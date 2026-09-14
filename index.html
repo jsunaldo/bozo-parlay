@@ -257,6 +257,9 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .sw{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer;background:var(--c);transition:transform .15s}
 .sw.on{border-color:var(--text);transform:scale(1.15)}
+.seasonchips{width:100%;display:flex;gap:6px;flex-wrap:wrap;padding-top:4px}
+.chip{border:1px solid var(--line2);background:var(--surface);color:var(--text);font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:980px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .teamgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:50vh;overflow-y:auto;padding:2px}
 .tp{border:2px solid transparent;background:var(--surface2);border-radius:12px;padding:6px 2px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;font:inherit;font-size:10px;font-weight:600;color:var(--muted);-webkit-tap-highlight-color:transparent}
 .tp img{width:32px;height:32px;object-fit:contain}
@@ -319,7 +322,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.8';
+const APP_VERSION='2026-09-14.9';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -344,7 +347,10 @@ function migrate(s){s.members??=[];s.weeks??=[];s.stake??=10;s.view??='week';s.w
 const KEY2='bozo-parlay-v2';
 let DB={leagues:[],active:null};
 function league(){return DB.leagues.find(l=>l.id===DB.active)||DB.leagues[0]}
-function setS(data){league().data=data;S=data}
+function season(l=league()){return l.seasons.find(x=>x.id===l.activeSeason)||l.seasons[0]}
+function setS(data){season().data=data;S=data}
+const seasonSorted=l=>[...l.seasons].sort((a,b)=>String(b.name).localeCompare(String(a.name)));
+const seasonSummary=x=>`${x.data.members.length} players · ${x.data.weeks.length} wk`;
 function seedLeague2(){
   const d=fresh();d.season='2026 NFL';d.seedV=2;
   const names=['Ian','Joey','Cruise','Chase','Jason','Jimmy','Ronnie','Sean','Jack','Zach','Eric'];
@@ -370,10 +376,17 @@ function migrateDB(d){
     if(!d.leagues.find(l=>l.id==='lg-stags-2025')){const i=d.leagues.findIndex(l=>l.data?.weeks?.[0]?.id==='w1'&&l.data.weeks[0].picks?.m1);d.leagues.splice(i>=0?i+1:d.leagues.length,0,{id:'lg-stags-2025',name:'Stags Bozo Parlay 2025',data:seedStags2025()})}
     d.seedV=5;
   }
+  if(!(d.seedV>=6)){
+    d.leagues.forEach(l=>{if(!l.seasons){const sid=uid();const nm=String(l.data?.season||'').replace(/\s*NFL$/i,'').trim()||'Season 1';l.seasons=[{id:sid,name:nm,data:l.data||fresh()}];l.activeSeason=sid;delete l.data}});
+    const isStags=x=>x.data?.weeks?.[0]?.id==='w1'&&x.data.weeks[0].picks?.m1;
+    const stags=d.leagues.find(l=>l.seasons.some(isStags));const s25=d.leagues.find(l=>l.id==='lg-stags-2025');
+    if(stags&&s25&&stags!==s25){s25.seasons.forEach(x=>{x.name='2025';x.id='season-2025';stags.seasons.push(x)});d.leagues=d.leagues.filter(l=>l!==s25);if(d.active===s25.id){d.active=stags.id;stags.activeSeason='season-2025'}}
+    d.seedV=6;
+  }
   return d;
 }
 function loadDB(){
-  try{const r=localStorage.getItem(KEY2);if(r){const d=JSON.parse(r);if(Array.isArray(d.leagues)&&d.leagues.length){d.leagues.forEach(l=>{l.data=migrate(l.data||fresh());l.name||=l.data.season||'League'});if(!d.leagues.find(l=>l.id===d.active))d.active=d.leagues[0].id;return migrateDB(d)}}}catch(e){console.warn('load failed',e)}
+  try{const r=localStorage.getItem(KEY2);if(r){const d=JSON.parse(r);if(Array.isArray(d.leagues)&&d.leagues.length){d.leagues.forEach(l=>{if(l.seasons){l.seasons.forEach(x=>x.data=migrate(x.data||fresh()));if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=l.seasons[0]?.id}else l.data=migrate(l.data||fresh());l.name||='League'});if(!d.leagues.find(l=>l.id===d.active))d.active=d.leagues[0].id;return migrateDB(d)}}}catch(e){console.warn('load failed',e)}
   let data=null;try{const r=localStorage.getItem(KEY);if(r)data=migrate(JSON.parse(r))}catch(e){console.warn('v1 load failed',e)}
   if(!data)data=seedSeason();
   const id=uid();return migrateDB({leagues:[{id,name:data.season||'League 1',data}],active:id});
@@ -429,8 +442,8 @@ function seedSeason(){
   s.weeks.push({id:'w1',num:1,date:'2026-09-13',bozoId:'m2',stake:10,votes:{},picks:picksFrom(SEED1)});
   s.currentWeekId='w1';s.seedV=2;return s;
 }
-DB=loadDB();{const q=new URLSearchParams(location.search).get('league');if(q&&DB.leagues.find(l=>l.id===q))DB.active=q}
-let S=league().data;
+DB=loadDB();{const qs=new URLSearchParams(location.search);const q=qs.get('league');if(q&&DB.leagues.find(l=>l.id===q))DB.active=q;const sq=qs.get('season');if(sq&&league().seasons.find(x=>x.id===sq))league().activeSeason=sq}
+let S=season().data;
 let saveT;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY2,JSON.stringify(DB))}catch(e){toast('Could not save — storage full or blocked. Export a backup.','bad')}},60)}
 function commit(){save();render()}
@@ -553,7 +566,7 @@ function render(){
   const st=S.weeks.length?stats().g:null;
   document.getElementById('topRight').innerHTML=st?`<span class="badge ${st.paid-st.staked>=0?'won':'lost'}" style="font-size:11px">${st.won}–${st.lost} · ${fmt$0(st.paid-st.staked)}</span>`:'';
 }
-function leagueLabel(){const l=league();const n=l.name||'League';return S.season&&S.season!==n?`${n} · ${S.season}`:n}
+function leagueLabel(){const l=league();const n=l.name||'League';const sn=S.season||season().name;return sn&&sn!==n?`${n} · ${sn}`:n}
 const empty=(t,s)=>`<div class="empty"><div class="empty-ic">🤡</div><b>${t}</b><p class="muted">${s}</p></div>`;
 
 /* ---- week ---- */
@@ -741,9 +754,13 @@ function closeCalls(per){
 
 /* ---- crew ---- */
 function renderLeagues(){
-  return`<section class="card"><h3>Leagues</h3><div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;return`<div class="mrow" style="${on?'border-color:rgba(176,124,255,.5)':''}"><div class="avatar" style="--c:${on?'#b07cff':'#3a4556'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${l.data.members.length} players · ${l.data.weeks.length} week${l.data.weeks.length===1?'':'s'}${on?' · active':''}</small></div>${on?`<button class="mini" data-act="rename-league" data-lid="${l.id}" title="Rename">✎</button>${DB.leagues.length>1?`<button class="mini danger" data-act="delete-league" data-lid="${l.id}" title="Delete league">×</button>`:''}`:`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>
+  const L=league();
+  return`<section class="card"><h3>Leagues</h3><div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;const n=l.seasons.length;return`<div class="mrow" style="${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${n} season${n===1?'':'s'}${on?' · active':''}</small></div>${on?`<button class="mini" data-act="rename-league" data-lid="${l.id}" title="Rename">✎</button>${DB.leagues.length>1?`<button class="mini danger" data-act="delete-league" data-lid="${l.id}" title="Delete league">×</button>`:''}`:`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>
   <button class="btn block" data-act="new-league">＋ New league</button>
-  <p class="muted tiny" style="margin-top:8px">Each league has its own crew, weeks and stats. Tap the logo up top to switch quickly.</p></section>`;
+  <p class="muted tiny" style="margin-top:8px">A league is a group of people. Each league has its own seasons, and each season its own crew, weeks and stats.</p></section>
+  <section class="card"><h3>${h(L.name)} · seasons</h3><div class="mlist">${seasonSorted(L).map(x=>{const on=x.id===L.activeSeason;return`<div class="mrow" style="${on?'border-color:rgba(0,113,227,.5)':''}"><div class="avatar" style="--c:${on?'var(--blue)':'#8e8e93'}">${h(String(x.name).slice(-2))}</div><div class="mbody"><b>${h(x.name)}</b><small>${seasonSummary(x)}${on?' · viewing':''}</small></div>${on?`<button class="mini" data-act="rename-season" data-sid="${x.id}" title="Rename">✎</button>${L.seasons.length>1?`<button class="mini danger" data-act="delete-season" data-sid="${x.id}" title="Delete season">×</button>`:''}`:`<button class="btn sm" data-act="switch-season" data-sid="${x.id}">Open</button>`}</div>`}).join('')}</div>
+  <button class="btn block" data-act="new-season">＋ New season</button>
+  <p class="muted tiny" style="margin-top:8px">A new season starts with this season's crew and a clean slate of weeks.</p></section>`;
 }
 function renderCrew(){
   return renderLeagues()+`<section class="card"><h3>Crew</h3>
@@ -934,11 +951,16 @@ const ACT={
   import(){document.getElementById('importFile').click()},
   sample(){const go=()=>{setS(sampleSeason());commit();toast('Sample season loaded — reset from Crew when you\'re ready','good')};if(S.weeks.length||S.members.length)confirm2('Replace current data?','Loading the sample overwrites what\'s here. Export a backup first if you want it.','Load sample',go,'primary');else go()},
   reset(){confirm2('Reset everything?','Wipes the crew, every week and all stats from this browser. Export a backup first if you want to keep it.','Reset',()=>{setS(fresh());commit();toast('Fresh slate')})},
-  leagues(){modal({title:'Leagues',body:`<div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;return`<div class="mrow" style="${on?'border-color:rgba(176,124,255,.5)':''}"><div class="avatar" style="--c:${on?'#b07cff':'#3a4556'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${l.data.members.length} players · ${l.data.weeks.length} wk</small></div>${on?'<span class="tag bozo">Active</span>':`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>`,actions:[{label:'Close',cls:'ghost'},{label:'＋ New league',cls:'primary',onClick:()=>{ACT['new-league']();return false}}]})},
-  'switch-league'(el){DB.active=el.dataset.lid;S=league().data;closeModal();commit();toast(`Switched to ${league().name}`);window.scrollTo({top:0})},
-  'new-league'(){modal({title:'New league',body:`<p>A fresh league with its own crew and season.</p><input id="lgName" placeholder="League name — e.g. Work guys" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n){toast('Give it a name','bad');return false}const d=fresh();d.season=n;const id=uid();DB.leagues.push({id,name:n,data:d});DB.active=id;S=d;commit();toast(`${n} created — add the crew`);window.scrollTo({top:0})}}],onOpen:()=>setTimeout(()=>document.getElementById('lgName')?.focus(),80)})},
+  leagues(){modal({title:'Leagues & seasons',body:`<div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;return`<div class="mrow" style="flex-wrap:wrap;${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${l.seasons.length} season${l.seasons.length===1?'':'s'}</small></div>${on?'<span class="tag bozo">Active</span>':`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}<div class="seasonchips">${seasonSorted(l).map(x=>`<button class="chip ${on&&x.id===l.activeSeason?'on':''}" data-act="switch-season" data-lid="${l.id}" data-sid="${x.id}">${h(x.name)}</button>`).join('')}</div></div>`}).join('')}</div>`,actions:[{label:'Close',cls:'ghost'},{label:'＋ New league',cls:'primary',onClick:()=>{ACT['new-league']();return false}}]})},
+  'switch-league'(el){DB.active=el.dataset.lid;S=season().data;closeModal();commit();toast(`Switched to ${league().name}`);window.scrollTo({top:0})},
+  'switch-season'(el){if(el.dataset.lid)DB.active=el.dataset.lid;const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid))l.activeSeason=el.dataset.sid;S=season().data;closeModal();commit();toast(`${l.name} · ${season().name}`);window.scrollTo({top:0})},
+  'new-league'(){modal({title:'New league',body:`<p>A fresh group with its own crew and seasons.</p><input id="lgName" placeholder="League name — e.g. Work guys" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n){toast('Give it a name','bad');return false}const d=fresh();const yr=String(new Date().getFullYear());d.season=yr+' NFL';const id=uid(),sid=uid();DB.leagues.push({id,name:n,seasons:[{id:sid,name:yr,data:d}],activeSeason:sid});DB.active=id;S=d;commit();toast(`${n} created — add the crew`);window.scrollTo({top:0})}}],onOpen:()=>setTimeout(()=>document.getElementById('lgName')?.focus(),80)})},
+  'new-season'(){const l=league();const yr=String(Math.max(...l.seasons.map(x=>parseInt(x.name)||0),new Date().getFullYear()-1)+1);
+    modal({title:`New ${h(l.name)} season`,body:`<p>Starts with this season's active crew and no weeks. Past seasons stay as they are.</p><input id="ssName" value="${h(yr)}" placeholder="Season name — e.g. 2024" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n){toast('Give it a name','bad');return false}if(l.seasons.find(x=>x.name===n)){toast('That season already exists','bad');return false}const d=fresh();d.season=/^\d{4}$/.test(n)?n+' NFL':n;d.stake=S.stake;d.members=S.members.filter(m=>m.active).map(m=>({...m}));const sid=uid();l.seasons.push({id:sid,name:n,data:d});l.activeSeason=sid;S=d;commit();toast(`${l.name} ${n} started`);window.scrollTo({top:0})}}],onOpen:()=>setTimeout(()=>document.getElementById('ssName')?.select(),80)})},
+  'rename-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x)return;modal({title:'Rename season',body:`<input id="ssName" value="${h(x.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n)return false;x.name=n;if(/^\d{4}$/.test(n))x.data.season=n+' NFL';commit()}}]})},
+  'delete-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x||l.seasons.length<2)return;confirm2(`Delete the ${x.name} season?`,`Removes ${x.data.weeks.length} week${x.data.weeks.length===1?'':'s'} of ${l.name} from this browser. Export a backup first if you might want it back.`,'Delete season',()=>{l.seasons=l.seasons.filter(y=>y!==x);l.activeSeason=seasonSorted(l)[0].id;S=season().data;commit();toast(`${x.name} deleted`)})},
   'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;commit()}}]})},
-  'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;confirm2(`Delete ${l.name}?`,`Removes this league's crew, ${l.data.weeks.length} week${l.data.weeks.length===1?'':'s'} and stats from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=league().data;commit();toast(`${l.name} deleted`)})},
+  'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;confirm2(`Delete ${l.name}?`,`Removes this league and all ${l.seasons.length} season${l.seasons.length===1?'':'s'} from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit();toast(`${l.name} deleted`)})},
   async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()))}if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
   'pick-team'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p)return;const sel=[...(p.teams||[])];
     modal({title:'Team logo',body:`<p class="tiny">Pick up to two teams for this leg. Auto-detected from the pick text unless you set it here.</p><div class="teamgrid" id="teamgrid">${Object.keys(TEAMS).map(a=>`<button class="tp ${sel.includes(a)?'on':''}" data-act="tp-toggle" data-abbr="${a}"><img src="${LOGO(a)}" alt="">${a}</button>`).join('')}</div>`,
