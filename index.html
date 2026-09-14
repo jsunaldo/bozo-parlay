@@ -149,6 +149,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .foot-actions{display:flex;gap:8px;margin-top:12px;justify-content:space-between}
 
 /* vote */
+.vote.next{border-color:rgba(176,124,255,.45);box-shadow:0 0 0 1px rgba(176,124,255,.15),0 16px 40px rgba(176,124,255,.12)}
+.vote.next h3{color:var(--text);text-transform:none;letter-spacing:-.01em;font-size:16px}
 .vote .progress{height:8px;background:rgba(0,0,0,.35);border-radius:6px;overflow:hidden;margin-bottom:10px}
 .vote .progress div{height:100%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:6px;transition:width .4s cubic-bezier(.2,.8,.2,1)}
 .cands{display:flex;flex-direction:column;gap:8px;margin:12px 0}
@@ -303,19 +305,22 @@ const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).sli
 const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function fresh(){return{v:1,season:'',stake:10,members:[],weeks:[],currentWeekId:null,view:'week',pendingBozo:null}}
-function migrate(s){s.members??=[];s.weeks??=[];s.stake??=10;s.view??='week';s.weeks.forEach(w=>{w.picks??={};w.votes??={};w.stake??=s.stake});return s}
+const SEED_MARGINS={m1:13,m2:9.5,m3:3.5,m4:22.5,m5:7.5};
+function migrate(s){s.members??=[];s.weeks??=[];s.stake??=10;s.view??='week';s.weeks.forEach(w=>{w.picks??={};w.votes??={};w.stake??=s.stake});
+  if(!(s.seedV>=2)){const w=s.weeks.find(w=>w.id==='w1');if(w)for(const[k,v]of Object.entries(SEED_MARGINS)){const p=w.picks[k];if(p&&p.margin==null&&(p.status==='hit'||p.status==='miss'))p.margin=v}s.seedV=2}
+  return s}
 function load(){try{const r=localStorage.getItem(KEY);if(r)return migrate(JSON.parse(r))}catch(e){console.warn('load failed',e)}return seedSeason()}
 /* Real season seed — used the first time the app opens with no saved data */
 function seedSeason(){
   const s=fresh();s.season='2026 NFL';
   ['Jason','Murph','Chin','Genes','Sean'].forEach((n,i)=>s.members.push({id:'m'+(i+1),name:n,color:PALETTE[i],active:true}));
   const w={id:'w1',num:1,date:'2026-09-13',bozoId:'m2',stake:10,votes:{},picks:{
-    m1:{text:'Jets ML',odds:'+100',status:'hit',margin:null},
-    m2:{text:'TB/CIN O50.5',odds:'-110',status:'hit',margin:null},
-    m3:{text:'PHI -5.5',odds:'-112',status:'miss',margin:null},
-    m4:{text:'BUF/HOU O44.5',odds:'-110',status:'hit',margin:null},
-    m5:{text:'ARI/LAC O47.5',odds:'-104',status:'miss',margin:null}}};
-  s.weeks.push(w);s.currentWeekId='w1';return s;
+    m1:{text:'Jets ML',odds:'+100',status:'hit',margin:13},
+    m2:{text:'TB/CIN O50.5',odds:'-110',status:'hit',margin:9.5},
+    m3:{text:'PHI -5.5',odds:'-112',status:'miss',margin:3.5},
+    m4:{text:'BUF/HOU O44.5',odds:'-110',status:'hit',margin:22.5},
+    m5:{text:'ARI/LAC O47.5',odds:'-104',status:'miss',margin:7.5}}};
+  s.weeks.push(w);s.currentWeekId='w1';s.seedV=2;return s;
 }
 let S=load();
 let saveT;
@@ -450,7 +455,7 @@ function renderWeek(){
     <button class="icon-btn" data-act="week-prev" ${idx===0?'disabled':''}>‹</button>
     <div class="week-title"><strong>Week ${w.num}</strong><input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date"></div>
     <button class="icon-btn" data-act="week-next" ${isLast?'disabled':''}>›</button>
-  </div>${renderTicket(w,c)}${renderVote(w,c,isLast)}`;
+  </div>${c.graded&&!S.weeks[idx+1]?renderVote(w,c,isLast)+renderTicket(w,c):renderTicket(w,c)+renderVote(w,c,isLast)}`;
 }
 function renderTicket(w,c){
   const b=member(w.bozoId);
@@ -495,7 +500,7 @@ function ticketFoot(w,c){
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
   <div id="f-won">${c.result==='won'?`<div class="won-line">🎉 Everyone collects ${fmt$(c.share)}. ${h(b?.name||'The Bozo')} nets ${fmt$(c.share-c.stake)} after fronting the stake.</div>`:''}</div>
-  <div class="foot-actions"><button class="btn sm ghost" data-act="copy-recap" data-wid="${w.id}">📋 Copy recap</button>${lastWeek()===w?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">Delete week</button>`:''}</div>`;
+  <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${lastWeek()===w?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">Delete week</button>`:''}</div>`;
 }
 function patchTicket(w){
   const c=calc(w);const priced=!c.missingOdds&&c.n>0;const $=id=>document.getElementById(id);
@@ -521,7 +526,7 @@ function renderVote(w,c,isLast){
   const el=eligible(w);const votes=w.votes||{};
   const max=Math.max(0,...el.list.map(id=>votes[id]||0));const leaders=max>0?el.list.filter(id=>(votes[id]||0)===max):[];
   const reason={miss:'Only the people who missed are on the ballot.',push:'Nobody missed — the pushes are on the ballot.',all:'Everyone hit. Everyone is on the ballot.'}[el.reason];
-  return`<section class="card vote"><h3>Who's the next Bozo?</h3><p class="muted tiny">${reason} Tap + as each person votes.</p>
+  return`<section class="card vote next"><h3>Week ${w.num} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Tap + as each person votes, then crown the winner to open Week ${w.num+1}.</p>
     <div class="cands">${el.list.map(id=>{const m=member(id);const l=c.legs.find(x=>x.mid===id);const v=votes[id]||0;
       const sub=l.status==='miss'?(l.margin!=null?`missed by ${l.margin}`:'missed'):l.status==='push'?'pushed':'hit';
       return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)}</b><small>${sub}${l.text?' · '+h(l.text):''}</small></div><div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${v}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div></div>`}).join('')}</div>
@@ -651,6 +656,86 @@ function recap(w){
 }
 async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Recap copied — paste it in the chat','good')}catch(e){modal({title:'Copy this',body:`<textarea rows="10" style="width:100%;font-family:var(--mono);font-size:12px">${h(t)}</textarea>`,actions:[{label:'Done'}]})}}
 
+/* ============================== SLIP IMAGE ============================== */
+function rr(x,X,Y,W,H,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+W,Y,X+W,Y+H,r);x.arcTo(X+W,Y+H,X,Y+H,r);x.arcTo(X,Y+H,X,Y,r);x.arcTo(X,Y,X+W,Y,r);x.closePath()}
+async function slipImage(w){
+  const c=calc(w);const b=member(w.bozoId);
+  try{await Promise.all([document.fonts.load('900 60px Inter'),document.fonts.load('800 32px Inter'),document.fonts.load('600 28px Inter'),document.fonts.load('700 36px "JetBrains Mono"')])}catch(e){}
+  const F=(wt,sz,mono)=>`${wt} ${sz}px ${mono?'"JetBrains Mono",Menlo,monospace':'Inter,-apple-system,"Helvetica Neue",Arial,sans-serif'}`;
+  const W=1080,L=88,R=W-88,legH=136,pad=48;
+  const el=c.graded?eligible(w):null;const ballot=el&&el.list.length&&c.result!=='won'?el.list.map(id=>member(id)?.name).join(', '):'';
+  const extra=(c.result==='won'?110:0)+(ballot?90:0)+(c.missingOdds?0:0);
+  const H=300+c.legs.length*legH+270+extra;
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');
+  x.fillStyle='#0a0e13';x.fillRect(0,0,W,H);
+  const g=x.createLinearGradient(0,pad,0,H-pad);g.addColorStop(0,'#1c2536');g.addColorStop(1,'#121926');
+  x.save();x.shadowColor='rgba(0,0,0,.6)';x.shadowBlur=40;x.shadowOffsetY=16;rr(x,pad,pad,W-pad*2,H-pad*2,44);x.fillStyle=g;x.fill();x.restore();
+  rr(x,pad,pad,W-pad*2,H-pad*2,44);x.strokeStyle='rgba(255,255,255,.12)';x.lineWidth=2;x.stroke();
+  x.save();rr(x,pad,pad,W-pad*2,H-pad*2,44);x.clip();const g2=x.createLinearGradient(pad,0,W-pad,0);g2.addColorStop(0,'#ff5fb0');g2.addColorStop(.5,'#b07cff');g2.addColorStop(1,'#4da3ff');x.fillStyle=g2;x.fillRect(pad,pad,W-pad*2,8);x.restore();
+  try{x.letterSpacing='4px'}catch(e){}
+  x.fillStyle='#8d99aa';x.font=F(800,24);x.textBaseline='alphabetic';x.textAlign='left';
+  x.fillText(`BOZO PARLAY  ·  WEEK ${w.num}${S.season?'  ·  '+S.season.toUpperCase():''}`,L,124);
+  try{x.letterSpacing='0px'}catch(e){}
+  // result pill
+  const pill={won:['CASHED','#22e07a','#052a15'],lost:[`LOST · ${c.hits}/${c.n-c.pushes}`,'rgba(255,77,106,.16)','#ff4d6a','#ff4d6a'],pending:[`${c.n-c.pending}/${c.n} GRADED`,'rgba(255,184,77,.14)','#ffb84d','#ffb84d'],void:['VOID','rgba(255,255,255,.1)','#8d99aa']}[c.result];
+  x.font=F(900,24);try{x.letterSpacing='3px'}catch(e){}const pw=x.measureText(pill[0]).width+48;
+  rr(x,R-pw,92,pw,48,14);x.fillStyle=pill[1];x.fill();if(pill[3]){x.strokeStyle=pill[3];x.lineWidth=2;x.stroke()}
+  x.fillStyle=pill[2];x.textAlign='center';x.fillText(pill[0],R-pw/2,125);try{x.letterSpacing='0px'}catch(e){}
+  // bozo line
+  x.textAlign='left';x.font='60px "Apple Color Emoji","Segoe UI Emoji",sans-serif';x.fillText('🤡',L,218);
+  x.font=F(900,58);x.fillStyle=b?.color||'#fff';const bn=b?.name||'Nobody';x.fillText(bn,L+84,216);
+  const bw=x.measureText(bn).width;x.font=F(600,36);x.fillStyle='#8d99aa';x.fillText('is the Bozo',L+84+bw+18,216);
+  // legs
+  let y=262;x.strokeStyle='rgba(255,255,255,.08)';x.lineWidth=2;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();
+  for(const l of c.legs){const m=member(l.mid);const col={hit:'#22e07a',miss:'#ff4d6a',push:'#ffb84d',pending:'#5b6776'}[l.status];
+    const tint={hit:'rgba(34,224,122,.12)',miss:'rgba(255,77,106,.13)',push:'rgba(255,184,77,.11)'}[l.status];
+    if(tint){const gg=x.createLinearGradient(pad,0,W*.6,0);gg.addColorStop(0,tint);gg.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=gg;x.fillRect(pad,y,W-pad*2,legH)}
+    // avatar
+    x.beginPath();x.arc(L+36,y+legH/2,36,0,7);x.fillStyle=m.color;x.fill();
+    x.fillStyle='#0a0e13';x.font=F(900,24);x.textAlign='center';x.textBaseline='middle';x.fillText(initials(m.name),L+36,y+legH/2+1);x.textBaseline='alphabetic';
+    // name + pick
+    x.textAlign='left';x.fillStyle='#eef2f7';x.font=F(800,34);x.fillText(m.name+(l.mid===w.bozoId?'  🤡':''),L+96,y+56);
+    x.fillStyle='#aab4c3';x.font=F(600,29);x.fillText(l.text||'(no pick)',L+96,y+100);
+    // odds + margin
+    x.textAlign='right';x.fillStyle='#eef2f7';x.font=F(700,34,true);x.fillText(l.oddsN!=null?fmtOdds(l.oddsN):'—',R-96,y+56);
+    if(l.margin!=null&&(l.status==='hit'||l.status==='miss')){x.fillStyle=col;x.font=F(700,26);x.fillText(`${l.status==='hit'?'covered':'missed'} by ${l.margin}`,R-96,y+100)}
+    else if(l.status==='push'){x.fillStyle=col;x.font=F(700,26);x.fillText('push',R-96,y+100)}
+    // status dot
+    x.beginPath();x.arc(R-32,y+legH/2,30,0,7);x.fillStyle=l.status==='pending'?'rgba(255,255,255,.06)':col;x.fill();
+    if(l.status==='pending'){x.strokeStyle='rgba(255,255,255,.18)';x.lineWidth=3;x.stroke()}
+    x.fillStyle=l.status==='hit'?'#052a15':l.status==='push'?'#2a1a00':'#fff';x.font=F(900,30);x.textAlign='center';x.textBaseline='middle';x.fillText({hit:'✓',miss:'✗',push:'P',pending:'·'}[l.status],R-32,y+legH/2+1);x.textBaseline='alphabetic';
+    y+=legH;x.strokeStyle='rgba(255,255,255,.08)';x.lineWidth=2;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();
+  }
+  // perforation
+  y+=8;x.setLineDash([12,10]);x.strokeStyle='rgba(255,255,255,.2)';x.beginPath();x.moveTo(pad+30,y+22);x.lineTo(W-pad-30,y+22);x.stroke();x.setLineDash([]);
+  x.fillStyle='#0a0e13';x.beginPath();x.arc(pad,y+22,20,0,7);x.arc(W-pad,y+22,20,0,7);x.fill();
+  // totals
+  const priced=!c.missingOdds&&c.n>0;y+=70;
+  const cols=[['PARLAY',c.n?amer(c.dec):'—'],['STAKE',fmt$0(c.stake)],[c.result==='won'?'PAID':'TO WIN',priced?fmt$(c.potential):'—'],['EACH',priced?fmt$(c.potential/c.n):'—']];
+  const cw=(R-L)/4;cols.forEach(([k,v],i)=>{const cx=L+cw*i;x.textAlign='left';try{x.letterSpacing='3px'}catch(e){}x.fillStyle='#8d99aa';x.font=F(800,20);x.fillText(k,cx,y+24);try{x.letterSpacing='0px'}catch(e){}
+    x.fillStyle=i===2&&c.result==='won'?'#22e07a':'#eef2f7';x.font=F(700,i===0?40:36,true);x.fillText(v,cx,y+76)});
+  y+=120;
+  if(c.result==='won'){rr(x,L,y,R-L,80,20);x.fillStyle='rgba(34,224,122,.12)';x.fill();x.strokeStyle='rgba(34,224,122,.4)';x.lineWidth=2;x.stroke();x.fillStyle='#22e07a';x.font=F(800,30);x.textAlign='left';x.fillText(`🎉  Everyone collects ${fmt$(c.share)}`,L+28,y+51);y+=110}
+  if(ballot){x.fillStyle='#b07cff';x.font=F(800,28);x.textAlign='left';x.fillText(`🗳  On the ballot for Week ${w.num+1}: ${ballot}`,L,y+30);y+=90}
+  x.fillStyle='#5b6776';x.font=F(600,22);x.textAlign='left';x.fillText(fmtDate(w.date)?`${fmtDate(w.date)}${w.date?', '+w.date.slice(0,4):''}`:'',L,H-pad-40);
+  x.textAlign='right';x.fillText('bozo parlay',R,H-pad-40);
+  return cv;
+}
+async function shareSlip(w){
+  toast('Rendering slip…');
+  let cv;try{cv=await slipImage(w)}catch(e){console.error(e);toast('Could not render the slip: '+e.message,'bad');return}
+  const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
+  const file=new File([blob],`bozo-parlay-week-${w.num}.png`,{type:'image/png'});
+  const url=URL.createObjectURL(blob);
+  const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
+  const canCopy=!!(navigator.clipboard&&navigator.clipboard.write&&window.ClipboardItem);
+  const actions=[{label:'Text instead',cls:'ghost sm',onClick:()=>{copyText(recap(w));return false}}];
+  if(canCopy)actions.push({label:'Copy image',onClick:async()=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('Image copied — paste it in the chat','good')}catch(e){toast('Copy blocked here — long-press the image to save it instead','bad')}return false}});
+  if(canShare)actions.push({label:'Share…',cls:'primary',onClick:()=>{navigator.share({files:[file],title:`Bozo Parlay — Week ${w.num}`}).catch(()=>{})}});
+  else actions.push({label:'Download',cls:'primary',onClick:()=>{const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove()}});
+  modal({title:`Week ${w.num} slip`,body:`<img src="${url}" alt="Week ${w.num} slip" style="width:100%;border-radius:18px;display:block;box-shadow:0 12px 40px rgba(0,0,0,.5)"><p class="tiny" style="margin-top:10px">${canShare?'Share… sends the picture straight to iMessage or the group chat.':'Long-press or right-click the picture to save or copy it.'}</p>`,actions});
+}
+
 /* ============================== UI BITS ============================== */
 function modal({title,body,actions=[],onOpen}){
   const root=document.getElementById('modal-root');
@@ -705,6 +790,7 @@ const ACT={
   'change-bozo'(){const w=currentWeek();modal({title:`Week ${w.num} Bozo`,body:memberSelect('bozoSel',w.bozoId),actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{w.bozoId=document.getElementById('bozoSel').value;commit()}}]})},
   'remove-leg'(el){const w=currentWeek();const m=member(el.dataset.mid);confirm2('Remove leg?',`Drop ${h(m?.name)} from the Week ${w.num} slip. They sat this one out.`,'Remove',()=>{delete w.picks[el.dataset.mid];w.votes={};commit()})},
   'copy-recap'(el){copyText(recap(week(el.dataset.wid)))},
+  'share-slip'(el){shareSlip(week(el.dataset.wid))},
   'delete-week'(el){const w=week(el.dataset.wid);confirm2(`Delete Week ${w.num}?`,'This removes the slip, grades and votes for this week. There is no undo — export a backup first if unsure.','Delete week',()=>{S.weeks=S.weeks.filter(x=>x!==w);S.currentWeekId=lastWeek()?.id||null;commit();toast(`Week ${w.num} deleted`)})},
   'first-bozo'(el){S.pendingBozo=el.dataset.mid;commit()},
   'first-start'(){if(!S.pendingBozo)return;const id=S.pendingBozo;S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
@@ -765,7 +851,7 @@ function sampleSeason(){
 }
 
 /* ============================== BOOT ============================== */
-render();
+render();save();
 if('serviceWorker'in navigator&&location.protocol.startsWith('http')){navigator.serviceWorker.register('sw.js').catch(()=>{})}
 </script>
 </body>
