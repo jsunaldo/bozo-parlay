@@ -393,7 +393,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-15.3';
+const APP_VERSION='2026-09-15.4';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1048,10 +1048,13 @@ function heatmap(){
 }
 function closeCalls(per){
   const all=[];Object.values(per).forEach(p=>p.history.forEach(x=>{if(x.status==='miss'&&x.margin!=null)all.push({...x,id:p.id})}));
-  if(!all.length)return'';const rank={rec:0,pts:1,yds:2};all.sort((a,b)=>(rank[a.unit||'pts']-rank[b.unit||'pts'])||(a.margin-b.margin));
+  if(!all.length)return'';
   const row=x=>{const m=member(x.id);return`<div class="call"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="call-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${h(x.wk||'W'+x.num)}</span></b><small>${betChip(x.text,x.teams)}</small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`};
-  const worst=[...all].sort((a,b)=>(rank[b.unit||'pts']-rank[a.unit||'pts'])||(b.margin-a.margin));
-  return`<section class="card"><h3>Closest misses</h3><div class="calls">${all.slice(0,6).map(row).join('')}</div>${all.length>6?`<h3 style="margin-top:16px">Biggest chokes</h3><div class="calls">${worst.slice(0,3).map(row).join('')}</div>`:''}</section>`;
+  const UNITS_ORDER=[['pts','Points'],['yds','Yards'],['rec','Receptions']];
+  const section=(title,pickFn,n,minCount)=>{const blocks=UNITS_ORDER.map(([u,label])=>{const list=all.filter(x=>(x.unit||'pts')===u);if(list.length<minCount)return'';return`<div class="pd-sub" style="margin:10px 0 6px">${label}</div><div class="calls">${pickFn(list).slice(0,n).map(row).join('')}</div>`}).join('');return blocks?`<h3>${title}</h3>${blocks}`:''};
+  const closest=section('Closest misses',l=>[...l].sort((a,b)=>a.margin-b.margin),5,1);
+  const chokes=section('Biggest chokes',l=>[...l].sort((a,b)=>b.margin-a.margin),3,4);
+  return`<section class="card">${closest}${chokes?`<div style="height:8px"></div>${chokes}`:''}<p class="muted tiny" style="margin-top:12px">Ranked within each measure — a yardage miss is never compared to a points miss.</p></section>`;
 }
 
 /* ---- crew ---- */
