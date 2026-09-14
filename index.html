@@ -322,7 +322,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.9';
+const APP_VERSION='2026-09-14.10';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -383,6 +383,11 @@ function migrateDB(d){
     if(stags&&s25&&stags!==s25){s25.seasons.forEach(x=>{x.name='2025';x.id='season-2025';stags.seasons.push(x)});d.leagues=d.leagues.filter(l=>l!==s25);if(d.active===s25.id){d.active=stags.id;stags.activeSeason='season-2025'}}
     d.seedV=6;
   }
+  if(!(d.seedV>=7)){
+    const stags=d.leagues.find(l=>l.seasons?.some(x=>x.data?.weeks?.[0]?.id==='w1'&&x.data.weeks[0].picks?.m1));
+    if(stags&&!stags.seasons.find(x=>x.id==='season-2024'))stags.seasons.push({id:'season-2024',name:'2024',data:seedStags2024()});
+    d.seedV=7;
+  }
   return d;
 }
 function loadDB(){
@@ -433,6 +438,34 @@ function seedStags2025(){
     d.weeks.push(w);
   }
   d.currentWeekId='s25w24';return d;
+}
+// Stags Bozo Parlay — 2024 season (weeks 6-18, from the user's Notes + Stags2024.pdf). Bozo per week was not recorded anywhere.
+const STAGS24_MEMBERS=[['s1','Jason',0],['s2','Murph',1],['s3','Chin',2],['s4','Genes',3],['s6','Lap',5],['s7','IV',6],['s8','Jim',7],['s9','Lazick',8],['s10','Kierns',9]];
+const STAGS24=[
+ [6,'2024-10-13',[['Jason','Bengals -3.5','-114','hit'],['Murph','Commanders moneyline','+245','miss'],['Lap','Jaguars / Bears under 44.5','-112','miss'],['Jim','Buccaneers moneyline','-166','hit'],['Kierns','Lions / Cowboys under 52','-110','miss'],['Lazick','Raiders / Steelers over 36.5','-112','hit'],['IV','Eagles -9.5','-108','miss'],['Chin','Packers / Cardinals over 49','+113','miss'],['Genes','Buccaneers / Saints over 41','-112','hit']]],
+ [7,'2024-10-20',[['Jason','Lions moneyline','+100','hit'],['Murph','Patriots moneyline','+190','miss'],['Lap','Chiefs / 49ers over 47','-110','miss'],['Jim','Chiefs moneyline','+102','hit'],['Kierns','Seahawks / Falcons over 51','-112','miss'],['Lazick','Bengals / Browns over 41.5','-108','miss'],['IV','Jets / Steelers over 38.5','-112','hit'],['Chin','Raiders +10.5','-178','hit'],['Genes','Texans moneyline','+124','miss']]],
+ [8,'2024-10-27',[['Jason','Bengals -2.5','-120','miss'],['Murph','Packers -3','-165','push'],['Lap','Bills moneyline','-148','hit'],['Jim','Cardinals / Dolphins under 48','-110','miss'],['Kierns','Bills / Seahawks over 48.5','-110','miss'],['Lazick','Packers / Jaguars under 49.5','-112','miss'],['IV','Colts +6','-110','hit'],['Chin','Broncos -8','-112','hit'],['Genes','Cardinals +3.5','-120','hit']]],
+ [9,'2024-11-03',[['Jason','Chargers -2','-102','hit'],['Murph','Cowboys +3','-102','miss'],['Lap','Commanders -4','-110','hit'],['Jim','Rams -1.5','-113','hit'],['Kierns','Bears +1.5','-106','miss'],['Lazick','Packers / Lions over 47.5','-112','miss'],['IV','Bills -6.5','-110','miss'],['Chin','Eagles first to score in 1st half','-180','hit',['PHI'],'none'],['Genes','Patriots +3','-102','push']]],
+ [10,'2024-11-10',[['Jason','Amon-Ra St. Brown anytime TD','+110','hit',['DET']],['Murph','Lions -3','-115','push'],['Lap','Bills -4.5','-115','hit'],['Jim','Vikings -7','-110','miss'],['Kierns','Titans / Chargers over 39','-110','hit'],['Lazick','Vikings / Jaguars over 46','-110','miss'],['IV','Eagles -7','-110','hit'],['Chin','49ers -3','-195','push'],['Genes','Falcons -3','-122','miss']]],
+ [11,'2024-11-17',[['Jason','Packers -5.5','-124','miss'],['Murph','Lions -8.5','-200','hit'],['Lap','Vikings -6.5','-104','hit'],['Jim','Bengals moneyline','-102','miss'],['Kierns','Vikings / Titans over 39.5','-118','miss'],['Lazick','Lions D/ST anytime TD','+400','miss',['DET'],'none'],['IV','Ravens -2.5','-138','miss'],['Chin','Dolphins -7.5','-118','hit'],['Genes','Falcons / Broncos over 43.5','-133','hit']]],
+ [12,'2024-11-24',[['Jason','Buccaneers -6.5','+107','hit'],['Murph','Broncos -5.5','-110','hit'],['Lap','Vikings moneyline','-175','hit'],['Jim','Texans -6.5','-153','miss'],['Kierns','Chiefs -11','-108','miss'],['Lazick','David Montgomery anytime TD','-195','hit',['DET']],['IV','Packers -2.5','-112','hit'],['Chin','Dolphins -6.5','-108','hit'],['Genes','Broncos / Raiders over 41.5','-103','hit']]],
+ [13,'2024-12-01',[['Jason','Chargers -2.5','-102','hit'],['Murph','Steelers +3.5','-142','hit'],['Lap','Vikings moneyline','-180','hit'],['Jim','Rams -2.5','-118','hit'],['Kierns','Titans / Commanders over 45.5','-106','hit'],['Lazick','Panthers / Buccaneers over 46.5','-110','hit'],['IV','Seahawks -2','-108','hit'],['Chin','Cowboys moneyline','-185','hit'],['Genes','Texans -4.5','-107','miss']]],
+ [14,'2024-12-08',[['Jason','Saquon Barkley 2+ TDs','+180','miss',['PHI'],'none'],['Murph','Browns +7.5','-140','miss'],['Lap','Chiefs moneyline','-198','hit'],['Jim','Seahawks moneyline','+124','hit'],['Kierns','Jaguars / Titans over 40.5','-108','miss'],['Lazick','Xavier Worthy anytime TD','+275','miss',['KC']],['IV','Eagles / Panthers over 44.5','-135','miss'],['Chin','Bills -4.5','-103','miss'],['Genes','Seahawks / Cardinals over 44','-112','hit']]],
+ [15,'2024-12-15',[['Jason','Chiefs moneyline','-198','hit'],['Murph','Steelers moneyline','+205','miss'],['Lap','Cardinals -6','-108','hit'],['Jim','Packers -2.5','-110','hit'],['Kierns','Steelers / Eagles over 41.5','-110','miss'],['Lazick','Lions / Bills over 54.5','-110','hit'],['IV','Broncos moneyline','-180','hit'],['Chin','Dolphins +6.5','-194','miss'],['Genes','Commanders / Saints over 43.5','-105','miss']]],
+ [16,'2024-12-22',[['Jason','James Conner 80+ rushing yds','-145','hit',['ARI']],['Murph','Steelers +7.5','-137','miss'],['Lap','Cardinals -5','-111','miss'],['Jim','Jaguars moneyline','+105','miss'],['Kierns','Lions -6.5','-115','hit'],['Lazick','Vikings -5.5','+127','miss'],['IV','Chiefs moneyline','-185','hit'],['Chin','A.J. Brown 70+ receiving yds','-150','hit',['PHI']],['Genes','Rams moneyline','-162','hit']]],
+ [17,'2024-12-29',[['Jason','Bucky Irving over 77.5 rushing yds','-115','hit',['TB']],['Murph','Rams -6.5','-110','miss'],['Lap','Seahawks moneyline','-192','hit'],['Jim','Titans / Jaguars over 39.5','-110','miss'],['Kierns','Saints -1.5','-112','miss'],['Lazick','Vikings / Packers over 48.5','-122','hit'],['IV','Commanders moneyline','-180','hit'],['Chin','Colts to score in 1st half','-180','hit',['IND'],'none'],['Genes','Broncos moneyline','+142','miss']]],
+ [18,'2025-01-05',[['Jason','Bijan Robinson over 95.5 rushing yds','-125','hit',['ATL']],['Murph','Vikings moneyline','+124','miss'],['Lap','Texans +1.5','-110','hit'],['Jim','Dolphins -1','-108','miss'],['Kierns','Seahawks / Rams over 38.5','-112','hit'],['Lazick','Mike Evans over 89.5 receiving yds','-170','miss',['TB']],['IV','Eagles moneyline','-142','hit'],['Chin','Colts / Jaguars under 44.5','-128','miss'],['Genes','Bengals moneyline','-122','hit']]],
+];
+function seedStags2024(){
+  const d=fresh();d.season='2024 NFL';d.seedV=2;
+  STAGS24_MEMBERS.forEach(([id,n,ci])=>d.members.push({id,name:n,color:PALETTE[ci%PALETTE.length],active:true}));
+  const idOf=n=>STAGS24_MEMBERS.find(m=>m[1]===n)[0];
+  for(const[num,date,rows]of STAGS24){
+    const w={id:'s24w'+num,num,date,bozoId:null,stake:10,votes:{},picks:{}};
+    for(const[name,text,odds,status,teams,unit]of rows){const u=unit||unitFor(text);w.picks[idOf(name)]={text,odds,status,margin:null,unit:u,teams:teams&&teams.length?teams:detectTeams(text),tm:!!(teams&&teams.length),um:!!unit}}
+    d.weeks.push(w);
+  }
+  d.currentWeekId='s24w18';return d;
 }
 function picksFrom(rows){const o={};for(const[id,text,odds,status,margin,unit,teams]of rows)o[id]={text,odds,status,margin:unit==='none'?null:margin,unit,teams,tm:true,um:true};return o}
 function applySeedPicks(w,rows){for(const[id,text,odds,status,margin,unit,teams]of rows){const p=w.picks[id];if(!p)continue;p.text=text;p.unit=unit;p.teams=teams;p.tm=true;p.um=true;if(unit==='none')p.margin=null;else if(p.margin==null&&(p.status==='hit'||p.status==='miss'))p.margin=margin}}
