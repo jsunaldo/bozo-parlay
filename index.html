@@ -300,7 +300,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.3';
+const APP_VERSION='2026-09-14.4';
 const KEY='bozo-parlay-v1';
 const PALETTE=['#22e07a','#4da3ff','#ff8a4d','#c96bff','#ffd34d','#4de3e0','#ff6bb5','#9ecf4d','#ff5e5e','#7aa2ff','#f7a8ff','#8ef0c2'];
 const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-3);
@@ -315,11 +315,29 @@ const KEY2='bozo-parlay-v2';
 let DB={leagues:[],active:null};
 function league(){return DB.leagues.find(l=>l.id===DB.active)||DB.leagues[0]}
 function setS(data){league().data=data;S=data}
+function seedLeague2(){
+  const d=fresh();d.season='2026 NFL';d.seedV=2;
+  const names=['Ian','Joey','Cruise','Chase','Jason','Jimmy','Ronnie','Sean','Jack','Zach','Eric'];
+  names.forEach((n,i)=>d.members.push({id:'b'+(i+1),name:n,color:PALETTE[i%PALETTE.length],active:true}));
+  const L=[['Breece Hall ATTD','+100','hit',null],['Texans 1H +0.5','-118','miss',2.5],['Lions -6.5','-125','miss',5.5],['Bears -3','-118','hit',19],['PIT -5.5','-105','hit',1.5],['Gibbs 90+ rush yds','+107','hit',66],['Swift 80+ rush+rec yds','-106','hit',54],['Bills -1.5','-105','hit',3.5],['TB/CIN U50.5','-112','miss',9.5],['Iosivas U1.5 rec','-146','miss',0.5],['Skattebo ATTD','+100','hit',null]];
+  const w={id:'w1',num:1,date:'2026-09-13',bozoId:null,stake:10,votes:{},picks:{}};
+  L.forEach(([text,odds,status,margin],i)=>w.picks['b'+(i+1)]={text,odds,status,margin});
+  d.weeks.push(w);d.currentWeekId='w1';return d;
+}
+function migrateDB(d){
+  if(!(d.seedV>=3)){
+    const first=d.leagues.find(l=>l.data?.weeks?.[0]?.id==='w1'&&l.data.weeks[0].picks?.m1);
+    if(first&&(first.name==='2026 NFL'||first.name==='League 1'))first.name='Stags Bozo Parlay';
+    if(!d.leagues.find(l=>l.id==='lg2'))d.leagues.push({id:'lg2',name:'Bozo Parlay',data:seedLeague2()});
+    d.seedV=3;
+  }
+  return d;
+}
 function loadDB(){
-  try{const r=localStorage.getItem(KEY2);if(r){const d=JSON.parse(r);if(Array.isArray(d.leagues)&&d.leagues.length){d.leagues.forEach(l=>{l.data=migrate(l.data||fresh());l.name||=l.data.season||'League'});if(!d.leagues.find(l=>l.id===d.active))d.active=d.leagues[0].id;return d}}}catch(e){console.warn('load failed',e)}
+  try{const r=localStorage.getItem(KEY2);if(r){const d=JSON.parse(r);if(Array.isArray(d.leagues)&&d.leagues.length){d.leagues.forEach(l=>{l.data=migrate(l.data||fresh());l.name||=l.data.season||'League'});if(!d.leagues.find(l=>l.id===d.active))d.active=d.leagues[0].id;return migrateDB(d)}}}catch(e){console.warn('load failed',e)}
   let data=null;try{const r=localStorage.getItem(KEY);if(r)data=migrate(JSON.parse(r))}catch(e){console.warn('v1 load failed',e)}
   if(!data)data=seedSeason();
-  const id=uid();return{leagues:[{id,name:data.season||'League 1',data}],active:id};
+  const id=uid();return migrateDB({leagues:[{id,name:data.season||'League 1',data}],active:id});
 }
 /* Real season seed — used the first time the app opens with no saved data */
 function seedSeason(){
