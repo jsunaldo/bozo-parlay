@@ -319,7 +319,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.7';
+const APP_VERSION='2026-09-14.8';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -366,6 +366,10 @@ function migrateDB(d){
     if(w2){applySeedPicks(w2,SEED2);if(!w2.bozoId)w2.bozoId='b1'}
     d.seedV=4;
   }
+  if(!(d.seedV>=5)){
+    if(!d.leagues.find(l=>l.id==='lg-stags-2025')){const i=d.leagues.findIndex(l=>l.data?.weeks?.[0]?.id==='w1'&&l.data.weeks[0].picks?.m1);d.leagues.splice(i>=0?i+1:d.leagues.length,0,{id:'lg-stags-2025',name:'Stags Bozo Parlay 2025',data:seedStags2025()})}
+    d.seedV=5;
+  }
   return d;
 }
 function loadDB(){
@@ -378,6 +382,45 @@ function loadDB(){
 // [id, pick, odds, status, margin, unit, teams]
 const SEED1=[['m1','Jets moneyline','+100','hit',13,'pts',['NYJ']],['m2','Bucs / Bengals over 50.5','-110','hit',9.5,'pts',['TB','CIN']],['m3','Eagles -5.5','-112','miss',3.5,'pts',['PHI']],['m4','Bills / Texans over 44.5','-110','hit',22.5,'pts',['BUF','HOU']],['m5','Cardinals / Chargers over 47.5','-104','miss',7.5,'pts',['ARI','LAC']]];
 const SEED2=[['b1','Breece Hall anytime TD','+100','hit',null,'none',['NYJ']],['b2','Texans 1st half +0.5','-118','miss',2.5,'pts',['HOU']],['b3','Lions -6.5','-125','miss',5.5,'pts',['DET']],['b4','Bears -3','-118','hit',19,'pts',['CHI']],['b5','Steelers -5.5','-105','hit',1.5,'pts',['PIT']],['b6','Jahmyr Gibbs 90+ rushing yds','+107','hit',66,'yds',['DET']],['b7',"D'Andre Swift 80+ rush + rec yds",'-106','hit',54,'yds',['CHI']],['b8','Bills -1.5','-105','hit',3.5,'pts',['BUF']],['b9','Bucs / Bengals under 50.5','-112','miss',9.5,'pts',['TB','CIN']],['b10','Andrei Iosivas under 1.5 receptions','-146','miss',0.5,'rec',['CIN']],['b11','Cam Skattebo anytime TD','+100','hit',null,'none',['NYG']]];
+// Stags Bozo Parlay — 2025 season (from the user's Notes 'Season 2' folder). Rows: [name, pick, odds, status, teams?, unit?]
+const STAGS25_NAMES=['Jason','Murph','Chin','Genes','Sean'];
+const STAGS25=[
+ [1,null,null,'2025-09-07','Chin',[['Genes','Dolphins / Colts over 46.5','-127','miss'],['Murph','Saints moneyline','+235','miss'],['Jason','Giants +6','-108','miss'],['Chin','Lions +1.5','-115','miss']]],
+ [2,null,null,'2025-09-14','Jason',[['Genes','Bills / Jets over 45.5','-147','miss'],['Murph','Titans +5.5','-110','miss'],['Jason','Breece Hall 60+ rushing yds','-110','miss',['NYJ']],['Chin','Eagles moneyline','-125','hit']]],
+ [3,null,null,'2025-09-21','Murph',[['Genes','Panthers +6.5 (alt)','-135','hit'],['Murph','Titans moneyline','+172','miss'],['Jason','Rams moneyline','+154','miss'],['Chin','Cardinals / 49ers under 44.5','-110','hit']]],
+ [4,null,null,'2025-09-28','Jason',[['Genes','Vikings -2.5','-115','miss'],['Murph','Buccaneers +3.5','-110','miss'],['Jason','Panthers +5.5','-110','miss'],['Chin','Michael Pittman 50+ receiving yds','-136','miss',['IND']]]],
+ [5,null,null,'2025-10-05','Genes',[['Genes','Titans +7.5','-110','hit'],['Murph','Commanders / Chargers over 46.5','-110','miss'],['Jason','Vikings -3.5','-110','hit'],['Chin','Lions / Bengals under 49.5','-112','miss']]],
+ [6,null,null,'2025-10-12','Genes',[['Genes','Chiefs / Lions over 51.5','-127','miss'],['Murph','Lions +2.5','-110','miss'],['Jason','Cowboys -3','-110','miss'],['Chin','Rams -5.5','-140','hit']]],
+ [7,null,null,'2025-10-19','Murph',[['Genes','Vikings moneyline','+110','miss'],['Murph','Commanders / Cowboys over 54.5','-110','hit'],['Jason','Falcons +1.5','-110','miss'],['Chin','Falcons / 49ers over 42.5','-110','miss']]],
+ [8,null,null,'2025-10-26','Jason',[['Genes','Giants / Eagles over 43.5','-118','hit'],['Murph','Broncos -3.5','-105','hit'],['Jason','Bills -6.5','-135','hit'],['Chin','Jalen Hurts 200+ passing yds','-124','miss',['PHI']]]],
+ [9,null,null,'2025-11-02','Chin',[['Jason','Lions -8.5','-112','miss'],['Murph','Colts -3.5','-110','miss'],['Genes','Patriots / Falcons over 45.5','-108','hit'],['Chin','Broncos / Texans over 39.5','-115','miss'],['Sean','Broncos +2.5','-105','hit']]],
+ [10,null,null,'2025-11-09','Murph',[['Jason','Ravens -4.5','-105','hit'],['Murph','Bears / Giants over 46.5','-110','miss'],['Genes','Colts / Falcons over 48.5','-108','hit'],['Chin','Bills -9.5','-105','miss'],['Sean','Buccaneers moneyline','-145','miss']]],
+ [11,null,null,'2025-11-16','Sean',[['Jason','Chiefs -2.5','-155','miss'],['Murph','Browns +7.5','-108','hit'],['Genes','Giants / Packers over 42.5','-115','hit'],['Chin','Eagles moneyline','-148','hit'],['Sean','Chargers -2.5','-130','miss']]],
+ [12,null,null,'2025-11-23','Sean',[['Jason','Jaguars -2.5','-102','hit'],['Murph','Vikings +6.5','-110','miss'],['Genes','Giants / Lions under 51.5','-112','miss'],['Chin','Colts +3.5','-110','hit'],['Sean','Jacoby Brissett over 240 passing yds','-122','hit',['ARI']]]],
+ [13,'Week 13 · Thanksgiving','W13a','2025-11-27','Murph',[['Jason','Chiefs moneyline','-185','miss'],['Murph','Packers +2.5','-110','hit'],['Genes','Packers / Lions over 47.5','-132','hit'],['Chin','Jahmyr Gibbs anytime TD','-195','miss',['DET']],['Sean','Travis Kelce anytime TD','+125','hit',['KC']]]],
+ [14,'Week 13 · Sunday','W13b','2025-11-30','Chin',[['Jason','Matthew Stafford 250+ passing yds','-116','miss',['LAR']],['Murph','49ers -4.5','-110','hit'],['Genes','Saints / Dolphins over 42.5','-105','miss'],['Chin','Rams / Panthers over 44.5','-115','hit'],['Sean','Bills -3.5','-110','hit']]],
+ [15,'Week 14','W14','2025-12-07','Genes',[['Jason','Bears +7.5','-140','hit'],['Murph','Bengals +5.5','-110','hit'],['Genes','Dolphins moneyline','-155','hit'],['Chin','Ravens -4.5','','miss'],['Sean','Colts moneyline','-130','miss']]],
+ [16,'Week 15','W15','2025-12-14','Sean',[['Jason','Texans -9.5','-115','hit'],['Murph','Bengals moneyline','+130','miss'],['Genes','Chargers +5.5','-108','hit'],['Chin','Panthers / Saints over 40.5','-110','miss'],['Sean','Bills moneyline','-118','hit']]],
+ [17,'Week 16','W16','2025-12-21','Murph',[['Jason','Chargers moneyline','+120','hit'],['Murph','Panthers moneyline','+134','hit'],['Genes','Bills / Browns over 41.5','-135','hit'],['Chin','Lions -7','-110','miss'],['Sean','Vikings moneyline','-150','hit']]],
+ [18,'Week 17 · Christmas','W17a','2025-12-25','Chin',[['Jason','Jameson Williams 70+ receiving yds','+108','miss',['DET']],['Murph','Commanders moneyline','+370','miss'],['Genes','Chiefs / Broncos over 33.5','-108','miss'],['Chin','Lions over 42.5','-118','miss'],['Sean','George Pickens anytime TD','+125','miss',['DAL']]]],
+ [19,'Week 17','W17b','2025-12-28','Chin',[['Jason','Steelers -3','-118','miss'],['Murph','Panthers +7','-110','miss'],['Genes','Giants / Raiders over 41.5','-108','hit'],['Chin','Eagles over 44.5','-105','miss'],['Sean','Buccaneers / Dolphins over 44.5','-105','miss']]],
+ [20,'Week 18','W18','2026-01-04','Chin',[['Jason','49ers moneyline','+124','miss'],['Murph','Steelers +3.5','+100','hit'],['Genes','Saints +3.5','-112','hit'],['Chin','49ers +4.5','-112','hit'],['Sean','Panthers moneyline','+120','miss']]],
+ [21,'Wild Card','WC','2026-01-11','Jason',[['Jason','Jaguars 1st half over 13.5','+105','miss'],['Murph','Patriots -4.5','+100','hit'],['Genes','Rams / Panthers over 45.5','-115','hit'],['Chin','49ers +5.5','-110','hit'],['Sean','Packers / Bears over 44.5','-110','hit']]],
+ [22,'Divisional','DIV','2026-01-18','Jason',[['Jason','49ers +7','-110','miss'],['Murph','Bears moneyline','+167','miss'],['Genes','Rams / Bears over 46.5','-141','miss'],['Chin','Texans / Patriots under 40.5','-110','miss'],['Sean','Bills +1.5','-115','miss']]],
+ [23,'Conference Championship','CONF','2026-01-25','Jason',[['Jason','Davante Adams anytime TD','+125','hit',['LAR']],['Murph','Patriots -2.5','-165','hit'],['Genes','Rams / Seahawks over 45.5','-112','hit'],['Chin','Matthew Stafford 250+ passing yds','-134','hit',['LAR']],['Sean','Stefon Diggs over 50 receiving yds','+105','miss',['NE']]]],
+ [24,'Super Bowl','SB','2026-02-08','Sean',[['Jason','Over 2.5 players with a pass attempt','+150','miss',[],'none'],['Murph','Patriots moneyline','+195','miss'],['Genes','Coin toss — tails','-103','miss',[],'none'],['Chin','Drake Maye 30+ pass attempts','-140','hit',['NE'],'none']]],
+];
+function seedStags2025(){
+  const d=fresh();d.season='2025 NFL';d.seedV=2;
+  STAGS25_NAMES.forEach((n,i)=>d.members.push({id:'s'+(i+1),name:n,color:PALETTE[i],active:true}));
+  const idOf=n=>'s'+(STAGS25_NAMES.indexOf(n)+1);
+  for(const[num,label,short,date,bozo,rows]of STAGS25){
+    const w={id:'s25w'+num,num,date,bozoId:idOf(bozo),stake:10,votes:{},picks:{}};if(label)w.label=label;if(short)w.short=short;
+    for(const[name,text,odds,status,teams,unit]of rows){const u=unit||unitFor(text);w.picks[idOf(name)]={text,odds,status,margin:null,unit:u,teams:teams&&teams.length?teams:detectTeams(text),tm:!!(teams&&teams.length),um:!!unit}}
+    d.weeks.push(w);
+  }
+  d.currentWeekId='s25w24';return d;
+}
 function picksFrom(rows){const o={};for(const[id,text,odds,status,margin,unit,teams]of rows)o[id]={text,odds,status,margin:unit==='none'?null:margin,unit,teams,tm:true,um:true};return o}
 function applySeedPicks(w,rows){for(const[id,text,odds,status,margin,unit,teams]of rows){const p=w.picks[id];if(!p)continue;p.text=text;p.unit=unit;p.teams=teams;p.tm=true;p.um=true;if(unit==='none')p.margin=null;else if(p.margin==null&&(p.status==='hit'||p.status==='miss'))p.margin=margin}}
 function seedSeason(){
@@ -410,6 +453,7 @@ const pct=v=>v==null?'—':Math.round(v*100)+'%';
 function fmtDate(d){if(!d)return'';const[y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
 const today=()=>new Date().toISOString().slice(0,10);
 
+const wkName=w=>w.label||`Week ${w.num}`;const wkShort=w=>w.short||`W${w.num}`;
 function newWeek(bozoId){
   const num=(S.weeks.length?Math.max(...S.weeks.map(w=>w.num)):0)+1;
   const w={id:uid(),num,date:today(),bozoId,stake:S.stake,picks:{},votes:{}};
@@ -456,18 +500,18 @@ function stats(){
     g.legsTotal+=c.hits+c.misses;g.legsHit+=c.hits;g.bestLegs=Math.max(g.bestLegs,c.hits);
     for(const l of c.legs){
       const p=per[l.mid];if(!p)continue;
-      p.history.push({num:w.num,status:l.status,margin:l.margin,unit:l.unit,text:l.text,odds:l.oddsN});
+      p.history.push({num:w.num,wk:wkShort(w),status:l.status,margin:l.margin,unit:l.unit,text:l.text,odds:l.oddsN});
       if(l.status==='pending'){p.pending++;continue}
       p.picks++;if(l.oddsN!=null){p.decSum+=dec(l.oddsN);p.decN++}
       if(l.status==='hit'){
         p.hits++;p.cur=p.cur>=0?p.cur+1:1;p.bestHit=Math.max(p.bestHit,p.cur);
-        if(l.margin!=null&&(l.unit||'pts')==='pts'&&(p.sweat==null||+l.margin<p.sweat.m))p.sweat={m:+l.margin,num:w.num,text:l.text};
+        if(l.margin!=null&&(l.unit||'pts')==='pts'&&(p.sweat==null||+l.margin<p.sweat.m))p.sweat={m:+l.margin,num:w.num,wk:wkShort(w),text:l.text};
       }else if(l.status==='miss'){
         p.misses++;p.cur=p.cur<=0?p.cur-1:-1;p.worstMiss=Math.max(p.worstMiss,-p.cur);
         if(c.misses===1)p.killer++;
         if(l.margin!=null&&(l.unit||'pts')==='pts'){const m=+l.margin;p.missMargins.push(m);
-          if(p.closest==null||m<p.closest.m)p.closest={m,num:w.num,text:l.text};
-          if(p.choke==null||m>p.choke.m)p.choke={m,num:w.num,text:l.text}}
+          if(p.closest==null||m<p.closest.m)p.closest={m,num:w.num,wk:wkShort(w),text:l.text};
+          if(p.choke==null||m>p.choke.m)p.choke={m,num:w.num,wk:wkShort(w),text:l.text}}
       }else p.pushes++;
       if(c.result==='won')p.earned+=c.share;
     }
@@ -489,12 +533,12 @@ function awards(per){
   add('🔪','Parlay Killer',pick(p=>p.killer||null),(p,v)=>`${v} solo miss${v>1?'es':''}`);
   add('🤡','Head Clown',pick(p=>p.bozo||null),(p,v)=>`${v}× · ${fmt$0(p.spent)} burned`);
   add('🎰','Degen',pick(p=>p.avgDec),(p,v)=>`avg ${amer(v)}`);
-  add('😬','Closest Call',pick(p=>p.closest?-p.closest.m:null),(p)=>`missed by ${p.closest.m} · W${p.closest.num}`);
-  add('🤮','Biggest Choke',pick(p=>p.choke?p.choke.m:null),(p)=>`missed by ${p.choke.m} · W${p.choke.num}`);
+  add('😬','Closest Call',pick(p=>p.closest?-p.closest.m:null),(p)=>`missed by ${p.closest.m} · ${p.closest.wk}`);
+  add('🤮','Biggest Choke',pick(p=>p.choke?p.choke.m:null),(p)=>`missed by ${p.choke.m} · ${p.choke.wk}`);
   add('🔥','Hot Streak',pick(p=>p.bestHit>1?p.bestHit:null),(p,v)=>`${v} straight hits`);
   add('🧊','Ice Cold',pick(p=>p.worstMiss>1?p.worstMiss:null),(p,v)=>`${v} straight misses`);
   add('💰','Bag Holder',pick(p=>p.net>0?p.net:null),(p,v)=>`${fmt$(v)} net`);
-  add('🫠','Sweatiest Hit',pick(p=>p.sweat?-p.sweat.m:null),(p)=>`covered by ${p.sweat.m} · W${p.sweat.num}`);
+  add('🫠','Sweatiest Hit',pick(p=>p.sweat?-p.sweat.m:null),(p)=>`covered by ${p.sweat.m} · ${p.sweat.wk}`);
   return A;
 }
 
@@ -519,7 +563,7 @@ function renderWeek(){
   const w=currentWeek();const c=calc(w);const idx=S.weeks.indexOf(w);const isLast=idx===S.weeks.length-1;
   return`<div class="week-nav">
     <button class="icon-btn" data-act="week-prev" ${idx===0?'disabled':''}>‹</button>
-    <div class="week-title"><strong>Week ${w.num}</strong><input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date"></div>
+    <div class="week-title"><strong>${h(wkName(w))}</strong><input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date"></div>
     <button class="icon-btn" data-act="week-next" ${isLast?'disabled':''}>›</button>
   </div>${c.graded&&!S.weeks[idx+1]?renderVote(w,c,isLast)+renderTicket(w,c):renderTicket(w,c)+renderVote(w,c,isLast)}`;
 }
@@ -589,13 +633,13 @@ function patchTicket(w){
 }
 function renderVote(w,c,isLast){
   const next=S.weeks[S.weeks.indexOf(w)+1];
-  if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in Week ${next.num}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div></section>`}
+  if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div></section>`}
   if(!c.n)return'';
   if(!c.graded){const done=c.n-c.pending;return`<section class="card vote"><h3>Bozo vote</h3><div class="progress"><div style="width:${done/c.n*100}%"></div></div><p class="muted tiny">Grade all ${c.n} legs to open the vote · ${done}/${c.n} done</p></section>`}
   const el=eligible(w);const votes=w.votes||{};
   const max=Math.max(0,...el.list.map(id=>votes[id]||0));const leaders=max>0?el.list.filter(id=>(votes[id]||0)===max):[];
   const reason={miss:'Only the people who missed are on the ballot.',push:'Nobody missed — the pushes are on the ballot.',all:'Everyone hit. Everyone is on the ballot.'}[el.reason];
-  return`<section class="card vote next"><h3>Week ${w.num} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Tap + as each person votes, then crown the winner to open Week ${w.num+1}.</p>
+  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Tap + as each person votes, then crown the winner to open Week ${w.num+1}.</p>
     <div class="cands">${el.list.map(id=>{const m=member(id);const l=c.legs.find(x=>x.mid===id);const v=votes[id]||0;
       const sub=l.status==='miss'?(l.margin!=null?`missed by ${fmtMargin(l.margin,l.unit)}`:'missed'):l.status==='push'?'pushed':'hit';
       return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)}</b><small>${sub}${l.text?' · '+h(l.text):''}</small></div><div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${v}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div></div>`}).join('')}</div>
@@ -649,7 +693,7 @@ function renderHistory(){
   </div>
   ${[...S.weeks].reverse().map(w=>{const c=calc(w);const b=member(w.bozoId);
     return`<button class="wk ${c.result}" data-act="open-week" data-wid="${w.id}">
-      <div class="wk-l"><div class="wk-num">W${w.num}</div><div><div class="wk-title">🤡 ${h(b?.name||'—')}</div><div class="wk-sub">${fmtDate(w.date)}${w.date?' · ':''}${c.n} legs · ${c.n?amer(c.dec):'—'}${c.result==='won'?' · '+fmt$(c.payout):''}</div></div></div>
+      <div class="wk-l"><div class="wk-num">${h(wkShort(w))}</div><div><div class="wk-title">🤡 ${h(b?.name||'—')}</div><div class="wk-sub">${fmtDate(w.date)}${w.date?' · ':''}${c.n} legs · ${c.n?amer(c.dec):'—'}${c.result==='won'?' · '+fmt$(c.payout):''}</div></div></div>
       <div class="wk-r"><div class="dots">${c.legs.map(l=>`<span class="dot ${l.status}" style="--c:${member(l.mid)?.color}" title="${h(member(l.mid)?.name)}"></span>`).join('')}</div>${resultBadge(c)}</div>
     </button>`}).join('')}`;
 }
@@ -685,12 +729,12 @@ function renderStats(){
 }
 function heatmap(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
-  return`<div class="heat-wrap"><table class="heat"><thead><tr><th></th>${weeks.map(w=>`<th>${w.num}</th>`).join('')}</tr></thead><tbody>${S.members.map(m=>`<tr><th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>${weeks.map(w=>{const p=w.picks[m.id];const st=p?p.status:'none';const bz=w.bozoId===m.id;return`<td><span class="cell ${st} ${bz?'bz':''}" title="${h(m.name)} · W${w.num}${p?' · '+st+(p.margin!=null?' by '+p.margin:''):' · sat out'}">${bz?'🤡':''}</span></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return`<div class="heat-wrap"><table class="heat"><thead><tr><th></th>${weeks.map(w=>`<th title="${h(wkName(w))}">${h(wkShort(w).replace(/^W/,''))}</th>`).join('')}</tr></thead><tbody>${S.members.map(m=>`<tr><th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>${weeks.map(w=>{const p=w.picks[m.id];const st=p?p.status:'none';const bz=w.bozoId===m.id;return`<td><span class="cell ${st} ${bz?'bz':''}" title="${h(m.name)} · ${h(wkShort(w))}${p?' · '+st+(p.margin!=null?' by '+p.margin:''):' · sat out'}">${bz?'🤡':''}</span></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 function closeCalls(per){
   const all=[];Object.values(per).forEach(p=>p.history.forEach(x=>{if(x.status==='miss'&&x.margin!=null)all.push({...x,id:p.id})}));
   if(!all.length)return'';const rank={rec:0,pts:1,yds:2};all.sort((a,b)=>(rank[a.unit||'pts']-rank[b.unit||'pts'])||(a.margin-b.margin));
-  const row=x=>{const m=member(x.id);return`<div class="call"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="call-body"><b>${h(m.name)}</b><small>W${x.num} · ${h(x.text||'—')}</small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`};
+  const row=x=>{const m=member(x.id);return`<div class="call"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="call-body"><b>${h(m.name)}</b><small>${h(x.wk||'W'+x.num)} · ${h(x.text||'—')}</small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`};
   const worst=[...all].sort((a,b)=>(rank[b.unit||'pts']-rank[a.unit||'pts'])||(b.margin-a.margin));
   return`<section class="card"><h3>Closest misses</h3><div class="calls">${all.slice(0,6).map(row).join('')}</div>${all.length>6?`<h3 style="margin-top:16px">Biggest chokes</h3><div class="calls">${worst.slice(0,3).map(row).join('')}</div>`:''}</section>`;
 }
@@ -721,7 +765,7 @@ function renderCrew(){
 /* ============================== RECAP ============================== */
 function recap(w){
   const c=calc(w);const b=member(w.bozoId);
-  const L=[`🤡 Bozo Parlay — Week ${w.num}${S.season?' · '+S.season:''}`,`Bozo: ${b?.name||'—'} (${fmt$0(c.stake)})`,''];
+  const L=[`🤡 Bozo Parlay — ${wkName(w)}${S.season?' · '+S.season:''}`,`Bozo: ${b?.name||'—'} (${fmt$0(c.stake)})`,''];
   for(const l of c.legs){const m=member(l.mid);const ic={hit:'✅',miss:'❌',push:'➖',pending:'⏳'}[l.status];
     let s=`${ic} ${m?.name}: ${l.text||'(no pick)'}${l.oddsN!=null?' ('+fmtOdds(l.oddsN)+')':''}`;
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss'))s+=` — ${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`;L.push(s)}
@@ -755,7 +799,7 @@ async function slipImage(w){
   rr(x,pad,pad,W-pad*2,H-pad*2,44);x.strokeStyle='rgba(0,0,0,.08)';x.lineWidth=2;x.stroke();
   try{x.letterSpacing='4px'}catch(e){}
   x.fillStyle=MU;x.font=F(600,24);x.textBaseline='alphabetic';x.textAlign='left';
-  x.fillText(`BOZO PARLAY  ·  WEEK ${w.num}${S.season?'  ·  '+S.season.toUpperCase():''}`,L,124);
+  x.fillText(`BOZO PARLAY  ·  ${wkName(w).toUpperCase()}${S.season?'  ·  '+S.season.toUpperCase():''}`,L,124);
   try{x.letterSpacing='0px'}catch(e){}
   // result pill
   const pill={won:['CASHED',GREEN,'#fff'],lost:[`LOST · ${c.hits}/${c.n-c.pushes}`,'rgba(255,59,48,.12)',RED],pending:[`${c.n-c.pending}/${c.n} GRADED`,'rgba(255,159,10,.15)','#b25e00'],void:['VOID','#e8e8ed',MU]}[c.result];
@@ -808,15 +852,15 @@ async function shareSlip(w){
   toast('Rendering slip…');
   let cv;try{cv=await slipImage(w)}catch(e){console.error(e);toast('Could not render the slip: '+e.message,'bad');return}
   const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
-  const file=new File([blob],`bozo-parlay-week-${w.num}.png`,{type:'image/png'});
+  const file=new File([blob],`bozo-parlay-${wkShort(w).toLowerCase()}.png`,{type:'image/png'});
   const url=URL.createObjectURL(blob);
   const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
   const canCopy=!!(navigator.clipboard&&navigator.clipboard.write&&window.ClipboardItem);
   const actions=[{label:'Text instead',cls:'ghost sm',onClick:()=>{copyText(recap(w));return false}}];
   if(canCopy)actions.push({label:'Copy image',onClick:async()=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('Image copied — paste it in the chat','good')}catch(e){toast('Copy blocked here — long-press the image to save it instead','bad')}return false}});
-  if(canShare)actions.push({label:'Share…',cls:'primary',onClick:()=>{navigator.share({files:[file],title:`Bozo Parlay — Week ${w.num}`}).catch(()=>{})}});
+  if(canShare)actions.push({label:'Share…',cls:'primary',onClick:()=>{navigator.share({files:[file],title:`Bozo Parlay — ${wkName(w)}`}).catch(()=>{})}});
   else actions.push({label:'Download',cls:'primary',onClick:()=>{const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove()}});
-  modal({title:`Week ${w.num} slip`,body:`<img src="${url}" alt="Week ${w.num} slip" style="width:100%;border-radius:18px;display:block;box-shadow:0 12px 40px rgba(0,0,0,.5)"><p class="tiny" style="margin-top:10px">${canShare?'Share… sends the picture straight to iMessage or the group chat.':'Long-press or right-click the picture to save or copy it.'}</p>`,actions});
+  modal({title:`${wkName(w)} slip`,body:`<img src="${url}" alt="${h(wkName(w))} slip" style="width:100%;border-radius:18px;display:block;box-shadow:0 12px 40px rgba(0,0,0,.5)"><p class="tiny" style="margin-top:10px">${canShare?'Share… sends the picture straight to iMessage or the group chat.':'Long-press or right-click the picture to save or copy it.'}</p>`,actions});
 }
 
 /* ============================== UI BITS ============================== */
@@ -870,11 +914,11 @@ const ACT={
   flip(el){const ids=el.dataset.ids.split(',').filter(Boolean);if(!ids.length)return;
     spin(ids,id=>{if(el.dataset.first){S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} drew the short straw`)}else crown(id)})},
   'pick-bozo-manual'(){const w=currentWeek();modal({title:`Week ${w.num+1} Bozo`,body:`<p>Skip the vote and just pick.</p>${memberSelect('bozoSel')}`,actions:[{label:'Cancel',cls:'ghost'},{label:'Crown & start week',cls:'primary',onClick:()=>crown(document.getElementById('bozoSel').value)}]})},
-  'change-bozo'(){const w=currentWeek();modal({title:`Week ${w.num} Bozo`,body:memberSelect('bozoSel',w.bozoId),actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{w.bozoId=document.getElementById('bozoSel').value;commit()}}]})},
-  'remove-leg'(el){const w=currentWeek();const m=member(el.dataset.mid);confirm2('Remove leg?',`Drop ${h(m?.name)} from the Week ${w.num} slip. They sat this one out.`,'Remove',()=>{delete w.picks[el.dataset.mid];w.votes={};commit()})},
+  'change-bozo'(){const w=currentWeek();modal({title:`${wkName(w)} Bozo`,body:memberSelect('bozoSel',w.bozoId),actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{w.bozoId=document.getElementById('bozoSel').value;commit()}}]})},
+  'remove-leg'(el){const w=currentWeek();const m=member(el.dataset.mid);confirm2('Remove leg?',`Drop ${h(m?.name)} from the ${h(wkName(w))} slip. They sat this one out.`,'Remove',()=>{delete w.picks[el.dataset.mid];w.votes={};commit()})},
   'copy-recap'(el){copyText(recap(week(el.dataset.wid)))},
   'share-slip'(el){shareSlip(week(el.dataset.wid))},
-  'delete-week'(el){const w=week(el.dataset.wid);confirm2(`Delete Week ${w.num}?`,'This removes the slip, grades and votes for this week. There is no undo — export a backup first if unsure.','Delete week',()=>{S.weeks=S.weeks.filter(x=>x!==w);S.currentWeekId=lastWeek()?.id||null;commit();toast(`Week ${w.num} deleted`)})},
+  'delete-week'(el){const w=week(el.dataset.wid);confirm2(`Delete ${wkName(w)}?`,'This removes the slip, grades and votes for this week. There is no undo — export a backup first if unsure.','Delete week',()=>{S.weeks=S.weeks.filter(x=>x!==w);S.currentWeekId=lastWeek()?.id||null;commit();toast(`${wkName(w)} deleted`)})},
   'first-bozo'(el){S.pendingBozo=el.dataset.mid;commit()},
   'first-start'(){if(!S.pendingBozo)return;const id=S.pendingBozo;S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
   'remove-member'(el){S.members=S.members.filter(m=>m.id!==el.dataset.mid);commit()},
