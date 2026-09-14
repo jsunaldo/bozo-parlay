@@ -1,0 +1,14 @@
+{
+  "name": "Bozo Parlay",
+  "short_name": "Bozo",
+  "description": "Track the weekly bozo parlay: picks, hits, misses, and who's fronting the slip next.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0a0e13",
+  "theme_color": "#0a0e13",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
