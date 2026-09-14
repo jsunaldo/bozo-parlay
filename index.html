@@ -204,6 +204,10 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .dot.push{background:var(--amber);border-color:var(--amber);opacity:1}
 
 /* stats */
+.scope{display:flex;background:var(--surface2);border-radius:980px;padding:4px;margin-bottom:14px;gap:2px}
+.scope button{flex:1;border:0;background:transparent;font:inherit;font-weight:600;font-size:13px;padding:9px 10px;border-radius:980px;color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;-webkit-tap-highlight-color:transparent}
+.scope button.on{background:var(--surface);color:var(--text);box-shadow:var(--shadow)}
+.heat th.season-h{text-align:left;font-family:var(--font);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);padding-left:4px;border-bottom:1px solid var(--line)}
 .lb-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px;-webkit-overflow-scrolling:touch}
 table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .lb th{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 8px;cursor:pointer;white-space:nowrap;user-select:none;-webkit-user-select:none}
@@ -342,7 +346,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.13';
+const APP_VERSION='2026-09-14.14';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -499,7 +503,7 @@ DB=loadDB();{const qs=new URLSearchParams(location.search);const q=qs.get('leagu
 let S=season().data;
 let saveT;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY2,JSON.stringify(DB))}catch(e){toast('Could not save — storage full or blocked. Export a backup.','bad')}},60)}
-function commit(){save();render()}
+function commit(){ALLTIME=null;save();render()}
 
 /* ============================== HELPERS ============================== */
 const member=id=>S.members.find(m=>m.id===id);
@@ -770,16 +774,27 @@ function renderHistory(){
 }
 
 /* ---- stats ---- */
-let sortKey='rate';
+let sortKey='rate',statScope='season',ALLTIME=null;
+function allTimeSeason(){
+  const l=league();const v=fresh();v.season='All-time';v.view='stats';const byName={};let n=0;
+  for(const sn of seasonSorted(l).reverse()){const d=sn.data;const map={};
+    for(const m of d.members){const k=m.name.trim().toLowerCase();if(!byName[k]){byName[k]={id:'a'+(++n),name:m.name,color:m.color,active:m.active};v.members.push(byName[k])}else if(m.active)byName[k].active=true;map[m.id]=byName[k].id}
+    for(const w of [...d.weeks].sort((a,b)=>a.num-b.num)){const nw={id:sn.id+'|'+w.id,num:v.weeks.length+1,date:w.date,stake:w.stake,bozoId:map[w.bozoId]||null,votes:{},picks:{},label:`${sn.name} · ${wkName(w)}`,short:`'${String(sn.name).slice(-2)} ${wkShort(w)}`,col:wkShort(w),seasonName:String(sn.name)};
+      for(const[mid,p]of Object.entries(w.picks))if(map[mid])nw.picks[map[mid]]=p;v.weeks.push(nw)}}
+  return v;
+}
+function withAll(fn){if(statScope!=='all'||league().seasons.length<2)return fn();ALLTIME??=allTimeSeason();const real=S;S=ALLTIME;try{return fn()}finally{S=real}}
 const COLS=[['rate','Hit %'],['hits','Record'],['avgDec','Avg odds'],['bozo','Bozo'],['net','Net'],['cur','Streak']];
-function renderStats(){
-  if(!S.weeks.length)return empty('Nothing to crunch','Stats show up once Week 1 is graded.');
+function renderStats(){ALLTIME=null;return withAll(renderStatsInner)}
+function scopeBar(){const l=league();if(l.seasons.length<2)return'';return`<div class="scope"><button class="${statScope==='season'?'on':''}" data-act="stat-scope" data-scope="season">${h(season().name)} season</button><button class="${statScope==='all'?'on':''}" data-act="stat-scope" data-scope="all">All-time · ${l.seasons.length} seasons</button></div>`}
+function renderStatsInner(){
+  if(!S.weeks.length)return scopeBar()+empty('Nothing to crunch','Stats show up once Week 1 is graded.');
   const{per,g}=stats();
   const rows=S.members.map(m=>({m,...per[m.id]})).filter(r=>r.m.active||r.picks>0);
   rows.sort((a,b)=>{const av=a[sortKey],bv=b[sortKey];if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return bv-av||(b.hits-a.hits)});
   const legRate=g.legsTotal?g.legsHit/g.legsTotal:null;const net=g.paid-g.staked;
   const A=awards(per);
-  return`<div class="tiles">
+  return scopeBar()+`<div class="tiles">
     <div class="tile"><small>Cashed</small><b>${g.won}<span class="muted" style="font-size:12px">/${g.graded}</span></b><em>parlays</em></div>
     <div class="tile"><small>Legs hit</small><b>${pct(legRate)}</b><em>${g.legsHit}/${g.legsTotal}</em></div>
     <div class="tile"><small>Best wk</small><b>${g.bestLegs}</b><em>legs hit</em></div>
@@ -800,7 +815,8 @@ function renderStats(){
 }
 function heatmap(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
-  return`<div class="heat-wrap"><table class="heat"><thead><tr><th></th>${weeks.map(w=>`<th title="${h(wkName(w))}">${h(wkShort(w).replace(/^W/,''))}</th>`).join('')}</tr></thead><tbody>${S.members.map(m=>`<tr><th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>${weeks.map(w=>{const p=w.picks[m.id];const st=p?p.status:'none';const bz=w.bozoId===m.id;return`<td><button type="button" class="cell ${st} ${bz?'bz':''}" data-act="cell-tip" data-wid="${w.id}" data-mid="${m.id}" aria-label="${h(m.name)} ${h(wkShort(w))}">${bz?'🤡':''}</button></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
+  let groups='';if(weeks.some(w=>w.seasonName)){const gs=[];weeks.forEach(w=>{const last=gs[gs.length-1];if(last&&last.name===w.seasonName)last.n++;else gs.push({name:w.seasonName,n:1})});groups=`<tr><th></th>${gs.map(g=>`<th colspan="${g.n}" class="season-h">${h(g.name)}</th>`).join('')}</tr>`}
+  return`<div class="heat-wrap"><table class="heat"><thead>${groups}<tr><th></th>${weeks.map(w=>`<th title="${h(wkName(w))}">${h((w.col||wkShort(w)).replace(/^W/,''))}</th>`).join('')}</tr></thead><tbody>${S.members.map(m=>`<tr><th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>${weeks.map(w=>{const p=w.picks[m.id];const st=p?p.status:'none';const bz=w.bozoId===m.id;return`<td><button type="button" class="cell ${st} ${bz?'bz':''}" data-act="cell-tip" data-wid="${w.id}" data-mid="${m.id}" aria-label="${h(m.name)} ${h(wkShort(w))}">${bz?'🤡':''}</button></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 function closeCalls(per){
   const all=[];Object.values(per).forEach(p=>p.history.forEach(x=>{if(x.status==='miss'&&x.margin!=null)all.push({...x,id:p.id})}));
@@ -940,7 +956,8 @@ async function shareSlip(w){
 
 /* ============================== GRID POPOVER ============================== */
 let tipPinned=null;
-function tipHtml(wid,mid){
+function tipHtml(wid,mid){if(statScope==='all'&&S.view==='stats')return withAll(()=>tipHtmlInner(wid,mid));return tipHtmlInner(wid,mid)}
+function tipHtmlInner(wid,mid){
   const w=week(wid),m=member(mid);if(!w||!m)return'';const p=w.picks[mid];const bz=w.bozoId===mid;
   const head=`<div class="tip-head"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><b>${h(m.name)}</b><small>${h(wkName(w))}</small></div>`;
   if(!p)return head+`<div class="tip-empty">Sat this week out.</div>${bz?'<div class="tip-bozo">🤡 Was the Bozo</div>':''}`;
@@ -1052,6 +1069,7 @@ const ACT={
       actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit()}}]})},
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
+  'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=scrollY;showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
   'modal-action'(el){const a=document.getElementById('modal-root')._actions?.[el.dataset.i];const r=a?.onClick?.();if(r!==false)closeModal()},
