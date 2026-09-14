@@ -124,8 +124,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .leg.hit::before{background:var(--green)}.leg.miss::before{background:var(--red)}.leg.push::before{background:var(--amber)}
 .pickbox{display:flex;align-items:center;gap:6px;background:var(--surface2);border-radius:12px;padding-left:8px;min-width:0;border:1px solid transparent;transition:border-color .2s,box-shadow .2s,background .2s}
 .pickbox:focus-within{background:var(--surface);border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-bg)}
-.pickbox input{background:transparent;border:0;padding:10px 10px 10px 2px;box-shadow:none;flex:1}
-.pickbox input:focus{background:transparent;border:0;box-shadow:none}
+.pickbox textarea{background:transparent;border:0;padding:9px 10px 9px 2px;box-shadow:none;flex:1;resize:none;overflow:hidden;line-height:1.35;min-height:40px;display:block}
+.pickbox textarea:focus{background:transparent;border:0;box-shadow:none}
+.leg-inputs{align-items:start}
 .pickicon{display:inline-flex;align-items:center;gap:3px;flex:none;border:0;background:none;padding:0;cursor:pointer;height:30px;-webkit-tap-highlight-color:transparent}
 .pickicon img{width:26px;height:26px;object-fit:contain;filter:drop-shadow(0 1px 1px rgba(0,0,0,.12))}
 .pickicon.empty{width:26px;height:26px;border-radius:50%;background:var(--surface3);color:var(--dim);font-size:13px;display:grid;place-items:center;opacity:.8}
@@ -134,7 +135,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .leg-top .mini{margin-left:auto;width:22px;height:22px;font-size:13px;opacity:.5;background:transparent}
 .leg-top .mini:hover{opacity:1;background:var(--surface2)}
 .bz-ic{font-size:16px;flex:none}
-.leg-inputs{grid-column:2/4;display:grid;grid-template-columns:1fr 92px;gap:8px}
+.leg-inputs{grid-column:2/4;display:grid;grid-template-columns:1fr 84px;gap:8px}
 .leg-margin{grid-column:2/4;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);font-weight:500;animation:fadeUp .25s;flex-wrap:nowrap;min-width:0}
 .leg-margin>span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .leg-margin input{width:64px;padding:7px 6px;flex:none}
@@ -143,6 +144,8 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .seg button{border:0;background:transparent;color:var(--dim);width:36px;height:30px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;transition:all .18s cubic-bezier(.34,1.56,.64,1);-webkit-tap-highlight-color:transparent}
 .seg button:hover{color:var(--text)}
 .seg button.on{transform:scale(1.04);box-shadow:var(--shadow)}
+.seg.graded{background:transparent;padding:0}
+.seg.graded button{width:auto;padding:0 12px;font-size:13px;letter-spacing:-.01em;transform:none;border-radius:980px;height:32px}
 .seg button.on.hit{background:var(--green);color:#fff}
 .seg button.on.miss{background:var(--red);color:#fff}
 .seg button.on.push{background:var(--amber);color:#1d1d1f}
@@ -172,7 +175,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .cand.lead{border-color:var(--blue);background:var(--blue-bg)}
 .cand-body{flex:1;min-width:0;display:flex;flex-direction:column}
 .cand-body b{font-weight:600}
-.cand-body small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cand-body small{color:var(--muted);font-size:12px;line-height:1.3}
 .tally{display:flex;align-items:center;gap:8px}
 .tally .mini{background:var(--surface)}
 .tally b{width:22px;text-align:center;font-size:17px;font-weight:600}
@@ -192,7 +195,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .wk-l{display:flex;align-items:center;gap:12px;min-width:0}
 .wk-num{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--muted);background:var(--surface2);padding:8px 9px;border-radius:12px;flex:none}
 .wk-title{font-weight:600;font-size:15px}
-.wk-sub{color:var(--muted);font-size:12px;font-weight:500}
+.wk-sub{color:var(--muted);font-size:12px;font-weight:500;line-height:1.3}
 .wk-r{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:none}
 .dots{display:flex;gap:4px}
 .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--c);background:transparent;opacity:.35}
@@ -217,13 +220,14 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .award .ic{font-size:26px;flex:none}
 .award .ab{display:flex;flex-direction:column;min-width:0}
 .award small{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.award b{font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.award em{font-style:normal;font-size:12px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.award b{font-size:14px;font-weight:700}
+.award em{font-style:normal;font-size:12px;color:var(--muted);font-weight:500;line-height:1.3}
 .heat-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
 table.heat{border-collapse:separate;border-spacing:4px}
 .heat th{font-size:11px;font-weight:600;color:var(--muted);font-family:var(--mono)}
 .heat td{padding:0}
-.cell{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--surface2);font-size:14px;transition:transform .15s}
+.cell{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--surface2);font-size:14px;transition:transform .15s;border:0;padding:0;cursor:pointer;font:inherit;-webkit-tap-highlight-color:transparent}
+.cell:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .cell:hover{transform:scale(1.15)}
 .cell.hit{background:var(--green)}.cell.miss{background:var(--red)}.cell.push{background:var(--amber)}.cell.pending{background:var(--amber-bg);outline:1px dashed var(--amber);outline-offset:-1px}
 .cell.bz{box-shadow:0 0 0 2px var(--purple)}
@@ -234,7 +238,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .call{display:flex;align-items:center;gap:10px}
 .call-body{flex:1;min-width:0;display:flex;flex-direction:column}
 .call-body b{font-weight:600;font-size:14px}
-.call-body small{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.call-body small{color:var(--muted);font-size:12px;line-height:1.3}
 .margin-pill{font-family:var(--mono);font-weight:600;font-size:12px;padding:5px 10px;border-radius:980px;background:var(--surface2);color:var(--muted);flex:none}
 .margin-pill.close{background:var(--amber-bg);color:#b25e00}
 @media(prefers-color-scheme:dark){.margin-pill.close{color:var(--amber)}}
@@ -278,6 +282,21 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .steps i{width:28px;height:4px;border-radius:2px;background:var(--surface3)}
 .steps i.on{background:var(--blue)}
 
+/* bet popover (season grid) */
+#tip{position:fixed;z-index:45;width:260px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transform:translateY(4px) scale(.98);transition:opacity .15s,transform .15s}
+#tip.in{opacity:1;transform:none}
+.tip-head{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.tip-head b{font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tip-head small{color:var(--muted);font-size:12px;font-weight:600;white-space:nowrap}
+.tip-bet{display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;line-height:1.3}
+.tip-bet .pickicon{pointer-events:none}
+.tip-bet span{flex:1;min-width:0}
+.tip-row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:8px}
+.tip-row .mono{font-weight:600}
+.tip-margin{font-size:12px;font-weight:600}
+.tip-margin.hit{color:var(--green)}.tip-margin.miss{color:var(--red)}
+.tip-bozo{margin-top:8px;font-size:12px;font-weight:600;color:var(--purple)}
+.tip-empty{color:var(--muted);font-size:13px}
 /* modal + toast */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:50;display:grid;place-items:end center;opacity:0;transition:opacity .25s;padding:0 12px calc(12px + env(safe-area-inset-bottom))}
 @media(min-width:600px){.scrim{place-items:center}}
@@ -317,12 +336,13 @@ table.heat{border-collapse:separate;border-spacing:4px}
 </nav>
 <div id="modal-root"></div>
 <div id="toast-root"></div>
+<div id="tip" role="tooltip"></div>
 <canvas id="confetti"></canvas>
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.10';
+const APP_VERSION='2026-09-14.13';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -589,12 +609,14 @@ function awards(per){
 }
 
 /* ============================== RENDER ============================== */
+function autosize(t){t.style.height='auto';t.style.height=Math.max(40,t.scrollHeight)+'px'}
 function render(){
   const v=S.view||'week';
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const main=document.getElementById('view');
   main.innerHTML=v==='week'?renderWeek():v==='history'?renderHistory():v==='stats'?renderStats():renderCrew();
   main.classList.remove('enter');void main.offsetWidth;main.classList.add('enter');
+  main.querySelectorAll('textarea.pick-in').forEach(autosize);
   document.getElementById('seasonLabel').textContent=leagueLabel();
   const st=S.weeks.length?stats().g:null;
   document.getElementById('topRight').innerHTML=st?`<span class="badge ${st.paid-st.staked>=0?'won':'lost'}" style="font-size:11px">${st.won}–${st.lost} · ${fmt$0(st.paid-st.staked)}</span>`:'';
@@ -626,17 +648,20 @@ function renderTicket(w,c){
     <div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>
   </section>`;
 }
+const segOpen=new Set();
 function renderLeg(w,l){
   const m=member(l.mid);const isBozo=l.mid===w.bozoId;
   const bad=l.odds!==''&&l.odds!=null&&!legal(l.oddsN);
   const marginLabel=l.status==='hit'?'Covered by':'Missed by';const unit=l.unit||'pts';
-  const seg=['hit','miss','push'].map(st=>`<button class="${st} ${l.status===st?'on':''}" data-act="status" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('');
+  const open=l.status==='pending'||segOpen.has(l.mid);
+  const seg=open?['hit','miss','push'].map(st=>`<button class="${st} ${l.status===st?'on':''}" data-act="status" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('')
+    :`<button class="${l.status} on" data-act="seg-open" data-mid="${l.mid}" title="Tap to change">${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status]}</button>`;
   return`<div class="leg ${l.status}" data-leg="${l.mid}">
     <div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div>
     <div class="leg-top"><span class="leg-name">${h(m.name)}</span>${isBozo?'<span class="bz-ic" title="This week\'s Bozo">🤡</span>':''}<span class="tag warn" data-warn="${l.mid}" ${bad?'':'hidden'}>Too heavy</span><button class="mini danger" data-act="remove-leg" data-mid="${l.mid}" title="Remove leg">×</button></div>
-    <div class="seg">${seg}</div>
+    <div class="seg ${open?'':'graded'}">${seg}</div>
     <div class="leg-inputs">
-      <div class="pickbox">${pickIcon(l)}<input placeholder="Pick — e.g. Chiefs -3.5" value="${h(l.text)}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next"></div>
+      <div class="pickbox">${pickIcon(l)}<textarea class="pick-in" rows="1" placeholder="Pick — e.g. Chiefs -3.5" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next">${h(l.text)}</textarea></div>
       <input class="mono ${bad?'bad':''}" placeholder="-110" value="${h(l.odds)}" data-bind="pick|${w.id}|${l.mid}|odds" data-odds="${l.mid}" autocomplete="off" inputmode="text">
     </div>
     ${l.status==='hit'||l.status==='miss'?`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${marginLabel}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal">`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit">${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`:''}
@@ -775,7 +800,7 @@ function renderStats(){
 }
 function heatmap(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
-  return`<div class="heat-wrap"><table class="heat"><thead><tr><th></th>${weeks.map(w=>`<th title="${h(wkName(w))}">${h(wkShort(w).replace(/^W/,''))}</th>`).join('')}</tr></thead><tbody>${S.members.map(m=>`<tr><th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>${weeks.map(w=>{const p=w.picks[m.id];const st=p?p.status:'none';const bz=w.bozoId===m.id;return`<td><span class="cell ${st} ${bz?'bz':''}" title="${h(m.name)} · ${h(wkShort(w))}${p?' · '+st+(p.margin!=null?' by '+p.margin:''):' · sat out'}">${bz?'🤡':''}</span></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
+  return`<div class="heat-wrap"><table class="heat"><thead><tr><th></th>${weeks.map(w=>`<th title="${h(wkName(w))}">${h(wkShort(w).replace(/^W/,''))}</th>`).join('')}</tr></thead><tbody>${S.members.map(m=>`<tr><th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>${weeks.map(w=>{const p=w.picks[m.id];const st=p?p.status:'none';const bz=w.bozoId===m.id;return`<td><button type="button" class="cell ${st} ${bz?'bz':''}" data-act="cell-tip" data-wid="${w.id}" data-mid="${m.id}" aria-label="${h(m.name)} ${h(wkShort(w))}">${bz?'🤡':''}</button></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
 function closeCalls(per){
   const all=[];Object.values(per).forEach(p=>p.history.forEach(x=>{if(x.status==='miss'&&x.margin!=null)all.push({...x,id:p.id})}));
@@ -872,7 +897,7 @@ async function slipImage(w){
     // pick line: team logo(s) lead the text, sportsbook style
     let px=L+96;const logos=(l.teams||[]).map(a=>logoCache[a]).filter(Boolean);
     logos.forEach(im=>{x.drawImage(im,px,y+72,40,40);px+=44});if(logos.length)px+=6;
-    x.fillStyle=MU;x.font=F(500,29);x.fillText(l.text||'(no pick)',px,y+100);
+    const maxW=(R-96-250)-px;let fs=29;x.font=F(500,fs);const pt=l.text||'(no pick)';while(x.measureText(pt).width>maxW&&fs>19){fs-=1;x.font=F(500,fs)}x.fillStyle=MU;x.fillText(pt,px,y+100);
     // odds + margin
     x.textAlign='right';x.fillStyle=T;x.font=F(600,34,true);x.fillText(l.oddsN!=null?fmtOdds(l.oddsN):'—',R-96,y+56);
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss')){x.fillStyle=col;x.font=F(700,26);x.fillText(`${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`,R-96,y+100)}
@@ -912,6 +937,33 @@ async function shareSlip(w){
   else actions.push({label:'Download',cls:'primary',onClick:()=>{const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove()}});
   modal({title:`${wkName(w)} slip`,body:`<img src="${url}" alt="${h(wkName(w))} slip" style="width:100%;border-radius:18px;display:block;box-shadow:0 12px 40px rgba(0,0,0,.5)"><p class="tiny" style="margin-top:10px">${canShare?'Share… sends the picture straight to iMessage or the group chat.':'Long-press or right-click the picture to save or copy it.'}</p>`,actions});
 }
+
+/* ============================== GRID POPOVER ============================== */
+let tipPinned=null;
+function tipHtml(wid,mid){
+  const w=week(wid),m=member(mid);if(!w||!m)return'';const p=w.picks[mid];const bz=w.bozoId===mid;
+  const head=`<div class="tip-head"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><b>${h(m.name)}</b><small>${h(wkName(w))}</small></div>`;
+  if(!p)return head+`<div class="tip-empty">Sat this week out.</div>${bz?'<div class="tip-bozo">🤡 Was the Bozo</div>':''}`;
+  const oddsN=parseOdds(p.odds);const st=p.status||'pending';
+  const badge={hit:'<span class="badge won">Hit</span>',miss:'<span class="badge lost">Miss</span>',push:'<span class="badge void">Push</span>',pending:'<span class="badge pending">Pending</span>'}[st];
+  const margin=p.margin!=null&&(st==='hit'||st==='miss')?`<span class="tip-margin ${st}">${st==='hit'?'covered':'missed'} by ${fmtMargin(p.margin,p.unit)}</span>`:'';
+  return head+`<div class="tip-bet">${pickIcon({...p,mid}).replace('data-act="pick-team"','')}<span>${h(p.text||'(no pick)')}</span></div>
+    <div class="tip-row"><span class="mono">${oddsN!=null?fmtOdds(oddsN):'—'}</span>${margin}${badge}</div>${bz?'<div class="tip-bozo">🤡 Fronted the parlay this week</div>':''}`;
+}
+function showTip(cell){
+  const t=document.getElementById('tip');const html=tipHtml(cell.dataset.wid,cell.dataset.mid);if(!html)return;
+  t.innerHTML=html;t.classList.add('in');
+  const r=cell.getBoundingClientRect();const W=t.offsetWidth||260,H=t.offsetHeight||120;
+  let x=r.left+r.width/2-W/2;x=Math.max(8,Math.min(innerWidth-W-8,x));
+  let y=r.bottom+8;if(y+H>innerHeight-8)y=r.top-H-8;
+  t.style.left=x+'px';t.style.top=y+'px';
+}
+function hideTip(){if(tipPinned)return;document.getElementById('tip').classList.remove('in')}
+document.addEventListener('mouseover',e=>{const c=e.target.closest('.cell[data-act=cell-tip]');if(c&&!tipPinned)showTip(c)});
+document.addEventListener('mouseout',e=>{if(e.target.closest&&e.target.closest('.cell[data-act=cell-tip]')&&!e.relatedTarget?.closest?.('.cell'))hideTip()});
+document.addEventListener('click',e=>{if(!e.target.closest('.cell[data-act=cell-tip]')&&tipPinned){tipPinned=null;hideTip()}},true);
+let tipScrollY=0;
+addEventListener('scroll',()=>{if(tipPinned){if(Math.abs(scrollY-tipScrollY)>48){tipPinned=null;hideTip()}else showTip(tipPinned)}else hideTip()},{passive:true});
 
 /* ============================== UI BITS ============================== */
 function modal({title,body,actions=[],onOpen}){
@@ -953,7 +1005,7 @@ const ACT={
   'open-week'(el){S.currentWeekId=el.dataset.wid;S.view='week';commit();window.scrollTo({top:0,behavior:'smooth'})},
   status(el){
     const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p)return;const st=el.dataset.st;const was=calc(w).result;
-    p.status=p.status===st?'pending':st;if(p.status==='push'||p.status==='pending')p.margin=null;
+    segOpen.delete(el.dataset.mid);p.status=p.status===st?'pending':st;if(p.status==='push'||p.status==='pending')p.margin=null;
     if(p.status==='pending')w.votes={};
     commit();const now=calc(w).result;
     if(now==='won'&&was!=='won'){confetti();toast('PARLAY CASHED 🤑 the Bozo is a hero','good')}
@@ -999,6 +1051,8 @@ const ACT={
     modal({title:'Team logo',body:`<p class="tiny">Pick up to two teams for this leg. Auto-detected from the pick text unless you set it here.</p><div class="teamgrid" id="teamgrid">${Object.keys(TEAMS).map(a=>`<button class="tp ${sel.includes(a)?'on':''}" data-act="tp-toggle" data-abbr="${a}"><img src="${LOGO(a)}" alt="">${a}</button>`).join('')}</div>`,
       actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit()}}]})},
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
+  'seg-open'(el){segOpen.add(el.dataset.mid);render()},
+  'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=scrollY;showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
   'modal-action'(el){const a=document.getElementById('modal-root')._actions?.[el.dataset.i];const r=a?.onClick?.();if(r!==false)closeModal()},
 };
@@ -1014,7 +1068,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     if(c==='margin')p.margin=e.target.value===''?null:Math.abs(Number(e.target.value));
     else if(c==='unit'){p.unit=e.target.value;p.um=true;if(p.unit==='none')p.margin=null;commit();return}
     else p[c]=e.target.value;
-    if(c==='text'){if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=detectTeams(p.text);if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
+    if(c==='text'){if(e.target.tagName==='TEXTAREA')autosize(e.target);if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=detectTeams(p.text);if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
     save();if(c==='odds')patchTicket(w)}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save()}
   else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=leagueLabel()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
@@ -1022,7 +1076,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
 document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a]=b.split('|');
   if(k==='add-leg'&&e.target.value){const w=week(a);w.picks[e.target.value]={text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]};w.votes={};commit()}
 });
-document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(e.key==='Enter'&&e.target.classList?.contains('pick-in')){e.preventDefault();const n=e.target.closest('.leg-inputs')?.querySelector('[data-odds]');n?n.focus():e.target.blur()}});
 document.getElementById('importFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.members)||!Array.isArray(o.weeks))throw new Error('not a Bozo Parlay backup');
     const go=()=>{setS(migrate(o));commit();toast(`Imported ${S.members.length} players, ${S.weeks.length} weeks`,'good')};
