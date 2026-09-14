@@ -300,6 +300,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
+const APP_VERSION='2026-09-14.3';
 const KEY='bozo-parlay-v1';
 const PALETTE=['#22e07a','#4da3ff','#ff8a4d','#c96bff','#ffd34d','#4de3e0','#ff6bb5','#9ecf4d','#ff5e5e','#7aa2ff','#f7a8ff','#8ef0c2'];
 const uid=()=>Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-3);
@@ -655,6 +656,7 @@ function renderCrew(){
   <section class="card"><h3>Data</h3>
     <div class="grid2"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button><button class="btn" data-act="sample">✨ Load sample</button><button class="btn danger" data-act="reset">🗑 Reset season</button></div>
     <p class="muted tiny">Everything lives in this browser. Export a backup now and then, or to move it to another phone.</p>
+    <div class="row between" style="margin-top:10px"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div>
   </section>`;
 }
 
@@ -828,6 +830,7 @@ const ACT={
   'new-league'(){modal({title:'New league',body:`<p>A fresh league with its own crew and season.</p><input id="lgName" placeholder="League name — e.g. Work guys" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n){toast('Give it a name','bad');return false}const d=fresh();d.season=n;const id=uid();DB.leagues.push({id,name:n,data:d});DB.active=id;S=d;commit();toast(`${n} created — add the crew`);window.scrollTo({top:0})}}],onOpen:()=>setTimeout(()=>document.getElementById('lgName')?.focus(),80)})},
   'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;commit()}}]})},
   'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;confirm2(`Delete ${l.name}?`,`Removes this league's crew, ${l.data.weeks.length} week${l.data.weeks.length===1?'':'s'} and stats from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=league().data;commit();toast(`${l.name} deleted`)})},
+  async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()))}if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
   'modal-close'(el,e){if(e.target===el)closeModal()},
   'modal-action'(el){const a=document.getElementById('modal-root')._actions?.[el.dataset.i];const r=a?.onClick?.();if(r!==false)closeModal()},
 };
@@ -873,7 +876,11 @@ function sampleSeason(){
 
 /* ============================== BOOT ============================== */
 render();save();
-if('serviceWorker'in navigator&&location.protocol.startsWith('http')){navigator.serviceWorker.register('sw.js').catch(()=>{})}
+if('serviceWorker'in navigator&&location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update().catch(()=>{})}).catch(()=>{});
+  const hadController=!!navigator.serviceWorker.controller;let swapped=false;
+  navigator.serviceWorker.addEventListener('controllerchange',()=>{if(swapped||!hadController)return;swapped=true;toast('Updated — reloading');setTimeout(()=>location.reload(),600)});
+}
 </script>
 </body>
 </html>
