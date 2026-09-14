@@ -37,6 +37,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 @media(prefers-color-scheme:dark){.top{background:linear-gradient(#000 70%,rgba(0,0,0,0))}}
 .brand{display:flex;align-items:center;gap:11px;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .brand small::after{content:' ▾';opacity:.5}
+.brand>div{position:relative}
+.syncdot{position:absolute;right:-14px;bottom:5px;width:7px;height:7px;border-radius:50%;background:var(--dim)}
+.syncdot.off{display:none}.syncdot.ok{background:var(--green)}.syncdot.bad{background:var(--red)}.syncdot.busy{background:var(--amber);animation:pulse 1s ease-in-out infinite}
+.leg.mine{background:var(--blue-bg)}
+.leg.mine::after{content:'you';position:absolute;right:12px;top:6px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+.cand .voters{font-size:11px;color:var(--dim);font-weight:500;white-space:normal;line-height:1.3}
+.cand .btn.voted{background:var(--blue);color:#fff}
+.share-link{font-family:var(--mono);font-size:12px;word-break:break-all;background:var(--surface2);border-radius:12px;padding:10px 12px;margin:8px 0}
 .logo{width:40px;height:40px;border-radius:12px;background:url("icon.svg") center/cover;box-shadow:var(--shadow);flex:none}
 .brand h1{font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
 .brand small{display:block;color:var(--muted);font-size:12px;font-weight:500;margin-top:2px}
@@ -351,7 +359,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 <body>
 <div id="app">
   <header class="top">
-    <button class="brand" data-act="leagues" title="Switch league"><div class="logo"></div><div><h1>Bozo Parlay</h1><small id="seasonLabel">Season</small></div></button>
+    <button class="brand" data-act="leagues" title="Switch league"><div class="logo"></div><div><h1>Bozo Parlay</h1><small id="seasonLabel">Season</small><span id="syncDot" class="syncdot off"></span></div></button>
     <div id="topRight"></div>
   </header>
   <main id="view"></main>
@@ -370,7 +378,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.20';
+const APP_VERSION='2026-09-15.1';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -586,9 +594,69 @@ function seedSeason(){
 }
 DB=loadDB();{const qs=new URLSearchParams(location.search);const q=qs.get('league');if(q&&DB.leagues.find(l=>l.id===q))DB.active=q;const sq=qs.get('season');if(sq&&league().seasons.find(x=>x.id===sq))league().activeSeason=sq}
 let S=season().data;
+/* ============================== CLOUD SYNC ============================== */
+const SYNC_URL=(()=>{try{return localStorage.getItem('bp-sync-url')}catch(e){}return null})()||'https://bozo-sync.jsunaldo.workers.dev';
+const isAdmin=(l=league())=>!l.sync||l.sync.role==='admin';
+const canEdit=(mid,l=league())=>isAdmin(l)||l.me===mid;
+const shareLink=l=>l.sync&&l.shareKey?`${location.origin}${location.pathname}?join=${l.sync.id}.${l.shareKey}`:'';
+async function api(l,path,opts={}){
+  const r=await fetch((l.sync.url||SYNC_URL)+'/leagues/'+l.sync.id+path,{method:opts.method||'GET',headers:{'Content-Type':'application/json','X-BP-Key':l.sync.key},body:opts.body?JSON.stringify(opts.body):undefined});
+  const d=await r.json().catch(()=>({ok:false,error:'unreadable response'}));
+  if(!r.ok||!d.ok)throw Object.assign(new Error(d.error||('HTTP '+r.status)),{status:r.status,data:d});
+  return d;
+}
+function applyState(l,d){
+  const ui={};for(const x of (l.seasons||[]))ui[x.id]={view:x.data?.view,cur:x.data?.currentWeekId};   // per-device UI state must not ride along with synced data
+  l.seasons=d.seasons.map(x=>({...x,data:migrate(x.data||fresh())}));
+  for(const x of l.seasons){const u=ui[x.id];if(u){if(u.view)x.data.view=u.view;if(u.cur&&x.data.weeks.find(w=>w.id===u.cur))x.data.currentWeekId=u.cur}else if(x.data.weeks.length){x.data.view='week';x.data.currentWeekId=x.data.weeks[x.data.weeks.length-1].id}}
+  if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
+  if(d.name)l.name=d.name;l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;
+  if(league()===l){S=season().data;ALLTIME=null}
+}
+function setSyncDot(state){const d=document.getElementById('syncDot');if(!d)return;const l=league();d.className='syncdot '+(l.sync?state:'off');d.title={ok:'Synced with the group',bad:'Cloud sync failed — your changes are saved on this device',busy:'Syncing…'}[state]||''}
+let pushT=null,pendingPick=null,pullBusy=false;
+async function pull(l=league(),loud=false){
+  if(!l.sync||pullBusy||pushT||pendingPick)return;pullBusy=true;setSyncDot('busy');
+  try{const d=await api(l,'');if(d.rev!==l.sync.rev){applyState(l,d);save();render()}setSyncDot('ok');if(loud)toast('Up to date','good')}
+  catch(e){setSyncDot('bad');if(loud)toast('Could not reach the cloud: '+e.message+'. Showing what this device has.','bad')}
+  finally{pullBusy=false}
+}
+function schedulePush(){const l=league();if(!l.sync||l.sync.role!=='admin')return;clearTimeout(pushT);pushT=setTimeout(()=>{pushT=null;push(l)},700)}
+async function push(l){
+  setSyncDot('busy');
+  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:l.activeSeason,name:l.name,baseRev:l.sync.rev}});l.sync.rev=d.rev;save();setSyncDot('ok')}
+  catch(e){if(e.status===409&&e.data?.state){applyState(l,e.data.state);save();render();toast('Someone else changed the league first — reloaded their version. Redo your last edit.','bad')}
+    else{setSyncDot('bad');toast('Cloud save failed: '+e.message+'. Kept on this device — it retries on your next change.','bad')}}
+}
+async function sendPick(l,w,mid){
+  const p=w.picks[mid];if(!p)return;pendingPick=null;setSyncDot('busy');
+  try{const d=await api(l,'/pick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,memberId:mid,pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,unit:p.unit,um:p.um}}});l.sync.rev=d.rev;setSyncDot('ok');toast('Pick saved for the group','good')}
+  catch(e){setSyncDot('bad');toast(e.status===423?'Too late — '+e.message+'.':'Could not save your pick: '+e.message,'bad');pull(l)}
+}
+async function sendVote(l,w,voterId,candidateId){
+  setSyncDot('busy');
+  try{const d=await api(l,'/vote',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,voterId,candidateId}});applyState(l,d);save();render();setSyncDot('ok');toast(candidateId?`Vote in: ${member(candidateId)?.name}`:'Vote withdrawn','good')}
+  catch(e){setSyncDot('bad');toast('Vote didn\'t go through: '+e.message,'bad')}
+}
+async function joinFromUrl(){
+  const q=new URLSearchParams(location.search).get('join');if(!q)return false;const[id,key]=q.split('.');if(!id||!key)return false;
+  try{toast('Joining the league…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`);const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'that link doesn\'t work');
+    let l=DB.leagues.find(x=>x.sync&&x.sync.id===id);
+    if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null,sync:{url:SYNC_URL,id,key,role:d.role,rev:0}};DB.leagues.push(l)}else if(l.sync.role!=='admin'){l.sync.key=key}
+    applyState(l,d);DB.leagues=DB.leagues.filter(x=>x===l||x.sync||canonName(x.name)!==canonName(l.name));   // drop the built-in copy of the same league
+    DB.active=l.id;S=season().data;S.view='week';save();history.replaceState(null,'',location.pathname);render();
+    if(!l.me)pickMe(l,true);else toast(`Welcome back, ${member(l.me)?.name||''}`,'good');return true;
+  }catch(e){toast('Could not join: '+e.message,'bad');history.replaceState(null,'',location.pathname);return false}
+}
+function pickMe(l=league(),first=false){
+  const act=S.members.filter(m=>m.active);
+  modal({title:first?`You're in ${l.name}. Who are you?`:'Who are you?',body:`<p class="tiny">This device will enter picks and votes as this person.</p><div class="fb-grid">${act.map(m=>`<button class="fb ${l.me===m.id?'on':''}" data-act="set-me" data-mid="${m.id}"><span class="avatar lg" style="--c:${m.color}">${h(initials(m.name))}</span>${h(m.name)}</button>`).join('')}</div>`,actions:[{label:'Cancel',cls:'ghost'}]});
+}
+function ballotCount(w,id){return (w.votes?.[id]||0)+Object.values(w.ballots||{}).filter(c=>c===id).length}
+
 let saveT;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY2,JSON.stringify(DB))}catch(e){toast('Could not save — storage full or blocked. Export a backup.','bad')}},60)}
-function commit(){ALLTIME=null;save();render()}
+function commit(){ALLTIME=null;save();render();schedulePush()}
 
 /* ============================== HELPERS ============================== */
 const member=id=>S.members.find(m=>m.id===id);
@@ -733,10 +801,10 @@ function renderTicket(w,c){
   return`<section class="ticket ${c.result}" id="ticket">
     <div class="ticket-head">
       <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c)}</div></div>
-      <div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':'Bozo — tap ✎ to set'}</span><button class="mini" data-act="change-bozo" title="Change bozo">✎</button></div>
+      <div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':(isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown')}</span>${isAdmin()?`<button class="mini" data-act="change-bozo" title="Change bozo">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked for this week">🔒 locked</span>':''}</div>
     </div>
     <div class="legs">${c.legs.map(l=>renderLeg(w,l)).join('')||`<div class="leg" style="grid-template-columns:1fr;color:var(--muted)">No legs yet — add one below.</div>`}</div>
-    ${missing.length?`<div class="addleg"><select data-bind="add-leg|${w.id}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${m.id}">${h(m.name)}</option>`).join('')}</select></div>`:''}
+    ${missing.length&&isAdmin()?`<div class="addleg"><select data-bind="add-leg|${w.id}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${m.id}">${h(m.name)}</option>`).join('')}</select></div>`:''}
     <div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>
   </section>`;
 }
@@ -748,15 +816,16 @@ function renderLeg(w,l){
   const open=l.status==='pending'||segOpen.has(l.mid);
   const seg=open?['hit','miss','push'].map(st=>`<button class="${st} ${l.status===st?'on':''}" data-act="status" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('')
     :`<button class="${l.status} on" data-act="seg-open" data-mid="${l.mid}" title="Tap to change">${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status]}</button>`;
-  return`<div class="leg ${l.status}" data-leg="${l.mid}">
+  const editable=canEdit(l.mid)&&(isAdmin()||(!w.locked&&l.status==='pending'));const mine=league().me===l.mid;
+  return`<div class="leg ${l.status} ${mine?'mine':''}" data-leg="${l.mid}">
     <div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div>
-    <div class="leg-top"><span class="leg-name">${h(m.name)}</span>${isBozo?'<span class="bz-ic" title="This week\'s Bozo">🤡</span>':''}<span class="tag warn" data-warn="${l.mid}" ${bad?'':'hidden'}>Too heavy</span>${l.unsure?`<button type="button" class="tag unsure" data-act="verify-pick" data-mid="${l.mid}" title="This pick came from the shared slip; who owns it was inferred. Tap to mark verified.">unverified</button>`:''}<button class="mini danger" data-act="remove-leg" data-mid="${l.mid}" title="Remove leg">×</button></div>
-    <div class="seg ${open?'':'graded'}">${seg}</div>
+    <div class="leg-top"><span class="leg-name">${h(m.name)}</span>${isBozo?'<span class="bz-ic" title="This week\'s Bozo">🤡</span>':''}<span class="tag warn" data-warn="${l.mid}" ${bad?'':'hidden'}>Too heavy</span>${l.unsure?`<button type="button" class="tag unsure" data-act="verify-pick" data-mid="${l.mid}" title="This pick came from the shared slip; who owns it was inferred. Tap to mark verified.">unverified</button>`:''}${isAdmin()?`<button class="mini danger" data-act="remove-leg" data-mid="${l.mid}" title="Remove leg">×</button>`:''}</div>
+    ${isAdmin()?`<div class="seg ${open?'':'graded'}">${seg}</div>`:l.status==='pending'?`<span class="badge pending">pending</span>`:`<div class="seg graded"><button class="${l.status} on" disabled>${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status]}</button></div>`}
     <div class="leg-inputs">
-      <div class="pickbox">${pickIcon(l)}<textarea class="pick-in" rows="1" placeholder="Pick — e.g. Chiefs -3.5" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next">${h(l.text)}</textarea></div>
-      <input class="mono ${bad?'bad':''}" placeholder="-110" value="${h(l.odds)}" data-bind="pick|${w.id}|${l.mid}|odds" data-odds="${l.mid}" autocomplete="off" inputmode="text">
+      <div class="pickbox">${pickIcon(l)}<textarea class="pick-in" rows="1" placeholder="${editable?'Pick — e.g. Chiefs -3.5':'No pick yet'}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next" ${editable?'':'disabled'}>${h(l.text)}</textarea></div>
+      <input class="mono ${bad?'bad':''}" placeholder="-110" value="${h(l.odds)}" data-bind="pick|${w.id}|${l.mid}|odds" data-odds="${l.mid}" autocomplete="off" inputmode="text" ${editable?'':'disabled'}>
     </div>
-    ${l.status==='hit'||l.status==='miss'?`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${marginLabel}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal">`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit">${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`:''}
+    ${l.status==='hit'||l.status==='miss'?`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${marginLabel}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal" ${isAdmin()?'':'disabled'}>`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit" ${isAdmin()?'':'disabled'}>${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`:''}
   </div>`;
 }
 function pickIcon(l){const t=l.teams||[];
@@ -776,7 +845,7 @@ function ticketFoot(w,c){
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
   <div id="f-won">${c.result==='won'?`<div class="won-line">🎉 Everyone collects ${fmt$(c.share)}. ${h(b?.name||'The Bozo')} nets ${fmt$(c.share-c.stake)} after fronting the stake.</div>`:''}</div>
-  <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${lastWeek()===w?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">Delete week</button>`:''}</div>`;
+  <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&lastWeek()===w?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">Delete week</button>`:''}</div>`;
 }
 function patchTicket(w){
   const c=calc(w);const priced=!c.missingOdds&&c.n>0;const $=id=>document.getElementById(id);
@@ -798,20 +867,22 @@ function renderVote(w,c,isLast){
   const next=S.weeks[S.weeks.indexOf(w)+1];
   if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div></section>`}
   if(!c.n)return'';
-  if(!c.graded){const done=c.n-c.pending;return`<section class="card vote"><h3>Bozo vote</h3><div class="progress"><div style="width:${done/c.n*100}%"></div></div><p class="muted tiny">Grade all ${c.n} legs to open the vote · ${done}/${c.n} done</p></section>`}
-  const el=eligible(w);const votes=w.votes||{};
-  const max=Math.max(0,...el.list.map(id=>votes[id]||0));const leaders=max>0?el.list.filter(id=>(votes[id]||0)===max):[];
+  if(!c.graded){const done=c.n-c.pending;return`<section class="card vote"><h3>Bozo vote</h3><div class="progress"><div style="width:${done/c.n*100}%"></div></div><p class="muted tiny">${isAdmin()?`Grade all ${c.n} legs to open the vote`:'Voting opens once the results are graded'} · ${done}/${c.n} done</p></section>`}
+  const el=eligible(w);const votes=w.votes||{};const ballots=w.ballots||{};const me=league().me;const synced=!!league().sync;
+  const cnt=id=>ballotCount(w,id);const max=Math.max(0,...el.list.map(cnt));const leaders=max>0?el.list.filter(id=>cnt(id)===max):[];
+  const myVote=me?ballots[me]:null;const voted=Object.keys(ballots).length;const voters=S.members.filter(m=>m.active).length;
   const reason={miss:'Only the people who missed are on the ballot.',push:'Nobody missed — the pushes are on the ballot.',all:'Everyone hit. Everyone is on the ballot.'}[el.reason];
-  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Tap + as each person votes, then crown the winner to open Week ${w.num+1}.</p>
+  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} ${synced?`Everyone votes from their own phone${isAdmin()?', then you crown the winner':''}. Send your video in the chat as usual. ${voted}/${voters} votes in.`:`Tap + as each person votes, then crown the winner to open Week ${w.num+1}.`}</p>
     <div class="cands">${el.list.map(id=>{const m=member(id);const l=c.legs.find(x=>x.mid===id);const v=votes[id]||0;
       const sub=l.status==='miss'?(l.margin!=null?`missed by ${fmtMargin(l.margin,l.unit)}`:'missed'):l.status==='push'?'pushed':'hit';
-      return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)}</b><small>${sub}${l.text?' · '+h(l.text):''}</small></div><div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${v}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div></div>`}).join('')}</div>
-    <div class="vote-actions">
+      return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)}</b><small>${sub}${l.text?' · '+h(l.text):''}</small>${synced&&Object.keys(ballots).some(v=>ballots[v]===id)?`<div class="voters">votes: ${Object.keys(ballots).filter(v=>ballots[v]===id).map(v=>h(member(v)?.name||'?')).join(', ')}</div>`:''}</div>${synced?`<div class="tally"><b class="mono">${cnt(id)}</b>${me?`<button class="btn sm ${myVote===id?'voted':''}" data-act="cast-vote" data-mid="${id}">${myVote===id?'✓ Voted':'Vote'}</button>`:''}</div>`:`<div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${v}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div>`}</div>`}).join('')}</div>
+    ${synced&&!me?`<button class="btn block sm" data-act="pick-me">Tell the app who you are to vote</button>`:''}
+    ${isAdmin()?`<div class="vote-actions">
       ${leaders.length===1?`<button class="btn primary block" data-act="crown" data-mid="${leaders[0]}">🤡 Crown ${h(member(leaders[0]).name)} · start Week ${w.num+1}</button>`
       :leaders.length>1?`<button class="btn primary block" data-act="flip" data-ids="${leaders.join(',')}">🪙 ${leaders.length}-way tie — flip for it</button>`
       :`<button class="btn block" data-act="flip" data-ids="${el.list.join(',')}">🪙 No votes yet — flip among all ${el.list.length}</button>`}
       <button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button>
-    </div></section>`;
+    </div>`:`<p class="muted tiny">The commissioner crowns the Bozo once the votes are in.</p>`}</section>`;
 }
 
 /* ---- onboarding ---- */
@@ -937,15 +1008,23 @@ function closeCalls(per){
 /* ---- crew ---- */
 function renderLeagues(){
   const L=league();
-  return`<section class="card"><h3>Leagues</h3><div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;const n=l.seasons.length;return`<div class="mrow" style="${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${n} season${n===1?'':'s'}${on?' · active':''}</small></div>${on?`<button class="mini" data-act="rename-league" data-lid="${l.id}" title="Rename">✎</button>${DB.leagues.length>1?`<button class="mini danger" data-act="delete-league" data-lid="${l.id}" title="Delete league">×</button>`:''}`:`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>
+  return`<section class="card"><h3>Leagues</h3><div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;const n=l.seasons.length;return`<div class="mrow" style="${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${n} season${n===1?'':'s'}${on?' · active':''}</small></div>${on?(isAdmin(l)?`<button class="mini" data-act="rename-league" data-lid="${l.id}" title="Rename">✎</button>`:'')+(DB.leagues.length>1?`<button class="mini danger" data-act="delete-league" data-lid="${l.id}" title="${isAdmin(l)?'Delete league':'Leave league'}">×</button>`:''):`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>
   <button class="btn block" data-act="new-league">＋ New league</button>
   <p class="muted tiny" style="margin-top:8px">A league is a group of people. Each league has its own seasons, and each season its own crew, weeks and stats.</p></section>
-  <section class="card"><h3>${h(L.name)} · seasons</h3><div class="mlist">${seasonSorted(L).map(x=>{const on=x.id===L.activeSeason;return`<div class="mrow" style="${on?'border-color:rgba(0,113,227,.5)':''}"><div class="avatar" style="--c:${on?'var(--blue)':'#8e8e93'}">${h(String(x.name).slice(-2))}</div><div class="mbody"><b>${h(x.name)}</b><small>${seasonSummary(x)}${on?' · viewing':''}</small></div>${on?`<button class="mini" data-act="rename-season" data-sid="${x.id}" title="Rename">✎</button>${L.seasons.length>1?`<button class="mini danger" data-act="delete-season" data-sid="${x.id}" title="Delete season">×</button>`:''}`:`<button class="btn sm" data-act="switch-season" data-sid="${x.id}">Open</button>`}</div>`}).join('')}</div>
+  ${isAdmin(L)?`<section class="card"><h3>${h(L.name)} · seasons</h3><div class="mlist">${seasonSorted(L).map(x=>{const on=x.id===L.activeSeason;return`<div class="mrow" style="${on?'border-color:rgba(0,113,227,.5)':''}"><div class="avatar" style="--c:${on?'var(--blue)':'#8e8e93'}">${h(String(x.name).slice(-2))}</div><div class="mbody"><b>${h(x.name)}</b><small>${seasonSummary(x)}${on?' · viewing':''}</small></div>${on?`<button class="mini" data-act="rename-season" data-sid="${x.id}" title="Rename">✎</button>${L.seasons.length>1?`<button class="mini danger" data-act="delete-season" data-sid="${x.id}" title="Delete season">×</button>`:''}`:`<button class="btn sm" data-act="switch-season" data-sid="${x.id}">Open</button>`}</div>`}).join('')}</div>
   <button class="btn block" data-act="new-season">＋ New season</button>
-  <p class="muted tiny" style="margin-top:8px">A new season starts with this season's crew and a clean slate of weeks.</p></section>`;
+  <p class="muted tiny" style="margin-top:8px">A new season starts with this season's crew and a clean slate of weeks.</p></section>`:`<section class="card"><h3>${h(L.name)} · seasons</h3><div class="seasonchips">${seasonSorted(L).map(x=>`<button class="chip ${x.id===L.activeSeason?'on':''}" data-act="switch-season" data-lid="${L.id}" data-sid="${x.id}">${h(x.name)}</button>`).join('')}</div></section>`}`;
+}
+function renderShare(){
+  const l=league();const me=l.me?member(l.me):null;
+  const who=`<div class="row between" style="margin-bottom:10px"><div class="chip-lg">${me?`<span class="avatar sm" style="--c:${me.color}">${h(initials(me.name))}</span><span>You are <b>${h(me.name)}</b></span>`:'<span class="muted">Who are you on this device?</span>'}</div><button class="btn sm" data-act="pick-me">${me?'Change':'Choose'}</button></div>`;
+  if(!l.sync)return`<section class="card"><h3>Share with the group</h3><p class="muted tiny" style="margin-bottom:10px">Publish this league to the cloud and everyone gets a link: they pick their name, enter their own pick each week and cast their Bozo vote from their phone. You stay the commissioner — grading, crowning and edits are yours.</p><button class="btn primary block" data-act="publish-league">☁️ Publish ${h(l.name)}</button></section>`;
+  const link=shareLink(l);
+  return`<section class="card"><h3>Group</h3>${who}${isAdmin()?`<p class="muted tiny">Send this link to the crew. Anyone with it can enter their own pick and vote; only this device can grade and crown.</p><div class="share-link">${h(link)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div>`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">Picks and results come from the commissioner's device. You can edit your own pick until the week is locked, and vote once results are in.</p>`}</section>`;
 }
 function renderCrew(){
-  return renderLeagues()+`<section class="card"><h3>Crew</h3>
+  if(!isAdmin())return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?'Active':'Benched'}</small></div></div>`).join('')}</div></section>`+renderLeagues()+`<section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`;
+  return renderLeagues()+renderShare()+`<section class="card"><h3>Crew</h3>
     <div class="mlist">${S.members.map(m=>`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?'Active':'Benched — skipped on new weeks'}</small></div><button class="mini" data-act="edit-member" data-mid="${m.id}" title="Edit">✎</button><button class="mini" data-act="toggle-member" data-mid="${m.id}" title="${m.active?'Bench':'Activate'}">${m.active?'⏸':'▶'}</button></div>`).join('')||'<p class="muted tiny">Nobody yet.</p>'}</div>
     <form class="addrow" data-form="add-member"><input placeholder="Add a friend" name="name" autocomplete="off"><button class="btn sm primary">Add</button></form>
   </section>
@@ -973,7 +1052,7 @@ function recap(w){
   if(c.graded){const el=eligible(w);if(el.list.length)L.push(`On the ballot: ${el.list.map(id=>member(id)?.name).join(', ')}`)}
   return L.join('\n');
 }
-async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Recap copied — paste it in the chat','good')}catch(e){modal({title:'Copy this',body:`<textarea rows="10" style="width:100%;font-family:var(--mono);font-size:12px">${h(t)}</textarea>`,actions:[{label:'Done'}]})}}
+async function copyText(t){try{await navigator.clipboard.writeText(t);toast('Copied — paste it in the chat','good')}catch(e){modal({title:'Copy this',body:`<textarea rows="10" style="width:100%;font-family:var(--mono);font-size:12px">${h(t)}</textarea>`,actions:[{label:'Done'}]})}}
 
 /* ============================== SLIP IMAGE ============================== */
 function rr(x,X,Y,W,H,r){x.beginPath();x.moveTo(X+r,Y);x.arcTo(X+W,Y,X+W,Y+H,r);x.arcTo(X+W,Y+H,X,Y+H,r);x.arcTo(X,Y+H,X,Y,r);x.arcTo(X,Y,X+W,Y,r);x.closePath()}
@@ -1170,13 +1249,20 @@ const ACT={
   'rename-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x)return;modal({title:'Rename season',body:`<input id="ssName" value="${h(x.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n)return false;x.name=n;if(/^\d{4}$/.test(n))x.data.season=n+' NFL';commit()}}]})},
   'delete-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x||l.seasons.length<2)return;confirm2(`Delete the ${x.name} season?`,`Removes ${x.data.weeks.length} week${x.data.weeks.length===1?'':'s'} of ${l.name} from this browser. Export a backup first if you might want it back.`,'Delete season',()=>{l.seasons=l.seasons.filter(y=>y!==x);l.activeSeason=seasonSorted(l)[0].id;S=season().data;commit();toast(`${x.name} deleted`)})},
   'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;commit()}}]})},
-  'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;confirm2(`Delete ${l.name}?`,`Removes this league and all ${l.seasons.length} season${l.seasons.length===1?'':'s'} from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit();toast(`${l.name} deleted`)})},
+  'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;if(l.sync&&l.sync.role!=='admin'){confirm2(`Leave ${l.name}?`,'Removes it from this device only. Open the group link again to rejoin.','Leave',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit()});return}confirm2(`Delete ${l.name}?`,`Removes this league and all ${l.seasons.length} season${l.seasons.length===1?'':'s'} from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit();toast(`${l.name} deleted`)})},
   async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()))}if(window.caches){const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
-  'pick-team'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p)return;const sel=[...(p.teams||[])];
+  'pick-team'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p||!canEdit(el.dataset.mid))return;const sel=[...(p.teams||[])];
     modal({title:'Team logo',body:`<p class="tiny">Pick up to two teams for this leg. Auto-detected from the pick text unless you set it here.</p><div class="teamgrid" id="teamgrid">${Object.keys(TEAMS).map(a=>`<button class="tp ${sel.includes(a)?'on':''}" data-act="tp-toggle" data-abbr="${a}"><img src="${LOGO(a)}" alt="">${a}</button>`).join('')}</div>`,
-      actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit()}}]})},
+      actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit();const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===el.dataset.mid)sendPick(L,w,el.dataset.mid)}}]})},
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
+  async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
+  'copy-share'(){const link=shareLink(league());copyText(link)},
+  'sync-now'(){pull(league(),true)},
+  'pick-me'(){pickMe(league())},
+  'set-me'(el){const l=league();l.me=el.dataset.mid;save();closeModal();render();toast(`Got it — you're ${member(l.me)?.name}`,'good')},
+  'cast-vote'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}const cand=el.dataset.mid;sendVote(l,w,l.me,(w.ballots||{})[l.me]===cand?null:cand)},
+  'toggle-lock'(el){const w=week(el.dataset.wid);w.locked=!w.locked;commit();toast(w.locked?'Picks locked — nobody can change their pick':'Picks unlocked')},
   'verify-pick'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(p){delete p.unsure;commit();toast('Marked verified')}},
   'player-detail'(el){detailOpen=detailOpen===el.dataset.mid?null:el.dataset.mid;render()},
   'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
@@ -1197,7 +1283,8 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     else if(c==='unit'){p.unit=e.target.value;p.um=true;if(p.unit==='none')p.margin=null;commit();return}
     else p[c]=e.target.value;
     if(c==='text'){delete p.unsure;if(e.target.tagName==='TEXTAREA')autosize(e.target);if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=detectTeams(p.text);if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
-    save();if(c==='odds')patchTicket(w)}
+    save();if(c==='odds')patchTicket(w);
+    const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save()}
   else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=leagueLabel()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
 });
@@ -1229,6 +1316,9 @@ function sampleSeason(){
 
 /* ============================== BOOT ============================== */
 render();save();
+(async()=>{const joined=await joinFromUrl();if(!joined)pull();})();
+setInterval(()=>{if(document.visibilityState==='visible')pull()},30000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pull()});
 if('serviceWorker'in navigator&&location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update().catch(()=>{})}).catch(()=>{});
   const hadController=!!navigator.serviceWorker.controller;let swapped=false;
