@@ -196,6 +196,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .wk-num{font-family:var(--mono);font-weight:600;font-size:13px;color:var(--muted);background:var(--surface2);padding:8px 9px;border-radius:12px;flex:none}
 .wk-title{font-weight:600;font-size:15px}
 .wk-sub{color:var(--muted);font-size:12px;font-weight:500;line-height:1.3}
+.wk-count{font-size:11px;font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
 .wk-r{display:flex;flex-direction:column;align-items:flex-end;gap:7px;flex:none}
 .dots{display:flex;gap:4px}
 .dot{width:11px;height:11px;border-radius:50%;border:2px solid var(--c);background:transparent;opacity:.35}
@@ -217,6 +218,28 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .lb td{padding:10px 8px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
 .lb td:first-child{text-align:left}
 .lb .who{display:flex;align-items:center;gap:8px;font-weight:600}
+.lb-row{cursor:pointer}
+.lb-row:hover td{background:var(--surface2)}
+.lb .chev{color:var(--dim);font-weight:600;transition:transform .2s;margin-left:2px}
+.lb-row.open .chev{transform:rotate(90deg);color:var(--blue)}
+.pd-wrap{margin-top:12px;animation:fadeUp .2s}
+.pd-title{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:15px}
+.pd-title b{font-weight:700}
+.pd-title .mini{margin-left:auto}
+.pd{background:var(--surface2);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;animation:fadeUp .2s}
+.pd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:480px){.pd-grid{grid-template-columns:repeat(4,1fr)}}
+.pd-cell{background:var(--surface);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:1px;min-width:0}
+.pd-cell small{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pd-cell b{font-size:15px;font-weight:700}
+.pd-cell em{font-style:normal;font-size:11px;color:var(--muted);font-weight:500;white-space:normal;line-height:1.3}
+.pd-bets{display:flex;flex-direction:column;gap:6px}
+.pd-bet{background:var(--surface);border-radius:10px;padding:8px 10px;display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;border-left:3px solid var(--line2)}
+.pd-bet.good-l{border-left-color:var(--green)}.pd-bet.bad-l{border-left-color:var(--red)}
+.pd-bet small{grid-column:1/4;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pd-bet b{font-size:14px}
+.pd-bet span{font-size:13px;font-weight:500;white-space:normal;line-height:1.3}
+.pd-bet small:last-child{grid-column:3;color:var(--dim);text-transform:none;letter-spacing:0;font-size:11px}
 .lb .rank{color:var(--dim);font-family:var(--mono);font-size:11px;width:14px}
 .bar{display:inline-block;height:6px;border-radius:4px;background:var(--blue);vertical-align:middle;margin-right:6px;min-width:2px}
 .awards{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
@@ -346,7 +369,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.15';
+const APP_VERSION='2026-09-14.16';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -411,6 +434,14 @@ function migrateDB(d){
     const stags=d.leagues.find(l=>l.seasons?.some(x=>x.data?.weeks?.[0]?.id==='w1'&&x.data.weeks[0].picks?.m1));
     if(stags&&!stags.seasons.find(x=>x.id==='season-2024'))stags.seasons.push({id:'season-2024',name:'2024',data:seedStags2024()});
     d.seedV=7;
+  }
+  if(!(d.seedV>=8)){
+    for(const l of d.leagues)for(const x of (l.seasons||[]))for(const w of x.data.weeks){const mm=MARGINS[w.id];if(mm)for(const[mid,mg]of Object.entries(mm)){const p=w.picks[mid];if(p&&p.margin==null&&(p.status==='hit'||p.status==='miss')&&p.unit!=='none')p.margin=mg}}
+    const stags=d.leagues.find(l=>l.seasons?.some(x=>x.id==='season-2024'));const s24=stags?.seasons.find(x=>x.id==='season-2024');
+    if(s24)for(const w of s24.data.weeks){if(!w.bozoId&&STAGS24_BOZOS[w.num])w.bozoId=STAGS24_BOZOS[w.num]}
+    const lg2=d.leagues.find(l=>l.id==='lg2');
+    if(lg2&&!lg2.seasons.find(x=>x.id==='season-og2024'))lg2.seasons.push({id:'season-og2024',name:'2024',data:seedOG2024()});
+    d.seedV=8;
   }
   return d;
 }
@@ -491,6 +522,24 @@ function seedStags2024(){
   }
   d.currentWeekId='s24w18';return d;
 }
+// Margins computed from ESPN box scores (2026-09-14) for the imported seasons; keyed week id -> member id
+const MARGINS={"s25w1":{"s4":5.5,"s2":7,"s1":9.0,"s3":12.5},"s25w2":{"s4":5.5,"s2":8.5,"s1":31.0,"s3":3},"s25w3":{"s4":36.5,"s2":21,"s1":7,"s3":13.5},"s25w4":{"s4":5.5,"s2":2.5,"s1":23.5,"s3":9.0},"s25w5":{"s4":8.5,"s2":9.5,"s1":0.5,"s3":11.5},"s25w6":{"s4":4.5,"s2":10.5,"s1":6.0,"s3":8.5},"s25w7":{"s4":6,"s2":11.5,"s1":8.5,"s3":12.5},"s25w8":{"s4":14.5,"s2":16.5,"s1":24.5,"s3":21.0},"s25w9":{"s1":11.5,"s2":10.5,"s4":1.5,"s3":6.5,"s5":5.5},"s25w10":{"s1":3.5,"s2":2.5,"s4":7.5,"s3":26.5,"s5":5},"s25w11":{"s1":5.5,"s2":0.5,"s4":4.5,"s3":7,"s5":31.5},"s25w12":{"s1":0.5,"s2":10.5,"s4":9.5,"s3":0.5,"s5":77.0},"s25w13":{"s1":3,"s2":9.5,"s4":7.5},"s25w14":{"s1":7.0,"s2":13.5,"s4":4.5,"s3":14.5,"s5":15.5},"s25w15":{"s1":0.5,"s2":0.5,"s4":24,"s3":9.5,"s5":17},"s25w16":{"s1":10.5,"s2":24,"s4":8.5,"s3":3.5,"s5":4},"s25w17":{"s1":17,"s2":3,"s4":1.5,"s3":12.0,"s5":3},"s25w18":{"s1":33.0,"s2":7,"s4":0.5,"s3":32.5},"s25w19":{"s1":10.0,"s2":10.0,"s4":2.5,"s3":31.5,"s5":7.5},"s25w20":{"s1":10,"s2":5.5,"s4":1.5,"s5":2},"s25w21":{"s1":6.5,"s2":8.5,"s4":19.5,"s3":9.5,"s5":13.5},"s25w22":{"s1":28.0,"s2":3,"s4":9.5,"s3":3.5,"s5":1.5},"s25w23":{"s2":0.5,"s4":12.5,"s3":124.0,"s5":33.0},"s25w24":{"s2":16},"s24w6":{"s1":6.5,"s2":7,"s6":6.5,"s8":24,"s10":4.0,"s9":8.5,"s7":5.5,"s3":2.0,"s4":37.0},"s24w7":{"s1":2,"s2":16,"s6":1.0,"s8":10,"s10":3.0,"s9":6.5,"s7":13.5,"s3":5.5,"s4":2},"s24w8":{"s1":22.5,"s2":0.0,"s6":21,"s8":7.0,"s10":7.5,"s9":7.5,"s7":3.0,"s3":6.0,"s4":4.5},"s24w9":{"s1":15.0,"s2":3.0,"s6":1.0,"s8":4.5,"s10":18.5,"s9":9.5,"s7":3.5,"s4":0.0},"s24w10":{"s2":0.0,"s6":5.5,"s8":2.0,"s10":5.0,"s9":27.0,"s7":21.0,"s3":0.0,"s4":6.0},"s24w11":{"s1":4.5,"s2":37.5,"s6":3.5,"s8":7,"s10":3.5,"s7":4.5,"s3":7.5,"s4":0.5},"s24w12":{"s1":16.5,"s2":4.5,"s6":3,"s8":11.5,"s10":8.0,"s7":25.5,"s3":12.5,"s4":6.5},"s24w13":{"s1":1.5,"s2":9.5,"s6":1,"s8":4.5,"s10":15.5,"s9":2.5,"s7":3.0,"s3":7,"s4":1.5},"s24w14":{"s2":5.5,"s6":2,"s8":12,"s10":24.5,"s7":6.5,"s3":6.5,"s4":4.0},"s24w15":{"s1":14,"s2":14,"s6":7.0,"s8":14.5,"s10":1.5,"s9":35.5,"s7":18,"s3":1.5,"s4":4.5},"s24w16":{"s1":37.0,"s2":9.5,"s6":11.0,"s8":5,"s10":10.5,"s9":2.5,"s7":8,"s3":27.0,"s4":10},"s24w17":{"s1":35.5,"s2":2.5,"s6":3,"s8":6.5,"s10":16.5,"s9":3.5,"s7":6,"s4":6},"s24w18":{"s1":74.5,"s2":22,"s6":10.5,"s8":13.0,"s10":16.5,"s9":0.5,"s7":7,"s3":4.5,"s4":2}};
+// Stags 2024 Bozo per week, from the original Stags2.xlsx 'Bets' sheet (W14 also marked Genes; W17-18 not in the sheet)
+const STAGS24_BOZOS={6:'s9',7:'s6',8:'s2',9:'s1',10:'s10',11:'s8',12:'s7',13:'s10',14:'s1',15:'s3',16:'s2'};
+// Bozo Parlay (OG) 2024 season, weeks 4-17 from the user's 'OG Bozo Week 16' note. Rows: [name, pick, odds, status, teams, unit, margin]
+const OG24_NAMES=["Jason", "Cruise", "Chase", "Jack", "Jimmy", "Ian", "Joey", "Ronnie", "Eric", "Sean"];
+const OG24=[[4,null,null,"2024-09-29",[["Jason","Breece Hall anytime TD","","miss",["NYJ"],"none",null],["Cruise","DJ Moore anytime TD","+210","hit",["CHI"],"none",null],["Chase","(pick not recorded)","","hit",[],"none",null],["Jack","Saquon Barkley anytime TD","-145","miss",["PHI"],"none",null],["Jimmy","Steelers moneyline","","miss",[],null,3],["Ian","Mike Williams anytime TD","","miss",["NYJ"],"none",null],["Joey","Ravens moneyline","-135","miss",[],null,null],["Ronnie","(pick not recorded)","","hit",[],"none",null],["Eric","Browns -2","","miss",[],null,6.0]]],[5,null,null,"2024-10-06",[["Jason","Cowboys moneyline","+124","hit",[],null,3],["Cruise","Saints +7.5","-169","miss",[],null,5.5],["Chase","Wan'Dale Robinson 40+ receiving yds","-190","miss",["NYG"],null,4.0],["Jack","Justin Jefferson anytime TD","-105","miss",["MIN"],"none",null],["Jimmy","Colts +3.5","-112","hit",[],null,0.5],["Ian","Browns / Commanders over 45.5","","hit",[],null,1.5],["Joey","Texans moneyline","-118","hit",[],null,3],["Ronnie","Jayden Daniels over rushing yds (line not recorded)","","hit",["WSH"],"none",null],["Eric","Packers / Rams over 48.5","-115","miss",[],null,5.5]]],[6,null,null,"2024-10-13",[["Jason","Commanders / Ravens over 51.5","","hit",[],null,1.5],["Cruise","Steelers moneyline","","hit",[],null,19],["Chase","Lions -3","","hit",[],null,35.0],["Jack","Buccaneers -2.5","","hit",[],null,21.5],["Jimmy","Derrick Henry 80+ rushing yds","","hit",["BAL"],null,52.0],["Sean","Falcons / Panthers over 47","","hit",[],null,11.0],["Ian","Cardinals +5.5","","miss",[],null,15.5],["Joey","Broncos +3.5","","miss",[],null,3.5],["Ronnie","Chuba Hubbard 60+ rushing yds","","hit",["CAR"],null,32.0],["Eric","Texans -6.5","","hit",[],null,13.5]]],[7,null,null,"2024-10-20",[["Jason","Bengals -6","-101","hit",[],null,1.0],["Cruise","Ravens -2.5","","hit",[],null,7.5],["Chase","Texans / Packers over 44.5","-177","hit",[],null,1.5],["Jack","Colts -2.5","-122","hit",[],null,3.5],["Jimmy","Derrick Henry 80+ rushing yds","","hit",["BAL"],null,89.0],["Sean","Lions +2","","hit",[],null,4.0],["Ian","Jets -2.5","-105","miss",[],null,24.5],["Joey","Chiefs moneyline","+105","hit",[],null,10],["Ronnie","Jayden Daniels 50+ rushing yds","-120","hit",["WSH"],null,0.0],["Eric","Jahmyr Gibbs 50+ rushing yds","","hit",["DET"],null,66.0]]],[8,null,null,"2024-10-27",[["Jason","Packers -2.5","-155","hit",[],null,0.5],["Cruise","Bills -2.5","-127","hit",[],null,18.5],["Chase","Lamar Jackson 200+ passing yds","-155","hit",["BAL"],null,89.0],["Jack","Bears / Commanders over 48.5","-200","miss",[],null,15.5],["Jimmy","Brandon Aubrey over 7.5 points","-105","miss",["DAL"],null,1.5],["Sean","Dolphins moneyline","-198","miss",[],null,1],["Ian","Giants / Steelers under 36.5","-110","miss",[],null,7.5],["Joey","Bears moneyline","-148","miss",[],null,3],["Ronnie","Lamar Jackson over 48.5 rushing yds","-115","hit",["BAL"],null,null],["Eric","Jayden Reed 60+ receiving yds","-110","miss",["GB"],null,5.0]]],[9,"Week 8 · Anytime TD parlay","W8b","2024-10-27",[["Jason","Davante Adams anytime TD","","miss",["NYJ"],"none",null],["Cruise","D'Andre Swift anytime TD","","hit",["CHI"],"none",null],["Chase","Jonathan Taylor anytime TD","","hit",["IND"],"none",null],["Jack","Amari Cooper anytime TD","","miss",["BUF"],"none",null],["Jimmy","Derrick Henry anytime TD","","hit",["BAL"],"none",null],["Sean","Saquon Barkley anytime TD","","miss",["PHI"],"none",null],["Ian","DeAndre Hopkins anytime TD","","miss",["KC"],"none",null],["Joey","DeVonta Smith anytime TD","","hit",["PHI"],"none",null],["Ronnie","Drake London anytime TD","","miss",["ATL"],"none",null],["Eric","David Montgomery anytime TD","","hit",["DET"],"none",null]]],[10,"Week 9","W9","2024-11-03",[["Jason","Chargers -1.5","","hit",[],null,15.5],["Cruise","Bengals -5.5","","hit",[],null,11.5],["Chase","Rams moneyline","","hit",[],null,6],["Jack","Alvin Kamara over 100 total yds","","hit",["NO"],null,115.0],["Jimmy","Sam Darnold over 1.5 passing TDs","","hit",["MIN"],"none",null],["Sean","Lions moneyline","","hit",[],null,10],["Ian","Vikings -4.5","","hit",[],null,3.5],["Joey","Cowboys +3","","miss",[],null,3.0],["Ronnie","Chuba Hubbard over 60 rushing yds","","hit",["CAR"],null,12.0],["Eric","David Montgomery anytime TD","","miss",["DET"],"none",null]]],[11,"Week 10","W10","2024-11-10",[["Jason","Garrett Wilson over 5.5 catches","","miss",["NYJ"],null,0.5],["Cruise","Eagles -6.5","","hit",[],null,21.5],["Chase","Justin Jefferson 80+ receiving yds","","miss",["MIN"],null,32.0],["Jack","Saquon Barkley over 100 total yds","","miss",["PHI"],null,22.0],["Jimmy","Sam Darnold over 1.5 passing TDs","","miss",["MIN"],"none",null],["Sean","Bills -4","","hit",[],null,6.0],["Ian","Chiefs -7.5","","miss",[],null,5.5],["Joey","Steelers +3","","hit",[],null,4.0],["Ronnie","Alvin Kamara 60+ rushing yds","","miss",["NO"],null,5.0],["Eric","David Montgomery anytime TD","","hit",["DET"],"none",null]]],[12,"Week 11","W11","2024-11-17",[["Jason","George Pickens over 4.5 catches","-115","hit",["PIT"],null,3.5],["Cruise","Bengals moneyline","+102","miss",[],null,7],["Chase","Lions team total over 27.5","-166","hit",["DET"],null,24.5],["Jack","Aaron Jones over 75 total yds","-175","miss",["MIN"],null,32.0],["Jimmy","Jonathan Taylor over 82.5 rushing yds","-120","miss",["IND"],null,25.5],["Ian","Broncos -2.5","-107","hit",[],null,29.5],["Joey","Steelers / Ravens under 48","-112","hit",[],null,14.0],["Ronnie","Joe Mixon anytime TD","-175","hit",["HOU"],"none",null],["Eric","Kyren Williams over 89.5 rushing yds","-105","miss",["LAR"],null,3.5],["Sean","Ravens -3","-118","miss",[],null,5.0]]],[13,"Week 12","W12","2024-11-24",[["Jason","Jaxon Smith-Njigba over 5.5 catches","-135","hit",["SEA"],null,0.5],["Cruise","A.J. Brown over 5.5 catches","-143","hit",["PHI"],null,0.5],["Chase","Lions team total over 27.5","-148","miss",["DET"],null,3.5],["Jack","Lions -6.5","-142","hit",[],null,11.5],["Jimmy","David Montgomery anytime TD","-190","hit",["DET"],"none",null],["Ian","Ravens -2.5","-115","hit",[],null,4.5],["Joey","Eagles -2.5","-127","hit",[],null,14.5],["Ronnie","Chuba Hubbard 50+ rushing yds","-140","hit",["CAR"],null,8.0],["Eric","Brock Bowers anytime TD","+195","miss",["LV"],"none",null],["Sean","Nico Collins over 5.5 catches","-125","miss",["HOU"],null,0.5]]],[14,"Week 13","W13","2024-12-01",[["Jason","Vikings -3","-118","miss",[],null,2.0],["Cruise","Mike Evans anytime TD","+130","hit",["TB"],"none",null],["Chase","Saquon Barkley over 110.5 total yds","-120","hit",["PHI"],null,6.5],["Jack","Nico Collins over 5.5 catches","-155","hit",["HOU"],null,2.5],["Jimmy","Puka Nacua 80+ receiving yds","-125","miss",["LAR"],null,24.0],["Ian","Jets moneyline","-108","miss",[],null,5],["Joey","Falcons moneyline","+100","miss",[],null,4],["Ronnie","Chuba Hubbard 60+ rushing yds","-155","miss",["CAR"],null,17.0],["Eric","Jayden Daniels 225+ passing yds","+115","miss",["WSH"],null,19.0],["Sean","Mike Evans over 4.5 catches","-145","hit",["TB"],null,3.5]]],[15,"Week 14","W14","2024-12-08",[["Jason","A.J. Brown over 5.5 catches","+105","miss",["PHI"],null,1.5],["Cruise","Titans / Jaguars under 35.5","+157","hit",[],null,19.5],["Chase","Marvin Harrison Jr. 50+ receiving yds","-130","miss",["ARI"],null,1.0],["Jack","Saquon Barkley 125+ total yds","-160","miss",["PHI"],null,1.0],["Jimmy","Ja'Marr Chase 80+ receiving yds","-110","hit",["CIN"],null,97.0],["Ian","Chiefs / Chargers over 43.5","-105","miss",[],null,7.5],["Joey","Bears +4","-135","miss",[],null,21.0],["Ronnie","Bills moneyline","-192","miss",[],null,2],["Eric","Brock Bowers 70+ receiving yds","-150","miss",["LV"],null,21.0],["Sean","Mike Evans over 5.5 catches","+100","miss",["TB"],null,1.5]]],[16,"Week 15","W15","2024-12-15",[["Jason","Amon-Ra St. Brown anytime TD","-110","hit",["DET"],"none",null],["Cruise","Saquon Barkley over 1.5 catches","+140","hit",["PHI"],null,0.5],["Chase","Commanders -7","-130","miss",[],null,6.0],["Jack","Jerry Jeudy 70+ receiving yds","-130","hit",["CLE"],null,38.0],["Jimmy","Rico Dowdle 100+ rushing yds","+155","hit",["DAL"],null,49.0],["Ian","Ravens -16.5","","hit",[],null,4.5],["Joey","Bills moneyline","+124","hit",[],null,6],["Ronnie","Chuba Hubbard 80+ rushing yds","-135","miss",["CAR"],null,48.0],["Eric","Zach Charbonnet 60+ rushing yds","-125","miss",["SEA"],null,6.0],["Sean","Joe Burrow over 275 passing yds","-110","miss",["CIN"],null,4.0]]],[17,"Week 16","W16","2024-12-22",[["Jason","Lions -6.5","-115","hit",[],null,10.5],["Cruise","Michael Penix Jr. 2+ passing TDs","-110","miss",["ATL"],"none",null],["Chase","Jordan Addison over 51.5 receiving yds","-115","miss",["MIN"],null,16.5],["Jack","Jerry Jeudy 60+ receiving yds","-120","miss",["CLE"],null,40.0],["Jimmy","James Conner 100+ rushing yds","+145","hit",["ARI"],null,17.0],["Ian","Jaguars +1.5","-108","miss",[],null,3.5],["Joey","Texans moneyline","+160","miss",[],null,8],["Ronnie","Josh Allen anytime TD","-140","miss",["BUF"],"none",null],["Eric","Drake London anytime TD","+115","miss",["ATL"],"none",null],["Sean","Cooper Kupp 50+ receiving yds","-190","miss",["LAR"],null,26.0]]],[18,"Week 17","W17","2024-12-29",[["Jason","Chargers -3.5","-154","hit",[],null,29.5],["Cruise","Jaguars / Titans under 39.5","-112","hit",[],null,6.5],["Chase","Terry McLaurin 60+ receiving yds","-130","miss",["WSH"],null,55.0],["Jack","Bucky Irving anytime TD","-190","miss",["TB"],"none",null],["Jimmy","Bucky Irving 100+ rushing yds","+145","hit",["TB"],null,13.0],["Ian","Lions / 49ers under 50.5","-110","miss",[],null,23.5],["Joey","Packers moneyline","-102","miss",[],null,2],["Ronnie","Bo Nix over 225 passing yds","-160","miss",["DEN"],null,6.0],["Eric","Buccaneers -7.5","-121","hit",[],null,26.5],["Sean","Josh Allen over 216.5 passing yds","-115","miss",["BUF"],null,34.5]]]];
+function seedOG2024(){
+  const d=fresh();d.season='2024 NFL';d.seedV=2;
+  OG24_NAMES.forEach((n,i)=>d.members.push({id:'o'+(i+1),name:n,color:PALETTE[i%PALETTE.length],active:true}));
+  const idOf=n=>'o'+(OG24_NAMES.indexOf(n)+1);
+  for(const[num,label,short,date,rows]of OG24){
+    const w={id:'og24w'+num,num,date,bozoId:null,stake:10,votes:{},picks:{}};if(label)w.label=label;if(short)w.short=short;
+    for(const[name,text,odds,status,teams,unit,margin]of rows){const u=unit||unitFor(text);w.picks[idOf(name)]={text,odds:odds||'',status,margin:u==='none'?null:(margin??null),unit:u,teams:teams&&teams.length?teams:detectTeams(text),tm:!!(teams&&teams.length),um:!!unit}}
+    d.weeks.push(w);
+  }
+  d.currentWeekId='og24w18';return d;
+}
 function picksFrom(rows){const o={};for(const[id,text,odds,status,margin,unit,teams]of rows)o[id]={text,odds,status,margin:unit==='none'?null:margin,unit,teams,tm:true,um:true};return o}
 function applySeedPicks(w,rows){for(const[id,text,odds,status,margin,unit,teams]of rows){const p=w.picks[id];if(!p)continue;p.text=text;p.unit=unit;p.teams=teams;p.tm=true;p.um=true;if(unit==='none')p.margin=null;else if(p.margin==null&&(p.status==='hit'||p.status==='miss'))p.margin=margin}}
 function seedSeason(){
@@ -558,11 +607,11 @@ function eligible(w){
 function stats(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
   const per={};
-  S.members.forEach(m=>per[m.id]={id:m.id,picks:0,hits:0,misses:0,pushes:0,pending:0,decSum:0,decN:0,bozo:0,spent:0,earned:0,cur:0,bestHit:0,worstMiss:0,killer:0,missMargins:[],closest:null,choke:null,sweat:null,history:[]});
+  S.members.forEach(m=>per[m.id]={id:m.id,picks:0,hits:0,misses:0,pushes:0,pending:0,decSum:0,decN:0,bozo:0,spent:0,earned:0,cur:0,bestHit:0,worstMiss:0,killer:0,missMargins:[],closest:null,choke:null,sweat:null,history:[],plus:{w:0,l:0,p:0},minus:{w:0,l:0,p:0},winDec:[],loseDec:[],longestHit:null,easiestHit:null,worstMissOdds:null,bozoWeeks:[]});
   const g={weeks:weeks.length,graded:0,won:0,lost:0,staked:0,paid:0,bestLegs:0,legsTotal:0,legsHit:0,bestOdds:null};
   for(const w of weeks){
     const c=calc(w);
-    if(per[w.bozoId]){per[w.bozoId].bozo++;per[w.bozoId].spent+=c.stake}
+    if(per[w.bozoId]){per[w.bozoId].bozo++;per[w.bozoId].spent+=c.stake;per[w.bozoId].bozoWeeks.push(wkShort(w))}
     g.staked+=c.stake;
     if(c.result==='won'){g.won++;g.paid+=c.payout;if(g.bestOdds==null||c.dec>g.bestOdds)g.bestOdds=c.dec}
     if(c.result==='lost')g.lost++;
@@ -572,7 +621,9 @@ function stats(){
       const p=per[l.mid];if(!p)continue;
       p.history.push({num:w.num,wk:wkShort(w),status:l.status,margin:l.margin,unit:l.unit,text:l.text,odds:l.oddsN});
       if(l.status==='pending'){p.pending++;continue}
-      p.picks++;if(l.oddsN!=null){p.decSum+=dec(l.oddsN);p.decN++}
+      p.picks++;if(l.oddsN!=null){p.decSum+=dec(l.oddsN);p.decN++;const side=l.oddsN>0?p.plus:p.minus;side[l.status==='hit'?'w':l.status==='miss'?'l':'p']++;
+        if(l.status==='hit'){p.winDec.push(dec(l.oddsN));if(!p.longestHit||l.oddsN>p.longestHit.odds)p.longestHit={odds:l.oddsN,text:l.text,wk:wkShort(w)};if(!p.easiestHit||l.oddsN<p.easiestHit.odds)p.easiestHit={odds:l.oddsN,text:l.text,wk:wkShort(w)}}
+        if(l.status==='miss'){p.loseDec.push(dec(l.oddsN));if(!p.worstMissOdds||l.oddsN<p.worstMissOdds.odds)p.worstMissOdds={odds:l.oddsN,text:l.text,wk:wkShort(w)}}}
       if(l.status==='hit'){
         p.hits++;p.cur=p.cur>=0?p.cur+1:1;p.bestHit=Math.max(p.bestHit,p.cur);
         if(l.margin!=null&&(l.unit||'pts')==='pts'&&(p.sweat==null||+l.margin<p.sweat.m))p.sweat={m:+l.margin,num:w.num,wk:wkShort(w),text:l.text};
@@ -590,6 +641,7 @@ function stats(){
     const g2=p.hits+p.misses;
     p.rate=g2>0?p.hits/g2:null;p.graded=g2;
     p.avgDec=p.decN?p.decSum/p.decN:null;
+    p.avgWinDec=p.winDec.length?p.winDec.reduce((a,b)=>a+b,0)/p.winDec.length:null;p.avgLoseDec=p.loseDec.length?p.loseDec.reduce((a,b)=>a+b,0)/p.loseDec.length:null;
     p.net=p.earned-p.spent;
     p.avgMiss=p.missMargins.length?p.missMargins.reduce((a,b)=>a+b,0)/p.missMargins.length:null;
   });
@@ -769,13 +821,13 @@ function renderHistory(){
   ${[...S.weeks].reverse().map(w=>{const c=calc(w);const b=member(w.bozoId);
     return`<button class="wk ${c.result}" data-act="open-week" data-wid="${w.id}">
       <div class="wk-l"><div class="wk-num">${h(wkShort(w))}</div><div><div class="wk-title">🤡 ${h(b?.name||'Unknown')}</div><div class="wk-sub">${fmtDate(w.date)}${w.date?' · ':''}${c.n} legs · ${c.n?amer(c.dec):'—'}${c.result==='won'?' · '+fmt$(c.payout):''}</div></div></div>
-      <div class="wk-r"><div class="dots">${c.legs.map(l=>`<span class="dot ${l.status}" style="--c:${member(l.mid)?.color}" title="${h(member(l.mid)?.name)}"></span>`).join('')}</div>${resultBadge(c)}</div>
+      <div class="wk-r"><div class="dots">${c.legs.map(l=>`<span class="dot ${l.status}" style="--c:${member(l.mid)?.color}" title="${h(member(l.mid)?.name)}"></span>`).join('')}</div>${c.result==='lost'?`<span class="wk-count">${c.hits}/${c.n-c.pushes} hit</span>`:resultBadge(c)}</div>
     </button>`}).join('')}`;
 }
 
 /* ---- stats ---- */
-let sortKey='rate',statScope='season',ALLTIME=null;
-const ALIASES={jase:'jason',jay:'jason',murphy:'murph',jimmy:'jim'};
+let sortKey='rate',statScope='season',ALLTIME=null,detailOpen=null;
+const ALIASES={jase:'jason',jay:'jason',murphy:'murph',jimmy:'jim',pags:'joey'};
 const canonName=n=>{const k=String(n||'').trim().toLowerCase().replace(/\s*\(.*?\)\s*$/,'');return ALIASES[k]||k};
 function allTimeSeason(){
   const l=league();const v=fresh();v.season='All-time';v.view='stats';const byName={};let n=0;
@@ -803,17 +855,35 @@ function renderStatsInner(){
     <div class="tile"><small>Net</small><b class="${net>=0?'good':'bad'}">${fmt$0(net)}</b><em>${fmt$0(g.paid)} in</em></div>
   </div>
   <section class="card"><h3>Leaderboard</h3><div class="lb-wrap"><table class="lb"><thead><tr><th>Player</th>${COLS.map(([k,l])=>`<th class="${sortKey===k?'on':''}" data-act="sort" data-key="${k}">${l}</th>`).join('')}</tr></thead><tbody>
-    ${rows.map((r,i)=>`<tr><td><div class="who"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span>${h(r.m.name)}</div></td>
+    ${rows.map((r,i)=>`<tr class="lb-row ${detailOpen===r.m.id?'open':''}" data-act="player-detail" data-mid="${r.m.id}"><td><div class="who"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span>${h(r.m.name)}<span class="chev">›</span></div></td>
       <td><span class="bar" style="width:${Math.round((r.rate||0)*36)}px"></span>${pct(r.rate)}</td>
       <td>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</td>
       <td class="mono">${r.avgDec?amer(r.avgDec):'—'}</td>
       <td>${r.bozo}×</td>
       <td class="${r.net>0?'good':r.net<0?'bad':''}">${fmt$0(r.net)}</td>
       <td class="${r.cur>0?'good':r.cur<0?'bad':''}">${r.cur>0?'W'+r.cur:r.cur<0?'L'+(-r.cur):'—'}</td></tr>`).join('')}
-  </tbody></table></div></section>
+  </tbody></table></div>${(()=>{const r=rows.find(x=>x.m.id===detailOpen);return r?`<div class="pd-wrap"><div class="pd-title"><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span><b>${h(r.m.name)}</b><span class="muted">${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''} · ${pct(r.rate)}</span><button class="mini" data-act="player-detail" data-mid="${r.m.id}" title="Close">×</button></div>${playerDetail(r)}</div>`:''})()}</section>
   ${A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map(a=>{const m=member(a.who);return`<div class="award"><span class="ic">${a.icon}</span><div class="ab"><small>${a.name}</small><b style="color:${m.color}">${h(m.name)}</b><em>${h(a.val)}</em></div></div>`}).join('')}</div></section>`:''}
   <section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--pink);background:transparent"></i>bozo</span></div></section>
   ${closeCalls(per)}`;
+}
+function playerDetail(r){
+  const rec=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`,pc=o=>(o.w+o.l)?Math.round(o.w/(o.w+o.l)*100)+'%':'—';
+  const bet=x=>x?`<b class="mono">${fmtOdds(x.odds)}</b><span>${h(x.text)}</span><small>${h(x.wk)}</small>`:'<span class="muted">—</span>';
+  const cell=(k,v)=>`<div class="pd-cell"><small>${k}</small>${v}</div>`;
+  return`<div class="pd">
+    <div class="pd-grid">
+      ${cell('Plus-money bets',`<b>${rec(r.plus)}</b><em>${pc(r.plus)}</em>`)}${cell('Minus-money bets',`<b>${rec(r.minus)}</b><em>${pc(r.minus)}</em>`)}
+      ${cell('Avg odds',`<b class="mono">${r.avgDec?amer(r.avgDec):'—'}</b>`)}${cell('Avg odds · wins',`<b class="mono good">${r.avgWinDec?amer(r.avgWinDec):'—'}</b>`)}${cell('Avg odds · losses',`<b class="mono bad">${r.avgLoseDec?amer(r.avgLoseDec):'—'}</b>`)}
+      ${cell('Best streak',`<b class="good">${r.bestHit?r.bestHit+' hits':'—'}</b>`)}${cell('Worst streak',`<b class="bad">${r.worstMiss?r.worstMiss+' misses':'—'}</b>`)}${cell('Bozo',`<b>${r.bozo}×</b><em>${r.bozoWeeks.length?h(r.bozoWeeks.join(', ')):'never'}</em>`)}
+    </div>
+    <div class="pd-bets">
+      <div class="pd-bet good-l"><small>Best hit</small>${bet(r.longestHit)}</div>
+      <div class="pd-bet"><small>Easiest hit</small>${bet(r.easiestHit)}</div>
+      <div class="pd-bet bad-l"><small>Worst miss</small>${bet(r.worstMissOdds)}</div>
+      ${r.closest?`<div class="pd-bet bad-l"><small>Closest miss</small><b>by ${fmtMargin(r.closest.m,'pts')}</b><span>${h(r.closest.text)}</span><small>${h(r.closest.wk)}</small></div>`:''}
+      ${r.sweat?`<div class="pd-bet good-l"><small>Sweatiest hit</small><b>by ${fmtMargin(r.sweat.m,'pts')}</b><span>${h(r.sweat.text)}</span><small>${h(r.sweat.wk)}</small></div>`:''}
+    </div></div>`;
 }
 function heatmap(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
@@ -1071,6 +1141,7 @@ const ACT={
       actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit()}}]})},
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
+  'player-detail'(el){detailOpen=detailOpen===el.dataset.mid?null:el.dataset.mid;render()},
   'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=scrollY;showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
