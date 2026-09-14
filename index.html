@@ -243,6 +243,8 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .pd-cell b{font-size:15px;font-weight:700}
 .pd-cell em{font-style:normal;font-size:11px;color:var(--muted);font-weight:500;white-space:normal;line-height:1.3}
 .pd-bets{display:flex;flex-direction:column;gap:6px}
+.pd-sub{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+.pd-bet .betchip{min-width:0}
 .pd-bet{background:var(--surface);border-radius:10px;padding:8px 10px;display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:center;border-left:3px solid var(--line2)}
 .pd-bet.good-l{border-left-color:var(--green)}.pd-bet.bad-l{border-left-color:var(--red)}
 .pd-bet small{grid-column:1/4;font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
@@ -258,6 +260,15 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .award small{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
 .award b{font-size:14px;font-weight:700}
 .award em{font-style:normal;font-size:12px;color:var(--muted);font-weight:500;line-height:1.3}
+.typerows,.teamrows{display:flex;flex-direction:column;gap:8px}
+.typerow,.teamrow{display:grid;grid-template-columns:1fr 90px 52px 40px;align-items:center;gap:10px;font-size:13px}
+.teamrow{grid-template-columns:24px 1fr 90px 52px 40px}
+.teamrow img{width:24px;height:24px;object-fit:contain}
+.tname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tbar{height:6px;background:var(--surface2);border-radius:4px;overflow:hidden}
+.tbar i{display:block;height:100%;background:var(--blue);border-radius:4px}
+.trec{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.tpct{font-weight:700;text-align:right;font-size:12px}
 .heat-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
 table.heat{border-collapse:separate;border-spacing:4px}
 .heat th{font-size:11px;font-weight:600;color:var(--muted);font-family:var(--mono)}
@@ -275,6 +286,10 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .call-body{flex:1;min-width:0;display:flex;flex-direction:column}
 .call-body b{font-weight:600;font-size:14px}
 .call-body small{color:var(--muted);font-size:12px;line-height:1.3}
+.betchip{display:inline-flex;align-items:center;gap:5px;min-width:0;vertical-align:middle}
+.betchip img{width:18px;height:18px;object-fit:contain;flex:none}
+.betchip .bt{white-space:normal;line-height:1.3}
+.betchip.lg img{width:22px;height:22px}
 .margin-pill{font-family:var(--mono);font-weight:600;font-size:12px;padding:5px 10px;border-radius:980px;background:var(--surface2);color:var(--muted);flex:none}
 .margin-pill.close{background:var(--amber-bg);color:#b25e00}
 @media(prefers-color-scheme:dark){.margin-pill.close{color:var(--amber)}}
@@ -378,7 +393,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-15.1';
+const APP_VERSION='2026-09-15.3';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -472,6 +487,17 @@ function migrateDB(d){
     const lg2=d.leagues.find(l=>l.id==='lg2');const x=lg2?.seasons.find(y=>y.id==='season-og2025');
     if(x){const fresh2=seedOG2025();for(const w of fresh2.weeks){if(!x.data.weeks.find(y=>y.id===w.id))x.data.weeks.push(w)}x.data.weeks.sort((a,b)=>a.num-b.num)}
     d.seedV=12;
+  }
+  if(!(d.seedV>=13)){
+    // The 5-man crew (2025, 2026) is its own group: Bozo University. Stags keeps the 2024 nine-man season.
+    const stags=d.leagues.find(l=>l.seasons?.some(x=>x.id==='season-2024'||x.id==='season-2025'));
+    if(stags&&!d.leagues.find(l=>l.id==='lg3')){
+      const moving=stags.seasons.filter(x=>x.id!=='season-2024');
+      if(moving.length){stags.seasons=stags.seasons.filter(x=>x.id==='season-2024');stags.activeSeason='season-2024';
+        const bu={id:'lg3',name:'Bozo University',seasons:moving,activeSeason:(moving.find(x=>x.name==='2026')||moving[0]).id};
+        d.leagues.splice(d.leagues.indexOf(stags)+1,0,bu);if(d.active===stags.id)d.active=bu.id}
+    }
+    d.seedV=13;
   }
   return d;
 }
@@ -711,11 +737,12 @@ function eligible(w){
 function stats(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
   const per={};
-  S.members.forEach(m=>per[m.id]={id:m.id,picks:0,hits:0,misses:0,pushes:0,pending:0,decSum:0,decN:0,bozo:0,spent:0,earned:0,cur:0,bestHit:0,worstMiss:0,killer:0,missMargins:[],closest:null,choke:null,sweat:null,history:[],plus:{w:0,l:0,p:0},minus:{w:0,l:0,p:0},winDec:[],loseDec:[],longestHit:null,easiestHit:null,worstMissOdds:null,bozoWeeks:[]});
-  const g={weeks:weeks.length,graded:0,won:0,lost:0,staked:0,paid:0,bestLegs:0,legsTotal:0,legsHit:0,bestOdds:null};
+  S.members.forEach(m=>per[m.id]={id:m.id,picks:0,hits:0,misses:0,pushes:0,pending:0,decSum:0,decN:0,bozo:0,spent:0,earned:0,cur:0,bestHit:0,worstMiss:0,killer:0,missMargins:[],closest:null,choke:null,sweat:null,history:[],plus:{w:0,l:0,p:0},minus:{w:0,l:0,p:0},winDec:[],loseDec:[],longestHit:null,easiestHit:null,worstMissOdds:null,bozoWeeks:[],byType:{},byTeam:{},bozoLegs:0,bozoLegsHit:0,bozoCashed:0,hitMargins:[]});
+  const g={weeks:weeks.length,graded:0,won:0,lost:0,staked:0,paid:0,bestLegs:0,legsTotal:0,legsHit:0,bestOdds:null,byType:{},byTeam:{},closestWeek:null};
   for(const w of weeks){
     const c=calc(w);
-    if(per[w.bozoId]){per[w.bozoId].bozo++;per[w.bozoId].spent+=c.stake;per[w.bozoId].bozoWeeks.push(wkShort(w))}
+    if(per[w.bozoId]){const pb=per[w.bozoId];pb.bozo++;pb.spent+=c.stake;pb.bozoWeeks.push(wkShort(w));if(c.graded){pb.bozoLegs+=c.hits+c.misses;pb.bozoLegsHit+=c.hits;if(c.result==='won')pb.bozoCashed++}}
+    if(c.graded&&c.n&&(!g.closestWeek||c.hits/(c.n-c.pushes||1)>g.closestWeek.rate))g.closestWeek={wk:wkShort(w),hits:c.hits,n:c.n-c.pushes,rate:c.hits/(c.n-c.pushes||1)};
     g.staked+=c.stake;
     if(c.result==='won'){g.won++;g.paid+=c.payout;if(g.bestOdds==null||c.dec>g.bestOdds)g.bestOdds=c.dec}
     if(c.result==='lost')g.lost++;
@@ -723,20 +750,21 @@ function stats(){
     g.legsTotal+=c.hits+c.misses;g.legsHit+=c.hits;g.bestLegs=Math.max(g.bestLegs,c.hits);
     for(const l of c.legs){
       const p=per[l.mid];if(!p)continue;
-      p.history.push({num:w.num,wk:wkShort(w),status:l.status,margin:l.margin,unit:l.unit,text:l.text,odds:l.oddsN});
+      p.history.push({num:w.num,wk:wkShort(w),status:l.status,margin:l.margin,unit:l.unit,text:l.text,odds:l.oddsN,teams:l.teams||[]});
       if(l.status==='pending'){p.pending++;continue}
-      p.picks++;if(l.oddsN!=null){p.decSum+=dec(l.oddsN);p.decN++;const side=l.oddsN>0?p.plus:p.minus;side[l.status==='hit'?'w':l.status==='miss'?'l':'p']++;
-        if(l.status==='hit'){p.winDec.push(dec(l.oddsN));if(!p.longestHit||l.oddsN>p.longestHit.odds)p.longestHit={odds:l.oddsN,text:l.text,wk:wkShort(w)};if(!p.easiestHit||l.oddsN<p.easiestHit.odds)p.easiestHit={odds:l.oddsN,text:l.text,wk:wkShort(w)}}
-        if(l.status==='miss'){p.loseDec.push(dec(l.oddsN));if(!p.worstMissOdds||l.oddsN<p.worstMissOdds.odds)p.worstMissOdds={odds:l.oddsN,text:l.text,wk:wkShort(w)}}}
+      p.picks++;{const k=l.status==='hit'?'w':l.status==='miss'?'l':'p';const bt=betType(l.text);(p.byType[bt]??={w:0,l:0,p:0})[k]++;(g.byType[bt]??={w:0,l:0,p:0})[k]++;for(const a of (l.teams||[])){(p.byTeam[a]??={w:0,l:0,p:0})[k]++;(g.byTeam[a]??={w:0,l:0,p:0})[k]++}}
+      if(l.oddsN!=null){p.decSum+=dec(l.oddsN);p.decN++;const side=l.oddsN>0?p.plus:p.minus;side[l.status==='hit'?'w':l.status==='miss'?'l':'p']++;
+        if(l.status==='hit'){p.winDec.push(dec(l.oddsN));if(!p.longestHit||l.oddsN>p.longestHit.odds)p.longestHit={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams};if(!p.easiestHit||l.oddsN<p.easiestHit.odds)p.easiestHit={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams}}
+        if(l.status==='miss'){p.loseDec.push(dec(l.oddsN));if(!p.worstMissOdds||l.oddsN<p.worstMissOdds.odds)p.worstMissOdds={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams}}}
       if(l.status==='hit'){
         p.hits++;p.cur=p.cur>=0?p.cur+1:1;p.bestHit=Math.max(p.bestHit,p.cur);
-        if(l.margin!=null&&(l.unit||'pts')==='pts'&&(p.sweat==null||+l.margin<p.sweat.m))p.sweat={m:+l.margin,num:w.num,wk:wkShort(w),text:l.text};
+        if(l.margin!=null&&(l.unit||'pts')==='pts'){p.hitMargins.push(+l.margin);if(p.sweat==null||+l.margin<p.sweat.m)p.sweat={m:+l.margin,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams}}
       }else if(l.status==='miss'){
         p.misses++;p.cur=p.cur<=0?p.cur-1:-1;p.worstMiss=Math.max(p.worstMiss,-p.cur);
         if(c.misses===1)p.killer++;
         if(l.margin!=null&&(l.unit||'pts')==='pts'){const m=+l.margin;p.missMargins.push(m);
-          if(p.closest==null||m<p.closest.m)p.closest={m,num:w.num,wk:wkShort(w),text:l.text};
-          if(p.choke==null||m>p.choke.m)p.choke={m,num:w.num,wk:wkShort(w),text:l.text}}
+          if(p.closest==null||m<p.closest.m)p.closest={m,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams};
+          if(p.choke==null||m>p.choke.m)p.choke={m,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams}}
       }else p.pushes++;
       if(c.result==='won')p.earned+=c.share;
     }
@@ -747,7 +775,9 @@ function stats(){
     p.avgDec=p.decN?p.decSum/p.decN:null;
     p.avgWinDec=p.winDec.length?p.winDec.reduce((a,b)=>a+b,0)/p.winDec.length:null;p.avgLoseDec=p.loseDec.length?p.loseDec.reduce((a,b)=>a+b,0)/p.loseDec.length:null;
     p.net=p.earned-p.spent;
-    p.avgMiss=p.missMargins.length?p.missMargins.reduce((a,b)=>a+b,0)/p.missMargins.length:null;
+    p.avgMiss=p.missMargins.length?p.missMargins.reduce((a,b)=>a+b,0)/p.missMargins.length:null;p.avgHitMargin=p.hitMargins.length?p.hitMargins.reduce((a,b)=>a+b,0)/p.hitMargins.length:null;
+    p.topTeam=Object.entries(p.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p))[0]||null;
+    p.bestType=Object.entries(p.byType).filter(([,o])=>o.w+o.l>=2).sort((a,b)=>b[1].w/(b[1].w+b[1].l)-a[1].w/(a[1].w+a[1].l))[0]||null;
   });
   return{per,g};
 }
@@ -765,6 +795,9 @@ function awards(per){
   add('🧊','Ice Cold',pick(p=>p.worstMiss>1?p.worstMiss:null),(p,v)=>`${v} straight misses`);
   add('💰','Bag Holder',pick(p=>p.net>0?p.net:null),(p,v)=>`${fmt$(v)} net`);
   add('🫠','Sweatiest Hit',pick(p=>p.sweat?-p.sweat.m:null),(p)=>`covered by ${p.sweat.m} · ${p.sweat.wk}`);
+  add('🐶','One-Team Guy',pick(p=>p.topTeam&&(p.topTeam[1].w+p.topTeam[1].l+p.topTeam[1].p)>=3?p.topTeam[1].w+p.topTeam[1].l+p.topTeam[1].p:null),(p)=>`${NICK[p.topTeam[0]]||p.topTeam[0]} ×${p.topTeam[1].w+p.topTeam[1].l+p.topTeam[1].p} · ${p.topTeam[1].w}-${p.topTeam[1].l}`);
+  add('🪦','Cursed Team',pick(p=>{const worst=Object.entries(p.byTeam).filter(([,o])=>o.w+o.l>=3).sort((a,b)=>(a[1].w/(a[1].w+a[1].l))-(b[1].w/(b[1].w+b[1].l)))[0];if(!worst)return null;p._cursed=worst;return 1-worst[1].w/(worst[1].w+worst[1].l)}),(p)=>`${NICK[p._cursed[0]]||p._cursed[0]} · ${p._cursed[1].w}-${p._cursed[1].l}`);
+  add('🧱','Bozo Wall',pick(p=>p.bozoLegs>=8?p.bozoLegsHit/p.bozoLegs:null),(p,v)=>`${pct(v)} legs hit as Bozo`);
   return A;
 }
 
@@ -831,6 +864,8 @@ function renderLeg(w,l){
 function pickIcon(l){const t=l.teams||[];
   if(!t.length)return`<button type="button" class="pickicon empty" data-act="pick-team" data-mid="${l.mid}" title="Set team">🏈</button>`;
   return`<button type="button" class="pickicon" data-act="pick-team" data-mid="${l.mid}" title="${t.map(a=>NICK[a]||a).join(' vs ')} — tap to change">${t.map(a=>`<img src="${LOGO(a)}" alt="${NICK[a]||a}" decoding="async">`).join('')}</button>`}
+function betType(text){const t=String(text||'').toLowerCase();if(!t||t.startsWith('('))return'Other';if(/moneyline|\bml\b/.test(t))return'Moneyline';if(/team total/.test(t))return'Team total';if(/\/ .*(over|under) \d|\b(over|under) \d+(\.5)?$/.test(t)&&!/\d\+ |yds|receptions|catches|attempts|goals|sacks/.test(t))return'Total';if(/[+-]\d+(\.5)?( \(alt\))?$/.test(t))return'Spread';return'Player prop'}
+function betChip(text,teams,cls=''){const t=(teams||[]).slice(0,2);return`<span class="betchip ${cls}">${t.map(a=>`<img src="${LOGO(a)}" alt="" decoding="async">`).join('')}<span class="bt">${h(text||'—')}</span></span>`}
 function resultBadge(c){
   const map={pending:['pending',c.n?`${c.n-c.pending}/${c.n} graded`:'empty'],won:['won','Cashed'],lost:['lost',`Lost · ${c.hits}/${c.n-c.pushes}`],void:['void','Void']};
   const[cls,txt]=map[c.result];return`<span class="badge ${cls}">${txt}</span>`;
@@ -875,7 +910,7 @@ function renderVote(w,c,isLast){
   return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} ${synced?`Everyone votes from their own phone${isAdmin()?', then you crown the winner':''}. Send your video in the chat as usual. ${voted}/${voters} votes in.`:`Tap + as each person votes, then crown the winner to open Week ${w.num+1}.`}</p>
     <div class="cands">${el.list.map(id=>{const m=member(id);const l=c.legs.find(x=>x.mid===id);const v=votes[id]||0;
       const sub=l.status==='miss'?(l.margin!=null?`missed by ${fmtMargin(l.margin,l.unit)}`:'missed'):l.status==='push'?'pushed':'hit';
-      return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)}</b><small>${sub}${l.text?' · '+h(l.text):''}</small>${synced&&Object.keys(ballots).some(v=>ballots[v]===id)?`<div class="voters">votes: ${Object.keys(ballots).filter(v=>ballots[v]===id).map(v=>h(member(v)?.name||'?')).join(', ')}</div>`:''}</div>${synced?`<div class="tally"><b class="mono">${cnt(id)}</b>${me?`<button class="btn sm ${myVote===id?'voted':''}" data-act="cast-vote" data-mid="${id}">${myVote===id?'✓ Voted':'Vote'}</button>`:''}</div>`:`<div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${v}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div>`}</div>`}).join('')}</div>
+      return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${l.text?betChip(l.text,l.teams):''}</small>${synced&&Object.keys(ballots).some(v=>ballots[v]===id)?`<div class="voters">votes: ${Object.keys(ballots).filter(v=>ballots[v]===id).map(v=>h(member(v)?.name||'?')).join(', ')}</div>`:''}</div>${synced?`<div class="tally"><b class="mono">${cnt(id)}</b>${me?`<button class="btn sm ${myVote===id?'voted':''}" data-act="cast-vote" data-mid="${id}">${myVote===id?'✓ Voted':'Vote'}</button>`:''}</div>`:`<div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${v}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div>`}</div>`}).join('')}</div>
     ${synced&&!me?`<button class="btn block sm" data-act="pick-me">Tell the app who you are to vote</button>`:''}
     ${isAdmin()?`<div class="vote-actions">
       ${leaders.length===1?`<button class="btn primary block" data-act="crown" data-mid="${leaders[0]}">🤡 Crown ${h(member(leaders[0]).name)} · start Week ${w.num+1}</button>`
@@ -958,7 +993,7 @@ function renderStatsInner(){
   return scopeBar()+`<div class="tiles">
     <div class="tile"><small>Cashed</small><b>${g.won}<span class="muted" style="font-size:12px">/${g.graded}</span></b><em>parlays</em></div>
     <div class="tile"><small>Legs hit</small><b>${pct(legRate)}</b><em>${g.legsHit}/${g.legsTotal}</em></div>
-    <div class="tile"><small>Best wk</small><b>${g.bestLegs}</b><em>legs hit</em></div>
+    <div class="tile"><small>Closest</small><b>${g.closestWeek?g.closestWeek.hits+'<span class="muted" style="font-size:12px">/'+g.closestWeek.n+'</span>':'—'}</b><em>${g.closestWeek?h(g.closestWeek.wk):'legs'}</em></div>
     <div class="tile"><small>Net</small><b class="${net>=0?'good':'bad'}">${fmt$0(net)}</b><em>${fmt$0(g.paid)} in</em></div>
   </div>
   <section class="card"><h3>Leaderboard</h3><div class="lb-wrap"><table class="lb"><thead><tr><th>Player</th>${COLS.map(([k,l])=>`<th class="${sortKey===k?'on':''}" data-act="sort" data-key="${k}">${l}</th>`).join('')}</tr></thead><tbody>
@@ -971,26 +1006,40 @@ function renderStatsInner(){
       <td class="${r.cur>0?'good':r.cur<0?'bad':''}">${r.cur>0?'W'+r.cur:r.cur<0?'L'+(-r.cur):'—'}</td></tr>`).join('')}
   </tbody></table></div>${(()=>{const r=rows.find(x=>x.m.id===detailOpen);return r?`<div class="pd-wrap"><div class="pd-title"><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span><b>${h(r.m.name)}</b><span class="muted">${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''} · ${pct(r.rate)}</span><button class="mini" data-act="player-detail" data-mid="${r.m.id}" title="Close">×</button></div>${playerDetail(r)}</div>`:''})()}</section>
   ${A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map(a=>{const m=member(a.who);return`<div class="award"><span class="ic">${a.icon}</span><div class="ab"><small>${a.name}</small><b style="color:${m.color}">${h(m.name)}</b><em>${h(a.val)}</em></div></div>`}).join('')}</div></section>`:''}
+  ${betTypeCard(g)}${teamsCard(g)}
   <section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--pink);background:transparent"></i>bozo</span></div></section>
   ${closeCalls(per)}`;
 }
 function playerDetail(r){
   const rec=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`,pc=o=>(o.w+o.l)?Math.round(o.w/(o.w+o.l)*100)+'%':'—';
-  const bet=x=>x?`<b class="mono">${fmtOdds(x.odds)}</b><span>${h(x.text)}</span><small>${h(x.wk)}</small>`:'<span class="muted">—</span>';
+  const bet=x=>x?`<b class="mono">${fmtOdds(x.odds)}</b>${betChip(x.text,x.teams)}<small>${h(x.wk)}</small>`:'<span class="muted">—</span>';
   const cell=(k,v)=>`<div class="pd-cell"><small>${k}</small>${v}</div>`;
   return`<div class="pd">
     <div class="pd-grid">
       ${cell('Plus-money bets',`<b>${rec(r.plus)}</b><em>${pc(r.plus)}</em>`)}${cell('Minus-money bets',`<b>${rec(r.minus)}</b><em>${pc(r.minus)}</em>`)}
       ${cell('Avg odds',`<b class="mono">${r.avgDec?amer(r.avgDec):'—'}</b>`)}${cell('Avg odds · wins',`<b class="mono good">${r.avgWinDec?amer(r.avgWinDec):'—'}</b>`)}${cell('Avg odds · losses',`<b class="mono bad">${r.avgLoseDec?amer(r.avgLoseDec):'—'}</b>`)}
       ${cell('Best streak',`<b class="good">${r.bestHit?r.bestHit+' hits':'—'}</b>`)}${cell('Worst streak',`<b class="bad">${r.worstMiss?r.worstMiss+' misses':'—'}</b>`)}${cell('Bozo',`<b>${r.bozo}×</b><em>${r.bozoWeeks.length?h(r.bozoWeeks.join(', ')):'never'}</em>`)}
+      ${cell('As Bozo',`<b>${r.bozoLegs?Math.round(r.bozoLegsHit/r.bozoLegs*100)+'%':'—'}</b><em>${r.bozoLegs?`${r.bozoLegsHit}/${r.bozoLegs} legs hit · ${r.bozoCashed} cashed`:'never fronted it'}</em>`)}
+      ${cell('Avg cover',`<b class="good">${r.avgHitMargin!=null?'+'+r.avgHitMargin.toFixed(1):'—'}</b><em>pts when hitting</em>`)}${cell('Avg miss',`<b class="bad">${r.avgMiss!=null?'-'+r.avgMiss.toFixed(1):'—'}</b><em>pts when missing</em>`)}
+      ${cell('Best at',r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>')}
     </div>
+    ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type</div><div class="typerows">${Object.entries(r.byType).sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l)).map(([k,o])=>{const n=o.w+o.l;const rt=n?o.w/n:0;return`<div class="typerow"><span class="tname">${h(k)}</span><span class="tbar"><i style="width:${Math.round(rt*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${rt>=.5?'good':'bad'}">${n?Math.round(rt*100)+'%':'—'}</span></div>`}).join('')}</div>`:''}
+    ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most</div><div class="teamrows">${Object.entries(r.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,5).map(([a,o])=>{const n=o.w+o.l;const rt=n?o.w/n:0;return`<div class="teamrow"><img src="${LOGO(a)}" alt=""><span class="tname">${h(NICK[a]||a)}</span><span class="tbar"><i style="width:${Math.round(rt*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${rt>=.5?'good':'bad'}">${n?Math.round(rt*100)+'%':'—'}</span></div>`}).join('')}</div>`:''}
     <div class="pd-bets">
       <div class="pd-bet good-l"><small>Best hit</small>${bet(r.longestHit)}</div>
       <div class="pd-bet"><small>Easiest hit</small>${bet(r.easiestHit)}</div>
       <div class="pd-bet bad-l"><small>Worst miss</small>${bet(r.worstMissOdds)}</div>
-      ${r.closest?`<div class="pd-bet bad-l"><small>Closest miss</small><b>by ${fmtMargin(r.closest.m,'pts')}</b><span>${h(r.closest.text)}</span><small>${h(r.closest.wk)}</small></div>`:''}
-      ${r.sweat?`<div class="pd-bet good-l"><small>Sweatiest hit</small><b>by ${fmtMargin(r.sweat.m,'pts')}</b><span>${h(r.sweat.text)}</span><small>${h(r.sweat.wk)}</small></div>`:''}
+      ${r.closest?`<div class="pd-bet bad-l"><small>Closest miss</small><b>by ${fmtMargin(r.closest.m,'pts')}</b>${betChip(r.closest.text,r.closest.teams)}<small>${h(r.closest.wk)}</small></div>`:''}
+      ${r.sweat?`<div class="pd-bet good-l"><small>Sweatiest hit</small><b>by ${fmtMargin(r.sweat.m,'pts')}</b>${betChip(r.sweat.text,r.sweat.teams)}<small>${h(r.sweat.wk)}</small></div>`:''}
     </div></div>`;
+}
+function betTypeCard(g){
+  const rows=Object.entries(g.byType||{}).filter(([k])=>k!=='Other').sort((a,b)=>(b[1].w+b[1].l)-(a[1].w+a[1].l));if(!rows.length)return'';
+  return`<section class="card"><h3>By bet type</h3><div class="typerows">${rows.map(([k,o])=>{const n=o.w+o.l;const r=n?o.w/n:0;return`<div class="typerow"><span class="tname">${h(k)}</span><span class="tbar"><i style="width:${Math.round(r*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span></div>`}).join('')}</div></section>`;
+}
+function teamsCard(g){
+  const rows=Object.entries(g.byTeam||{}).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,10);if(!rows.length)return'';
+  return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team.</p><div class="teamrows">${rows.map(([a,o])=>{const n=o.w+o.l;const r=n?o.w/n:0;return`<div class="teamrow"><img src="${LOGO(a)}" alt=""><span class="tname">${h(NICK[a]||a)}</span><span class="tbar"><i style="width:${Math.round(r*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span></div>`}).join('')}</div></section>`;
 }
 function heatmap(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
@@ -1000,7 +1049,7 @@ function heatmap(){
 function closeCalls(per){
   const all=[];Object.values(per).forEach(p=>p.history.forEach(x=>{if(x.status==='miss'&&x.margin!=null)all.push({...x,id:p.id})}));
   if(!all.length)return'';const rank={rec:0,pts:1,yds:2};all.sort((a,b)=>(rank[a.unit||'pts']-rank[b.unit||'pts'])||(a.margin-b.margin));
-  const row=x=>{const m=member(x.id);return`<div class="call"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="call-body"><b>${h(m.name)}</b><small>${h(x.wk||'W'+x.num)} · ${h(x.text||'—')}</small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`};
+  const row=x=>{const m=member(x.id);return`<div class="call"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="call-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${h(x.wk||'W'+x.num)}</span></b><small>${betChip(x.text,x.teams)}</small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`};
   const worst=[...all].sort((a,b)=>(rank[b.unit||'pts']-rank[a.unit||'pts'])||(b.margin-a.margin));
   return`<section class="card"><h3>Closest misses</h3><div class="calls">${all.slice(0,6).map(row).join('')}</div>${all.length>6?`<h3 style="margin-top:16px">Biggest chokes</h3><div class="calls">${worst.slice(0,3).map(row).join('')}</div>`:''}</section>`;
 }
