@@ -33,7 +33,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(900px 500px at 50% -180px,rgba(176,124,255,.16),transparent 60%),radial-gradient(700px 400px at 110% 110%,rgba(255,95,176,.07),transparent 60%);pointer-events:none;z-index:0}
 #app{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 14px calc(100px + env(safe-area-inset-bottom))}
 .top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 2px 12px;position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 60%,rgba(10,14,19,0))}
-.brand{display:flex;align-items:center;gap:11px}
+.brand{display:flex;align-items:center;gap:11px;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.brand small::after{content:' ▾';opacity:.6}
 .logo{width:40px;height:40px;border-radius:13px;background:linear-gradient(135deg,var(--pink),var(--purple));display:grid;place-items:center;font-size:22px;box-shadow:0 8px 24px rgba(176,124,255,.35);animation:bob 4s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
 .brand h1{font-size:18px;font-weight:900;letter-spacing:-.03em;line-height:1.1}
@@ -281,7 +282,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 <body>
 <div id="app">
   <header class="top">
-    <div class="brand"><div class="logo">🤡</div><div><h1>Bozo Parlay</h1><small id="seasonLabel">Season</small></div></div>
+    <button class="brand" data-act="leagues" title="Switch league"><div class="logo">🤡</div><div><h1>Bozo Parlay</h1><small id="seasonLabel">Season</small></div></button>
     <div id="topRight"></div>
   </header>
   <main id="view"></main>
@@ -309,7 +310,16 @@ const SEED_MARGINS={m1:13,m2:9.5,m3:3.5,m4:22.5,m5:7.5};
 function migrate(s){s.members??=[];s.weeks??=[];s.stake??=10;s.view??='week';s.weeks.forEach(w=>{w.picks??={};w.votes??={};w.stake??=s.stake});
   if(!(s.seedV>=2)){const w=s.weeks.find(w=>w.id==='w1');if(w)for(const[k,v]of Object.entries(SEED_MARGINS)){const p=w.picks[k];if(p&&p.margin==null&&(p.status==='hit'||p.status==='miss'))p.margin=v}s.seedV=2}
   return s}
-function load(){try{const r=localStorage.getItem(KEY);if(r)return migrate(JSON.parse(r))}catch(e){console.warn('load failed',e)}return seedSeason()}
+const KEY2='bozo-parlay-v2';
+let DB={leagues:[],active:null};
+function league(){return DB.leagues.find(l=>l.id===DB.active)||DB.leagues[0]}
+function setS(data){league().data=data;S=data}
+function loadDB(){
+  try{const r=localStorage.getItem(KEY2);if(r){const d=JSON.parse(r);if(Array.isArray(d.leagues)&&d.leagues.length){d.leagues.forEach(l=>{l.data=migrate(l.data||fresh());l.name||=l.data.season||'League'});if(!d.leagues.find(l=>l.id===d.active))d.active=d.leagues[0].id;return d}}}catch(e){console.warn('load failed',e)}
+  let data=null;try{const r=localStorage.getItem(KEY);if(r)data=migrate(JSON.parse(r))}catch(e){console.warn('v1 load failed',e)}
+  if(!data)data=seedSeason();
+  const id=uid();return{leagues:[{id,name:data.season||'League 1',data}],active:id};
+}
 /* Real season seed — used the first time the app opens with no saved data */
 function seedSeason(){
   const s=fresh();s.season='2026 NFL';
@@ -322,9 +332,9 @@ function seedSeason(){
     m5:{text:'ARI/LAC O47.5',odds:'-104',status:'miss',margin:7.5}}};
   s.weeks.push(w);s.currentWeekId='w1';s.seedV=2;return s;
 }
-let S=load();
+DB=loadDB();let S=league().data;
 let saveT;
-function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){toast('Could not save — storage full or blocked. Export a backup.','bad')}},60)}
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY2,JSON.stringify(DB))}catch(e){toast('Could not save — storage full or blocked. Export a backup.','bad')}},60)}
 function commit(){save();render()}
 
 /* ============================== HELPERS ============================== */
@@ -440,10 +450,11 @@ function render(){
   const main=document.getElementById('view');
   main.innerHTML=v==='week'?renderWeek():v==='history'?renderHistory():v==='stats'?renderStats():renderCrew();
   main.classList.remove('enter');void main.offsetWidth;main.classList.add('enter');
-  document.getElementById('seasonLabel').textContent=S.season||(S.weeks.length?`${S.weeks.length} week${S.weeks.length>1?'s':''} deep`:'Season');
+  document.getElementById('seasonLabel').textContent=leagueLabel();
   const st=S.weeks.length?stats().g:null;
   document.getElementById('topRight').innerHTML=st?`<span class="badge ${st.paid-st.staked>=0?'won':'lost'}" style="font-size:11px">${st.won}–${st.lost} · ${fmt$0(st.paid-st.staked)}</span>`:'';
 }
+function leagueLabel(){const l=league();const n=l.name||'League';return S.season&&S.season!==n?`${n} · ${S.season}`:n}
 const empty=(t,s)=>`<div class="empty"><div class="empty-ic">🤡</div><b>${t}</b><p class="muted">${s}</p></div>`;
 
 /* ---- week ---- */
@@ -626,8 +637,13 @@ function closeCalls(per){
 }
 
 /* ---- crew ---- */
+function renderLeagues(){
+  return`<section class="card"><h3>Leagues</h3><div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;return`<div class="mrow" style="${on?'border-color:rgba(176,124,255,.5)':''}"><div class="avatar" style="--c:${on?'#b07cff':'#3a4556'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${l.data.members.length} players · ${l.data.weeks.length} week${l.data.weeks.length===1?'':'s'}${on?' · active':''}</small></div>${on?`<button class="mini" data-act="rename-league" data-lid="${l.id}" title="Rename">✎</button>${DB.leagues.length>1?`<button class="mini danger" data-act="delete-league" data-lid="${l.id}" title="Delete league">×</button>`:''}`:`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>
+  <button class="btn block" data-act="new-league">＋ New league</button>
+  <p class="muted tiny" style="margin-top:8px">Each league has its own crew, weeks and stats. Tap the logo up top to switch quickly.</p></section>`;
+}
 function renderCrew(){
-  return`<section class="card"><h3>Crew</h3>
+  return renderLeagues()+`<section class="card"><h3>Crew</h3>
     <div class="mlist">${S.members.map(m=>`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?'Active':'Benched — skipped on new weeks'}</small></div><button class="mini" data-act="edit-member" data-mid="${m.id}" title="Edit">✎</button><button class="mini" data-act="toggle-member" data-mid="${m.id}" title="${m.active?'Bench':'Activate'}">${m.active?'⏸':'▶'}</button></div>`).join('')||'<p class="muted tiny">Nobody yet.</p>'}</div>
     <form class="addrow" data-form="add-member"><input placeholder="Add a friend" name="name" autocomplete="off"><button class="btn sm primary">Add</button></form>
   </section>
@@ -805,8 +821,13 @@ const ACT={
   sort(el){sortKey=el.dataset.key;render()},
   export(){download(`bozo-parlay-${today()}.json`,JSON.stringify(S,null,2));toast('Backup downloaded')},
   import(){document.getElementById('importFile').click()},
-  sample(){const go=()=>{S=sampleSeason();commit();toast('Sample season loaded — reset from Crew when you\'re ready','good')};if(S.weeks.length||S.members.length)confirm2('Replace current data?','Loading the sample overwrites what\'s here. Export a backup first if you want it.','Load sample',go,'primary');else go()},
-  reset(){confirm2('Reset everything?','Wipes the crew, every week and all stats from this browser. Export a backup first if you want to keep it.','Reset',()=>{S=fresh();commit();toast('Fresh slate')})},
+  sample(){const go=()=>{setS(sampleSeason());commit();toast('Sample season loaded — reset from Crew when you\'re ready','good')};if(S.weeks.length||S.members.length)confirm2('Replace current data?','Loading the sample overwrites what\'s here. Export a backup first if you want it.','Load sample',go,'primary');else go()},
+  reset(){confirm2('Reset everything?','Wipes the crew, every week and all stats from this browser. Export a backup first if you want to keep it.','Reset',()=>{setS(fresh());commit();toast('Fresh slate')})},
+  leagues(){modal({title:'Leagues',body:`<div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;return`<div class="mrow" style="${on?'border-color:rgba(176,124,255,.5)':''}"><div class="avatar" style="--c:${on?'#b07cff':'#3a4556'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${l.data.members.length} players · ${l.data.weeks.length} wk</small></div>${on?'<span class="tag bozo">Active</span>':`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>`,actions:[{label:'Close',cls:'ghost'},{label:'＋ New league',cls:'primary',onClick:()=>{ACT['new-league']();return false}}]})},
+  'switch-league'(el){DB.active=el.dataset.lid;S=league().data;closeModal();commit();toast(`Switched to ${league().name}`);window.scrollTo({top:0})},
+  'new-league'(){modal({title:'New league',body:`<p>A fresh league with its own crew and season.</p><input id="lgName" placeholder="League name — e.g. Work guys" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n){toast('Give it a name','bad');return false}const d=fresh();d.season=n;const id=uid();DB.leagues.push({id,name:n,data:d});DB.active=id;S=d;commit();toast(`${n} created — add the crew`);window.scrollTo({top:0})}}],onOpen:()=>setTimeout(()=>document.getElementById('lgName')?.focus(),80)})},
+  'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;commit()}}]})},
+  'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;confirm2(`Delete ${l.name}?`,`Removes this league's crew, ${l.data.weeks.length} week${l.data.weeks.length===1?'':'s'} and stats from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=league().data;commit();toast(`${l.name} deleted`)})},
   'modal-close'(el,e){if(e.target===el)closeModal()},
   'modal-action'(el){const a=document.getElementById('modal-root')._actions?.[el.dataset.i];const r=a?.onClick?.();if(r!==false)closeModal()},
 };
@@ -822,7 +843,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     if(c==='margin')p.margin=e.target.value===''?null:Math.abs(Number(e.target.value));else p[c]=e.target.value;
     save();if(c==='odds')patchTicket(w)}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save()}
-  else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=S.season||'Season'}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
+  else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=leagueLabel()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
 });
 document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a]=b.split('|');
   if(k==='add-leg'&&e.target.value){const w=week(a);w.picks[e.target.value]={text:'',odds:'',status:'pending',margin:null};w.votes={};commit()}
@@ -830,7 +851,7 @@ document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)retur
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 document.getElementById('importFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.members)||!Array.isArray(o.weeks))throw new Error('not a Bozo Parlay backup');
-    const go=()=>{S=migrate(o);commit();toast(`Imported ${S.members.length} players, ${S.weeks.length} weeks`,'good')};
+    const go=()=>{setS(migrate(o));commit();toast(`Imported ${S.members.length} players, ${S.weeks.length} weeks`,'good')};
     if(S.weeks.length)confirm2('Replace current data?',`The backup has ${o.members.length} players and ${o.weeks.length} weeks. It will replace what's here.`,'Import',go,'primary');else go()}
     catch(err){toast('Import failed: '+err.message,'bad')}e.target.value=''};r.readAsText(f)});
 
