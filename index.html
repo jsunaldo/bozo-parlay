@@ -346,7 +346,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.14';
+const APP_VERSION='2026-09-14.15';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -645,7 +645,7 @@ function renderTicket(w,c){
   return`<section class="ticket ${c.result}" id="ticket">
     <div class="ticket-head">
       <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c)}</div></div>
-      <div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'#888'}">${h(b?.name||'Nobody')}</span><span class="is-bozo">is the Bozo</span><button class="mini" data-act="change-bozo" title="Change bozo">✎</button></div>
+      <div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':'Bozo — tap ✎ to set'}</span><button class="mini" data-act="change-bozo" title="Change bozo">✎</button></div>
     </div>
     <div class="legs">${c.legs.map(l=>renderLeg(w,l)).join('')||`<div class="leg" style="grid-template-columns:1fr;color:var(--muted)">No legs yet — add one below.</div>`}</div>
     ${missing.length?`<div class="addleg"><select data-bind="add-leg|${w.id}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${m.id}">${h(m.name)}</option>`).join('')}</select></div>`:''}
@@ -768,17 +768,19 @@ function renderHistory(){
   </div>
   ${[...S.weeks].reverse().map(w=>{const c=calc(w);const b=member(w.bozoId);
     return`<button class="wk ${c.result}" data-act="open-week" data-wid="${w.id}">
-      <div class="wk-l"><div class="wk-num">${h(wkShort(w))}</div><div><div class="wk-title">🤡 ${h(b?.name||'—')}</div><div class="wk-sub">${fmtDate(w.date)}${w.date?' · ':''}${c.n} legs · ${c.n?amer(c.dec):'—'}${c.result==='won'?' · '+fmt$(c.payout):''}</div></div></div>
+      <div class="wk-l"><div class="wk-num">${h(wkShort(w))}</div><div><div class="wk-title">🤡 ${h(b?.name||'Unknown')}</div><div class="wk-sub">${fmtDate(w.date)}${w.date?' · ':''}${c.n} legs · ${c.n?amer(c.dec):'—'}${c.result==='won'?' · '+fmt$(c.payout):''}</div></div></div>
       <div class="wk-r"><div class="dots">${c.legs.map(l=>`<span class="dot ${l.status}" style="--c:${member(l.mid)?.color}" title="${h(member(l.mid)?.name)}"></span>`).join('')}</div>${resultBadge(c)}</div>
     </button>`}).join('')}`;
 }
 
 /* ---- stats ---- */
 let sortKey='rate',statScope='season',ALLTIME=null;
+const ALIASES={jase:'jason',jay:'jason',murphy:'murph',jimmy:'jim'};
+const canonName=n=>{const k=String(n||'').trim().toLowerCase().replace(/\s*\(.*?\)\s*$/,'');return ALIASES[k]||k};
 function allTimeSeason(){
   const l=league();const v=fresh();v.season='All-time';v.view='stats';const byName={};let n=0;
   for(const sn of seasonSorted(l).reverse()){const d=sn.data;const map={};
-    for(const m of d.members){const k=m.name.trim().toLowerCase();if(!byName[k]){byName[k]={id:'a'+(++n),name:m.name,color:m.color,active:m.active};v.members.push(byName[k])}else if(m.active)byName[k].active=true;map[m.id]=byName[k].id}
+    for(const m of d.members){const k=canonName(m.name);if(!byName[k]){byName[k]={id:'a'+(++n),name:m.name,color:m.color,active:m.active};v.members.push(byName[k])}else if(m.active)byName[k].active=true;map[m.id]=byName[k].id}
     for(const w of [...d.weeks].sort((a,b)=>a.num-b.num)){const nw={id:sn.id+'|'+w.id,num:v.weeks.length+1,date:w.date,stake:w.stake,bozoId:map[w.bozoId]||null,votes:{},picks:{},label:`${sn.name} · ${wkName(w)}`,short:`'${String(sn.name).slice(-2)} ${wkShort(w)}`,col:wkShort(w),seasonName:String(sn.name)};
       for(const[mid,p]of Object.entries(w.picks))if(map[mid])nw.picks[map[mid]]=p;v.weeks.push(nw)}}
   return v;
@@ -856,7 +858,7 @@ function renderCrew(){
 /* ============================== RECAP ============================== */
 function recap(w){
   const c=calc(w);const b=member(w.bozoId);
-  const L=[`🤡 Bozo Parlay — ${wkName(w)}${S.season?' · '+S.season:''}`,`Bozo: ${b?.name||'—'} (${fmt$0(c.stake)})`,''];
+  const L=[`🤡 Bozo Parlay — ${wkName(w)}${S.season?' · '+S.season:''}`,`Bozo: ${b?.name||'Unknown'} (${fmt$0(c.stake)})`,''];
   for(const l of c.legs){const m=member(l.mid);const ic={hit:'✅',miss:'❌',push:'➖',pending:'⏳'}[l.status];
     let s=`${ic} ${m?.name}: ${l.text||'(no pick)'}${l.oddsN!=null?' ('+fmtOdds(l.oddsN)+')':''}`;
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss'))s+=` — ${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`;L.push(s)}
@@ -899,7 +901,7 @@ async function slipImage(w){
   x.fillStyle=pill[2];x.textAlign='center';x.fillText(pill[0],R-pw/2,125);try{x.letterSpacing='0px'}catch(e){}
   // bozo line
   x.textAlign='left';x.font='60px "Apple Color Emoji","Segoe UI Emoji",sans-serif';x.fillText('🤡',L,218);
-  x.font=F(700,58);x.fillStyle=b?.color||T;const bn=b?.name||'Nobody';x.fillText(bn,L+84,216);
+  x.font=F(700,58);x.fillStyle=b?.color||MU;const bn=b?.name||'Unknown';x.fillText(bn,L+84,216);
   const bw=x.measureText(bn).width;x.font=F(500,36);x.fillStyle=MU;x.fillText('is the Bozo',L+84+bw+18,216);
   // legs
   let y=262;x.strokeStyle='rgba(0,0,0,.08)';x.lineWidth=2;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();
@@ -1076,7 +1078,7 @@ const ACT={
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const fn=ACT[el.dataset.act];if(fn)fn(el,e)});
 document.addEventListener('submit',e=>{const f=e.target.closest('[data-form]');if(!f)return;e.preventDefault();
-  if(f.dataset.form==='add-member'){const n=f.name.value.trim();if(!n)return;if(S.members.some(m=>m.name.toLowerCase()===n.toLowerCase())){toast('Already on the crew','bad');return}
+  if(f.dataset.form==='add-member'){const n=f.name.value.trim();if(!n)return;if(S.members.some(m=>canonName(m.name)===canonName(n))){toast('Already on the crew (same person under another name)','bad');return}
     S.members.push({id:uid(),name:n,color:PALETTE[S.members.length%PALETTE.length],active:true});
     const lw=lastWeek();if(lw&&!lw.picks){}
     commit();setTimeout(()=>document.querySelector('[data-form="add-member"] input')?.focus(),30)}
