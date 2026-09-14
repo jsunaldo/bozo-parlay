@@ -119,15 +119,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .bozo-name{font-size:24px;font-weight:700;letter-spacing:-.03em;color:var(--c)}
 .is-bozo{color:var(--muted);font-weight:500;font-size:17px}
 .legs{border-top:1px solid var(--line)}
-.leg{padding:14px 18px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:52px 1fr auto;gap:10px 12px;align-items:center;transition:background .35s;position:relative}
+.leg{padding:14px 18px;border-bottom:1px solid var(--line);display:grid;grid-template-columns:36px 1fr auto;gap:10px 12px;align-items:center;transition:background .35s;position:relative}
 .leg::before{content:'';position:absolute;left:0;top:0;bottom:0;width:4px;background:transparent;transition:background .3s}
 .leg.hit::before{background:var(--green)}.leg.miss::before{background:var(--red)}.leg.push::before{background:var(--amber)}
-.legpic{position:relative;width:52px;height:52px;border:0;background:none;padding:0;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
-.legpic img{width:46px;height:46px;object-fit:contain;filter:drop-shadow(0 1px 2px rgba(0,0,0,.15))}
-.legpic.two img{width:34px;height:34px;position:absolute}
-.legpic.two img:first-child{left:0;top:0}.legpic.two img:last-child{right:0;bottom:0}
-.legpic .avatar{position:absolute;right:-4px;bottom:-4px;width:22px;height:22px;font-size:9px;box-shadow:0 0 0 2px var(--surface)}
-.legpic.noteam .avatar{position:static;width:44px;height:44px;font-size:14px;box-shadow:none}
+.matchup{grid-column:2/4;display:flex;align-items:center;gap:6px;border:0;background:none;padding:0;font:inherit;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;min-width:0;text-align:left;-webkit-tap-highlight-color:transparent}
+.matchup img{width:28px;height:28px;object-fit:contain;flex:none}
+.matchup .team{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.matchup .vs{color:var(--dim);font-size:10px;font-weight:700;letter-spacing:.08em;margin:0 6px;flex:none}
+.matchup.empty{color:var(--dim);font-weight:500;font-size:12px}
+.matchup:hover .team{color:var(--text)}
 .leg-top{display:flex;align-items:center;gap:8px;min-width:0}
 .leg-name{font-weight:600;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;letter-spacing:-.01em}
 .leg-top .mini{margin-left:auto;width:22px;height:22px;font-size:13px;opacity:.5;background:transparent}
@@ -318,9 +318,10 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-14.5';
+const APP_VERSION='2026-09-14.6';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
+const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
 const LOGO=a=>`https://a.espncdn.com/i/teamlogos/nfl/500/${a.toLowerCase()}.png`;
 const esc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 function detectTeams(text){const out=[];const t=String(text||'');
@@ -540,19 +541,21 @@ function renderLeg(w,l){
   const marginLabel=l.status==='hit'?'Covered by':'Missed by';const unit=l.unit||'pts';
   const seg=['hit','miss','push'].map(st=>`<button class="${st} ${l.status===st?'on':''}" data-act="status" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('');
   return`<div class="leg ${l.status}" data-leg="${l.mid}">
-    ${legPic(l,m)}
+    <div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div>
     <div class="leg-top"><span class="leg-name">${h(m.name)}</span>${isBozo?'<span class="bz-ic" title="This week\'s Bozo">🤡</span>':''}<span class="tag warn" data-warn="${l.mid}" ${bad?'':'hidden'}>Too heavy</span><button class="mini danger" data-act="remove-leg" data-mid="${l.mid}" title="Remove leg">×</button></div>
     <div class="seg">${seg}</div>
     <div class="leg-inputs">
       <input placeholder="Pick — e.g. Chiefs -3.5" value="${h(l.text)}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next">
       <input class="mono ${bad?'bad':''}" placeholder="-110" value="${h(l.odds)}" data-bind="pick|${w.id}|${l.mid}|odds" data-odds="${l.mid}" autocomplete="off" inputmode="text">
     </div>
+    ${matchupHtml(l)}
     ${l.status==='hit'||l.status==='miss'?`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${marginLabel}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal">`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit">${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`:''}
   </div>`;
 }
-function legPic(l,m){const t=l.teams||[];const av=`<span class="avatar" style="--c:${m.color}">${h(initials(m.name))}</span>`;
-  if(!t.length)return`<button class="legpic noteam" data-act="pick-team" data-mid="${l.mid}" title="Set team">${av}</button>`;
-  return`<button class="legpic ${t.length>1?'two':''}" data-act="pick-team" data-mid="${l.mid}" title="${t.join(' / ')} — tap to change">${t.map(a=>`<img src="${LOGO(a)}" alt="${a}" decoding="async">`).join('')}${av}</button>`}
+function matchupHtml(l){const t=l.teams||[];
+  if(!t.length)return`<button class="matchup empty" data-act="pick-team" data-mid="${l.mid}">＋ Add team</button>`;
+  const team=a=>`<span class="team"><img src="${LOGO(a)}" alt="" decoding="async">${NICK[a]||a}</span>`;
+  return`<button class="matchup" data-act="pick-team" data-mid="${l.mid}" title="Tap to change">${t.map(team).join('<span class="vs">VS</span>')}</button>`}
 function resultBadge(c){
   const map={pending:['pending',c.n?`${c.n-c.pending}/${c.n} graded`:'empty'],won:['won','Cashed'],lost:['lost',`Lost · ${c.hits}/${c.n-c.pushes}`],void:['void','Void']};
   const[cls,txt]=map[c.result];return`<span class="badge ${cls}">${txt}</span>`;
@@ -736,7 +739,7 @@ async function slipImage(w){
   const c=calc(w);const b=member(w.bozoId);
   try{await Promise.all([document.fonts.load('900 60px Inter'),document.fonts.load('800 32px Inter'),document.fonts.load('600 28px Inter'),document.fonts.load('700 36px "JetBrains Mono"')])}catch(e){}
   const F=(wt,sz,mono)=>`${wt} ${sz}px ${mono?'"SF Mono",ui-monospace,"JetBrains Mono",Menlo,monospace':'-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,"Helvetica Neue",Arial,sans-serif'}`;
-  const W=1080,L=88,R=W-88,legH=136,pad=48;
+  const W=1080,L=88,R=W-88,pad=48;const anyTeams=c.legs.some(l=>(l.teams||[]).length);const legH=anyTeams?178:136;
   const T='#1d1d1f',MU='#6e6e73',DIM='#aeaeb2',GREEN='#34c759',RED='#ff3b30',AMBER='#ff9f0a',PURPLE='#af52de';
   // team logos (CORS-enabled CDN) — best effort, 2.5s budget
   const loadImg=async u=>{const timeout=new Promise(r=>setTimeout(()=>r(null),4000));
@@ -768,17 +771,17 @@ async function slipImage(w){
   let y=262;x.strokeStyle='rgba(0,0,0,.08)';x.lineWidth=2;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();
   for(const l of c.legs){const m=member(l.mid);const col={hit:GREEN,miss:RED,push:AMBER,pending:DIM}[l.status];
     if(l.status!=='pending'){x.fillStyle=col;x.fillRect(pad,y,6,legH)}
-    // team logo(s) with a small avatar badge, or the avatar alone
-    const logos=(l.teams||[]).map(a=>logoCache[a]).filter(Boolean);const cx=L+36,cy=y+legH/2;
-    if(logos.length===2){x.drawImage(logos[0],cx-42,cy-42,54,54);x.drawImage(logos[1],cx-8,cy-8,54,54)}
-    else if(logos.length===1){x.drawImage(logos[0],cx-38,cy-38,76,76)}
-    const ar=logos.length?16:36,ax=logos.length?cx+30:cx,ay=logos.length?cy+30:cy;
-    if(logos.length){x.beginPath();x.arc(ax,ay,ar+3,0,7);x.fillStyle='#fff';x.fill()}
-    x.beginPath();x.arc(ax,ay,ar,0,7);x.fillStyle=m.color;x.fill();
-    x.fillStyle='#fff';x.font=F(700,logos.length?13:24);x.textAlign='center';x.textBaseline='middle';x.fillText(initials(m.name),ax,ay+1);x.textBaseline='alphabetic';
-    // name + pick
+    // bettor avatar
+    x.beginPath();x.arc(L+36,y+legH/2,36,0,7);x.fillStyle=m.color;x.fill();
+    x.fillStyle='#fff';x.font=F(700,24);x.textAlign='center';x.textBaseline='middle';x.fillText(initials(m.name),L+36,y+legH/2+1);x.textBaseline='alphabetic';
+    // name, then pick text with the matchup logos side by side after it
     x.textAlign='left';x.fillStyle=T;x.font=F(600,34);x.fillText(m.name+(l.mid===w.bozoId?'  🤡':''),L+96,y+56);
     x.fillStyle=MU;x.font=F(500,29);x.fillText(l.text||'(no pick)',L+96,y+100);
+    // matchup line: logo + nickname, side by side, on its own row
+    const tms=(l.teams||[]);if(tms.length){let lx=L+96;const ly=y+118;
+      tms.forEach((a,i)=>{if(i>0){x.fillStyle=DIM;x.font=F(700,15);x.textAlign='left';try{x.letterSpacing='2px'}catch(e){}x.fillText('VS',lx+10,ly+26);try{x.letterSpacing='0px'}catch(e){}lx+=46}
+        const im=logoCache[a];if(im){x.drawImage(im,lx,ly,38,38);lx+=46}
+        x.fillStyle=MU;x.font=F(600,22);x.textAlign='left';const nm=NICK[a]||a;x.fillText(nm,lx,ly+26);lx+=x.measureText(nm).width+10})}
     // odds + margin
     x.textAlign='right';x.fillStyle=T;x.font=F(600,34,true);x.fillText(l.oddsN!=null?fmtOdds(l.oddsN):'—',R-96,y+56);
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss')){x.fillStyle=col;x.font=F(700,26);x.fillText(`${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`,R-96,y+100)}
@@ -915,7 +918,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     if(c==='margin')p.margin=e.target.value===''?null:Math.abs(Number(e.target.value));
     else if(c==='unit'){p.unit=e.target.value;p.um=true;if(p.unit==='none')p.margin=null;commit();return}
     else p[c]=e.target.value;
-    if(c==='text'){if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=detectTeams(p.text);if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.legpic[data-mid="${b2}"]`);if(pic)pic.outerHTML=legPic({...p,mid:b2},member(b2))}}}
+    if(c==='text'){if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=detectTeams(p.text);if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.matchup[data-mid="${b2}"]`);if(pic)pic.outerHTML=matchupHtml({...p,mid:b2})}}}
     save();if(c==='odds')patchTicket(w)}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save()}
   else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=leagueLabel()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
