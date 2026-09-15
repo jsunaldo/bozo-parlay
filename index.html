@@ -238,6 +238,9 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .modal .pd{background:transparent;padding:0;animation:none}
 .modal .pd-cell,.modal .pd-bet{background:var(--surface2)}
 .modal .pd-title{margin:-2px 0 12px}
+.pd-grid.three{grid-template-columns:repeat(3,1fr)}
+.px-seg{margin:12px 0 12px}
+.modal .x-head b{font-size:17px}
 .modal .pd-title .avatar{width:34px;height:34px;font-size:13px}
 .modal .pd-title b{font-size:17px}
 .modal .pd-cell b,.modal .pd-sub,.modal .typerow,.modal .pd-bet b,.modal .pd-bet span{color:var(--text)}
@@ -489,7 +492,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-16.3';
+const APP_VERSION='2026-09-16.4';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -992,11 +995,11 @@ function nodeLegs(legs,n){return legs.filter(l=>(!n.type||l.type===n.type)&&(!n.
 function recOf(legs){const o={w:0,l:0,p:0};for(const l of legs)o[l.status==='hit'?'w':l.status==='miss'?'l':'p']++;return o}
 function nodeTitle(n){const parts=[];if(n.team)parts.push(NICK[n.team]||n.team);if(n.type)parts.push(n.type);for(const d of DIM_ORDER)if(n.f?.[d])parts.push(n.f[d]);return parts.length?parts.join(' · '):'All bets'}
 function nodeCrumbs(n){const out=[{label:'All bets',node:{}}];let cur={};if(n.team){cur={...cur,team:n.team};out.push({label:NICK[n.team]||n.team,node:cur})}if(n.type){cur={...cur,type:n.type};out.push({label:n.type,node:cur})}for(const d of DIM_ORDER)if(n.f?.[d]){cur={...cur,f:{...(cur.f||{}),[d]:n.f[d]}};out.push({label:n.f[d],node:cur})}return out}
-function nodeGroups(legs,n){
+function nodeGroups(legs,n,minTeam=3){
   const groups=[];const cnt=fn=>{const m={};for(const l of legs){const v=fn(l);if(v!=null)m[v]=(m[v]||0)+1}return m};
   if(!n.type){const m=cnt(l=>l.type);const vals=TYPE_ORDER.filter(t=>m[t]).map(t=>({label:t,node:{...n,type:t}}));if(vals.length)groups.push({dim:'Bet type',vals})}
   else for(const[dim,vals]of DIMS[n.type]){if(n.f?.[dim])continue;const m=cnt(l=>l.f[dim]);const vs=vals.filter(v=>m[v]).map(v=>({label:v,node:{...n,f:{...(n.f||{}),[dim]:v}}}));if(vs.length)groups.push({dim,vals:vs})}
-  if(!n.team){const m={};for(const l of legs)for(const a of l.teams)m[a]=(m[a]||0)+1;const vs=Object.entries(m).filter(([,c])=>c>=3).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([a])=>({label:NICK[a]||a,logo:a,node:{...n,team:a}}));if(vs.length)groups.push({dim:'Team',vals:vs})}
+  if(!n.team){const m={};for(const l of legs)for(const a of l.teams)m[a]=(m[a]||0)+1;const vs=Object.entries(m).filter(([,c])=>c>=minTeam).sort((a,b)=>b[1]-a[1]).slice(0,8).map(([a])=>({label:NICK[a]||a,logo:a,node:{...n,team:a}}));if(vs.length)groups.push({dim:'Team',vals:vs})}
   return groups;
 }
 const recStr=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`;const rateOf=o=>(o.w+o.l)?o.w/(o.w+o.l):null;
@@ -1021,7 +1024,30 @@ function betListHtml(legs,showWho){
   return`<div class="bl">${sorted.map(l=>{const m=showWho?member(l.mid):null;const mg=l.margin!=null?'by '+fmtMargin(l.margin,l.unit):'';
     return`<div class="bl-row"><span class="bl-wk mono">${h(l.wk)}</span><div class="bl-mid">${betChip(l.text,l.teams)}<div class="bl-sub">${m?`<span class="avatar xs" style="--c:${m.color}">${h(initials(m.name))}</span>${h(m.name)} · `:''}<span class="mono">${l.odds!=null?fmtOdds(l.odds):'—'}</span></div></div><span class="bl-res ${l.status}">${l.status==='hit'?'Hit':l.status==='miss'?'Miss':'Push'}${mg?`<small>${h(mg)}</small>`:''}</span></div>`}).join('')}</div>`;
 }
+// ---- Per-player sheet: same drill-down, one person, Breakdown | Bets toggle ----
+let pxNode=null,pxMode='stats';
+function playerSheetBody(){
+  const{g}=stats();const n=pxNode;const legs=nodeLegs(g.legs,n);const rec=recOf(legs);const r=rateOf(rec);
+  const base={...n};delete base.mid;const crumbs=nodeCrumbs(base).map(c=>({label:c.label,node:{...c.node,mid:n.mid}}));
+  const crumbHtml=`<div class="crumbs">${crumbs.map((c,i)=>(i?'<span class="sep">›</span>':'')+`<span class="crumb ${i===crumbs.length-1?'cur':''}" data-act="px-go" data-node="${encNode(c.node)}">${h(c.label)}</span>`).join('')}</div>`;
+  const head=`<div class="x-head"><b>${h(nodeTitle(base))}</b><span class="mono">${recStr(rec)}</span><span class="tpct ${r>=.5?'good':'bad'}">${r!=null?Math.round(r*100)+'%':'—'}</span></div><div class="tbar wide"><i style="width:${Math.round((r||0)*100)}%"></i></div>`;
+  if(!legs.length)return crumbHtml+head+`<p class="muted">No bets here.</p>`;
+  const seg=`<div class="scope px-seg"><button class="${pxMode==='stats'?'on':''}" data-act="px-mode" data-mode="stats">Breakdown</button><button class="${pxMode==='bets'?'on':''}" data-act="px-mode" data-mode="bets">${legs.length} bet${legs.length===1?'':'s'}</button></div>`;
+  let content='';
+  if(pxMode==='bets')content=betListHtml(legs,false);
+  else{
+    const decs=legs.filter(l=>l.odds!=null).map(l=>dec(l.odds));const avg=decs.length?decs.reduce((a,b)=>a+b,0)/decs.length:null;
+    const best=legs.filter(l=>l.status==='hit'&&l.odds!=null).sort((a,b)=>b.odds-a.odds)[0];const worst=legs.filter(l=>l.status==='miss'&&l.odds!=null).sort((a,b)=>a.odds-b.odds)[0];
+    const tiles=`<div class="pd-grid three"><div class="pd-cell"><small>Avg odds</small><b class="mono">${avg?amer(avg):'—'}</b></div><div class="pd-cell"><small>Best hit</small><b class="mono good">${best?fmtOdds(best.odds):'—'}</b><em>${best?h(best.wk):'—'}</em></div><div class="pd-cell"><small>Worst miss</small><b class="mono bad">${worst?fmtOdds(worst.odds):'—'}</b><em>${worst?h(worst.wk):'—'}</em></div></div>`;
+    const groups=nodeGroups(legs,n,2);
+    content=tiles+(groups.length?`<div class="pd-sub" style="margin-top:12px">Go deeper</div>${groups.map(gr=>`<div class="x-dim">${gr.dim==='Bet type'?'':`<small>${h(gr.dim)}</small>`}<div class="typerows">${gr.vals.map(v=>statRow({label:v.label,logo:v.logo,rec:recOf(nodeLegs(legs,v.node)),act:'px-go',data:`data-node="${encNode(v.node)}"`,nav:true})).join('')}</div></div>`).join('')}`:'<p class="muted tiny" style="margin-top:10px">Nothing deeper to split here.</p>');
+  }
+  return crumbHtml+head+seg+content;
+}
+function openPlayerSheet(n,mode='stats'){pxNode=n;pxMode=mode;withStats(()=>{const m=member(n.mid);modal({stack:true,title:m?m.name:'Player',body:playerSheetBody(),actions:[{label:'Done',cls:'ghost'}]})})}
+function refreshSheet(){withStats(()=>{const root=document.getElementById('modal-root');const b=root.querySelector('.modal-body');if(b)b.innerHTML=playerSheetBody();const mo=root.querySelector('.modal');if(mo)mo.scrollTop=0})}
 function showBets(n){
+  if(n.mid)return openPlayerSheet(n,'stats');
   withStats(()=>{const{g}=stats();const legs=nodeLegs(g.legs,n);const rec=recOf(legs);const m=n.mid?member(n.mid):null;
     const title=(m?m.name+' · ':'')+nodeTitle(n);
     modal({stack:true,title,body:`<p class="muted" style="margin:0 0 4px"><b class="mono">${recStr(rec)}</b>${rateOf(rec)!=null?` · ${Math.round(rateOf(rec)*100)}%`:''} · ${legs.length} bet${legs.length===1?'':'s'}</p>${betListHtml(legs,!m)}`,actions:[{label:'Done',cls:'ghost'}]})});
@@ -1196,8 +1222,8 @@ function playerDetail(r){
       ${cell('Avg cover',`<b class="good">${r.avgHitMargin!=null?'+'+r.avgHitMargin.toFixed(1):'—'}</b><em>pts when hitting</em>`)}${cell('Avg miss',`<b class="bad">${r.avgMiss!=null?'-'+r.avgMiss.toFixed(1):'—'}</b><em>pts when missing</em>`)}
       ${cell('Best at',r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>')}
     </div>
-    ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type <span class="muted">· tap for the bets</span></div><div class="typerows">${typeRows(r.byType,r.m.id)}</div>`:''}
-    ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most</div><div class="typerows">${Object.entries(r.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,5).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'show-bets',data:`data-node="${encNode({team:a,mid:r.m.id})}"`})).join('')}</div>`:''}
+    ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type <span class="muted">· tap to dig in</span></div><div class="typerows">${typeRows(r.byType,r.m.id)}</div>`:''}
+    ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most <span class="muted">· tap to dig in</span></div><div class="typerows">${Object.entries(r.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,5).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'show-bets',data:`data-node="${encNode({team:a,mid:r.m.id})}"`})).join('')}</div>`:''}
     <div class="pd-bets">
       <div class="pd-bet good-l"><small>Best hit</small>${bet(r.longestHit)}</div>
       <div class="pd-bet"><small>Easiest hit</small>${bet(r.easiestHit)}</div>
@@ -1408,7 +1434,7 @@ addEventListener('scroll',()=>{if(tipPinned){if(Math.abs(scrollY-tipScrollY)>48)
 const modalStack=[];
 function modal({title,body,actions=[],onOpen,stack}){
   const root=document.getElementById('modal-root');
-  if(stack&&root.firstElementChild)modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal')?.scrollTop||0});else modalStack.length=0;
+  if(stack&&root.firstElementChild?.classList.contains('in'))modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal')?.scrollTop||0});else modalStack.length=0;
   root.innerHTML=`<div class="scrim" data-act="modal-close"><div class="modal" role="dialog"><h2>${h(title)}</h2><div class="modal-body">${body}</div>${actions.length?`<div class="modal-actions">${actions.map((a,i)=>`<button class="btn ${a.cls||''}" data-act="modal-action" data-i="${i}">${h(a.label)}</button>`).join('')}</div>`:''}</div></div>`;
   root._actions=actions;requestAnimationFrame(()=>root.firstElementChild?.classList.add('in'));onOpen&&onOpen(root);
 }
@@ -1498,6 +1524,8 @@ const ACT={
   'x-go'(el){xNode=decNode(el.dataset.node);render();const x=document.querySelector('.explorer');if(x){const r=x.getBoundingClientRect();if(r.top<0||r.top>window.innerHeight*.6)x.scrollIntoView({block:'start',behavior:'smooth'})}},
   'x-sort'(el){xSort=el.dataset.sort;render()},
   'show-bets'(el){showBets(decNode(el.dataset.node))},
+  'px-go'(el){pxNode=decNode(el.dataset.node);refreshSheet()},
+  'px-mode'(el){pxMode=el.dataset.mode;refreshSheet()},
   'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
   'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   'toggle-kind'(el){const k=el.dataset.key;if(openKinds.has(k))openKinds.delete(k);else openKinds.add(k);render()},
@@ -1510,7 +1538,7 @@ const ACT={
   'toggle-lock'(el){const w=week(el.dataset.wid);w.locked=!w.locked;commit();toast(w.locked?'Picks locked — nobody can change their pick':'Picks unlocked')},
   'verify-pick'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(p){delete p.unsure;commit();toast('Marked verified')}},
   'player-detail'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;const r={m,...p};
-    modal({title:m.name,body:`<div class="pd-title"><span class="avatar" style="--c:${m.color}">${h(initials(m.name))}</span><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${pct(r.rate)} · ${r.picks} pick${r.picks===1?'':'s'}${statScope==='all'?' · all-time':' · '+h(season().name)}</span></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
+    modal({title:m.name,body:`<div class="pd-title"><span class="avatar" style="--c:${m.color}">${h(initials(m.name))}</span><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${pct(r.rate)} · ${r.picks} pick${r.picks===1?'':'s'}${statScope==='all'?' · all-time':' · '+h(season().name)}</span><button class="pillbtn" style="margin-left:auto" data-act="show-bets" data-node="${encNode({mid:m.id})}">Explore ›</button></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
   'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=scrollY;showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
