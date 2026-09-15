@@ -492,7 +492,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-16.4';
+const APP_VERSION='2026-09-16.5';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1006,52 +1006,44 @@ const recStr=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`;const rateOf=o=>(o.w+o.l)?o.w/(
 function statRow({label,logo,avatar,rec,act,data,nav,rank}){const r=rateOf(rec);const n=rec.w+rec.l;return`<div class="typerow tap ${nav?'nav':''}" data-act="${act}" ${data}><span class="tname">${rank!=null?`<span class="rank">${rank}</span>`:''}${logo?`<img class="tlogo" src="${LOGO(logo)}" alt="">`:''}${avatar||''}<span class="nm">${h(label)}</span></span><span class="tbar"><i style="width:${Math.round((r||0)*100)}%"></i></span><span class="mono trec">${recStr(rec)}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span>${nav?'<span class="chev">›</span>':''}</div>`}
 function explorerCard(g){
   if(!g.legs.length)return'';
-  const n=xNode;const legs=nodeLegs(g.legs,n);const rec=recOf(legs);const crumbs=nodeCrumbs(n);const root=!n.type&&!n.team&&!Object.keys(n.f||{}).length;
-  const crumbHtml=`<div class="crumbs">${crumbs.map((c,i)=>(i?'<span class="sep">›</span>':'')+`<span class="crumb ${i===crumbs.length-1?'cur':''}" data-act="x-go" data-node="${encNode(c.node)}">${h(c.label)}</span>`).join('')}</div>`;
-  if(!legs.length)return`<section class="card explorer"><h3>Bet explorer</h3>${crumbHtml}<p class="muted">No bets here in this view. Tap a crumb to head back.</p></section>`;
-  const r=rateOf(rec);
-  const head=`<div class="x-head"><b>${h(nodeTitle(n))}</b><span class="mono">${recStr(rec)}</span><span class="tpct ${r>=.5?'good':'bad'}">${r!=null?Math.round(r*100)+'%':'—'}</span><button class="pillbtn" data-act="show-bets" data-node="${encNode(n)}">All ${legs.length} bets</button></div><div class="tbar wide"><i style="width:${Math.round((r||0)*100)}%"></i></div>`;
-  let people='';
-  if(!root){const rows=S.members.map(m=>({m,rec:recOf(legs.filter(l=>l.mid===m.id))})).filter(x=>x.rec.w+x.rec.l+x.rec.p>0);
-    rows.sort((a,b)=>xSort==='wins'?(b.rec.w-a.rec.w)||((rateOf(b.rec)||0)-(rateOf(a.rec)||0)):((rateOf(b.rec)||0)-(rateOf(a.rec)||0))||(b.rec.w-a.rec.w));
-    people=`<div class="x-sub"><span class="pd-sub">Everyone on this bet</span><span class="seg tiny"><button class="${xSort==='wins'?'on':''}" data-act="x-sort" data-sort="wins">Wins</button><button class="${xSort==='rate'?'on':''}" data-act="x-sort" data-sort="rate">Rate</button></span></div><div class="typerows">${rows.map((x,i)=>statRow({label:x.m.name,rank:i+1,avatar:`<span class="avatar sm" style="--c:${x.m.color}">${h(initials(x.m.name))}</span>`,rec:x.rec,act:'show-bets',data:`data-node="${encNode({...n,mid:x.m.id})}"`})).join('')}</div>`}
-  const groups=nodeGroups(legs,n);
-  const deeper=groups.length?`<div class="pd-sub" style="margin-top:14px">${root?'Pick a bet type':'Go deeper'}</div>${groups.map(gr=>`<div class="x-dim">${root&&gr.dim==='Bet type'?'':`<small>${h(gr.dim)}</small>`}<div class="typerows">${gr.vals.map(v=>statRow({label:v.label,logo:v.logo,rec:recOf(nodeLegs(legs,v.node)),act:'x-go',data:`data-node="${encNode(v.node)}"`,nav:true})).join('')}</div></div>`).join('')}`:'';
-  return`<section class="card explorer"><h3>Bet explorer</h3><p class="muted tiny" style="margin:-4px 0 10px">Drill into any kind of bet. Tap a record to see the bets behind it.</p>${crumbHtml}${head}${people}${deeper}</section>`;
+  const rows=TYPE_ORDER.filter(t=>g.legs.some(l=>l.type===t)).map(t=>statRow({label:t,rec:recOf(nodeLegs(g.legs,{type:t})),act:'x-go',data:`data-node="${encNode({type:t})}"`,nav:true})).join('');
+  return`<section class="card explorer"><div class="row between" style="align-items:center;margin-bottom:4px"><h3 style="margin:0">Bet explorer</h3><button class="pillbtn" data-act="x-go" data-node="${encNode({})}">All bets ›</button></div><p class="muted tiny" style="margin:0 0 10px">Tap a bet type to drill into sides, sizes, odds, teams, and who's best at each.</p><div class="typerows">${rows}</div></section>`;
 }
 function betListHtml(legs,showWho){
   const sorted=[...legs].sort((a,b)=>b.num-a.num);
   return`<div class="bl">${sorted.map(l=>{const m=showWho?member(l.mid):null;const mg=l.margin!=null?'by '+fmtMargin(l.margin,l.unit):'';
     return`<div class="bl-row"><span class="bl-wk mono">${h(l.wk)}</span><div class="bl-mid">${betChip(l.text,l.teams)}<div class="bl-sub">${m?`<span class="avatar xs" style="--c:${m.color}">${h(initials(m.name))}</span>${h(m.name)} · `:''}<span class="mono">${l.odds!=null?fmtOdds(l.odds):'—'}</span></div></div><span class="bl-res ${l.status}">${l.status==='hit'?'Hit':l.status==='miss'?'Miss':'Push'}${mg?`<small>${h(mg)}</small>`:''}</span></div>`}).join('')}</div>`;
 }
-// ---- Per-player sheet: same drill-down, one person, Breakdown | Bets toggle ----
+// ---- Explorer sheet: group or one player, drill in place, Breakdown | Players | Bets ----
 let pxNode=null,pxMode='stats';
-function playerSheetBody(){
-  const{g}=stats();const n=pxNode;const legs=nodeLegs(g.legs,n);const rec=recOf(legs);const r=rateOf(rec);
+function sheetBody(){
+  const{g}=stats();const n=pxNode;const solo=!!n.mid;const legs=nodeLegs(g.legs,n);const rec=recOf(legs);const r=rateOf(rec);
   const base={...n};delete base.mid;const crumbs=nodeCrumbs(base).map(c=>({label:c.label,node:{...c.node,mid:n.mid}}));
   const crumbHtml=`<div class="crumbs">${crumbs.map((c,i)=>(i?'<span class="sep">›</span>':'')+`<span class="crumb ${i===crumbs.length-1?'cur':''}" data-act="px-go" data-node="${encNode(c.node)}">${h(c.label)}</span>`).join('')}</div>`;
   const head=`<div class="x-head"><b>${h(nodeTitle(base))}</b><span class="mono">${recStr(rec)}</span><span class="tpct ${r>=.5?'good':'bad'}">${r!=null?Math.round(r*100)+'%':'—'}</span></div><div class="tbar wide"><i style="width:${Math.round((r||0)*100)}%"></i></div>`;
   if(!legs.length)return crumbHtml+head+`<p class="muted">No bets here.</p>`;
-  const seg=`<div class="scope px-seg"><button class="${pxMode==='stats'?'on':''}" data-act="px-mode" data-mode="stats">Breakdown</button><button class="${pxMode==='bets'?'on':''}" data-act="px-mode" data-mode="bets">${legs.length} bet${legs.length===1?'':'s'}</button></div>`;
+  if(solo&&pxMode==='people')pxMode='stats';
+  const seg=`<div class="scope px-seg"><button class="${pxMode==='stats'?'on':''}" data-act="px-mode" data-mode="stats">Breakdown</button>${solo?'':`<button class="${pxMode==='people'?'on':''}" data-act="px-mode" data-mode="people">Players</button>`}<button class="${pxMode==='bets'?'on':''}" data-act="px-mode" data-mode="bets">${legs.length} bet${legs.length===1?'':'s'}</button></div>`;
   let content='';
-  if(pxMode==='bets')content=betListHtml(legs,false);
-  else{
+  if(pxMode==='bets')content=betListHtml(legs,!solo);
+  else if(pxMode==='people'){
+    const rows=S.members.map(m=>({m,rec:recOf(legs.filter(l=>l.mid===m.id))})).filter(x=>x.rec.w+x.rec.l+x.rec.p>0);
+    rows.sort((a,b)=>xSort==='wins'?(b.rec.w-a.rec.w)||((rateOf(b.rec)||0)-(rateOf(a.rec)||0)):((rateOf(b.rec)||0)-(rateOf(a.rec)||0))||(b.rec.w-a.rec.w));
+    content=`<div class="x-sub"><span class="pd-sub">Everyone on this bet · tap for their breakdown</span><span class="seg tiny"><button class="${xSort==='wins'?'on':''}" data-act="x-sort" data-sort="wins">Wins</button><button class="${xSort==='rate'?'on':''}" data-act="x-sort" data-sort="rate">Rate</button></span></div><div class="typerows">${rows.map((x,i)=>statRow({label:x.m.name,rank:i+1,avatar:`<span class="avatar sm" style="--c:${x.m.color}">${h(initials(x.m.name))}</span>`,rec:x.rec,act:'show-bets',data:`data-node="${encNode({...n,mid:x.m.id})}"`,nav:true})).join('')}</div>`;
+  }else{
     const decs=legs.filter(l=>l.odds!=null).map(l=>dec(l.odds));const avg=decs.length?decs.reduce((a,b)=>a+b,0)/decs.length:null;
     const best=legs.filter(l=>l.status==='hit'&&l.odds!=null).sort((a,b)=>b.odds-a.odds)[0];const worst=legs.filter(l=>l.status==='miss'&&l.odds!=null).sort((a,b)=>a.odds-b.odds)[0];
-    const tiles=`<div class="pd-grid three"><div class="pd-cell"><small>Avg odds</small><b class="mono">${avg?amer(avg):'—'}</b></div><div class="pd-cell"><small>Best hit</small><b class="mono good">${best?fmtOdds(best.odds):'—'}</b><em>${best?h(best.wk):'—'}</em></div><div class="pd-cell"><small>Worst miss</small><b class="mono bad">${worst?fmtOdds(worst.odds):'—'}</b><em>${worst?h(worst.wk):'—'}</em></div></div>`;
-    const groups=nodeGroups(legs,n,2);
+    const who=l=>solo?h(l.wk):`${h(l.wk)} · ${h(member(l.mid)?.name||'')}`;
+    const tiles=`<div class="pd-grid three"><div class="pd-cell"><small>Avg odds</small><b class="mono">${avg?amer(avg):'—'}</b></div><div class="pd-cell"><small>Best hit</small><b class="mono good">${best?fmtOdds(best.odds):'—'}</b><em>${best?who(best):'—'}</em></div><div class="pd-cell"><small>Worst miss</small><b class="mono bad">${worst?fmtOdds(worst.odds):'—'}</b><em>${worst?who(worst):'—'}</em></div></div>`;
+    const groups=nodeGroups(legs,n,solo?2:3);
     content=tiles+(groups.length?`<div class="pd-sub" style="margin-top:12px">Go deeper</div>${groups.map(gr=>`<div class="x-dim">${gr.dim==='Bet type'?'':`<small>${h(gr.dim)}</small>`}<div class="typerows">${gr.vals.map(v=>statRow({label:v.label,logo:v.logo,rec:recOf(nodeLegs(legs,v.node)),act:'px-go',data:`data-node="${encNode(v.node)}"`,nav:true})).join('')}</div></div>`).join('')}`:'<p class="muted tiny" style="margin-top:10px">Nothing deeper to split here.</p>');
   }
   return crumbHtml+head+seg+content;
 }
-function openPlayerSheet(n,mode='stats'){pxNode=n;pxMode=mode;withStats(()=>{const m=member(n.mid);modal({stack:true,title:m?m.name:'Player',body:playerSheetBody(),actions:[{label:'Done',cls:'ghost'}]})})}
-function refreshSheet(){withStats(()=>{const root=document.getElementById('modal-root');const b=root.querySelector('.modal-body');if(b)b.innerHTML=playerSheetBody();const mo=root.querySelector('.modal');if(mo)mo.scrollTop=0})}
-function showBets(n){
-  if(n.mid)return openPlayerSheet(n,'stats');
-  withStats(()=>{const{g}=stats();const legs=nodeLegs(g.legs,n);const rec=recOf(legs);const m=n.mid?member(n.mid):null;
-    const title=(m?m.name+' · ':'')+nodeTitle(n);
-    modal({stack:true,title,body:`<p class="muted" style="margin:0 0 4px"><b class="mono">${recStr(rec)}</b>${rateOf(rec)!=null?` · ${Math.round(rateOf(rec)*100)}%`:''} · ${legs.length} bet${legs.length===1?'':'s'}</p>${betListHtml(legs,!m)}`,actions:[{label:'Done',cls:'ghost'}]})});
-}
+function openSheet(n,mode='stats'){const px={node:pxNode,mode:pxMode};pxNode=n;pxMode=mode;withStats(()=>{const m=n.mid?member(n.mid):null;modal({stack:true,px,title:m?m.name:'Bet explorer',body:sheetBody(),actions:[{label:'Done',cls:'ghost'}]})})}
+const openPlayerSheet=openSheet;
+function refreshSheet(){withStats(()=>{const root=document.getElementById('modal-root');const b=root.querySelector('.modal-body');if(b)b.innerHTML=sheetBody();const mo=root.querySelector('.modal');if(mo)mo.scrollTop=0})}
+function showBets(n){openSheet(n,n.mid?'stats':'bets')}
 function withStats(fn){return(VIEW==='stats'||VIEW==='history')?withAll(fn):fn()}
 
 const openKinds=new Set();
@@ -1432,13 +1424,13 @@ addEventListener('scroll',()=>{if(tipPinned){if(Math.abs(scrollY-tipScrollY)>48)
 
 /* ============================== UI BITS ============================== */
 const modalStack=[];
-function modal({title,body,actions=[],onOpen,stack}){
+function modal({title,body,actions=[],onOpen,stack,px}){
   const root=document.getElementById('modal-root');
-  if(stack&&root.firstElementChild?.classList.contains('in'))modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal')?.scrollTop||0});else modalStack.length=0;
+  if(stack&&root.firstElementChild?.classList.contains('in'))modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal')?.scrollTop||0,px});else modalStack.length=0;
   root.innerHTML=`<div class="scrim" data-act="modal-close"><div class="modal" role="dialog"><h2>${h(title)}</h2><div class="modal-body">${body}</div>${actions.length?`<div class="modal-actions">${actions.map((a,i)=>`<button class="btn ${a.cls||''}" data-act="modal-action" data-i="${i}">${h(a.label)}</button>`).join('')}</div>`:''}</div></div>`;
   root._actions=actions;requestAnimationFrame(()=>root.firstElementChild?.classList.add('in'));onOpen&&onOpen(root);
 }
-function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root._actions=prev.actions;const m=root.querySelector('.modal');if(m)m.scrollTop=prev.scroll;return}s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250)}
+function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root._actions=prev.actions;if(prev.px){pxNode=prev.px.node;pxMode=prev.px.mode}const m=root.querySelector('.modal');if(m)m.scrollTop=prev.scroll;return}s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250)}
 function confirm2(title,body,label,fn,cls='danger'){modal({title,body:`<p>${body}</p>`,actions:[{label:'Cancel',cls:'ghost'},{label,cls,onClick:fn}]})}
 function toast(msg,cls=''){const r=document.getElementById('toast-root');const t=document.createElement('div');t.className='toast '+cls;t.textContent=msg;r.appendChild(t);requestAnimationFrame(()=>t.classList.add('in'));setTimeout(()=>{t.classList.remove('in');setTimeout(()=>t.remove(),320)},2600)}
 function spin(cands,onDone){
@@ -1521,8 +1513,8 @@ const ACT={
       actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit();const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===el.dataset.mid)sendPick(L,w,el.dataset.mid)}}]})},
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
-  'x-go'(el){xNode=decNode(el.dataset.node);render();const x=document.querySelector('.explorer');if(x){const r=x.getBoundingClientRect();if(r.top<0||r.top>window.innerHeight*.6)x.scrollIntoView({block:'start',behavior:'smooth'})}},
-  'x-sort'(el){xSort=el.dataset.sort;render()},
+  'x-go'(el){openSheet(decNode(el.dataset.node),'stats')},
+  'x-sort'(el){xSort=el.dataset.sort;refreshSheet()},
   'show-bets'(el){showBets(decNode(el.dataset.node))},
   'px-go'(el){pxNode=decNode(el.dataset.node);refreshSheet()},
   'px-mode'(el){pxMode=el.dataset.mode;refreshSheet()},
