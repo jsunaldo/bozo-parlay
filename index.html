@@ -31,6 +31,7 @@
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%;color-scheme:light dark}
+body.locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45;min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;letter-spacing:-.01em}
 #app{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 16px calc(104px + env(safe-area-inset-bottom))}
 .top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 0 14px;position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 70%,rgba(245,245,247,0))}
@@ -448,15 +449,19 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .tip-bozo{margin-top:8px;font-size:12px;font-weight:600;color:var(--purple)}
 .tip-empty{color:var(--muted);font-size:13px}
 /* modal + toast */
-.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:50;display:grid;place-items:end center;opacity:0;transition:opacity .25s;padding:0 12px calc(12px + env(safe-area-inset-bottom))}
+.scrim{overscroll-behavior:contain;touch-action:none;position:fixed;inset:0;background:rgba(0,0,0,.35);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);z-index:50;display:grid;place-items:end center;opacity:0;transition:opacity .25s;padding:0 12px calc(12px + env(safe-area-inset-bottom))}
 @media(min-width:600px){.scrim{place-items:center}}
 .scrim.in{opacity:1}
-.modal{width:min(520px,100%);background:var(--surface);border-radius:26px;padding:22px;transform:translateY(30px) scale(.97);transition:transform .3s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow-lg);max-height:calc(100dvh - 40px);overflow-y:auto}
+.modal{display:flex;flex-direction:column;width:min(520px,100%);background:var(--surface);border-radius:26px;padding:0;transform:translateY(30px) scale(.97);transition:transform .3s cubic-bezier(.2,.8,.2,1);box-shadow:var(--shadow-lg);max-height:calc(100dvh - 40px);overflow:hidden}
 .scrim.in .modal{transform:none}
-.modal h2{font-size:21px;font-weight:700;letter-spacing:-.03em;margin-bottom:10px}
-.modal-body{color:var(--muted);font-size:14px}
+.modal-head{flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px 10px 22px;position:relative}
+.modal-head::before{content:'';position:absolute;top:6px;left:50%;width:36px;height:4px;margin-left:-18px;border-radius:2px;background:var(--line2)}
+.modal h2{font-size:21px;font-weight:700;letter-spacing:-.03em;margin:4px 0 0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mclose{flex:none;margin-top:4px;width:30px;height:30px;border-radius:50%;border:0;background:var(--surface2);color:var(--muted);font:inherit;font-size:18px;line-height:1;cursor:pointer;display:grid;place-items:center;-webkit-tap-highlight-color:transparent}
+.mclose:active{opacity:.7}
+.modal-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:0 22px 18px;color:var(--muted);font-size:14px}
 .modal-body p{margin-bottom:10px}
-.modal-actions{display:flex;gap:8px;margin-top:16px;justify-content:flex-end;flex-wrap:wrap}
+.modal-actions{flex:none;display:flex;gap:8px;padding:10px 22px 16px;border-top:1px solid var(--line);justify-content:flex-end;flex-wrap:wrap}
 .spin{text-align:center;padding:24px 0 10px}
 .spin-name{font-size:40px;font-weight:700;letter-spacing:-.04em;color:var(--text);transition:transform .1s}
 .spin-name.land{animation:land .6s cubic-bezier(.34,1.56,.64,1)}
@@ -492,7 +497,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-16.5';
+const APP_VERSION='2026-09-16.6';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1042,7 +1047,7 @@ function sheetBody(){
 }
 function openSheet(n,mode='stats'){const px={node:pxNode,mode:pxMode};pxNode=n;pxMode=mode;withStats(()=>{const m=n.mid?member(n.mid):null;modal({stack:true,px,title:m?m.name:'Bet explorer',body:sheetBody(),actions:[{label:'Done',cls:'ghost'}]})})}
 const openPlayerSheet=openSheet;
-function refreshSheet(){withStats(()=>{const root=document.getElementById('modal-root');const b=root.querySelector('.modal-body');if(b)b.innerHTML=sheetBody();const mo=root.querySelector('.modal');if(mo)mo.scrollTop=0})}
+function refreshSheet(){withStats(()=>{const root=document.getElementById('modal-root');const b=root.querySelector('.modal-body');if(b)b.innerHTML=sheetBody();const mo=root.querySelector('.modal-body');if(mo)mo.scrollTop=0})}
 function showBets(n){openSheet(n,n.mid?'stats':'bets')}
 function withStats(fn){return(VIEW==='stats'||VIEW==='history')?withAll(fn):fn()}
 
@@ -1423,14 +1428,17 @@ let tipScrollY=0;
 addEventListener('scroll',()=>{if(tipPinned){if(Math.abs(scrollY-tipScrollY)>48){tipPinned=null;hideTip()}else showTip(tipPinned)}else hideTip()},{passive:true});
 
 /* ============================== UI BITS ============================== */
-const modalStack=[];
+const modalStack=[];let lockY=0;
+function lockScroll(){const b=document.body;if(b.classList.contains('locked'))return;lockY=window.scrollY;b.style.top=-lockY+'px';b.classList.add('locked')}
+function unlockScroll(){const b=document.body;if(!b.classList.contains('locked'))return;b.classList.remove('locked');b.style.top='';window.scrollTo({top:lockY,behavior:'instant'})}
+document.addEventListener('touchmove',e=>{const sc=e.target.closest?.('.scrim');if(sc&&!e.target.closest('.modal'))e.preventDefault()},{passive:false});
 function modal({title,body,actions=[],onOpen,stack,px}){
   const root=document.getElementById('modal-root');
-  if(stack&&root.firstElementChild?.classList.contains('in'))modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal')?.scrollTop||0,px});else modalStack.length=0;
-  root.innerHTML=`<div class="scrim" data-act="modal-close"><div class="modal" role="dialog"><h2>${h(title)}</h2><div class="modal-body">${body}</div>${actions.length?`<div class="modal-actions">${actions.map((a,i)=>`<button class="btn ${a.cls||''}" data-act="modal-action" data-i="${i}">${h(a.label)}</button>`).join('')}</div>`:''}</div></div>`;
-  root._actions=actions;requestAnimationFrame(()=>root.firstElementChild?.classList.add('in'));onOpen&&onOpen(root);
+  if(stack&&root._open)modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal-body')?.scrollTop||0,px});else modalStack.length=0;
+  root.innerHTML=`<div class="scrim" data-act="modal-close"><div class="modal" role="dialog"><div class="modal-head"><h2>${h(title)}</h2><button class="mclose" data-act="modal-close-btn" aria-label="Close">×</button></div><div class="modal-body">${body}</div>${actions.length?`<div class="modal-actions">${actions.map((a,i)=>`<button class="btn ${a.cls||''}" data-act="modal-action" data-i="${i}">${h(a.label)}</button>`).join('')}</div>`:''}</div></div>`;
+  root._actions=actions;root._open=true;lockScroll();requestAnimationFrame(()=>root.firstElementChild?.classList.add('in'));onOpen&&onOpen(root);
 }
-function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root._actions=prev.actions;if(prev.px){pxNode=prev.px.node;pxMode=prev.px.mode}const m=root.querySelector('.modal');if(m)m.scrollTop=prev.scroll;return}s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250)}
+function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root._actions=prev.actions;if(prev.px){pxNode=prev.px.node;pxMode=prev.px.mode}const m=root.querySelector('.modal-body');if(m)m.scrollTop=prev.scroll;return}root._open=false;unlockScroll();s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250)}
 function confirm2(title,body,label,fn,cls='danger'){modal({title,body:`<p>${body}</p>`,actions:[{label:'Cancel',cls:'ghost'},{label,cls,onClick:fn}]})}
 function toast(msg,cls=''){const r=document.getElementById('toast-root');const t=document.createElement('div');t.className='toast '+cls;t.textContent=msg;r.appendChild(t);requestAnimationFrame(()=>t.classList.add('in'));setTimeout(()=>{t.classList.remove('in');setTimeout(()=>t.remove(),320)},2600)}
 function spin(cands,onDone){
@@ -1534,6 +1542,7 @@ const ACT={
   'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=scrollY;showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
+  'modal-close-btn'(){closeModal()},
   'modal-action'(el){const a=document.getElementById('modal-root')._actions?.[el.dataset.i];const r=a?.onClick?.();if(r!==false)closeModal()},
 };
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const fn=ACT[el.dataset.act];if(fn)fn(el,e)});
