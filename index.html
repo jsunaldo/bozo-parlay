@@ -270,7 +270,15 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .typerow,.teamrow{display:grid;grid-template-columns:1fr 90px 52px 40px;align-items:center;gap:10px;font-size:13px}
 .teamrow{grid-template-columns:24px 1fr 90px 52px 40px}
 .teamrow img{width:24px;height:24px;object-fit:contain}
+.teamrow.expandable{cursor:pointer}
+.teamppl{display:flex;flex-direction:column;gap:6px;padding:2px 0 6px 10px;border-left:2px solid var(--line);margin-left:11px}
+.teamrow.sub{font-size:12px}
+.teamrow.sub .tname{font-weight:500;color:var(--muted)}
 .tname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.typerow.expandable{cursor:pointer}
+.typerow.expandable:hover .tname{color:var(--blue)}
+.tname .chev{display:inline-block;color:var(--dim);margin-right:4px;transition:transform .2s}
+.tname .chev.open{transform:rotate(90deg);color:var(--blue)}
 .typerow.subrow{font-size:12px}
 .typerow.subrow .tname{padding-left:14px;font-weight:500;color:var(--muted)}
 .typerow.subrow .tname::before{content:'↳ ';color:var(--dim)}
@@ -279,10 +287,21 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .tbar i{display:block;height:100%;background:var(--blue);border-radius:4px}
 .trec{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
 .tpct{font-weight:700;text-align:right;font-size:12px}
+.kingrows{display:flex;flex-direction:column;gap:6px}
+.kingrow{display:grid;grid-template-columns:1fr 1.25fr 1.25fr;align-items:center;gap:8px;font-size:13px}
+.kingrow.head{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.kingrow.subrow{font-size:12px}
+.kingrow.subrow .tname{padding-left:14px;font-weight:500;color:var(--muted)}
+.kingrow.subrow .tname::before{content:'↳ ';color:var(--dim)}
+.kingrow.expandable{cursor:pointer}
+.king{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.king b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.king small{color:var(--muted);font-size:11px;flex:none}
 .kg-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
 .kg{border-collapse:separate;border-spacing:3px;font-size:11px}
 .kg th{font-weight:600;color:var(--muted);text-align:left;white-space:nowrap;padding:2px 6px 2px 0;position:sticky;left:0;background:var(--surface)}
 .kg thead th{text-align:center;padding:0 2px;position:static}
+.kg tr.expandable{cursor:pointer}
 .kg tr.sub th{font-weight:500;padding-left:12px;color:var(--dim);font-size:10px}
 .kg tr.sub th::before{content:'↳ ';}
 .kg td{min-width:38px;height:26px;text-align:center;border-radius:7px;font-variant-numeric:tabular-nums;padding:0 4px}
@@ -412,7 +431,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-15.7';
+const APP_VERSION='2026-09-15.8';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -805,19 +824,11 @@ function awards(per){
   const pick=f=>{let best=null;for(const p of list){const v=f(p);if(v==null||Number.isNaN(v))continue;if(best==null||v>best.v)best={p,v}}return best};
   const A=[];const add=(icon,name,blurb,r,fn)=>{if(!r)return;const o=fn(r.p,r.v)||{};A.push({icon,name,blurb,who:r.p.id,...o})};
   const span=sp=>sp?(sp[0]===sp[1]?sp[0]:`${sp[0]}–${sp[1]}`):'';
-  add('🎯','Sharpest','Best hit rate',pick(p=>p.graded>=2?p.rate:null),(p,v)=>({stat:`${pct(v)}`,detail:`${p.hits}-${p.misses}${p.pushes?'-'+p.pushes:''} on the season`}));
-  add('🔪','Parlay Killer','The only miss on a slip, most often',pick(p=>p.killer||null),(p,v)=>{const k=p.killers[p.killers.length-1];return{stat:`${v} solo miss${v>1?'es':''}`,detail:`${p.killers.map(x=>x.wk).join(', ')}${p.killers.length>1?' · latest:':''}`,bet:k}});
   add('🤡','Head Clown','Fronted the parlay the most',pick(p=>p.bozo||null),(p,v)=>({stat:`${v}× Bozo`,detail:`${fmt$0(p.spent)} burned · ${p.bozoWeeks.join(', ')}`}));
-  add('🎰','Degen','Longest odds on average',pick(p=>p.avgDec),(p,v)=>({stat:`avg ${amer(v)}`,detail:p.longestHit?`longest hit ${fmtOdds(p.longestHit.odds)} · ${p.longestHit.wk}`:'',bet:p.longestHit}));
-  add('😬','Closest Call','Smallest points miss',pick(p=>p.closest?-p.closest.m:null),(p)=>({stat:`missed by ${fmtMargin(p.closest.m,'pts')}`,detail:p.closest.wk,bet:p.closest}));
-  add('🤮','Biggest Choke','Largest points miss',pick(p=>p.choke?p.choke.m:null),(p)=>({stat:`missed by ${fmtMargin(p.choke.m,'pts')}`,detail:p.choke.wk,bet:p.choke}));
+  add('💎','Best Win','Longest odds that actually hit',pick(p=>p.longestHit?p.longestHit.odds:null),(p)=>({stat:`${fmtOdds(p.longestHit.odds)} cashed`,detail:p.longestHit.wk,bet:p.longestHit}));
+  add('🎯','Sharpest Bettor','Best hit rate',pick(p=>p.graded>=2?p.rate:null),(p,v)=>({stat:`${pct(v)}`,detail:`${p.hits}-${p.misses}${p.pushes?'-'+p.pushes:''} on the season`}));
   add('🔥','Hot Streak','Most hits in a row',pick(p=>p.bestHit>1?p.bestHit:null),(p,v)=>({stat:`${v} straight hits`,detail:span(p.bestHitSpan)}));
-  add('🧊','Ice Cold','Most misses in a row',pick(p=>p.worstMiss>1?p.worstMiss:null),(p,v)=>({stat:`${v} straight misses`,detail:span(p.worstMissSpan)}));
-  add('💰','Bag Holder','Most money up',pick(p=>p.net>0?p.net:null),(p,v)=>({stat:`${fmt$(v)} net`,detail:`${fmt$0(p.earned)} won · ${fmt$0(p.spent)} fronted`}));
-  add('🫠','Sweatiest Hit','A hit by the thinnest points margin',pick(p=>p.sweat?-p.sweat.m:null),(p)=>({stat:`covered by ${fmtMargin(p.sweat.m,'pts')}`,detail:p.sweat.wk,bet:p.sweat}));
-  add('🐶','One-Team Guy','Kept going back to one team',pick(p=>p.topTeam&&(p.topTeam[1].w+p.topTeam[1].l+p.topTeam[1].p)>=3?p.topTeam[1].w+p.topTeam[1].l+p.topTeam[1].p:null),(p)=>{const[a,o]=p.topTeam;return{stat:`${o.w+o.l+o.p} bets on the ${NICK[a]||a}`,detail:`${o.w}-${o.l}${o.p?'-'+o.p:''} with them`,bet:{text:NICK[a]||a,teams:[a]}}});
-  add('🪦','Cursed Team','Worst record on a team bet 3+ times',pick(p=>{const worst=Object.entries(p.byTeam).filter(([,o])=>o.w+o.l>=3).sort((a,b)=>(a[1].w/(a[1].w+a[1].l))-(b[1].w/(b[1].w+b[1].l)))[0];if(!worst)return null;p._cursed=worst;return 1-worst[1].w/(worst[1].w+worst[1].l)}),(p)=>{const[a,o]=p._cursed;return{stat:`${o.w}-${o.l} on the ${NICK[a]||a}`,detail:`${o.w+o.l} bets, ${o.l} of them lost`,bet:{text:NICK[a]||a,teams:[a]}}});
-  add('🧱','Bozo Wall','Best slip when they fronted it',pick(p=>p.bozoLegs>=8?p.bozoLegsHit/p.bozoLegs:null),(p,v)=>({stat:`${pct(v)} of legs hit as Bozo`,detail:`${p.bozoLegsHit}/${p.bozoLegs} legs · ${p.bozoCashed} cashed · ${p.bozoWeeks.join(', ')}`}));
+  add('🧊','Cold Streak','Most misses in a row',pick(p=>p.worstMiss>1?p.worstMiss:null),(p,v)=>({stat:`${v} straight misses`,detail:span(p.worstMissSpan)}));
   return A;
 }
 
@@ -896,9 +907,11 @@ function subKinds(type,text,oddsN){const t=String(text||'').toLowerCase();const 
   else if(type==='Player prop'){out.push(propKind(text))}
   return out}
 const TYPE_ORDER=['Spread','Moneyline','Total','Team total','Player prop','Other'];
-function typeRows(byType,bySub){
-  const row=(k,o,sub)=>{const n=o.w+o.l;const r=n?o.w/n:0;return`<div class="typerow ${sub?'subrow':''}"><span class="tname">${h(k)}</span><span class="tbar"><i style="width:${Math.round(r*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span></div>`};
-  return TYPE_ORDER.filter(k=>byType[k]).map(k=>row(k,byType[k])+((SUB_ORDER[k]||[]).filter(x=>bySub&&bySub[k]&&bySub[k][x]).map(x=>row(x,bySub[k][x],true)).join(''))).join('');
+const openKinds=new Set();
+const chev=open=>`<span class="chev ${open?'open':''}">›</span>`;
+function typeRows(byType,bySub,scope='bt'){
+  const row=(k,o,sub,key,open,hasSub)=>{const n=o.w+o.l;const r=n?o.w/n:0;return`<div class="typerow ${sub?'subrow':''} ${hasSub?'expandable':''}" ${hasSub?`data-act="toggle-kind" data-key="${key}"`:''}><span class="tname">${hasSub?chev(open):''}${h(k)}</span><span class="tbar"><i style="width:${Math.round(r*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span></div>`};
+  return TYPE_ORDER.filter(k=>byType[k]).map(k=>{const subs=(SUB_ORDER[k]||[]).filter(x=>bySub&&bySub[k]&&bySub[k][x]);const key=scope+':'+k;const open=openKinds.has(key);return row(k,byType[k],false,key,open,subs.length>0)+(open?subs.map(x=>row(x,bySub[k][x],true)).join(''):'')}).join('');
 }
 function betChip(text,teams,cls=''){const t=(teams||[]).slice(0,2);return`<span class="betchip ${cls}">${t.map(a=>`<img src="${LOGO(a)}" alt="" decoding="async">`).join('')}<span class="bt">${h(text||'—')}</span></span>`}
 function resultBadge(c){
@@ -1041,7 +1054,7 @@ function renderStatsInner(){
       <td class="${r.cur>0?'good':r.cur<0?'bad':''}">${r.cur>0?'W'+r.cur:r.cur<0?'L'+(-r.cur):'—'}</td></tr>`).join('')}
   </tbody></table></div>${(()=>{const r=rows.find(x=>x.m.id===detailOpen);return r?`<div class="pd-wrap"><div class="pd-title"><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span><b>${h(r.m.name)}</b><span class="muted">${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''} · ${pct(r.rate)}</span><button class="mini" data-act="player-detail" data-mid="${r.m.id}" title="Close">×</button></div>${playerDetail(r)}</div>`:''})()}</section>
   ${A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map(a=>{const m=member(a.who);return`<div class="award"><div class="aw-head"><span class="ic">${a.icon}</span><div class="ab"><small>${a.name} <span class="aw-blurb">· ${h(a.blurb)}</span></small><b style="color:${m.color}">${h(m.name)}</b></div></div><div class="aw-stat">${h(a.stat||'')}</div>${a.bet&&a.bet.text?`<div class="aw-bet">${betChip(a.bet.text,a.bet.teams)}${a.bet.odds!=null&&a.bet.odds!==''?`<span class="mono muted">${fmtOdds(a.bet.odds)}</span>`:''}</div>`:''}${a.detail?`<em>${h(a.detail)}</em>`:''}</div>`}).join('')}</div></section>`:''}
-  ${betTypeCard(g)}${kindGrid(per)}${teamsCard(g)}
+  ${betTypeCard(g)}${kingsCard(per)}${kindGrid(per)}${teamsCard(g,per)}
   <section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--pink);background:transparent"></i>bozo</span></div></section>
   ${closeCalls(per)}`;
 }
@@ -1058,7 +1071,7 @@ function playerDetail(r){
       ${cell('Avg cover',`<b class="good">${r.avgHitMargin!=null?'+'+r.avgHitMargin.toFixed(1):'—'}</b><em>pts when hitting</em>`)}${cell('Avg miss',`<b class="bad">${r.avgMiss!=null?'-'+r.avgMiss.toFixed(1):'—'}</b><em>pts when missing</em>`)}
       ${cell('Best at',r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>')}
     </div>
-    ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type</div><div class="typerows">${typeRows(r.byType,r.bySub)}</div>`:''}
+    ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type</div><div class="typerows">${typeRows(r.byType,r.bySub,'pd')}</div>`:''}
     ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most</div><div class="teamrows">${Object.entries(r.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,5).map(([a,o])=>{const n=o.w+o.l;const rt=n?o.w/n:0;return`<div class="teamrow"><img src="${LOGO(a)}" alt=""><span class="tname">${h(NICK[a]||a)}</span><span class="tbar"><i style="width:${Math.round(rt*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${rt>=.5?'good':'bad'}">${n?Math.round(rt*100)+'%':'—'}</span></div>`}).join('')}</div>`:''}
     <div class="pd-bets">
       <div class="pd-bet good-l"><small>Best hit</small>${bet(r.longestHit)}</div>
@@ -1072,15 +1085,26 @@ function betTypeCard(g){
   if(!Object.keys(g.byType||{}).length)return'';
   return`<section class="card"><h3>By bet type</h3><div class="typerows">${typeRows(g.byType,g.bySub)}</div></section>`;
 }
-function teamsCard(g){
+function teamsCard(g,per){
   const rows=Object.entries(g.byTeam||{}).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,10);if(!rows.length)return'';
-  return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team.</p><div class="teamrows">${rows.map(([a,o])=>{const n=o.w+o.l;const r=n?o.w/n:0;return`<div class="teamrow"><img src="${LOGO(a)}" alt=""><span class="tname">${h(NICK[a]||a)}</span><span class="tbar"><i style="width:${Math.round(r*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span></div>`}).join('')}</div></section>`;
+  const people=S.members.filter(m=>per&&per[m.id]);
+  return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team. Tap a team to see who's been betting them.</p><div class="teamrows">${rows.map(([a,o])=>{const n=o.w+o.l;const r=n?o.w/n:0;const key='tm:'+a;const open=openKinds.has(key);
+    const ppl=people.map(m=>[m,per[m.id].byTeam[a]]).filter(([,x])=>x).sort((x,y)=>(y[1].w+y[1].l+y[1].p)-(x[1].w+x[1].l+x[1].p));
+    return`<div class="teamrow expandable" data-act="toggle-kind" data-key="${key}"><img src="${LOGO(a)}" alt=""><span class="tname">${chev(open)}${h(NICK[a]||a)}</span><span class="tbar"><i style="width:${Math.round(r*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span></div>${open?`<div class="teamppl">${ppl.map(([m,x])=>{const nn=x.w+x.l;const rr=nn?x.w/nn:0;return`<div class="teamrow sub"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><span class="tname">${h(m.name)}</span><span class="tbar"><i style="width:${Math.round(rr*100)}%"></i></span><span class="mono trec">${x.w}-${x.l}${x.p?'-'+x.p:''}</span><span class="tpct ${rr>=.5?'good':'bad'}">${nn?Math.round(rr*100)+'%':'—'}</span></div>`}).join('')}</div>`:''}`}).join('')}</div></section>`;
+}
+function kingsCard(per){
+  const people=S.members.filter(m=>per[m.id]&&per[m.id].picks>0);if(!people.length)return'';
+  const who=(get,mode)=>{let best=null;for(const m of people){const o=get(per[m.id]);if(!o)continue;const n=o.w+o.l;if(mode==='rate'&&(n<3||o.w/n<.5))continue;const v=mode==='wins'?o.w+(n?o.w/n:0)/10:o.w/n+o.w/1000;if(mode==='wins'&&!o.w)continue;if(!best||v>best.v)best={m,o,v}}return best};
+  const cell=(b,mode)=>b?`<span class="king"><span class="avatar sm" style="--c:${b.m.color}">${h(initials(b.m.name))}</span><b>${h(b.m.name)}</b><small class="mono">${b.o.w}-${b.o.l}${mode==='rate'?' · '+Math.round(b.o.w/(b.o.w+b.o.l)*100)+'%':''}</small></span>`:'<span class="muted tiny">—</span>';
+  const row=(k,get,sub,key,open,hasSub)=>`<div class="kingrow ${sub?'subrow':''} ${hasSub?'expandable':''}" ${hasSub?`data-act="toggle-kind" data-key="${key}"`:''}><span class="tname">${hasSub?chev(open):''}${h(k)}</span>${cell(who(get,'wins'),'wins')}${cell(who(get,'rate'),'rate')}</div>`;
+  const rows=TYPE_ORDER.filter(t=>t!=='Other'&&people.some(m=>per[m.id].byType[t])).map(t=>{const subs=(SUB_ORDER[t]||[]).filter(sk=>people.some(m=>per[m.id].bySub[t]?.[sk]));const key='kings:'+t;const open=openKinds.has(key);return row(t,p=>p.byType[t],false,key,open,subs.length>0)+(open?subs.map(sk=>row(sk,p=>p.bySub[t]?.[sk],true)).join(''):'')}).join('');
+  return`<section class="card"><h3>Kings of each bet</h3><p class="muted tiny" style="margin:-4px 0 10px">Who owns each kind of bet: most wins, and best rate (3+ bets and a winning record to qualify). Tap a row for the breakdown.</p><div class="kingrow head"><span></span><span>Most wins</span><span>Best rate</span></div><div class="kingrows">${rows}</div></section>`;
 }
 function kindGrid(per){
   const people=S.members.filter(m=>per[m.id]&&per[m.id].picks>0);if(!people.length)return'';
-  const rows=[];for(const t of TYPE_ORDER){if(!people.some(m=>per[m.id].byType[t]))continue;rows.push({k:t,get:p=>p.byType[t]});for(const sk of (SUB_ORDER[t]||[]))if(people.some(m=>per[m.id].bySub[t]?.[sk]))rows.push({k:sk,sub:true,get:p=>p.bySub[t]?.[sk]})}
+  const rows=[];for(const t of TYPE_ORDER){if(!people.some(m=>per[m.id].byType[t]))continue;const subs=(SUB_ORDER[t]||[]).filter(sk=>people.some(m=>per[m.id].bySub[t]?.[sk]));const key='kg:'+t;const open=openKinds.has(key);rows.push({k:t,get:p=>p.byType[t],key:subs.length?key:null,open});if(open)for(const sk of subs)rows.push({k:sk,sub:true,get:p=>p.bySub[t]?.[sk]})}
   const cell=o=>{if(!o||!(o.w+o.l+o.p))return'<td class="kg-empty">·</td>';const n=o.w+o.l;const r=n?o.w/n:.5;const bg=n?`rgba(${r>=.5?'52,199,89':'255,59,48'},${(0.12+Math.abs(r-.5)*.6).toFixed(2)})`:'var(--surface2)';return`<td style="background:${bg}"><b>${o.w}-${o.l}${o.p?'-'+o.p:''}</b></td>`};
-  return`<section class="card"><h3>Who's good at what</h3><p class="muted tiny" style="margin:-4px 0 10px">Record by bet kind for every player. Greener is better, redder is worse, deeper means further from .500.</p><div class="kg-wrap"><table class="kg"><thead><tr><th></th>${people.map(m=>`<th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr class="${r.sub?'sub':''}"><th>${h(r.k)}</th>${people.map(m=>cell(r.get(per[m.id]))).join('')}</tr>`).join('')}</tbody></table></div></section>`;
+  return`<section class="card"><h3>Who's good at what</h3><p class="muted tiny" style="margin:-4px 0 10px">Record by bet kind for every player. Greener is better, redder is worse, deeper means further from .500.</p><div class="kg-wrap"><table class="kg"><thead><tr><th></th>${people.map(m=>`<th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr class="${r.sub?'sub':''} ${r.key?'expandable':''}" ${r.key?`data-act="toggle-kind" data-key="${r.key}"`:''}><th>${r.key?chev(r.open):''}${h(r.k)}</th>${people.map(m=>cell(r.get(per[m.id]))).join('')}</tr>`).join('')}</tbody></table></div></section>`;
 }
 function heatmap(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
@@ -1349,6 +1373,7 @@ const ACT={
       actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit();const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===el.dataset.mid)sendPick(L,w,el.dataset.mid)}}]})},
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
+  'toggle-kind'(el){const k=el.dataset.key;if(openKinds.has(k))openKinds.delete(k);else openKinds.add(k);render()},
   async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
   'copy-share'(){const link=shareLink(league());copyText(link)},
   'sync-now'(){pull(league(),true)},
