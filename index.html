@@ -233,8 +233,14 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .lb-row{cursor:pointer}
 .lb-row:hover td{background:var(--surface2)}
 .lb .chev{color:var(--dim);font-weight:600;transition:transform .2s;margin-left:2px}
-.lb-row.open .chev{transform:rotate(90deg);color:var(--blue)}
+.lb-row:active td{opacity:.7}
 .pd-wrap{margin-top:12px;animation:fadeUp .2s}
+.modal .pd{background:transparent;padding:0;animation:none}
+.modal .pd-cell,.modal .pd-bet{background:var(--surface2)}
+.modal .pd-title{margin:-2px 0 12px}
+.modal .pd-title .avatar{width:34px;height:34px;font-size:13px}
+.modal .pd-title b{font-size:17px}
+.modal .pd-cell b,.modal .pd-sub,.modal .typerow,.modal .pd-bet b,.modal .pd-bet span{color:var(--text)}
 .pd-title{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:15px}
 .pd-title b{font-weight:700}
 .pd-title .mini{margin-left:auto}
@@ -483,7 +489,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-16.2';
+const APP_VERSION='2026-09-16.3';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1018,7 +1024,7 @@ function betListHtml(legs,showWho){
 function showBets(n){
   withStats(()=>{const{g}=stats();const legs=nodeLegs(g.legs,n);const rec=recOf(legs);const m=n.mid?member(n.mid):null;
     const title=(m?m.name+' · ':'')+nodeTitle(n);
-    modal({title,body:`<p class="muted" style="margin:0 0 4px"><b class="mono">${recStr(rec)}</b>${rateOf(rec)!=null?` · ${Math.round(rateOf(rec)*100)}%`:''} · ${legs.length} bet${legs.length===1?'':'s'}</p>${betListHtml(legs,!m)}`,actions:[{label:'Done',cls:'ghost'}]})});
+    modal({stack:true,title,body:`<p class="muted" style="margin:0 0 4px"><b class="mono">${recStr(rec)}</b>${rateOf(rec)!=null?` · ${Math.round(rateOf(rec)*100)}%`:''} · ${legs.length} bet${legs.length===1?'':'s'}</p>${betListHtml(legs,!m)}`,actions:[{label:'Done',cls:'ghost'}]})});
 }
 function withStats(fn){return(VIEW==='stats'||VIEW==='history')?withAll(fn):fn()}
 
@@ -1164,14 +1170,14 @@ function renderStatsInner(){
     <div class="tile"><small>Net</small><b class="${net>=0?'good':'bad'}">${fmt$0(net)}</b><em>${fmt$0(g.paid)} in</em></div>
   </div>
   <section class="card"><h3>Leaderboard</h3><div class="lb-wrap"><table class="lb"><thead><tr><th>Player</th>${COLS.map(([k,l])=>`<th class="${sortKey===k?'on':''}" data-act="sort" data-key="${k}">${l}</th>`).join('')}</tr></thead><tbody>
-    ${rows.map((r,i)=>`<tr class="lb-row ${detailOpen===r.m.id?'open':''}" data-act="player-detail" data-mid="${r.m.id}"><td><div class="who"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span>${h(r.m.name)}<span class="chev">›</span></div></td>
+    ${rows.map((r,i)=>`<tr class="lb-row" data-act="player-detail" data-mid="${r.m.id}"><td><div class="who"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span>${h(r.m.name)}<span class="chev">›</span></div></td>
       <td><span class="bar" style="width:${Math.round((r.rate||0)*36)}px"></span>${pct(r.rate)}</td>
       <td>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</td>
       <td class="mono">${r.avgDec?amer(r.avgDec):'—'}</td>
       <td>${r.bozo}×</td>
       <td class="${r.net>0?'good':r.net<0?'bad':''}">${fmt$0(r.net)}</td>
       <td class="${r.cur>0?'good':r.cur<0?'bad':''}">${r.cur>0?'W'+r.cur:r.cur<0?'L'+(-r.cur):'—'}</td></tr>`).join('')}
-  </tbody></table></div>${(()=>{const r=rows.find(x=>x.m.id===detailOpen);return r?`<div class="pd-wrap"><div class="pd-title"><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span><b>${h(r.m.name)}</b><span class="muted">${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''} · ${pct(r.rate)}</span><button class="mini" data-act="player-detail" data-mid="${r.m.id}" title="Close">×</button></div>${playerDetail(r)}</div>`:''})()}</section>
+  </tbody></table></div><p class="muted tiny" style="margin:8px 0 0">Tap a name for the full breakdown.</p></section>
   ${A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map((a,i)=>{const m=member(a.who);return`<div class="award tap" data-act="award-rank" data-i="${i}"><div class="aw-head"><span class="ic">${a.icon}</span><div class="ab"><small>${a.name} <span class="aw-blurb">· ${h(a.blurb)}</span></small><b style="color:${m.color}">${h(m.name)}</b></div></div><div class="aw-stat">${h(a.stat||'')}</div>${a.bet&&a.bet.text?`<div class="aw-bet">${betChip(a.bet.text,a.bet.teams)}${a.bet.odds!=null&&a.bet.odds!==''?`<span class="mono muted">${fmtOdds(a.bet.odds)}</span>`:''}</div>`:''}${a.detail?`<em>${h(a.detail)}</em>`:''}<span class="aw-more">Full ranking ›</span></div>`}).join('')}</div></section>`:''}
   ${killerClubCard(per)}${explorerCard(g)}${kingsCard(per)}${teamsCard(g)}
   <section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--pink);background:transparent"></i>bozo</span></div></section>
@@ -1399,12 +1405,14 @@ let tipScrollY=0;
 addEventListener('scroll',()=>{if(tipPinned){if(Math.abs(scrollY-tipScrollY)>48){tipPinned=null;hideTip()}else showTip(tipPinned)}else hideTip()},{passive:true});
 
 /* ============================== UI BITS ============================== */
-function modal({title,body,actions=[],onOpen}){
+const modalStack=[];
+function modal({title,body,actions=[],onOpen,stack}){
   const root=document.getElementById('modal-root');
+  if(stack&&root.firstElementChild)modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal')?.scrollTop||0});else modalStack.length=0;
   root.innerHTML=`<div class="scrim" data-act="modal-close"><div class="modal" role="dialog"><h2>${h(title)}</h2><div class="modal-body">${body}</div>${actions.length?`<div class="modal-actions">${actions.map((a,i)=>`<button class="btn ${a.cls||''}" data-act="modal-action" data-i="${i}">${h(a.label)}</button>`).join('')}</div>`:''}</div></div>`;
   root._actions=actions;requestAnimationFrame(()=>root.firstElementChild?.classList.add('in'));onOpen&&onOpen(root);
 }
-function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250)}
+function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root._actions=prev.actions;const m=root.querySelector('.modal');if(m)m.scrollTop=prev.scroll;return}s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250)}
 function confirm2(title,body,label,fn,cls='danger'){modal({title,body:`<p>${body}</p>`,actions:[{label:'Cancel',cls:'ghost'},{label,cls,onClick:fn}]})}
 function toast(msg,cls=''){const r=document.getElementById('toast-root');const t=document.createElement('div');t.className='toast '+cls;t.textContent=msg;r.appendChild(t);requestAnimationFrame(()=>t.classList.add('in'));setTimeout(()=>{t.classList.remove('in');setTimeout(()=>t.remove(),320)},2600)}
 function spin(cands,onDone){
@@ -1490,8 +1498,8 @@ const ACT={
   'x-go'(el){xNode=decNode(el.dataset.node);render();const x=document.querySelector('.explorer');if(x){const r=x.getBoundingClientRect();if(r.top<0||r.top>window.innerHeight*.6)x.scrollIntoView({block:'start',behavior:'smooth'})}},
   'x-sort'(el){xSort=el.dataset.sort;render()},
   'show-bets'(el){showBets(decNode(el.dataset.node))},
-  'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
-  'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
+  'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
+  'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   'toggle-kind'(el){const k=el.dataset.key;if(openKinds.has(k))openKinds.delete(k);else openKinds.add(k);render()},
   async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
   'copy-share'(){const link=shareLink(league());copyText(link)},
@@ -1501,7 +1509,8 @@ const ACT={
   'cast-vote'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}const cand=el.dataset.mid;sendVote(l,w,l.me,(w.ballots||{})[l.me]===cand?null:cand)},
   'toggle-lock'(el){const w=week(el.dataset.wid);w.locked=!w.locked;commit();toast(w.locked?'Picks locked — nobody can change their pick':'Picks unlocked')},
   'verify-pick'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(p){delete p.unsure;commit();toast('Marked verified')}},
-  'player-detail'(el){detailOpen=detailOpen===el.dataset.mid?null:el.dataset.mid;render()},
+  'player-detail'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;const r={m,...p};
+    modal({title:m.name,body:`<div class="pd-title"><span class="avatar" style="--c:${m.color}">${h(initials(m.name))}</span><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${pct(r.rate)} · ${r.picks} pick${r.picks===1?'':'s'}${statScope==='all'?' · all-time':' · '+h(season().name)}</span></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
   'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=scrollY;showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
