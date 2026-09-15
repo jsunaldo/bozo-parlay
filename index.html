@@ -279,6 +279,15 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .tbar i{display:block;height:100%;background:var(--blue);border-radius:4px}
 .trec{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
 .tpct{font-weight:700;text-align:right;font-size:12px}
+.kg-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
+.kg{border-collapse:separate;border-spacing:3px;font-size:11px}
+.kg th{font-weight:600;color:var(--muted);text-align:left;white-space:nowrap;padding:2px 6px 2px 0;position:sticky;left:0;background:var(--surface)}
+.kg thead th{text-align:center;padding:0 2px;position:static}
+.kg tr.sub th{font-weight:500;padding-left:12px;color:var(--dim);font-size:10px}
+.kg tr.sub th::before{content:'↳ ';}
+.kg td{min-width:38px;height:26px;text-align:center;border-radius:7px;font-variant-numeric:tabular-nums;padding:0 4px}
+.kg td b{font-weight:600}
+.kg td.kg-empty{color:var(--dim);background:transparent}
 .heat-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
 table.heat{border-collapse:separate;border-spacing:4px}
 .heat th{font-size:11px;font-weight:600;color:var(--muted);font-family:var(--mono)}
@@ -403,7 +412,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-15.6';
+const APP_VERSION='2026-09-15.7';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -762,7 +771,7 @@ function stats(){
       const p=per[l.mid];if(!p)continue;
       p.history.push({num:w.num,wk:wkShort(w),status:l.status,margin:l.margin,unit:l.unit,text:l.text,odds:l.oddsN,teams:l.teams||[]});
       if(l.status==='pending'){p.pending++;continue}
-      p.picks++;{const k=l.status==='hit'?'w':l.status==='miss'?'l':'p';const bt=betType(l.text);(p.byType[bt]??={w:0,l:0,p:0})[k]++;(g.byType[bt]??={w:0,l:0,p:0})[k]++;if(bt==='Player prop'){const pk=propKind(l.text);(p.bySub[pk]??={w:0,l:0,p:0})[k]++;(g.bySub[pk]??={w:0,l:0,p:0})[k]++}for(const a of (l.teams||[])){(p.byTeam[a]??={w:0,l:0,p:0})[k]++;(g.byTeam[a]??={w:0,l:0,p:0})[k]++}}
+      p.picks++;{const k=l.status==='hit'?'w':l.status==='miss'?'l':'p';const bt=betType(l.text);(p.byType[bt]??={w:0,l:0,p:0})[k]++;(g.byType[bt]??={w:0,l:0,p:0})[k]++;for(const sk of subKinds(bt,l.text,l.oddsN)){((p.bySub[bt]??={})[sk]??={w:0,l:0,p:0})[k]++;((g.bySub[bt]??={})[sk]??={w:0,l:0,p:0})[k]++}for(const a of (l.teams||[])){(p.byTeam[a]??={w:0,l:0,p:0})[k]++;(g.byTeam[a]??={w:0,l:0,p:0})[k]++}}
       if(l.oddsN!=null){p.decSum+=dec(l.oddsN);p.decN++;const side=l.oddsN>0?p.plus:p.minus;side[l.status==='hit'?'w':l.status==='miss'?'l':'p']++;
         if(l.status==='hit'){p.winDec.push(dec(l.oddsN));if(!p.longestHit||l.oddsN>p.longestHit.odds)p.longestHit={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams};if(!p.easiestHit||l.oddsN<p.easiestHit.odds)p.easiestHit={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams}}
         if(l.status==='miss'){p.loseDec.push(dec(l.oddsN));if(!p.worstMissOdds||l.oddsN<p.worstMissOdds.odds)p.worstMissOdds={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams}}}
@@ -787,7 +796,7 @@ function stats(){
     p.net=p.earned-p.spent;
     p.avgMiss=p.missMargins.length?p.missMargins.reduce((a,b)=>a+b,0)/p.missMargins.length:null;p.avgHitMargin=p.hitMargins.length?p.hitMargins.reduce((a,b)=>a+b,0)/p.hitMargins.length:null;
     p.topTeam=Object.entries(p.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p))[0]||null;
-    p.bestType=Object.entries({...p.byType,...p.bySub}).filter(([k,o])=>k!=='Player prop'&&k!=='Other'&&o.w+o.l>=2).sort((a,b)=>b[1].w/(b[1].w+b[1].l)-a[1].w/(a[1].w+a[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;
+    p.bestType=Object.entries({...p.byType,...Object.assign({},...Object.values(p.bySub))}).filter(([k,o])=>k!=='Player prop'&&k!=='Other'&&o.w+o.l>=2).sort((a,b)=>b[1].w/(b[1].w+b[1].l)-a[1].w/(a[1].w+a[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;
   });
   return{per,g};
 }
@@ -878,10 +887,18 @@ function pickIcon(l){const t=l.teams||[];
 function betType(text){const t=String(text||'').toLowerCase();if(!t||t.startsWith('('))return'Other';if(/moneyline|\bml\b/.test(t))return'Moneyline';if(/team total/.test(t))return'Team total';if(/\/ .*(over|under) \d|\b(over|under) \d+(\.5)?$/.test(t)&&!/\d\+ |yds|receptions|catches|attempts|goals|sacks/.test(t))return'Total';if(/[+-]\d+(\.5)?( \(alt\))?$/.test(t))return'Spread';return'Player prop'}
 function propKind(text){const t=String(text||'').toLowerCase();if(/anytime td|\battd\b/.test(t))return'Anytime TD';if(/rush \+ rec|total yds/.test(t))return'Rush + rec yds';if(/rush(ing)? ?yds|rushing yards/.test(t))return'Rushing yds';if(/rec(eiving)? ?yds|receiving yards/.test(t))return'Receiving yds';if(/pass(ing)? ?yds|passing yards/.test(t))return'Passing yds';if(/receptions|catches/.test(t))return'Receptions';if(/passing touchdowns|pass(ing)? tds?/.test(t))return'Passing TDs';if(/attempts/.test(t))return'Pass attempts';if(/field goals?/.test(t))return'Field goals';if(/longest rush|sacks|points\b/.test(t))return'Other props';return'Other props'}
 const PROP_ORDER=['Anytime TD','Rushing yds','Receiving yds','Passing yds','Rush + rec yds','Receptions','Passing TDs','Pass attempts','Field goals','Other props'];
+const SUB_ORDER={Spread:['Favorite','Underdog','Small (≤3)','Mid (3.5–6.5)','Big (7+)','Alt line','1st half'],Moneyline:['Favorite (−)','Underdog (+)','1st half'],Total:['Over','Under','Low (<44)','Mid (44–49.5)','High (50+)','Alt line'],'Team total':['Over','Under'],'Player prop':PROP_ORDER,Other:[]};
+function subKinds(type,text,oddsN){const t=String(text||'').toLowerCase();const out=[];
+  if(type==='Spread'){const m=t.match(/([+-])(\d+(?:\.\d)?)/);if(m){out.push(m[1]==='-'?'Favorite':'Underdog');const n=+m[2];out.push(n<=3?'Small (≤3)':n<7?'Mid (3.5–6.5)':'Big (7+)')}if(/\(alt\)|\balt\b/.test(t))out.push('Alt line');if(/1st half|first half/.test(t))out.push('1st half')}
+  else if(type==='Moneyline'){if(oddsN!=null)out.push(oddsN<0?'Favorite (−)':'Underdog (+)');if(/1st half|first half/.test(t))out.push('1st half')}
+  else if(type==='Total'){if(/\bover\b/.test(t))out.push('Over');else if(/\bunder\b/.test(t))out.push('Under');const m=t.match(/(?:over|under) (\d+(?:\.\d)?)/);if(m){const n=+m[1];out.push(n<44?'Low (<44)':n<50?'Mid (44–49.5)':'High (50+)')}if(/\(alt\)|\balt\b/.test(t))out.push('Alt line')}
+  else if(type==='Team total'){out.push(/\bover\b/.test(t)?'Over':'Under')}
+  else if(type==='Player prop'){out.push(propKind(text))}
+  return out}
+const TYPE_ORDER=['Spread','Moneyline','Total','Team total','Player prop','Other'];
 function typeRows(byType,bySub){
-  const order=['Spread','Moneyline','Total','Team total','Player prop','Other'];
   const row=(k,o,sub)=>{const n=o.w+o.l;const r=n?o.w/n:0;return`<div class="typerow ${sub?'subrow':''}"><span class="tname">${h(k)}</span><span class="tbar"><i style="width:${Math.round(r*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span></div>`};
-  return order.filter(k=>byType[k]).map(k=>row(k,byType[k])+(k==='Player prop'?PROP_ORDER.filter(x=>bySub&&bySub[x]).map(x=>row(x,bySub[x],true)).join(''):'')).join('');
+  return TYPE_ORDER.filter(k=>byType[k]).map(k=>row(k,byType[k])+((SUB_ORDER[k]||[]).filter(x=>bySub&&bySub[k]&&bySub[k][x]).map(x=>row(x,bySub[k][x],true)).join(''))).join('');
 }
 function betChip(text,teams,cls=''){const t=(teams||[]).slice(0,2);return`<span class="betchip ${cls}">${t.map(a=>`<img src="${LOGO(a)}" alt="" decoding="async">`).join('')}<span class="bt">${h(text||'—')}</span></span>`}
 function resultBadge(c){
@@ -1024,7 +1041,7 @@ function renderStatsInner(){
       <td class="${r.cur>0?'good':r.cur<0?'bad':''}">${r.cur>0?'W'+r.cur:r.cur<0?'L'+(-r.cur):'—'}</td></tr>`).join('')}
   </tbody></table></div>${(()=>{const r=rows.find(x=>x.m.id===detailOpen);return r?`<div class="pd-wrap"><div class="pd-title"><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span><b>${h(r.m.name)}</b><span class="muted">${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''} · ${pct(r.rate)}</span><button class="mini" data-act="player-detail" data-mid="${r.m.id}" title="Close">×</button></div>${playerDetail(r)}</div>`:''})()}</section>
   ${A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map(a=>{const m=member(a.who);return`<div class="award"><div class="aw-head"><span class="ic">${a.icon}</span><div class="ab"><small>${a.name} <span class="aw-blurb">· ${h(a.blurb)}</span></small><b style="color:${m.color}">${h(m.name)}</b></div></div><div class="aw-stat">${h(a.stat||'')}</div>${a.bet&&a.bet.text?`<div class="aw-bet">${betChip(a.bet.text,a.bet.teams)}${a.bet.odds!=null&&a.bet.odds!==''?`<span class="mono muted">${fmtOdds(a.bet.odds)}</span>`:''}</div>`:''}${a.detail?`<em>${h(a.detail)}</em>`:''}</div>`}).join('')}</div></section>`:''}
-  ${betTypeCard(g)}${teamsCard(g)}
+  ${betTypeCard(g)}${kindGrid(per)}${teamsCard(g)}
   <section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--pink);background:transparent"></i>bozo</span></div></section>
   ${closeCalls(per)}`;
 }
@@ -1058,6 +1075,12 @@ function betTypeCard(g){
 function teamsCard(g){
   const rows=Object.entries(g.byTeam||{}).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,10);if(!rows.length)return'';
   return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team.</p><div class="teamrows">${rows.map(([a,o])=>{const n=o.w+o.l;const r=n?o.w/n:0;return`<div class="teamrow"><img src="${LOGO(a)}" alt=""><span class="tname">${h(NICK[a]||a)}</span><span class="tbar"><i style="width:${Math.round(r*100)}%"></i></span><span class="mono trec">${o.w}-${o.l}${o.p?'-'+o.p:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span></div>`}).join('')}</div></section>`;
+}
+function kindGrid(per){
+  const people=S.members.filter(m=>per[m.id]&&per[m.id].picks>0);if(!people.length)return'';
+  const rows=[];for(const t of TYPE_ORDER){if(!people.some(m=>per[m.id].byType[t]))continue;rows.push({k:t,get:p=>p.byType[t]});for(const sk of (SUB_ORDER[t]||[]))if(people.some(m=>per[m.id].bySub[t]?.[sk]))rows.push({k:sk,sub:true,get:p=>p.bySub[t]?.[sk]})}
+  const cell=o=>{if(!o||!(o.w+o.l+o.p))return'<td class="kg-empty">·</td>';const n=o.w+o.l;const r=n?o.w/n:.5;const bg=n?`rgba(${r>=.5?'52,199,89':'255,59,48'},${(0.12+Math.abs(r-.5)*.6).toFixed(2)})`:'var(--surface2)';return`<td style="background:${bg}"><b>${o.w}-${o.l}${o.p?'-'+o.p:''}</b></td>`};
+  return`<section class="card"><h3>Who's good at what</h3><p class="muted tiny" style="margin:-4px 0 10px">Record by bet kind for every player. Greener is better, redder is worse, deeper means further from .500.</p><div class="kg-wrap"><table class="kg"><thead><tr><th></th>${people.map(m=>`<th><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${h(initials(m.name))}</span></th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr class="${r.sub?'sub':''}"><th>${h(r.k)}</th>${people.map(m=>cell(r.get(per[m.id]))).join('')}</tr>`).join('')}</tbody></table></div></section>`;
 }
 function heatmap(){
   const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
