@@ -1,23 +1,23 @@
 #!/usr/bin/env python3
 """Build the read-only league site (../bozo-parlay-club) from this app.
 Strips every built-in seed (all leagues' history) out of the page, flips SHARE_MODE on,
-and makes the page load its one league from data.json. data.json itself is managed
-separately: the commissioner publishes it from the app (Crew → League site) or hands over a snapshot."""
-import os,re,shutil,json,subprocess,sys
-SRC=os.path.dirname(os.path.abspath(__file__)); OUT=os.path.join(os.path.dirname(SRC),'bozo-parlay-club')
+and bakes in the one league it syncs live from the worker (--league <id> --key <memberKey> [--url]).
+Rebuild and push the club repo whenever index.html changes."""
+import os,re,shutil,json,subprocess,sys,argparse
+ap=argparse.ArgumentParser();ap.add_argument('--league',required=True,help='sync league id');ap.add_argument('--key',required=True,help='member key');ap.add_argument('--url',default='https://bozo-sync.jsunaldo.workers.dev');ap.add_argument('--out');A=ap.parse_args()
+SRC=os.path.dirname(os.path.abspath(__file__)); OUT=A.out or os.path.join(os.path.dirname(SRC),'bozo-parlay-club')
 os.makedirs(OUT,exist_ok=True)
 s=open(os.path.join(SRC,'index.html')).read()
 a=s.index('/*@@SEEDS-START@@*/'); b=s.index('/*@@SEEDS-END@@*/')
-STUB=r"""/* league site: no seeds, one league, loaded from data.json */
-const SHARE_KEY='bozo-club-data-v1';
+STUB=r"""/* league site: no seeds; one league, live from the sync server, this phone claims one name */
+const SHARE_LEAGUE={id:'__LEAGUE_ID__',key:'__MEMBER_KEY__',url:'__SYNC_URL__'};
 function migrateDB(d){return d}
-function shareDB(j){const l={id:'share',name:j.name||'Bozo Parlay',seasons:(j.seasons||[]).map(x=>({...x,data:migrate(x.data||fresh())})),activeSeason:j.activeSeason,updatedAt:j.updatedAt||null};if(!l.seasons.length){const d=fresh();l.seasons=[{id:'s0',name:'',data:d}]}if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=l.seasons[0].id;return{leagues:[l],active:'share',seedV:99,updatedAt:j.updatedAt||null}}
-function loadDB(){try{const r=localStorage.getItem(SHARE_KEY);if(r)return shareDB(JSON.parse(r))}catch(e){}return shareDB({name:'Bozo Parlay',seasons:[]})}
-let shareBusy=false;
-async function refreshShare(loud){if(shareBusy)return;shareBusy=true;try{const r=await fetch('data.json?r='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);const j=await r.json();
-    if(j.updatedAt!==DB.updatedAt){try{localStorage.setItem(SHARE_KEY,JSON.stringify(j))}catch(e){}const cur=season().id;DB=shareDB(j);const l=league();l.activeSeason=l.seasons.find(x=>x.id===cur)?cur:newestOf(l).id;S=season().data;ALLTIME=null;render();if(loud)toast('Updated with the latest results','good')}else if(loud)toast('Already up to date','good')}
-  catch(e){if(!DB.updatedAt)document.getElementById('view').innerHTML=empty('Couldn\'t load the league','Check your connection and try again.');else if(loud)toast('Could not check for updates: '+e.message,'bad')}
-  finally{shareBusy=false}}
+function loadDB(){let d=null;try{const r=localStorage.getItem(KEY2);if(r)d=JSON.parse(r)}catch(e){}
+  if(!d||!Array.isArray(d.leagues))d={leagues:[],active:null,seedV:99};
+  d.leagues.forEach(l=>{l.seasons=(l.seasons||[]).map(x=>({...x,data:migrate(x.data||fresh())}))});
+  let l=d.leagues.find(x=>x.sync&&x.sync.id===SHARE_LEAGUE.id);
+  if(!l){const dd=fresh();l={id:'cloud-'+SHARE_LEAGUE.id,name:'Bozo Parlay',seasons:[{id:'s0',name:'',data:dd}],activeSeason:'s0',sync:{url:SHARE_LEAGUE.url,id:SHARE_LEAGUE.id,key:SHARE_LEAGUE.key,role:'member',rev:0}}}
+  l.sync.url=SHARE_LEAGUE.url;l.sync.key=SHARE_LEAGUE.key;d.leagues=[l];d.active=l.id;return d}
 """
 s=s[:a]+STUB+s[b:]
 def sub(old,new):
@@ -27,7 +27,8 @@ sub("const SHARE_MODE=false;","const SHARE_MODE=true;")
 sub("const KEY2='bozo-parlay-v2';","const KEY2='bozo-club-v1';")
 sub("const KEY='bozo-parlay-v1';","const KEY='bozo-club-v0';")
 s=re.sub(r"^const SEED_MARGINS=.*$","const SEED_MARGINS={};",s,flags=re.M)
-sub("(async()=>{const joined=await joinFromUrl();if(!joined)pull();})();","refreshShare();document.addEventListener('visibilitychange',()=>{if(!document.hidden)refreshShare()});")
+sub("(async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined)pull();})();","pull(league(),false);")
+s=s.replace("__LEAGUE_ID__",A.league).replace("__MEMBER_KEY__",A.key).replace("__SYNC_URL__",A.url)
 sub("<title>Bozo Parlay</title>","<title>Bozo Parlay Club</title>")
 sub('<meta name="apple-mobile-web-app-title" content="Bozo Parlay">','<meta name="apple-mobile-web-app-title" content="Bozo Club">')
 for bad in ['seedStags','OG25','STAGS24','MARGINS={"','seedOG','seedLeague2','SEED1=','Stags Bozo','Bozo University']:
