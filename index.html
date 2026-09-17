@@ -91,6 +91,18 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .brow.clinch{box-shadow:inset 0 0 0 2px var(--pink)}
 .brow em{margin-left:auto;font-style:normal;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--pink)}
 .rv-final{margin-top:10px;font-weight:700;font-size:16px;text-align:center}
+.linkbox{display:flex;gap:8px}
+.linkbox input{flex:1;min-width:0;font:inherit;font-size:15px;padding:10px 12px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);color:var(--text)}
+.upbox{display:flex;flex-direction:column;gap:8px}
+.upbox b{font-size:15px}
+.upbox .warnline{color:var(--amber);font-weight:600}
+.upbox.warn{background:var(--amber-bg);border-radius:12px;padding:12px;margin:-4px}
+.upbox.warn b{color:#b25e00}
+.evlist{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.evrow{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:baseline;font-size:12px;color:var(--muted);padding:5px 8px;border-radius:8px;background:var(--surface2)}
+.evrow .mono{color:var(--dim);white-space:nowrap}
+.evrow.bad{background:var(--red-bg);color:var(--red)}
+.evrow.warn{background:var(--amber-bg);color:#b25e00}
 .featrows{display:flex;flex-direction:column;gap:8px}
 .featrow{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface2);border-radius:12px;padding:10px 12px;cursor:pointer}
 .featrow b{display:block;font-size:14px;font-weight:600}
@@ -551,7 +563,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.2';
+const APP_VERSION='2026-09-17.3';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -806,7 +818,7 @@ function applyState(l,d){
   l.seasons=d.seasons.map(x=>({...x,data:migrate(x.data||fresh())}));
   for(const x of l.seasons){const u=ui[x.id]||{};const newest=x.data.weeks[x.data.weeks.length-1]?.id;if(u.cur&&u.last===newest&&x.data.weeks.find(w=>w.id===u.cur))x.data.currentWeekId=u.cur;else if(newest)x.data.currentWeekId=newest}   // a freshly opened week pulls everyone to it
   if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
-  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;
+  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
   if(l.meKey&&d.you===null){delete l.me;delete l.meKey;setTimeout(()=>toast('The commissioner reset your name on this phone — tap your name again to vote','bad'),80)}
   l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;
   if(league()===l){S=season().data;ALLTIME=null}
@@ -816,7 +828,7 @@ let pushT=null,pendingPick=null,pullBusy=false;
 const videoPlaying=()=>[...document.querySelectorAll('video')].some(v=>!v.paused&&!v.ended);
 async function pull(l=league(),loud=false){
   if(!l.sync||pullBusy||pushT||pendingPick)return;pullBusy=true;setSyncDot('busy');
-  try{const d=await api(l,'');if(d.rev!==l.sync.rev){applyState(l,d);save();if(!videoPlaying()&&!upl)render()}setSyncDot('ok');if(loud)toast('Up to date','good')}
+  try{const d=await api(l,'');if(d.rev!==l.sync.rev){applyState(l,d);save();if(!videoPlaying()&&!upl)render()}setSyncDot('ok');if(loud)toast('Up to date','good');if(!upl)loadPending()}
   catch(e){setSyncDot('bad');if(loud)toast('Could not reach the cloud: '+e.message+'. Showing what this device has.','bad')}
   finally{pullBusy=false}
 }
@@ -837,25 +849,35 @@ async function sendVote(l,w,voterId,candidateId){
   try{const d=await api(l,'/vote',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,voterId,candidateId}});applyState(l,d);save();render();setSyncDot('ok');toast(candidateId?`Vote in: ${member(candidateId)?.name}`:'Vote withdrawn','good')}
   catch(e){setSyncDot('bad');toast('Vote didn\'t go through: '+e.message,'bad')}
 }
-async function adoptFromUrl(){
-  const q=new URLSearchParams(location.search).get('admin');if(!q)return false;const[id,key]=q.split('.');if(!id||!key)return false;
+function parseLink(text){const t=String(text||'').trim();let m=/[?&#]admin=([a-z0-9]+)\.([a-z0-9]+)/i.exec(t);if(m)return{kind:'admin',id:m[1],key:m[2]};m=/[?&#]join=([a-z0-9]+)\.([a-z0-9]+)/i.exec(t);if(m)return{kind:'join',id:m[1],key:m[2]};m=/^([a-z0-9]{6,20})\.([a-z0-9]{16,40})$/i.exec(t);if(m)return{kind:m[2].length>=26?'admin':'join',id:m[1],key:m[2]};return null}
+const hasContent=x=>(x.seasons||[]).some(sn=>sn.data?.members?.length||sn.data?.weeks?.length);
+async function adoptLink(id,key){
   try{toast('Connecting as commissioner…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`);const d=await r.json().catch(()=>({}));if(!d.ok||d.role!=='admin')throw new Error(d.error||'that link doesn\'t work');
     let l=DB.leagues.find(x=>x.sync&&x.sync.id===id)||DB.leagues.find(x=>!x.sync&&canonName(x.name)===canonName(d.name));
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null};DB.leagues.push(l)}
     l.sync={url:SYNC_URL,id,key,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features=d.features||{};l.claims=d.claims||{};
-    if(l.seasons.length){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:l.activeSeason,name:l.name,features:l.features}});applyState(l,d2)}else applyState(l,d);
-    DB.active=l.id;S=season().data;VIEW='crew';save();history.replaceState(null,'',location.pathname);render();toast(`${l.name} is live — this device runs it`,'good');return true;
-  }catch(e){toast('Could not connect: '+e.message,'bad');history.replaceState(null,'',location.pathname);return false}
+    if(l.seasons.length&&hasContent(l)){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:l.activeSeason,name:l.name,features:l.features}});applyState(l,d2)}else applyState(l,d);
+    DB.leagues=DB.leagues.filter(x=>x===l||x.sync||hasContent(x));   // drop the empty placeholder a fresh phone starts with
+    setOwner();DB.active=l.id;S=season().data;VIEW='crew';save();render();toast(`${l.name} is live — this device runs it`,'good');return true;
+  }catch(e){toast('Could not connect: '+e.message,'bad');return false}
 }
-async function joinFromUrl(){
-  const q=new URLSearchParams(location.search).get('join');if(!q)return false;const[id,key]=q.split('.');if(!id||!key)return false;
+async function useLink(text){const p=parseLink(text);if(!p){toast('That doesn\'t look like a league link. Paste the whole link.','bad');return false}return p.kind==='admin'?adoptLink(p.id,p.key):joinLink(p.id,p.key)}
+async function adoptFromUrl(){
+  const q=new URLSearchParams(location.search).get('admin');if(!q)return false;const[id,key]=q.split('.');if(!id||!key)return false;
+  const ok=await adoptLink(id,key);history.replaceState(null,'',location.pathname);return ok;
+}
+async function joinLink(id,key){
   try{toast('Joining the league…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`);const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'that link doesn\'t work');
     let l=DB.leagues.find(x=>x.sync&&x.sync.id===id);
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null,sync:{url:SYNC_URL,id,key,role:d.role,rev:0}};DB.leagues.push(l)}else if(l.sync.role!=='admin'){l.sync.key=key}
-    applyState(l,d);const hasContent=x=>(x.seasons||[]).some(sn=>sn.data?.members?.length||sn.data?.weeks?.length);DB.leagues=DB.leagues.filter(x=>x===l||(x.sync&&x.sync.id!==id)||(hasContent(x)&&canonName(x.name)!==canonName(l.name)));   // drop the built-in copy of the same league and the empty placeholder
-    DB.active=l.id;S=season().data;VIEW='week';save();history.replaceState(null,'',location.pathname);render();
+    applyState(l,d);DB.leagues=DB.leagues.filter(x=>x===l||(x.sync&&x.sync.id!==id)||(hasContent(x)&&canonName(x.name)!==canonName(l.name)));   // drop the built-in copy of the same league and the empty placeholder
+    DB.active=l.id;S=season().data;VIEW='week';save();render();
     if(!l.me&&(l.features?.picks||l.features?.votes))pickMe(l,true);else toast(l.me?`Welcome back, ${member(l.me)?.name||''}`:`You're in ${l.name}`,'good');return true;
-  }catch(e){toast('Could not join: '+e.message,'bad');history.replaceState(null,'',location.pathname);return false}
+  }catch(e){toast('Could not join: '+e.message,'bad');return false}
+}
+async function joinFromUrl(){
+  const q=new URLSearchParams(location.search).get('join');if(!q)return false;const[id,key]=q.split('.');if(!id||!key)return false;
+  const ok=await joinLink(id,key);history.replaceState(null,'',location.pathname);return ok;
 }
 function pickMe(l=league(),first=false){
   const act=S.members.filter(m=>m.active);const bound=!!l.sync&&!isAdmin(l);
@@ -863,7 +885,7 @@ function pickMe(l=league(),first=false){
 }
 const deviceName=()=>{const u=navigator.userAgent;return /iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':/Android/.test(u)?'Android':/Mac/.test(u)?'Mac':'Browser'};
 async function claimMe(l,mid){
-  if(!l.sync||isAdmin(l)){l.me=mid;save();closeModal();render();toast(`Got it — you're ${member(mid)?.name}`,'good');return}
+  if(!l.sync||isAdmin(l)){l.me=mid;save();closeModal();render();toast(`Got it — you're ${member(mid)?.name}`,'good');if(l.sync)pull(l,false);return}
   setSyncDot('busy');
   try{const d=await api(l,'/claim',{method:'POST',body:{memberId:mid,device:deviceName()}});l.me=d.memberId;l.meKey=d.meKey;applyState(l,d);save();closeModal();render();setSyncDot('ok');toast(`Got it — you're ${member(mid)?.name}. This phone is yours now.`,'good')}
   catch(e){setSyncDot('bad');toast(e.status===409?'That name is already taken on another phone. If that\'s you, ask the commissioner to reset it.':'Could not claim that name: '+e.message,'bad')}
@@ -1174,27 +1196,42 @@ function patchTicket(w){
   }
 }
 /* ---- sealed vote: one name + one video per person, hidden until everyone with a leg is in ---- */
-let upl=null;const subEdit=new Set();
+let upl=null,pendingUp=null;const subEdit=new Set();
+const IDB={db:null,open(){return this.db||(this.db=new Promise((res,rej)=>{if(!('indexedDB'in window))return rej(new Error('no idb'));const r=indexedDB.open('bp-uploads',1);r.onupgradeneeded=()=>r.result.createObjectStore('pending');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error)}))},
+  async put(k,v){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('pending','readwrite');t.objectStore('pending').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})},
+  async get(k){const db=await this.open();return new Promise((res,rej)=>{const r=db.transaction('pending').objectStore('pending').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})},
+  async del(k){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction('pending','readwrite');t.objectStore('pending').delete(k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}};
+const pendKey=(l,w)=>`pend:${l.sync?.id||l.id}:${w.id}`;
+async function loadPending(){try{const l=league();if(!l.sync||!S.weeks.length){pendingUp=null;return}const w=currentWeek();const p=await IDB.get(pendKey(l,w));const st=w.sub?.[l.me];const vidAt=st&&st.video&&typeof st.video==='object'&&!st.video.deleted?Date.parse(st.video.at||0):0;const done=!!(p&&vidAt&&vidAt>=(p.at||0));   // a finished video newer than the pending one means it went through after all
+  if(p&&p.file&&!done&&(!l.me||p.mid===l.me)){if(!pendingUp||pendingUp.key!==p.key){pendingUp=p;render()}}else{if(done){try{await IDB.del(pendKey(l,w))}catch(e){}}pendingUp=null}}catch(e){pendingUp=null}}
 const mb=n=>Math.round(n/1048576);
 function subStatus(w){const s=w.sub||{};return mid=>{const x=s[mid];if(!x)return{voted:false,video:false,cand:null};const vid=x.video;return{voted:!!(x.candidateId||x.voted),video:!!(vid&&(typeof vid==='boolean'?vid:!vid.deleted)),cand:x.candidateId||null}}}
 function expectedVoters(w,c){return c.legs.map(x=>x.mid).filter(mid=>!(w.skip&&w.skip[mid]))}
 async function sendSub(l,w,cid){setSyncDot('busy');
   try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:cid,memberId:l.me}});subEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(w.reveal?'That was the last one — the votes are in':`Vote sealed: ${member(cid)?.name}. Now the video.`,'good')}
   catch(e){setSyncDot('bad');toast('Vote didn\'t go through: '+e.message,'bad')}}
-async function uploadVideo(l,w,file){
-  const max=(l.limits&&l.limits.videoMax)||150*1048576;if(!file)return;
-  if(!/^video\//.test(file.type||'')&&!/\.(mp4|mov|m4v|webm)$/i.test(file.name||'')){toast('That doesn\'t look like a video file','bad');return}
-  if(file.size>max){toast(`That video is ${mb(file.size)} MB — the cap is ${mb(max)} MB. Trim it or record a shorter one.`,'bad');return}
-  const s=season(l);upl={pct:0,label:'Starting the upload…'};render();
-  const bar=()=>{const b=document.getElementById('upbar');const t=document.getElementById('uplabel');if(b)b.style.width=upl.pct+'%';if(t)t.textContent=upl.label};
-  try{const st=await api(l,'/video/start',{method:'POST',body:{seasonId:s.id,weekId:w.id,size:file.size,type:file.type||'video/mp4',memberId:l.me}});
-    const ps=st.partSize;const parts=[];let n=1;
-    for(let off=0;off<file.size;off+=ps,n++){const chunk=file.slice(off,Math.min(off+ps,file.size));let ok=false,err;
-      for(let t=0;t<3&&!ok;t++){try{const r=await fetch(`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/video/part?key=${encodeURIComponent(st.key)}&uploadId=${encodeURIComponent(st.uploadId)}&n=${n}`,{method:'PUT',headers:{'Content-Type':'application/octet-stream','X-BP-Key':l.sync.key,'X-BP-Me':l.meKey||'','X-BP-As':l.sync.role==='admin'&&l.me?l.me:''},body:chunk});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'HTTP '+r.status);parts.push({partNumber:d.partNumber,etag:d.etag});ok=true}catch(e){err=e;await new Promise(r=>setTimeout(r,800*(t+1)))}}
-      if(!ok)throw err;upl.pct=Math.min(99,Math.round((off+chunk.size)/file.size*100));upl.label=`Uploading… ${upl.pct}% of ${mb(file.size)} MB`;bar()}
+async function uploadVideo(l,w,file,resume){
+  const max=(l.limits&&l.limits.videoMax)||100*1048576;if(!file)return;
+  if(!resume){
+    if(!/^video\//.test(file.type||'')&&!/\.(mp4|mov|m4v|webm)$/i.test(file.name||'')){toast('That doesn\'t look like a video file','bad');return}
+    if(file.size>max){toast(`That video is ${mb(file.size)} MB — the cap is ${mb(max)} MB. Trim it or record a shorter one.`,'bad');return}
+  }
+  const s=season(l);upl={pct:0,label:resume?'Picking up where it left off…':'Starting the upload…'};render();
+  const bar=()=>{const b=document.getElementById('upbar');const t=document.getElementById('uplabel');const pc=document.getElementById('uppct');if(b)b.style.width=upl.pct+'%';if(t)t.textContent=upl.label;if(pc)pc.textContent=upl.pct+'%'};
+  const hdr={'Content-Type':'application/octet-stream','X-BP-Key':l.sync.key,'X-BP-Me':l.meKey||'','X-BP-As':l.sync.role==='admin'&&l.me?l.me:''};
+  try{let key,ps,have=new Set();
+    if(resume){const st=await api(l,'/video/status?key='+encodeURIComponent(resume.key));if(!st.alive){await IDB.del(pendKey(l,w)).catch(()=>{});pendingUp=null;throw new Error('that upload expired — pick the video again')}key=st.key;ps=st.partSize;have=new Set(st.parts||[])}
+    else{const st=await api(l,'/video/start',{method:'POST',body:{seasonId:s.id,weekId:w.id,size:file.size,type:file.type||'video/mp4',memberId:l.me}});key=st.key;ps=st.partSize;try{await IDB.put(pendKey(l,w),{key,file,mid:l.me,size:file.size,name:file.name||'',at:Date.now()})}catch(e){}}
+    const total=Math.ceil(file.size/ps);const parts=[];
+    for(let n=1;n<=total;n++){
+      if(have.has(n)){parts.push({partNumber:n});continue}
+      const chunk=file.slice((n-1)*ps,Math.min(n*ps,file.size));let ok=false,err;
+      for(let t=0;t<3&&!ok;t++){try{const r=await fetch(`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/video/part?key=${encodeURIComponent(key)}&n=${n}`,{method:'PUT',headers:hdr,body:chunk});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'HTTP '+r.status);parts.push({partNumber:n});ok=true}catch(e){err=e;await new Promise(r=>setTimeout(r,800*(t+1)))}}
+      if(!ok)throw err;upl.pct=Math.min(99,Math.round(n/total*100));upl.label=`${mb(Math.min(n*ps,file.size))} of ${mb(file.size)} MB sent`;bar()}
     upl.label='Finishing…';bar();
-    const d=await api(l,'/video/finish',{method:'POST',body:{seasonId:s.id,weekId:w.id,key:st.key,uploadId:st.uploadId,parts,memberId:l.me}});upl=null;applyState(l,d);save();render();toast(d.seasons&&week(w.id)?.reveal?'That was the last one — the votes are in':'Your video is in','good')}
-  catch(e){upl=null;render();toast('Upload failed: '+e.message+'. Try again.','bad')}
+    const d=await api(l,'/video/finish',{method:'POST',body:{seasonId:s.id,weekId:w.id,key,uploadId:'do',parts,type:file.type||'video/mp4',memberId:l.me}});
+    try{await IDB.del(pendKey(l,w))}catch(e){}pendingUp=null;upl=null;applyState(l,d);save();render();toast(week(w.id)?.reveal?'That was the last one — the votes are in':'✓ Video uploaded','good')}
+  catch(e){upl=null;try{pendingUp=await IDB.get(pendKey(l,w))}catch(e2){pendingUp=null}render();toast('Upload stopped: '+e.message+(pendingUp?'. Tap Resume to pick up where it left off.':''),'bad')}
 }
 function videoUrl(l,w,mid){const s=season(l);return`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/video?season=${encodeURIComponent(s.id)}&week=${encodeURIComponent(w.id)}&member=${encodeURIComponent(mid)}&k=${encodeURIComponent(l.sync.key)}`}
 function rvKey(w){return'bp-rv:'+(league().sync?.id||league().id)+':'+w.id}
@@ -1212,15 +1249,16 @@ function renderSealedVote(w,c,el,reason){
   let yours='';
   if(!me)yours=`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
   else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${w.skip?.[me]?'The commissioner skipped you this week.':'No leg this week for you, so no vote this week. Sit tight for the reveal.'}</p>`;
-  else if(mine.voted&&mine.video&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> ${h(member(mine.cand)?.name||'')} gets your vote and your video is sealed. <button class="btn sm ghost" data-act="change-sub">Change</button></div>`;
+  else if(mine.voted&&mine.video&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> ${mine.cand?`${h(member(mine.cand)?.name||'')} gets your vote and your video is uploaded.`:'Your vote and video are sealed.'} <button class="btn sm ghost" data-act="change-sub">Change</button></div>`;
   else{
     const max=(l.limits&&l.limits.videoMax)||150*1048576;
     yours=`<div class="pd-sub" style="margin:12px 0 6px">1 · Your vote ${mine.voted?'<span class="good">✓ sealed</span>':''}</div>
     <div class="cands">${el.list.map(id=>{const m=member(id);const lg=c.legs.find(x=>x.mid===id);const sub=lg.status==='miss'?(lg.margin!=null?`missed by ${fmtMargin(lg.margin,lg.unit)}`:'missed'):lg.status==='push'?'pushed':'hit';const self=id===me;const on=mine.cand===id;
       return`<div class="cand ${on?'sel':''} ${self?'self':''}" ${self?'':`data-act="pick-cand" data-mid="${id}"`}><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${lg.text?betChip(lg.text,lg.teams):''}</small></div><span class="chk ${on?'on':''}">${self?'<small>you</small>':on?'✓':''}</span></div>`}).join('')}</div>
     <div class="pd-sub" style="margin:12px 0 6px">2 · Your video ${mine.video?'<span class="good">✓ in</span>':''}</div>
-    <div class="vidbox ${mine.voted&&!mine.video?'hot':''}">${upl?`<div class="progress"><div id="upbar" style="width:${upl.pct}%"></div></div><small id="uplabel" class="muted tiny">${h(upl.label)}</small>`
-      :mine.video?`<div class="row between"><span>🎥 Your video is in${mine.cand?'':' — now pick a name above'}</span><label class="btn sm ghost">Replace<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
+    <div class="vidbox ${mine.voted&&!mine.video?'hot':''}">${upl?`<div class="upbox"><b>Uploading your video… <span id="uppct">${upl.pct}%</span></b><div class="progress"><div id="upbar" style="width:${upl.pct}%"></div></div><small id="uplabel">${h(upl.label)}</small><small class="warnline">Keep the app open until it says uploaded.</small></div>`
+      :mine.video?`<div class="row between"><span>✓ Video uploaded${mine.cand?'':' — now pick a name above'}</span><label class="btn sm ghost">Replace<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
+      :pendingUp?`<div class="upbox warn"><b>Your video didn't finish uploading</b><small>${pendingUp.size?mb(pendingUp.size)+' MB · ':''}picked ${h(new Date(pendingUp.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}</small><button class="btn primary block" data-act="resume-upload">↑ Resume the upload</button><label class="btn ghost block sm">Choose a different video<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
       :`<label class="btn primary block">🎥 Record or choose your vote video<input type="file" id="vidIn" accept="video/*" hidden></label><small class="muted tiny">Say who you're voting for and why. Up to ${mb(max)} MB, about a minute and a half at normal iPhone quality. Nobody sees it until everyone's in.</small>`}</div>
     ${editing?`<button class="btn ghost block sm" data-act="change-sub-done">Done changing</button>`:''}`;
   }
@@ -1280,7 +1318,8 @@ function renderVote(w,c,isLast){
 
 /* ---- onboarding ---- */
 function renderOnboard(){
-  return`<div class="hero"><span class="big">🤡</span><h2>Assemble the crew</h2><p>Add everyone in the group chat. Each week one of you is the Bozo who fronts the parlay.</p></div>
+  return`<div class="hero"><span class="big">🤡</span><h2>${isOwner()?'Assemble the crew':'Got a league link?'}</h2><p>${isOwner()?'Add everyone in the group chat. Each week one of you is the Bozo who fronts the parlay.':'Paste the link your commissioner sent and this phone joins the league. Or build your own league below.'}</p></div>
+  <section class="card"><h3>Join with a link</h3><div class="linkbox"><input id="linkIn" placeholder="Paste the league link here" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn primary" data-act="use-link">Go</button></div><p class="muted tiny" style="margin:8px 0 0">Works with a member link or the commissioner link.</p></section>
   <div class="steps"><i class="on"></i><i></i></div>
   <section class="card"><h3>Crew</h3>
     <div class="mlist">${S.members.map(m=>`<div class="mrow"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b></div><button class="mini danger" data-act="remove-member" data-mid="${m.id}">×</button></div>`).join('')}</div>
@@ -1436,6 +1475,7 @@ function renderLeagues(){
   const L=league();
   return`<section class="card"><h3>Leagues</h3><div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;const n=l.seasons.length;return`<div class="mrow" style="${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${n} season${n===1?'':'s'}${on?' · active':''}</small></div>${on?(isAdmin(l)?`<button class="mini" data-act="rename-league" data-lid="${l.id}" title="Rename">✎</button>`:'')+(DB.leagues.length>1?`<button class="mini danger" data-act="delete-league" data-lid="${l.id}" title="${isAdmin(l)?'Delete league':'Leave league'}">×</button>`:''):`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>
   <button class="btn block" data-act="new-league">＋ New league</button>
+  <div class="linkbox" style="margin-top:8px"><input id="linkIn" placeholder="Or paste a league link" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn" data-act="use-link">Go</button></div>
   <p class="muted tiny" style="margin-top:8px">A league is a group of people. Each league has its own seasons, and each season its own crew, weeks and stats.</p></section>
   ${isAdmin(L)?`<section class="card"><h3>${h(L.name)} · seasons</h3><div class="mlist">${seasonSorted(L).map(x=>{const on=x.id===L.activeSeason;return`<div class="mrow" style="${on?'border-color:rgba(0,113,227,.5)':''}"><div class="avatar" style="--c:${on?'var(--blue)':'#8e8e93'}">${h(String(x.name).slice(-2))}</div><div class="mbody"><b>${h(x.name)}</b><small>${seasonSummary(x)}${on?' · viewing':''}</small></div>${on?`<button class="mini" data-act="rename-season" data-sid="${x.id}" title="Rename">✎</button>${L.seasons.length>1?`<button class="mini danger" data-act="delete-season" data-sid="${x.id}" title="Delete season">×</button>`:''}`:`<button class="btn sm" data-act="switch-season" data-sid="${x.id}">Open</button>`}</div>`}).join('')}</div>
   <button class="btn block" data-act="new-season">＋ New season</button>
@@ -1444,6 +1484,13 @@ function renderLeagues(){
 // ---- Read-only league site (GitHub Pages) — one league, published from the commissioner's device ----
 const SHARE_SITES={lg2:{repo:'jsunaldo/bozo-parlay-club',url:'https://jsunaldo.github.io/bozo-parlay-club/'}};
 function siteCard(){const l=league();const site=SHARE_SITES[l.id];if(!site||l.sync)return'';return`<section class="card"><h3>League site</h3><p class="muted tiny" style="margin-bottom:10px">${h(site.url)}</p><p class="muted tiny">Publish this league to the cloud below and the site turns into the group's live app: everyone taps their name once, enters their own pick, votes with a video.</p></section>`}
+function activityHtml(l){
+  const nm=id=>member(id)?.name||'Someone';const ev=(l.events||[]).slice().reverse().slice(0,20);const ups=Object.entries(l.uploads||{});
+  const text=e=>({claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`})[e.type]||e.type;
+  const when=t=>new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  if(!ev.length&&!ups.length)return'';
+  return`<div class="pd-sub" style="margin:14px 0 6px">Recent activity</div>${ups.length?`<div class="evlist">${ups.map(([k,u])=>`<div class="evrow warn"><span class="mono tiny">${h(when(u.at))}</span><span>${h(nm(u.mid))} has an upload that never finished${u.size?' ('+mb(u.size)+' MB)':''} — they can resume it from their phone</span></div>`).join('')}</div>`:''}<div class="evlist">${ev.map(e=>`<div class="evrow ${/error|rejected/.test(e.type)?'bad':''}"><span class="mono tiny">${h(when(e.at))}</span><span>${h(text(e))}</span></div>`).join('')}</div>`;
+}
 function renderShare(){
   const l=league();const me=l.me?member(l.me):null;
   const who=`<div class="row between" style="margin-bottom:10px"><div class="chip-lg">${me?`<span class="avatar sm" style="--c:${me.color}">${h(initials(me.name))}</span><span>You are <b>${h(me.name)}</b></span>`:'<span class="muted">Who are you on this device?</span>'}</div><button class="btn sm" data-act="pick-me">${me?'Change':'Choose'}</button></div>`;
@@ -1451,7 +1498,7 @@ function renderShare(){
   const link=shareLink(l);
   const f=l.features||{};const tog=(k,label,sub)=>`<div class="featrow" data-act="feature" data-f="${k}"><div><b>${label}</b><small>${sub}</small></div><span class="toggle ${f[k]?'on':''}"><i></i></span></div>`;
   const site=SHARE_SITES[l.id];const primary=site?site.url:link;const claimRows=S.members.filter(m=>m.active).map(m=>{const cl=l.claims?.[m.id];return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="mbody"><b>${h(m.name)}</b><small>${cl?`${h(cl.device||'phone')} · ${h(new Date(cl.at).toLocaleDateString([],{month:'short',day:'numeric'}))}`:'not yet'}</small></div>${cl?`<button class="btn sm ghost" data-act="reset-claim" data-mid="${m.id}">Reset</button>`:'<span class="muted tiny">—</span>'}</div>`}).join('');
-  return`<section class="card"><h3>Group</h3>${who}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only this device can grade and crown.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
+  return`<section class="card"><h3>Group</h3>${who}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only this device can grade and crown.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>${activityHtml(l)}`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
 }
 function renderCrew(){
   if(SHARE_MODE){const l=league();return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>{const cl=l.claims?.[m.id];return`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?(cl?'On the app':'Hasn\'t tapped their name yet'):'Benched'}</small></div>${cl?'<span class="tag ok">joined</span>':''}</div>`}).join('')}</div></section><section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`}
@@ -1640,8 +1687,9 @@ function download(name,text){const a=document.createElement('a');a.href=URL.crea
 
 /* ============================== ACTIONS ============================== */
 const ACT={
-  nav(el){VIEW=el.dataset.view;if(VIEW==='week')goNow();save();render();window.scrollTo({top:0})},
+  nav(el){VIEW=el.dataset.view;if(VIEW==='week'){goNow();loadPending()}save();render();window.scrollTo({top:0})},
   'go-now'(){goNow();VIEW='week';save();render();window.scrollTo({top:0})},
+  'use-link'(){const v=document.getElementById('linkIn')?.value||'';useLink(v)},
   'pick-season'(el){const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid)){l.activeSeason=el.dataset.sid;S=season().data}statScope='season';ALLTIME=null;xNode={};detailOpen=null;save();render()},
   'week-prev'(){const i=S.weeks.indexOf(currentWeek());if(i>0){S.currentWeekId=S.weeks[i-1].id;commit()}},
   'week-next'(){const i=S.weeks.indexOf(currentWeek());if(i<S.weeks.length-1){S.currentWeekId=S.weeks[i+1].id;commit()}},
@@ -1707,6 +1755,7 @@ const ACT={
   'copy-share'(){const l=league();const site=SHARE_SITES[l.id];copyText(site?site.url:shareLink(l))},
   'pick-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}sendSub(l,w,el.dataset.mid)},
   'change-sub'(){subEdit.add(currentWeek().id);render()},
+  'resume-upload'(){const l=league();const w=currentWeek();if(!pendingUp||!pendingUp.file)return;if(!l.me){pickMe(l);return}uploadVideo(l,w,pendingUp.file,pendingUp)},
   'change-sub-done'(){subEdit.delete(currentWeek().id);render()},
   'reveal-now'(){const w=currentWeek();const c=calc(w);const st=subStatus(w);const exp=expectedVoters(w,c);const done=exp.filter(mid=>{const x=st(mid);return x.voted&&x.video}).length;confirm2('Reveal now?',`Only the ${done} ${done===1?'person':'people'} who finished count. The other ${exp.length-done} are out of this week's vote.`,'Reveal',()=>adminCall('/reveal',{},'The votes are in'),'primary')},
   'skip-sub'(el){adminCall('/skip',{memberId:el.dataset.mid,skip:el.dataset.skip==='1'},el.dataset.skip==='1'?`${member(el.dataset.mid)?.name} skipped this week`:`${member(el.dataset.mid)?.name} is back in`)},
@@ -1780,7 +1829,7 @@ function sampleSeason(){
 }
 
 /* ============================== BOOT ============================== */
-render();save();
+render();save();loadPending();
 (async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined)pull();})();
 setInterval(()=>{if(document.visibilityState==='visible')pull()},45000);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pull()});
