@@ -588,7 +588,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.12';
+const APP_VERSION='2026-09-17.14';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -841,7 +841,10 @@ async function api(l,path,opts={}){
 function applyState(l,d){
   const ui={};for(const x of (l.seasons||[]))ui[x.id]={cur:x.data?.currentWeekId,last:x.data?.weeks?.[x.data.weeks.length-1]?.id};   // per-device UI state must not ride along with synced data
   l.seasons=d.seasons.map(x=>({...x,data:migrate(x.data||fresh())}));
-  for(const x of l.seasons){const u=ui[x.id]||{};const newest=x.data.weeks[x.data.weeks.length-1]?.id;if(u.cur&&u.last===newest&&x.data.weeks.find(w=>w.id===u.cur))x.data.currentWeekId=u.cur;else if(newest)x.data.currentWeekId=newest}   // a freshly opened week pulls everyone to it
+  for(const x of l.seasons){const u=ui[x.id]||{};const newest=x.data.weeks[x.data.weeks.length-1]?.id;const cur=u.cur&&x.data.weeks.find(w=>w.id===u.cur);
+    if(cur&&u.last===newest)x.data.currentWeekId=u.cur;                       // nothing new
+    else if(cur&&!revealSeen(cur,l))x.data.currentWeekId=u.cur;               // hold them on the reveal they haven't watched yet
+    else if(newest)x.data.currentWeekId=newest}                               // otherwise a freshly opened week pulls them to it
   if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
   if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
   if(l.meKey&&d.you===null){delete l.me;delete l.meKey;setTimeout(()=>toast('The commissioner reset your name on this phone — tap your name again to vote','bad'),80)}
@@ -1271,9 +1274,11 @@ async function uploadVideo(l,w,file,resume){
   finally{try{await lock?.release()}catch(e){}}
 }
 function videoUrl(l,w,mid){const s=season(l);const k=l.sync.role==='admin'&&l.shareKey?l.shareKey:l.sync.key;return`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/video?season=${encodeURIComponent(s.id)}&week=${encodeURIComponent(w.id)}&member=${encodeURIComponent(mid)}&k=${encodeURIComponent(k)}`}
-function rvKey(w){return'bp-rv:'+(league().sync?.id||league().id)+':'+w.id}
-function rvGet(w){try{return JSON.parse(localStorage.getItem(rvKey(w)))||{i:-1,f:false}}catch(e){return{i:-1,f:false}}}
+function rvKey(w,l=league()){return'bp-rv:'+(l.sync?.id||l.id)+':'+w.id}
+function rvGet(w,l){try{return JSON.parse(localStorage.getItem(rvKey(w,l)))||{i:-1,f:false}}catch(e){return{i:-1,f:false}}}
 function rvSet(w,v){try{localStorage.setItem(rvKey(w),JSON.stringify(v))}catch(e){}}
+// has THIS device watched the reveal through to the vote board? nothing to watch counts as seen
+function revealSeen(w,l){if(!w||!w.reveal)return true;return rvGet(w,l).i>=w.reveal.order.length}
 async function adminCall(path,extra,okMsg){const l=league();const w=currentWeek();setSyncDot('busy');
   try{const d=await api(l,path,{method:'POST',body:{seasonId:season(l).id,weekId:w.id,...extra}});applyState(l,d);save();render();setSyncDot('ok');if(okMsg)toast(okMsg,'good')}
   catch(e){setSyncDot('bad');toast('That didn\'t go through: '+e.message,'bad')}}
@@ -1318,6 +1323,7 @@ function nextPickList(w,c,me){
 function nextPickBox(w,c){
   const l=league();const me=l.me;if(!me||!memberCan('picks'))return'';
   const st=subStatus(w)(me);const mineIn=!!(st.voted&&st.video)||isAdmin();const hasLeg=c.legs.some(x=>x.mid===me);if(!hasLeg)return'';
+  if(S.weeks[S.weeks.indexOf(w)+1])return'';   // that week's slip is open now — picks go on the slip
   const exp=expectedVoters(w,c);const inCount=exp.filter(mid=>w.next?.[mid]?.text).length;
   const np=w.next?.[me];const editing=nextEdit.has(w.id)||!np;
   if(!mineIn)return`<div class="nextpick locked"><div class="pd-sub">Your Week ${w.num+1} pick</div><p class="muted tiny" style="margin:0">Unlocks once your vote and video are in.</p>${nextPickList(w,c,me)}</div>`;
@@ -1328,6 +1334,8 @@ function nextPickBox(w,c){
 function tallyAt(r,i){const t={};for(let k=0;k<=i&&k<r.order.length;k++){const c=r.order[k].candidate;t[c]=(t[c]||0)+1}return t}
 function tallyBars(t,n,bump){return`<div class="rv-tally">${Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([cid,k])=>{const m=member(cid);return`<div class="rv-trow ${cid===bump?'bump':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="bar"><i style="width:${Math.round(k/n*100)}%"></i></span><b class="mono">${k}</b></div>`}).join('')}</div>`}
 function crownBlock(w,c,r){
+  const next=S.weeks[S.weeks.indexOf(w)+1];
+  if(next){const nb=member(next.bozoId);return`<button class="btn primary block" style="margin-top:12px" data-act="open-week" data-wid="${next.id}">🤡 ${h(nb?.name||'')} is the Week ${next.num} Bozo — open Week ${next.num} →</button>`}
   if(!isAdmin())return`<p class="muted tiny" style="margin-top:10px">The commissioner crowns the Bozo.</p>`;
   if(lastWeek()!==w)return'';
   return`<div class="vote-actions" style="margin-top:12px">${r.winner?`<button class="btn primary block" data-act="crown" data-mid="${r.winner}">🤡 Crown ${h(member(r.winner)?.name)} · start Week ${w.num+1}</button>`:`<button class="btn primary block" data-act="flip" data-ids="${r.tie.join(',')}">🪙 ${r.tie.length}-way tie — flip for it</button>`}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button><button class="btn ghost block sm" data-act="unreveal">Reopen the vote</button></div>`;
@@ -1353,7 +1361,8 @@ function renderReveal(w,c){
 }
 function renderVote(w,c,isLast){
   const next=S.weeks[S.weeks.indexOf(w)+1];
-  if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div>${w.reveal?`<div class="pd-sub" style="margin:12px 0 6px">How the vote went</div>${voteBoard(w,w.reveal)}`:''}</section>`}
+  if(next&&!revealSeen(w)){const el0=eligible(w);return renderSealedVote(w,c,el0,{miss:'Only the people who missed were on the ballot.',push:'Nobody missed — the pushes were on the ballot.',all:'Everyone hit. Everyone was on the ballot.'}[el0.reason]||'')}
+  if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div>${w.reveal?`<div class="pd-sub" style="margin:12px 0 6px">How the vote went</div>${voteBoard(w,w.reveal)}<button class="btn ghost block sm" data-act="rv-restart" data-wid="${w.id}">↺ Watch the reveal again</button>`:''}</section>`}
   if(!c.n)return'';
   if(seasonOver()&&c.graded)return`<section class="card vote"><h3>That's a wrap on ${h(season().name)}</h3><p class="muted tiny" style="margin:0">Final week of the season, so there's no next Bozo to vote on. The ${h(newestSeason().name)} slate started fresh.</p></section>`;
   if(!c.graded){const done=c.n-c.pending;return`<section class="card vote"><h3>Bozo vote</h3><div class="progress"><div style="width:${done/c.n*100}%"></div></div><p class="muted tiny">${isAdmin()?`Grade all ${c.n} legs to open the vote`:'Voting opens once the results are graded'} · ${done}/${c.n} done</p></section>`}
@@ -1444,7 +1453,8 @@ const seasonYear=x=>parseInt(String(x.name).match(/\d{4}/)?.[0]||0);
 function newestSeason(){return[...league().seasons].sort((a,b)=>seasonYear(b)-seasonYear(a))[0]}
 function seasonOver(){const cur=season();return league().seasons.some(x=>x!==cur&&seasonYear(x)>seasonYear(cur))}
 function scopeBar(){const l=league();if(l.seasons.length<2)return'';const cur=season().id;return`<div class="scope seasons">${seasonSorted(l).reverse().map(x=>`<button class="${statScope==='season'&&x.id===cur?'on':''}" data-act="pick-season" data-sid="${x.id}">${h(x.name)}</button>`).join('')}<button class="${statScope==='all'?'on':''}" data-act="stat-scope" data-scope="all">All-time</button></div>`}
-function goNow(){const l=league();l.activeSeason=newestOf(l).id;S=season().data;statScope='season';ALLTIME=null}
+function goNow(){const l=league();l.activeSeason=newestOf(l).id;S=season().data;statScope='season';ALLTIME=null;
+  const cur=currentWeek(),last=lastWeek();if(last&&cur!==last&&revealSeen(cur,l))S.currentWeekId=last.id}
 function oldBanner(){const l=league();if(l.seasons.length<2||season().id===newestOf(l).id)return'';return`<div class="oldbanner"><span>Browsing the ${h(season().name)} season</span><button class="pillbtn" data-act="go-now">This week →</button></div>`}
 function renderStatsInner(){
   if(!S.weeks.length)return scopeBar()+empty('Nothing to crunch','Stats show up once Week 1 is graded.');
@@ -1830,7 +1840,7 @@ const ACT={
   'rv-flip'(){const w=currentWeek();const st=rvGet(w);rvSet(w,{i:st.i,f:true});render()},
   'rv-next'(){const w=currentWeek();const st=rvGet(w);rvSet(w,{i:st.i+1,f:false});render();document.querySelector('.reveal')?.scrollIntoView({block:'start',behavior:'smooth'})},
   'rv-end'(){const w=currentWeek();rvSet(w,{i:w.reveal?w.reveal.order.length:0,f:false});render()},
-  'rv-restart'(){rvSet(currentWeek(),{i:-1,f:false});render()},
+  'rv-restart'(el){const w=(el&&el.dataset.wid&&week(el.dataset.wid))||currentWeek();S.currentWeekId=w.id;rvSet(w,{i:-1,f:false});save();render();window.scrollTo({top:0,behavior:'smooth'})},
 
   'share-refresh'(){pull(league(),true)},
   'feature'(el){const l=league();l.features=l.features||{};const f=el.dataset.f;l.features[f]=!l.features[f];commit();toast(l.features[f]?(f==='picks'?'Members can now enter their own picks':'Members can now vote in the app'):(f==='picks'?'Picks are yours to enter again':'Voting in the app is off'),'good')},
