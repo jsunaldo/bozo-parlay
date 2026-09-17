@@ -563,7 +563,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.3';
+const APP_VERSION='2026-09-17.4';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1211,10 +1211,10 @@ async function sendSub(l,w,cid){setSyncDot('busy');
   try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:cid,memberId:l.me}});subEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(w.reveal?'That was the last one — the votes are in':`Vote sealed: ${member(cid)?.name}. Now the video.`,'good')}
   catch(e){setSyncDot('bad');toast('Vote didn\'t go through: '+e.message,'bad')}}
 async function uploadVideo(l,w,file,resume){
-  const max=(l.limits&&l.limits.videoMax)||100*1048576;if(!file)return;
+  const max=(l.limits&&l.limits.videoMax)||150*1048576;if(!file)return;
   if(!resume){
-    if(!/^video\//.test(file.type||'')&&!/\.(mp4|mov|m4v|webm)$/i.test(file.name||'')){toast('That doesn\'t look like a video file','bad');return}
-    if(file.size>max){toast(`That video is ${mb(file.size)} MB — the cap is ${mb(max)} MB. Trim it or record a shorter one.`,'bad');return}
+    if(!/^video\//.test(file.type||'')&&!/\.(mp4|mov|m4v|webm)$/i.test(file.name||'')){modal({title:'That isn\'t a video',body:`<p>The file you picked (${h(file.name||'unnamed')}) doesn\'t look like a video. Pick the clip from your camera roll or record a new one.</p>`,actions:[{label:'OK',cls:'primary'}]});return}
+    if(file.size>max){modal({title:'Too big to upload',body:`<p>That video is <b>${mb(file.size)} MB</b>. The limit is <b>${mb(max)} MB</b>, so nothing was uploaded.</p><p>Easiest fix on an iPhone: <b>Settings → Camera → Record Video → 1080p at 30 fps</b>, then record it again. Or open the clip in Photos, tap Edit, and trim it shorter.</p>`,actions:[{label:'Got it',cls:'primary'}]});return}
   }
   const s=season(l);upl={pct:0,label:resume?'Picking up where it left off…':'Starting the upload…'};render();
   const bar=()=>{const b=document.getElementById('upbar');const t=document.getElementById('uplabel');const pc=document.getElementById('uppct');if(b)b.style.width=upl.pct+'%';if(t)t.textContent=upl.label;if(pc)pc.textContent=upl.pct+'%'};
@@ -1231,7 +1231,7 @@ async function uploadVideo(l,w,file,resume){
     upl.label='Finishing…';bar();
     const d=await api(l,'/video/finish',{method:'POST',body:{seasonId:s.id,weekId:w.id,key,uploadId:'do',parts,type:file.type||'video/mp4',memberId:l.me}});
     try{await IDB.del(pendKey(l,w))}catch(e){}pendingUp=null;upl=null;applyState(l,d);save();render();toast(week(w.id)?.reveal?'That was the last one — the votes are in':'✓ Video uploaded','good')}
-  catch(e){upl=null;try{pendingUp=await IDB.get(pendKey(l,w))}catch(e2){pendingUp=null}render();toast('Upload stopped: '+e.message+(pendingUp?'. Tap Resume to pick up where it left off.':''),'bad')}
+  catch(e){upl=null;try{pendingUp=await IDB.get(pendKey(l,w))}catch(e2){pendingUp=null}render();modal({title:pendingUp?'Upload stopped partway':'Upload didn\'t go through',body:`<p>${h(e.message)}.</p><p>${pendingUp?'Your video is saved on this phone. Tap <b>Resume the upload</b> on the vote card and keep the app open until it says uploaded.':'Nothing was uploaded. Pick the video again to retry.'}</p>`,actions:[{label:'OK',cls:'primary'}]})}
 }
 function videoUrl(l,w,mid){const s=season(l);return`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/video?season=${encodeURIComponent(s.id)}&week=${encodeURIComponent(w.id)}&member=${encodeURIComponent(mid)}&k=${encodeURIComponent(l.sync.key)}`}
 function rvKey(w){return'bp-rv:'+(league().sync?.id||league().id)+':'+w.id}
@@ -1259,7 +1259,7 @@ function renderSealedVote(w,c,el,reason){
     <div class="vidbox ${mine.voted&&!mine.video?'hot':''}">${upl?`<div class="upbox"><b>Uploading your video… <span id="uppct">${upl.pct}%</span></b><div class="progress"><div id="upbar" style="width:${upl.pct}%"></div></div><small id="uplabel">${h(upl.label)}</small><small class="warnline">Keep the app open until it says uploaded.</small></div>`
       :mine.video?`<div class="row between"><span>✓ Video uploaded${mine.cand?'':' — now pick a name above'}</span><label class="btn sm ghost">Replace<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
       :pendingUp?`<div class="upbox warn"><b>Your video didn't finish uploading</b><small>${pendingUp.size?mb(pendingUp.size)+' MB · ':''}picked ${h(new Date(pendingUp.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}</small><button class="btn primary block" data-act="resume-upload">↑ Resume the upload</button><label class="btn ghost block sm">Choose a different video<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
-      :`<label class="btn primary block">🎥 Record or choose your vote video<input type="file" id="vidIn" accept="video/*" hidden></label><small class="muted tiny">Say who you're voting for and why. Up to ${mb(max)} MB, about a minute and a half at normal iPhone quality. Nobody sees it until everyone's in.</small>`}</div>
+      :`<label class="btn primary block">🎥 Record or choose your vote video<input type="file" id="vidIn" accept="video/*" hidden></label><small class="muted tiny">Say who you're voting for and why. Up to ${mb(max)} MB: a couple of minutes at 1080p, under a minute at 4K. Nobody sees it until everyone's in.</small>`}</div>
     ${editing?`<button class="btn ghost block sm" data-act="change-sub-done">Done changing</button>`:''}`;
   }
   const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now" ${done.length?'':'disabled'}>🎬 Reveal now with ${done.length} of ${exp.length}</button>${missing.length?`<div class="skiprow">${missing.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="1">Skip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose the Bozo manually instead</button></div>`:'';
