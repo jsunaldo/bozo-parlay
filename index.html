@@ -55,7 +55,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .np-form input.mono{width:100%;padding:10px 6px}
 .np-list{display:flex;flex-direction:column;gap:4px}
 .np-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 8px;font-size:13px;padding:7px 10px;border-radius:10px;background:var(--surface2)}
-.np-row .nm{font-weight:600}
+.np-row .nm{font-weight:600;text-align:left;justify-self:start}
 .np-row .tag{justify-self:end}
 .np-row.mine{box-shadow:inset 0 0 0 1px var(--blue)}
 .np-row.clash{background:var(--amber-bg)}
@@ -587,7 +587,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.10';
+const APP_VERSION='2026-09-17.11';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1312,7 +1312,7 @@ function nextPickList(w,c,me){
   const rows=exp.map(mid=>({mid,np:next[mid]})).sort((a,b)=>(b.np?1:0)-(a.np?1:0));
   const have=rows.filter(r=>r.np&&r.np.text);if(!have.length)return'';
   const flags=mid=>{const np=next[mid];if(!np)return[];const out=[];const others=have.filter(r=>r.mid!==mid);if(others.some(r=>norm(r.np.text)===norm(np.text)))out.push('duplicate');else if((np.teams||[]).length&&others.some(r=>(r.np.teams||[]).some(t=>np.teams.includes(t))))out.push('same team');return out};
-  return`<div class="pd-sub" style="margin:12px 0 6px">Week ${w.num+1} picks so far <span class="muted">· ${have.length} of ${exp.length}</span></div><div class="np-list">${rows.map(({mid,np})=>{const m=member(mid);const f=flags(mid);return`<div class="np-row ${mid===me?'mine':''} ${f.length?'clash':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span>${np&&np.text?`<span class="np-pick">${betChip(np.text,np.teams)}<span class="mono muted">${h(np.odds||'')}</span></span>${f.map(x=>`<span class="tag warn">${x}</span>`).join('')}`:'<span class="muted tiny">not in yet</span>'}</div>`}).join('')}</div>${have.some(r=>flags(r.mid).length)?'<small class="muted tiny">Flagged picks share a team or repeat someone else\'s. Two legs on the same game can cancel out.</small>':''}`;
+  return`<div class="pd-sub" style="margin:12px 0 6px">Week ${w.num+1} picks so far <span class="muted">· ${have.length} of ${exp.length}</span></div><div class="np-list">${rows.map(({mid,np})=>{const m=member(mid);const f=flags(mid);return`<div class="np-row ${mid===me?'mine':''} ${f.length?'clash':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span>${np&&np.text?`${f.length?`<span class="tag warn">${f[0]}</span>`:'<span></span>'}<span class="np-pick">${betChip(np.text,np.teams)}<span class="mono muted">${h(np.odds||'')}</span></span>`:'<span class="muted tiny">not in yet</span>'}</div>`}).join('')}</div>${have.some(r=>flags(r.mid).length)?'<small class="muted tiny">Flagged picks share a team or repeat someone else\'s. Two legs on the same game can cancel out.</small>':''}`;
 }
 function nextPickBox(w,c){
   const l=league();const me=l.me;if(!me||!memberCan('picks'))return'';
