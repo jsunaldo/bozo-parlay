@@ -45,6 +45,14 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .leg.mine::after{content:'you';position:absolute;right:12px;top:6px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
 .cand .voters{font-size:11px;color:var(--dim);font-weight:500;white-space:normal;line-height:1.3}
 .cand .btn.voted{background:var(--blue);color:#fff}
+.nextpick{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
+.nextpick.locked{opacity:.75}
+.np-form{display:grid;grid-template-columns:1fr 84px auto;gap:8px;align-items:start;margin:6px 0}
+.np-form .pickbox{min-width:0}
+.np-form .pickicon.empty{width:28px;flex:none;text-align:center;opacity:.5}
+.np-form input.mono{width:100%;padding:10px 6px}
+.np-saved{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;background:var(--surface2);border-radius:12px;padding:8px 10px}
+.np-bet{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
 .substat{background:var(--surface2);border-radius:14px;padding:10px 12px;margin:10px 0}
 .subavs{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px}
 .subav{position:relative;opacity:.45}
@@ -568,7 +576,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.7';
+const APP_VERSION='2026-09-17.8';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -832,7 +840,7 @@ function setSyncDot(state){const d=document.getElementById('syncDot');if(!d)retu
 let pushT=null,pendingPick=null,pullBusy=false;
 const videoPlaying=()=>[...document.querySelectorAll('video')].some(v=>!v.paused&&!v.ended);
 let needRender=false,pickerOpen=0;
-const quiet=()=>!!(upl||videoPlaying()||document.querySelector('video.rv-video')||(pickerOpen&&Date.now()-pickerOpen<15*60000));   // don't yank the DOM mid-reveal, mid-upload or while the camera/file picker is up
+const quiet=()=>!!(upl||videoPlaying()||document.querySelector('video.rv-video')||document.body.classList.contains('typing')||(pickerOpen&&Date.now()-pickerOpen<15*60000));   // don't yank the DOM mid-reveal, mid-upload or while the camera/file picker is up
 async function pull(l=league(),loud=false,force=false){
   if(!l.sync||pullBusy||pushT||pendingPick)return;pullBusy=true;setSyncDot('busy');
   try{const d=await api(l,'');if(force||d.rev!==l.sync.rev){applyState(l,d);save();if(!quiet())render();else needRender=true}else if(needRender&&!quiet()){needRender=false;render()}setSyncDot('ok');if(loud)toast('Up to date','good');if(!upl)loadPending()}
@@ -926,8 +934,9 @@ const today=()=>new Date().toISOString().slice(0,10);
 const wkName=w=>w.label||`Week ${w.num}`;const wkShort=w=>w.short||`W${w.num}`;
 function newWeek(bozoId){
   const num=(S.weeks.length?Math.max(...S.weeks.map(w=>w.num)):0)+1;
+  const prev=S.weeks[S.weeks.length-1];const early=(prev&&prev.next)||{};
   const w={id:uid(),num,date:today(),bozoId,stake:S.stake,picks:{},votes:{}};
-  S.members.filter(m=>m.active).forEach(m=>w.picks[m.id]={text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]});
+  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:'pts',teams:np.teams||[],tm:!!(np.teams&&np.teams.length)}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
   S.weeks.push(w);S.currentWeekId=w.id;return w;
 }
 
@@ -1278,7 +1287,21 @@ function renderSealedVote(w,c,el,reason){
     ${editing?`<button class="btn ghost block sm" data-act="change-sub-done">Done changing</button>`:''}`;
   }
   const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now" ${done.length?'':'disabled'}>🎬 Reveal now with ${done.length} of ${exp.length}</button>${missing.length?`<div class="skiprow">${missing.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="1">Skip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose the Bozo manually instead</button></div>`:'';
-  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Everyone with a leg votes with a name and a video. The reveal starts when the last one lands.</p>${status}${yours}${admin}</section>`;
+  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Everyone with a leg votes with a name and a video. The reveal starts when the last one lands.</p>${status}${yours}${nextPickBox(w,c)}${admin}</section>`;
+}
+const nextEdit=new Set();
+async function sendNext(l,w,text,odds){setSyncDot('busy');
+  try{const teams=detectTeams(text);const d=await api(l,'/nextpick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,text,odds,teams,memberId:l.me}});nextEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(text?`Week ${w.num+1} pick saved — it's on the slip the moment the Bozo is crowned`:'Next week\'s pick cleared','good')}
+  catch(e){setSyncDot('bad');toast('Pick didn\'t save: '+e.message,'bad')}}
+function nextPickBox(w,c){
+  const l=league();const me=l.me;if(!me||!memberCan('picks'))return'';
+  const st=subStatus(w)(me);const mineIn=!!(st.voted&&st.video)||isAdmin();const hasLeg=c.legs.some(x=>x.mid===me);if(!hasLeg)return'';
+  const exp=expectedVoters(w,c);const inCount=exp.filter(mid=>w.next?.[mid]?.text).length;
+  const np=w.next?.[me];const editing=nextEdit.has(w.id)||!np;
+  if(!mineIn)return`<div class="nextpick locked"><div class="pd-sub">Your Week ${w.num+1} pick</div><p class="muted tiny" style="margin:0">Unlocks once your vote and video are in. ${inCount?`${inCount} of ${exp.length} already have next week's pick in.`:''}</p></div>`;
+  const oddsN=np?parseOdds(np.odds):null;const heavy=np&&np.odds&&!legal(oddsN);
+  return`<div class="nextpick"><div class="pd-sub">Your Week ${w.num+1} pick</div>${editing?`<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="Pick — e.g. Chiefs -3.5" autocomplete="off" enterkeyhint="next">${h(np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">Must be -200 or longer. It lands on the Week ${w.num+1} slip when the Bozo is crowned.${np?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small>`
+    :`<div class="np-saved"><div class="np-bet">${betChip(np.text,np.teams)}<span class="mono">${np.odds?h(np.odds):''}</span>${heavy?'<span class="tag warn">Too heavy</span>':''}</div><button class="btn sm ghost" data-act="next-edit">Edit</button></div>`}<small class="muted tiny">${inCount} of ${exp.length} have next week's pick in.</small></div>`;
 }
 function tallyAt(r,i){const t={};for(let k=0;k<=i&&k<r.order.length;k++){const c=r.order[k].candidate;t[c]=(t[c]||0)+1}return t}
 function tallyBars(t,n,bump){return`<div class="rv-tally">${Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([cid,k])=>{const m=member(cid);return`<div class="rv-trow ${cid===bump?'bump':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="bar"><i style="width:${Math.round(k/n*100)}%"></i></span><b class="mono">${k}</b></div>`}).join('')}</div>`}
@@ -1292,8 +1315,8 @@ function voteBoard(w,r){const n=r.order.length;const fin=tallyAt(r,n-1);
 function renderReveal(w,c){
   const l=league();const r=w.reveal;const n=r.order.length;const st=rvGet(w);
   const head=`<h3>${h(wkName(w))} — the votes are in</h3>`;
-  if(st.i<0)return`<section class="card vote next reveal">${head}<p class="muted tiny">${n} video${n===1?'':'s'}, revealed one at a time, tally kept as close as it can be. ${r.by==='admin'?'The commissioner opened the reveal early. ':''}Sound on.</p><button class="btn primary block" data-act="rv-start">▶ Start the reveal</button>${isAdmin()?`<button class="btn ghost block sm" data-act="rv-end">Skip the show — straight to the vote board</button>`:''}</section>`;
-  if(st.i>=n)return`<section class="card vote next reveal">${head}${voteBoard(w,r)}<button class="btn ghost block sm" data-act="rv-restart">↺ Watch it again</button>${crownBlock(w,c,r)}</section>`;
+  if(st.i<0)return`<section class="card vote next reveal">${head}<p class="muted tiny">${n} video${n===1?'':'s'}, revealed one at a time, tally kept as close as it can be. ${r.by==='admin'?'The commissioner opened the reveal early. ':''}Sound on.</p><button class="btn primary block" data-act="rv-start">▶ Start the reveal</button>${isAdmin()?`<button class="btn ghost block sm" data-act="rv-end">Skip the show — straight to the vote board</button>`:''}${nextPickBox(w,c)}</section>`;
+  if(st.i>=n)return`<section class="card vote next reveal">${head}${voteBoard(w,r)}<button class="btn ghost block sm" data-act="rv-restart">↺ Watch it again</button>${nextPickBox(w,c)}${crownBlock(w,c,r)}</section>`;
   const o=r.order[st.i];const v=member(o.voter);const cand=member(o.candidate);const t=tallyAt(r,st.i);const prev=tallyAt(r,st.i-1);
   const isClinch=r.clinch===st.i;const after=n-st.i-1;const vid=w.sub?.[o.voter]?.video;const expired=!!(vid&&vid.deleted);
   return`<section class="card vote next reveal">${head}
@@ -1770,6 +1793,9 @@ const ACT={
   'copy-share'(){const l=league();const site=SHARE_SITES[l.id];copyText(site?site.url:shareLink(l))},
   'pick-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}sendSub(l,w,el.dataset.mid)},
   'change-sub'(){subEdit.add(currentWeek().id);render()},
+  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');sendNext(l,w,text,odds)},
+  'next-edit'(){nextEdit.add(currentWeek().id);render()},
+  'next-cancel'(el,e){e.preventDefault();nextEdit.delete(currentWeek().id);render()},
   'resume-upload'(){const l=league();if(!pendingUp||!pendingUp.file)return;if(!l.me){pickMe(l);return}const w=week(pendingUp.weekId)||currentWeek();if(pendingUp.mid!==l.me){toast('That upload belongs to a different name on this phone','bad');return}uploadVideo(l,w,pendingUp.file,pendingUp)},
   'cancel-upload'(){upCancel=true;toast('Pausing after this piece…')},
   'change-sub-done'(){subEdit.delete(currentWeek().id);render()},
