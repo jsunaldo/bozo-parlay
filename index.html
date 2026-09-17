@@ -45,6 +45,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .leg.mine::after{content:'you';position:absolute;right:12px;top:6px;font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
 .cand .voters{font-size:11px;color:var(--dim);font-weight:500;white-space:normal;line-height:1.3}
 .cand .btn.voted{background:var(--blue);color:#fff}
+.spoiler{font:inherit;font-size:13px;font-weight:600;border:0;border-radius:999px;padding:3px 10px;background:var(--surface3);color:var(--muted);cursor:pointer}
+.spoiled{color:var(--blue);animation:fadeUp .2s}
 .nextpick{margin-top:14px;padding-top:12px;border-top:1px solid var(--line)}
 .nextpick.locked{opacity:.75}
 .np-form{display:grid;grid-template-columns:1fr 84px auto;gap:8px;align-items:start;margin:6px 0}
@@ -576,7 +578,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.8';
+const APP_VERSION='2026-09-17.9';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1214,7 +1216,8 @@ function patchTicket(w){
   }
 }
 /* ---- sealed vote: one name + one video per person, hidden until everyone with a leg is in ---- */
-let upl=null,pendingUp=null,upCancel=false;const subEdit=new Set();
+let upl=null,pendingUp=null,upCancel=false;const subEdit=new Set();const peek=new Set();let peekT=null;
+function spoiler(cid,wid){const open=peek.has(wid);return open?`<b class="spoiled">${h(member(cid)?.name||'?')}</b>`:`<button type="button" class="spoiler" data-act="peek" data-wid="${wid}">👀 tap to see</button>`}
 const IDB={open(){return new Promise((res,rej)=>{if(!('indexedDB'in window))return rej(new Error('no idb'));const r=indexedDB.open('bp-uploads',1);r.onupgradeneeded=()=>r.result.createObjectStore('pending');r.onsuccess=()=>{const db=r.result;db.onversionchange=()=>db.close();res(db)};r.onerror=()=>rej(r.error)})},
   async put(k,v){const db=await this.open();try{return await new Promise((res,rej)=>{const t=db.transaction('pending','readwrite');t.objectStore('pending').put(v,k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}finally{db.close()}},
   async get(k){const db=await this.open();try{return await new Promise((res,rej)=>{const r=db.transaction('pending').objectStore('pending').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})}finally{db.close()}},
@@ -1227,7 +1230,7 @@ const mb=n=>Math.round(n/1048576);
 function subStatus(w){const s=w.sub||{};return mid=>{const x=s[mid];if(!x)return{voted:false,video:false,cand:null};const vid=x.video;return{voted:!!(x.candidateId||x.voted),video:!!(vid&&(typeof vid==='boolean'?vid:!vid.deleted)),cand:x.candidateId||null}}}
 function expectedVoters(w,c){return c.legs.map(x=>x.mid).filter(mid=>!(w.skip&&w.skip[mid]))}
 async function sendSub(l,w,cid){setSyncDot('busy');
-  try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:cid,memberId:l.me}});subEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(w.reveal?'That was the last one — the votes are in':`Vote sealed: ${member(cid)?.name}. Now the video.`,'good')}
+  try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:cid,memberId:l.me}});subEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(w.reveal?'That was the last one — the votes are in':'Vote sealed. Now the video.','good')}
   catch(e){setSyncDot('bad');toast('Vote didn\'t go through: '+e.message,'bad')}}
 async function uploadVideo(l,w,file,resume){
   const max=(l.limits&&l.limits.videoMax)||150*1048576;if(!file)return;
@@ -1273,11 +1276,13 @@ function renderSealedVote(w,c,el,reason){
   let yours='';
   if(!me)yours=`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
   else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${w.skip?.[me]?'The commissioner skipped you this week.':'No leg this week for you, so no vote this week. Sit tight for the reveal.'}</p>`;
-  else if(mine.voted&&mine.video&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> ${mine.cand?`${h(member(mine.cand)?.name||'')} gets your vote and your video is uploaded.`:'Your vote and video are sealed.'} <button class="btn sm ghost" data-act="change-sub">Change</button></div>`;
+  else if(mine.voted&&mine.video&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> ${mine.cand?`Your vote: ${spoiler(mine.cand,w.id)}. Video uploaded.`:'Your vote and video are sealed.'} <button class="btn sm ghost" data-act="change-sub">Change</button></div>`;
   else{
     const max=(l.limits&&l.limits.videoMax)||150*1048576;
+    const showBallot=!mine.voted||editing;
     yours=`<div class="pd-sub" style="margin:12px 0 6px">1 · Your vote ${mine.voted?'<span class="good">✓ sealed</span>':''}</div>
-    <div class="cands">${el.list.map(id=>{const m=member(id);const lg=c.legs.find(x=>x.mid===id);const sub=lg.status==='miss'?(lg.margin!=null?`missed by ${fmtMargin(lg.margin,lg.unit)}`:'missed'):lg.status==='push'?'pushed':'hit';const self=id===me;const on=mine.cand===id;
+    ${showBallot?'':`<div class="np-saved"><span>Your vote: ${spoiler(mine.cand,w.id)}</span><button class="btn sm ghost" data-act="change-sub">Change</button></div>`}
+    <div class="cands" ${showBallot?'':'hidden'}>${el.list.map(id=>{const m=member(id);const lg=c.legs.find(x=>x.mid===id);const sub=lg.status==='miss'?(lg.margin!=null?`missed by ${fmtMargin(lg.margin,lg.unit)}`:'missed'):lg.status==='push'?'pushed':'hit';const self=id===me;const on=mine.cand===id;
       return`<div class="cand ${on?'sel':''} ${self?'self':''}" ${self?'':`data-act="pick-cand" data-mid="${id}"`}><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${lg.text?betChip(lg.text,lg.teams):''}</small></div><span class="chk ${on?'on':''}">${self?'<small>you</small>':on?'✓':''}</span></div>`}).join('')}</div>
     <div class="pd-sub" style="margin:12px 0 6px">2 · Your video ${mine.video?'<span class="good">✓ in</span>':''}</div>
     <div class="vidbox ${mine.voted&&!mine.video?'hot':''}">${(()=>{const pendNewer=!!(pendingUp&&(!mine.video||!(w.sub?.[me]?.video?.at)||Date.parse(w.sub[me].video.at)<(pendingUp.at||0)));return upl?`<div class="upbox"><b>Uploading your video… <span id="uppct">${upl.pct}%</span></b><div class="progress"><div id="upbar" style="width:${upl.pct}%"></div></div><small id="uplabel">${h(upl.label)}</small><small class="warnline">Keep the app open until it says uploaded.</small><button class="btn sm ghost" data-act="cancel-upload">Pause</button></div>`
@@ -1793,6 +1798,7 @@ const ACT={
   'copy-share'(){const l=league();const site=SHARE_SITES[l.id];copyText(site?site.url:shareLink(l))},
   'pick-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}sendSub(l,w,el.dataset.mid)},
   'change-sub'(){subEdit.add(currentWeek().id);render()},
+  'peek'(el){const wid=el.dataset.wid;peek.add(wid);render();clearTimeout(peekT);peekT=setTimeout(()=>{peek.delete(wid);if(!quiet())render()},4000)},
   'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');sendNext(l,w,text,odds)},
   'next-edit'(){nextEdit.add(currentWeek().id);render()},
   'next-cancel'(el,e){e.preventDefault();nextEdit.delete(currentWeek().id);render()},
