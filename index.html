@@ -90,6 +90,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .rv-prog{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
 .rv-who{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 .rv-who b{display:block;font-weight:700}
+.rv-novid{background:var(--surface2);border-radius:14px;padding:26px 12px;text-align:center;color:var(--muted);font-weight:600}
 .rv-video{width:100%;max-height:70vh;border-radius:14px;background:#000;display:block}
 .rv-card{margin-top:12px;background:var(--surface2);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;animation:fadeUp .35s}
 .rv-read{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:15px}
@@ -587,7 +588,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.11';
+const APP_VERSION='2026-09-17.12';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1300,8 +1301,8 @@ function renderSealedVote(w,c,el,reason){
       :`<label class="btn primary block">🎥 Record or choose your vote video<input type="file" id="vidIn" accept="video/*" hidden></label><small class="muted tiny">Say who you're voting for and why. Up to ${mb(max)} MB: a couple of minutes at 1080p, under a minute at 4K. Nobody sees it until everyone's in.</small>`})()}</div>
     ${editing?`<button class="btn ghost block sm" data-act="change-sub-done">Done changing</button>`:''}`;
   }
-  const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now" ${done.length?'':'disabled'}>🎬 Reveal now with ${done.length} of ${exp.length}</button>${missing.length?`<div class="skiprow">${missing.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="1">Skip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose the Bozo manually instead</button></div>`:'';
-  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Everyone with a leg votes with a name and a video. The reveal starts when the last one lands.</p>${status}${yours}${nextPickBox(w,c)}${admin}</section>`;
+  const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now" ${done.length?'':'disabled'}>🎬 Reveal now with ${done.length} of ${exp.length}</button>${missing.length?`<div class="skiprow">${missing.map(mid=>{const x=st(mid);return`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="1">${x.voted&&!x.video?`Count ${h(member(mid)?.name)} without a video`:`Skip ${h(member(mid)?.name)}`}</button>`}).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose the Bozo manually instead</button></div>`:'';
+  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Everyone with a leg votes with a name and a video. The reveal starts when the last one lands. A vote without a video still counts if the commissioner reveals without it.</p>${status}${yours}${nextPickBox(w,c)}${admin}</section>`;
 }
 const nextEdit=new Set();
 async function sendNext(l,w,text,odds){setSyncDot('busy');
@@ -1339,11 +1340,11 @@ function renderReveal(w,c){
   if(st.i<0)return`<section class="card vote next reveal">${head}<p class="muted tiny">${n} video${n===1?'':'s'}, revealed one at a time, tally kept as close as it can be. ${r.by==='admin'?'The commissioner opened the reveal early. ':''}Sound on.</p><button class="btn primary block" data-act="rv-start">▶ Start the reveal</button>${isAdmin()?`<button class="btn ghost block sm" data-act="rv-end">Skip the show — straight to the vote board</button>`:''}${nextPickBox(w,c)}</section>`;
   if(st.i>=n)return`<section class="card vote next reveal">${head}${voteBoard(w,r)}<button class="btn ghost block sm" data-act="rv-restart">↺ Watch it again</button>${nextPickBox(w,c)}${crownBlock(w,c,r)}</section>`;
   const o=r.order[st.i];const v=member(o.voter);const cand=member(o.candidate);const t=tallyAt(r,st.i);const prev=tallyAt(r,st.i-1);
-  const isClinch=r.clinch===st.i;const after=n-st.i-1;const vid=w.sub?.[o.voter]?.video;const expired=!!(vid&&vid.deleted);
+  const isClinch=r.clinch===st.i;const after=n-st.i-1;const vid=w.sub?.[o.voter]?.video;const expired=!!(vid&&vid.deleted);const noVideo=!vid;
   return`<section class="card vote next reveal">${head}
     <div class="rv-prog"><b>Vote ${st.i+1} of ${n}</b><span class="muted tiny">${st.i>0?Object.entries(prev).sort((a,b)=>b[1]-a[1]).map(([cid,k])=>`${h(member(cid)?.name)} ${k}`).join(' · '):'first vote'}</span></div>
-    <div class="rv-who"><span class="avatar" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><div><b>${h(v?.name||'?')}'s vote</b><small class="muted">${expired?'this video has expired':st.f?'':'watch it, then read the vote'}</small></div></div>
-    ${expired?'':`<video class="rv-video" controls playsinline preload="metadata" src="${videoUrl(l,w,o.voter)}"></video>`}
+    <div class="rv-who"><span class="avatar" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><div><b>${h(v?.name||'?')}'s vote</b><small class="muted">${noVideo?'skipped the video — vote still counts':expired?'this video has expired':st.f?'':'watch it, then read the vote'}</small></div></div>
+    ${noVideo||expired?`<div class="rv-novid">🎥 ${noVideo?'No video from '+h(v?.name||'?'):'Video expired'}</div>`:`<video class="rv-video" controls playsinline preload="metadata" src="${videoUrl(l,w,o.voter)}"></video>`}
     ${st.f?`<div class="rv-card ${isClinch?'clinch':''}"><div class="rv-read"><span>${h(v?.name||'?')} votes…</span><b style="color:${cand?.color||'inherit'}">${h(cand?.name||'?')}</b></div>${tallyBars(t,n,o.candidate)}
         ${isClinch?`<div class="tribe"><div class="tribe-ic">🤡</div><b>${t[o.candidate]} votes. That's enough. The tribe has spoken.</b><span>${h(cand?.name||'?')} is the Week ${w.num+1} Bozo.</span></div>`:''}
         ${after?`<button class="btn ${isClinch?'':'primary'} block" data-act="rv-next">${isClinch?`Watch the remaining ${after} vote${after===1?'':'s'} anyway`:'Next vote →'}</button>`:''}${isClinch&&after?`<button class="btn primary block" data-act="rv-end">See the vote board</button>`:''}${!after?`<button class="btn primary block" data-act="rv-end">See the vote board</button>`:''}</div>`
