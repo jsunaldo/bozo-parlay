@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="robots" content="noindex, nofollow">
@@ -123,6 +123,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 
 /* tabs */
 .tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:min(560px,calc(100% - 32px));background:var(--glass);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border:1px solid var(--line);border-radius:28px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px;z-index:10;box-shadow:var(--shadow-lg)}
+.tabs{transition:transform .25s ease,opacity .25s ease}
+body.typing .tabs{transform:translate(-50%,160%);opacity:0;pointer-events:none}
 .tabs button{background:none;border:0;color:var(--muted);font:inherit;font-size:11px;font-weight:600;padding:8px 4px 7px;border-radius:22px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:color .2s,background .2s;-webkit-tap-highlight-color:transparent}
 .tabs .ic{font-size:20px;line-height:1;transition:transform .3s cubic-bezier(.34,1.56,.64,1);filter:grayscale(1);opacity:.7}
 .tabs button.on{color:var(--text);background:var(--surface)}
@@ -540,6 +542,8 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .toast.good{background:var(--green);color:#fff}
 .toast.bad{background:var(--red);color:#fff}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:70;display:none}
+/* touch screens: never smaller than 16px in a form control, or iOS zooms the page and the fixed tab bar drifts */
+@media (pointer:coarse){input,select,textarea,.date-in,.leg-margin select,.leg-margin input,.linkbox input,.inline-num,.pickbox textarea,.modal input{font-size:16px!important}}
 </style>
 </head>
 <body>
@@ -564,7 +568,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.6';
+const APP_VERSION='2026-09-17.7';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1820,6 +1824,8 @@ document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('lab
 document.addEventListener('change',e=>{if(e.target.id==='vidIn'){pickerOpen=0;const f=e.target.files&&e.target.files[0];if(f)uploadVideo(league(),currentWeek(),f)}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&pickerOpen)setTimeout(()=>{if(pickerOpen&&!upl){pickerOpen=0;if(needRender){needRender=false;render()}}},4000)});
 document.addEventListener('ended',e=>{if(e.target.classList&&e.target.classList.contains('rv-video')){const w=currentWeek();const st=rvGet(w);if(!st.f){rvSet(w,{i:st.i,f:true});render();document.querySelector('.rv-card')?.scrollIntoView({block:'nearest',behavior:'smooth'})}}},true);
+document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input:not([type=file]),textarea,select'))document.body.classList.add('typing')});
+document.addEventListener('focusout',()=>{setTimeout(()=>{const a=document.activeElement;if(!a||!a.matches('input:not([type=file]),textarea,select'))document.body.classList.remove('typing')},120)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(e.key==='Enter'&&e.target.classList?.contains('pick-in')){e.preventDefault();const n=e.target.closest('.leg-inputs')?.querySelector('[data-odds]');n?n.focus():e.target.blur()}});
 document.getElementById('importFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.members)||!Array.isArray(o.weeks))throw new Error('not a Bozo Parlay backup');
