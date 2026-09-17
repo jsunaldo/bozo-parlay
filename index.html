@@ -563,7 +563,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.4';
+const APP_VERSION='2026-09-17.5';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -856,7 +856,8 @@ async function adoptLink(id,key){
     let l=DB.leagues.find(x=>x.sync&&x.sync.id===id)||DB.leagues.find(x=>!x.sync&&canonName(x.name)===canonName(d.name));
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null};DB.leagues.push(l)}
     l.sync={url:SYNC_URL,id,key,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features=d.features||{};l.claims=d.claims||{};
-    if(l.seasons.length&&hasContent(l)){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:l.activeSeason,name:l.name,features:l.features}});applyState(l,d2)}else applyState(l,d);
+    const serverWeeks=new Set((d.seasons||[]).flatMap(x=>(x.data?.weeks||[]).map(w=>x.id+'|'+w.id)));const localWeeks=new Set(l.seasons.flatMap(x=>(x.data?.weeks||[]).map(w=>x.id+'|'+w.id)));const covers=[...serverWeeks].every(k=>localWeeks.has(k));
+    if(l.seasons.length&&hasContent(l)&&covers){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:l.activeSeason,name:l.name,features:l.features,baseRev:d.rev}});applyState(l,d2)}else applyState(l,d);   // a device that is behind the server never overwrites it
     DB.leagues=DB.leagues.filter(x=>x===l||x.sync||hasContent(x));   // drop the empty placeholder a fresh phone starts with
     setOwner();DB.active=l.id;S=season().data;VIEW='crew';save();render();toast(`${l.name} is live — this device runs it`,'good');return true;
   }catch(e){toast('Could not connect: '+e.message,'bad');return false}
@@ -1270,7 +1271,7 @@ function tallyBars(t,n,bump){return`<div class="rv-tally">${Object.entries(t).so
 function crownBlock(w,c,r){
   if(!isAdmin())return`<p class="muted tiny" style="margin-top:10px">The commissioner crowns the Bozo.</p>`;
   if(lastWeek()!==w)return'';
-  return`<div class="vote-actions" style="margin-top:12px">${r.winner?`<button class="btn primary block" data-act="crown" data-mid="${r.winner}">🤡 Crown ${h(member(r.winner)?.name)} · start Week ${w.num+1}</button>`:`<button class="btn primary block" data-act="flip" data-ids="${r.tie.join(',')}">🪙 ${r.tie.length}-way tie — flip for it</button>`}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button></div>`;
+  return`<div class="vote-actions" style="margin-top:12px">${r.winner?`<button class="btn primary block" data-act="crown" data-mid="${r.winner}">🤡 Crown ${h(member(r.winner)?.name)} · start Week ${w.num+1}</button>`:`<button class="btn primary block" data-act="flip" data-ids="${r.tie.join(',')}">🪙 ${r.tie.length}-way tie — flip for it</button>`}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button><button class="btn ghost block sm" data-act="unreveal">Reopen the vote</button></div>`;
 }
 function voteBoard(w,r){const n=r.order.length;const fin=tallyAt(r,n-1);
   return`<div class="board">${r.order.map((o,i)=>{const v=member(o.voter),cd=member(o.candidate);return`<div class="brow ${i===r.clinch?'clinch':''}"><span class="mono muted">${i+1}</span><span class="avatar xs" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><span class="nm">${h(v?.name||'?')}</span><span class="muted">votes</span><b style="color:${cd?.color||'inherit'}">${h(cd?.name||'?')}</b>${i===r.clinch?'<em>the tribe has spoken</em>':''}</div>`}).join('')}</div>${tallyBars(fin,n)}<p class="rv-final">${r.winner?`🤡 ${h(member(r.winner)?.name)} is the Week ${w.num+1} Bozo`:`Tied between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')} — coin flip`}</p>`}
@@ -1759,7 +1760,8 @@ const ACT={
   'change-sub-done'(){subEdit.delete(currentWeek().id);render()},
   'reveal-now'(){const w=currentWeek();const c=calc(w);const st=subStatus(w);const exp=expectedVoters(w,c);const done=exp.filter(mid=>{const x=st(mid);return x.voted&&x.video}).length;confirm2('Reveal now?',`Only the ${done} ${done===1?'person':'people'} who finished count. The other ${exp.length-done} are out of this week's vote.`,'Reveal',()=>adminCall('/reveal',{},'The votes are in'),'primary')},
   'skip-sub'(el){adminCall('/skip',{memberId:el.dataset.mid,skip:el.dataset.skip==='1'},el.dataset.skip==='1'?`${member(el.dataset.mid)?.name} skipped this week`:`${member(el.dataset.mid)?.name} is back in`)},
-  'reset-claim'(el){const m=member(el.dataset.mid);confirm2(`Reset ${m?.name}'s phone?`,'Their current phone stops being them. They tap their name again on whichever phone they want.','Reset',()=>adminCall('/claim/reset',{memberId:el.dataset.mid},`${m?.name} can claim their name again`))},
+  'reset-claim'(el){const m=member(el.dataset.mid);const mid=el.dataset.mid;modal({title:`Reset ${m?.name}'s phone?`,body:`<p>Their current phone stops being them and they tap their name again on whichever phone they want.</p><p>If the wrong person grabbed this name, also wipe whatever was submitted under it this week.</p>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Reset and wipe',cls:'danger',onClick:()=>adminCall('/claim/reset',{memberId:mid,wipe:true},`${m?.name}'s name is free again and this week's submission is gone`)},{label:'Reset, keep their vote',cls:'primary',onClick:()=>adminCall('/claim/reset',{memberId:mid},`${m?.name} can claim their name again`)}]})},
+  'unreveal'(){confirm2('Reopen the vote?','The reveal disappears for everyone and voting reopens. Videos already uploaded stay.','Reopen',()=>adminCall('/unreveal',{},'Voting is open again'))},
   'rv-start'(){rvSet(currentWeek(),{i:0,f:false});render();window.scrollTo({top:0,behavior:'smooth'})},
   'rv-flip'(){const w=currentWeek();const st=rvGet(w);rvSet(w,{i:st.i,f:true});render()},
   'rv-next'(){const w=currentWeek();const st=rvGet(w);rvSet(w,{i:st.i+1,f:false});render();document.querySelector('.reveal')?.scrollIntoView({block:'start',behavior:'smooth'})},
