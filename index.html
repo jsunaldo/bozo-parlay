@@ -676,7 +676,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.24';
+const APP_VERSION='2026-09-18.25';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1044,7 +1044,7 @@ function adoptServerWeeks(l,st){   // weeks the server started (auto-crown) that
       else{for(let k=i-1;k>=0&&at<0;k--)at=lws.findIndex(y=>y.id===sws[k].id);if(at<0&&i>0)at=lws.length-1}
       const nw=JSON.parse(JSON.stringify(sw));nw.picks??={};nw.votes??={};for(const p of Object.values(nw.picks)){p.unit??=unitFor(p.text);p.teams??=detectTeams(p.text)}lws.splice(at+1,0,nw);n++})}
   return n}
-const MEMBER_PICK=['text','odds','teams','tm','unit','um','raw','keep','by','at','oddsBy','oddsTyped'],SERVER_WEEK=['sub','reveal','skip','next','revote','crowned','auto'],DEVICE_SEASON=['weeks','currentWeekId','view'];
+const MEMBER_PICK=['text','odds','teams','tm','tmh','unit','um','raw','keep','by','at','oddsBy','oddsTyped','oddsDk'],SERVER_WEEK=['sub','reveal','skip','next','revote','crowned','auto'],DEVICE_SEASON=['weeks','currentWeekId','view'];
 const stable=v=>v&&typeof v==='object'?(Array.isArray(v)?'['+v.map(stable).join(',')+']':'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}'):JSON.stringify(v===undefined?null:v);
 const hstr=t=>{let a=5381,b=52711;for(let i=0;i<t.length;i++){const c=t.charCodeAt(i);a=Math.imul(a,33)^c;b=Math.imul(b,31)^c}return(a>>>0).toString(36)+(b>>>0).toString(36)};
 function weekSig(w){   // the commissioner's part of a week (members' own pick fields and server-run fields left out)
@@ -1096,7 +1096,7 @@ const outboxHas=l=>!!(l.outbox&&Object.keys(l.outbox).length);
 const unsent=(w,mid,l=league())=>!!(l.outbox&&l.outbox[obKey(l,w,mid)]);
 async function sendPick(l,w,mid,quietly){   // a member's own pick: it waits in the outbox until the league has it
   const p=w.picks[mid];if(!p)return;pendingPick=null;const k=obKey(l,w,mid);const stamp=Date.now();l.outbox=l.outbox||{};const prev=l.outbox[k];const base=prev&&'base' in prev?prev.base:(p.at||'');l.outbox[k]={at:stamp,base};save();setSyncDot('busy');const sid=seasonOfWeek(l,w).id;
-  try{const d=await api(l,'/pick',{method:'POST',body:{seasonId:sid,weekId:w.id,memberId:mid,baseAt:base,pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,unit:p.unit,um:p.um,raw:p.raw||'',keep:!!p.keep,oddsBy:p.oddsBy||'',oddsTyped:p.oddsTyped??''}}});
+  try{const d=await api(l,'/pick',{method:'POST',body:{seasonId:sid,weekId:w.id,memberId:mid,baseAt:base,pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,tmh:!!p.tmh,unit:p.unit,um:p.um,raw:p.raw||'',keep:!!p.keep,oddsBy:p.oddsBy||'',oddsTyped:p.oddsTyped??'',oddsDk:p.oddsDk||''}}});
     const np=(d.seasons||[]).find(x=>x.id===sid)?.data?.weeks?.find(x=>x.id===w.id)?.picks?.[mid];if(np&&np.at)p.at=np.at;   // the league's stamp: the next edit starts from it
     if(l.outbox[k]&&l.outbox[k].at===stamp)delete l.outbox[k];else if(l.outbox[k]&&np&&np.at)l.outbox[k].base=np.at;save();setSyncDot('ok');if(!quietly)toast('Pick saved for the group','good');softRender()}
   catch(e){if(e.status===409&&e.data&&e.data.current){delete l.outbox[k];save();setSyncDot('ok');toast(`Your pick was changed on your other device to “${e.data.current.text||'nothing'}”, so this one wasn't saved. Change it again if you want.`,'bad');pull(l,false,true)}
@@ -1602,23 +1602,39 @@ function renderTicket(w,c){
   </section>`;
 }
 const segOpen=new Set();
+const fmtET=x=>{const d=new Date(x);return isNaN(d)?'':d.toLocaleString('en-US',{timeZone:'America/New_York',weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})+' ET'};
+function dkCompare(text,nfl){   // what DraftKings (via ESPN's schedule) has for this exact bet, for the details sheet: {price} | {other: the book's line} | {none}
+  const t=String(text||'');const lo=' '+t.toLowerCase()+' ';const type=betType(t);
+  if(!['Moneyline','Spread','Total'].includes(type)||/\b(1st|first|2nd|second|3rd|third|4th|fourth) ?(half|quarter|qtr)\b|\b[12]h\b|\bq[1-4]\b|\b[1-4]q\b|\(alt\)|\balt\b|team total|\btt\b/.test(lo))return{none:'kind'};
+  const teams=detectTeams(t);const g=nfl&&nfl.teamGame&&teams.length?nfl.teamGame[teams[0]]:null;const o=g&&g.odds;if(!o)return{none:'nodata'};
+  const side=teams[0]===g.home?'home':teams[0]===g.away?'away':null;const fl=v=>v===0?'PK':v>0?'+'+v:String(v);
+  if(type==='Moneyline'&&side)return o.ml&&o.ml[side]?{price:o.ml[side]}:{none:'nodata'};
+  if(type==='Spread'&&side){const x=[...lo.matchAll(/([+-]) ?(\d+(?:\.\d+)?)(?![\d.])/g)].find(x=>+x[2]<50);const L=/\bpk\b|pick ?em/.test(lo)?0:x?(x[1]==='-'?-1:1)*+x[2]:null;const sp=o.spread&&o.spread[side];if(!sp||sp.line==null)return{none:'nodata'};return sp.line===L&&sp.odds?{price:sp.odds}:{other:`${TEAM_NM(teams[0])} ${fl(sp.line)}${sp.odds?` (${sp.odds})`:''}`}}
+  if(type==='Total'){const ov=(lo.match(/\bover ?(\d+(?:\.\d+)?)/)||[])[1],un=(lo.match(/\bunder ?(\d+(?:\.\d+)?)/)||[])[1];if(!(ov||un)||!o.total||o.total.line==null)return{none:'nodata'};const pr=ov?o.total.over:o.total.under;return o.total.line===+(ov||un)&&pr?{price:pr}:{other:`${ov?'Over':'Under'} ${o.total.line}${pr?` (${pr})`:''}`}}
+  return{none:'nodata'}}
 function legInfo(w,mid){   // everything about one leg: what was typed, what the app changed and where from, how it was graded
   const p=w.picks[mid];const m=member(mid);if(!p||!m)return;const unit=p.um&&p.unit?p.unit:unitFor(p.text);const rows=[];const row=(k,v)=>rows.push(`<div class="li-row"><span class="li-k">${k}</span><span class="li-v">${v}</span></div>`);
-  const t=x=>{const d=new Date(x);return isNaN(d)?'':d.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})};
-  const tidied=p.raw&&p.raw!==p.text;
-  row('Pick',String(p.text||'').trim()?`<b>${h(p.text)}</b>`:'<span class="muted">No pick entered</span>');
-  if(String(p.text||'').trim())row('Typed',tidied?`“${h(p.raw)}”`:'Exactly as shown above');
-  row('Entered',(p.by==='admin'?'By the commissioner':p.by?`By ${h(member(p.by)?.name||m.name)} in the app`:'Not recorded (entered before the app kept track)')+(p.by&&p.at&&t(p.at)?`, ${t(p.at)}`:'')+(p.eby?`<br><span class="muted">Changed by the commissioner${p.eat&&t(p.eat)?`, ${t(p.eat)}`:''}</span>`:''));
-  if(tidied)row('Wording','The app rewrote it in sportsbook wording, matching team and player names to ESPN’s schedule and rosters. The meaning didn’t change.');
-  row('Odds',p.oddsBy==='espn'?`<b>${h(p.odds)}</b> from DraftKings (via ESPN), taken before kickoff. ${p.oddsTyped?`They typed ${h(p.oddsTyped)}.`:'They didn’t type a price.'}`:String(p.odds||'').trim()?`<b>${h(p.odds)}</b>, as typed`:'None entered');
+  const text=String(p.text||'').trim();const tidied=p.raw&&p.raw!==p.text;const nfl=nflOk(slipNfl(w));
+  row('Pick',text?`<b>${h(p.text)}</b>`:'<span class="muted">No pick entered</span>');
+  if(tidied)row('Typed',`“${h(p.raw)}”<br><span class="muted">The app rewrote it in sportsbook wording, matching team and player names to ESPN’s schedule and rosters. The meaning didn’t change.</span>`);
+  row('Entered',(p.by==='admin'?'By the commissioner':p.by?`By ${h(member(p.by)?.name||m.name)}`:'Not recorded (entered before the app kept track)')+(p.by&&p.at&&fmtET(p.at)?`, ${fmtET(p.at)}`:'')+(p.eby?`<br><span class="muted">Changed by the commissioner${p.eat&&fmtET(p.eat)?`, ${fmtET(p.eat)}`:''}</span>`:''));
+  if(text){let typed,dk=null,note='';   // typed: the price they entered ('' = none, null = not recorded on older picks); dk: DraftKings' price for this exact bet
+    if(p.oddsBy==='espn'){dk=p.oddsDk||p.odds;typed=p.oddsTyped!=null&&p.oddsTyped!==''?p.oddsTyped:p.oddsDk?'':null}
+    else{typed=String(p.odds||'').trim();dk=p.oddsDk||null;if(!dk){const c=dkCompare(p.text,nfl);if(c.price)dk=c.price;else note=c.other?`DraftKings has ${h(c.other)}, a different line, so the typed price is used.`:c.none==='kind'?'No DraftKings line for this kind of bet. The app only gets moneylines, spreads and totals.':'Not checked. The app looks it up before kickoff, when the pick is exactly the book’s line.'}}
+    const verdict=dk&&typed?(typed===dk?'✓ They match':`Different. The slip uses the ${p.oddsBy==='espn'?'DraftKings':'typed'} price, ${h(p.odds)}.`):dk&&typed===''?'Nothing was typed, so the slip uses the DraftKings price.':'';
+    row('Odds',`As typed: ${typed===null?'<span class="muted">not recorded</span>':typed?`<b>${h(typed)}</b>`:'<span class="muted">nothing typed</span>'}<br>DraftKings: ${dk?`<b>${h(dk)}</b> <span class="muted">(via ESPN)</span>`:'<span class="muted">—</span>'}${note?`<br><span class="muted">${note}</span>`:''}${verdict?`<br><span class="muted">${verdict}</span>`:''}`)}
+  else row('Odds',String(p.odds||'').trim()?`As typed: <b>${h(p.odds)}</b>`:'None entered');
   const t0=p.teams&&p.teams.length?p.teams:detectTeams(p.text).length?detectTeams(p.text):(teamOfPlayer(p.text)||[]);const tms=t0.slice(0,2).map(x=>TEAM_NM(x)).filter(Boolean);
-  if(String(p.text||'').trim())row('Teams',tms.length?`${h(tms.join(' vs '))} · ${p.tm?'set by hand':'read from the pick, using ESPN’s schedule and rosters'}`:'None found in the pick');
+  if(text)row('Teams',tms.length?`${h(tms.join(' vs '))} · ${p.tmh?'set by hand':'matched from the pick, using ESPN’s schedule and rosters'}`:'None found in the pick');
   const st=p.status||'pending';
-  if(st==='pending'){const R=RESULTS[checkDate(w)];const lv=R&&String(p.text||'').trim()?gradeLeg(p,R,true):null;
-    row('Result',`Not graded yet${lv&&lv.status&&lv.detail?`<br><span class="muted">Right now: ${h(lv.detail)}</span>`:lv&&lv.wait?`<br><span class="muted">${h(lv.wait)}</span>`:''}`)}
+  if(st==='pending'){const R=RESULTS[checkDate(w)];const lv=R&&text?gradeLeg(p,R,true):null;const sg=nfl&&nfl.teamGame&&t0.length?nfl.teamGame[t0[0]]:null;let sub='';
+    if(lv&&lv.status&&lv.detail)sub=`Right now: ${h(lv.detail)}`;
+    else if(text){const at=(lv&&lv.pre&&lv.at)||(sg&&sg.at);const gn=sg?`${TEAM_NM(sg.away)} @ ${TEAM_NM(sg.home)}`:lv&&lv.wait?String(lv.wait).split(':')[0]:'';
+      if(at&&Date.parse(at)>Date.now())sub=`${gn?h(gn)+' · ':''}Kicks off ${fmtET(at)}`;else if(lv&&lv.wait)sub=h(lv.wait);else if(at)sub=`${gn?h(gn)+' · ':''}Kicked off ${fmtET(at)}`}
+    row('Result',`Not graded yet${sub?`<br><span class="muted">${sub}</span>`:''}`)}
   else{row('Result',`<span class="stag ${st}">${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[st]||h(st)}</span>${p.margin!=null&&unit!=='none'&&st!=='push'?` ${st==='hit'?'covered':'missed'} by ${h(fmtMargin(p.margin,unit))}`:''}`);
     const how=p.gby==='check'?'With the Check button, from ESPN’s box score':p.gby==='hand'?'By hand, by the commissioner':p.gby==='auto'||p.auto?'Automatically, from ESPN’s box score':'By the commissioner';
-    const when=p.gat||(p.gby!=='hand'&&p.gby!=='check'&&p.auto);row('Graded',`${how}${when&&t(when)?`, ${t(when)}`:''}${p.gdet?`<br><span class="muted">${h(p.gdet)}</span>`:''}`)}
+    const when=p.gat||(p.gby!=='hand'&&p.gby!=='check'&&p.auto);row('Graded',`${how}${when&&fmtET(when)?`, ${fmtET(when)}`:''}${p.gdet?`<br><span class="muted">${h(p.gdet)}</span>`:''}`)}
   modal({title:`${m.name}’s leg · ${wkName(w)}`,body:`<div class="li">${rows.join('')}</div>`,actions:[{label:'Close',cls:'primary'}]})}
 const slipOpen=new Set();   // legs opened for editing on this device: "weekId|memberId"
 function renderLegs(w,c,cl){
@@ -2030,7 +2046,7 @@ function espnOdds(text,nfl){   // the book's current price for a game line, only
   return null}
 function oddsFix(p,nfl){   // at clean-up the price comes from DraftKings (via ESPN); what they typed stays as the fallback
   if(!p||p.status!=='pending'||p.oddsBy||p.keep)return false;const eo=espnOdds(p.text,nfl);if(!eo)return false;
-  p.oddsBy='espn';if(String(p.odds||'').trim()===eo)return false;p.oddsTyped=String(p.odds||'');p.odds=eo;return true}   // true only when the price actually changed
+  p.oddsBy='espn';p.oddsDk=eo;p.oddsTyped=String(p.odds||'').trim();p.odds=eo;return true}   // true once: the book's price and what they typed are both kept
 function tidyLeg(wid,mid,el){
   const w=week(wid);const p=w?.picks[mid];if(!p||!String(p.text||'').trim())return;if(p.status!=='pending'&&!isAdmin())return;
   const nfl=nflOk(slipNfl(w));const clean=p.keep?null:cleanPick(p.text,nfl);const newText=!!clean&&clean!==p.text;
@@ -2797,7 +2813,7 @@ const ACT={
   async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=(await navigator.serviceWorker.getRegistrations()).filter(r=>r.scope.startsWith(location.origin+location.pathname));const keep=!!(PUSH.sub||DB.leagues.some(x=>x.pushEp));await Promise.all(rs.map(r=>keep?r.update().catch(()=>{}):r.unregister()))}if(window.caches){const pre=CACHE_PREFIX;const ks=await caches.keys();await Promise.all(ks.filter(k=>k.startsWith(pre)).map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
   'pick-team'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p||!canEdit(el.dataset.mid))return;const sel=[...(p.teams||[])];
     modal({title:'Team logo',body:`<p class="tiny">Pick up to two teams for this leg. Auto-detected from the pick text unless you set it here.</p><div class="teamgrid" id="teamgrid">${Object.keys(TEAMS).map(a=>`<button class="tp ${sel.includes(a)?'on':''}" data-act="tp-toggle" data-abbr="${a}"><img src="${LOGO(a)}" alt="">${a}</button>`).join('')}</div>`,
-      actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);done()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];done()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);done()}}]});
+      actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;delete p.tmh;p.teams=detectTeams(p.text);done()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.tmh=true;p.teams=[];done()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.tmh=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);done()}}]});
     function done(){const L=league();if(L.sync&&L.sync.role!=='admin'){save();render();if(L.me===el.dataset.mid)sendPick(L,w,el.dataset.mid)}else commit()}},
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
@@ -2919,7 +2935,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     else if(c==='unit'){p.unit=e.target.value;p.um=true;if(p.unit==='none')p.margin=null;commit();return}
     else p[c]=e.target.value;
     if(c==='odds'){p.oddsBy='typed';delete p.oddsTyped}   // a price they typed themselves stays theirs
-    if(c==='text'){delete p.unsure;delete p.oddsBy;delete p.oddsTyped;if(e.target.tagName==='TEXTAREA')autosize(e.target);if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=pickTeamsFor(p.text,slipNfl(w));if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
+    if(c==='text'){delete p.unsure;delete p.oddsBy;delete p.oddsTyped;delete p.oddsDk;if(e.target.tagName==='TEXTAREA')autosize(e.target);if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=pickTeamsFor(p.text,slipNfl(w));if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
     save();if(c==='odds')patchTicket(w);
     const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){L.outbox=L.outbox||{};const ok0=obKey(L,w,b2);const e0=L.outbox[ok0];L.outbox[ok0]={at:Date.now(),base:e0&&'base' in e0?e0.base:(p.at||'')};save();clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin'){if(c==='text'||c==='odds'){const now=new Date().toISOString();if(b2===L.me){p.by=b2;p.at=now;delete p.eby;delete p.eat}else if(p.by&&p.by!=='admin'){p.eby='admin';p.eat=now}else{p.by='admin';p.at=now}}schedulePush()}}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
