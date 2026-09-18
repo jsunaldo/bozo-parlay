@@ -621,7 +621,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.6';
+const APP_VERSION='2026-09-18.7';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -882,7 +882,7 @@ function applyState(l,d){
     else if(cur&&!revealSeen(cur,l))x.data.currentWeekId=u.cur;               // hold them on the reveal they haven't watched yet
     else if(newest)x.data.currentWeekId=newest}                               // otherwise a freshly opened week pulls them to it
   if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
-  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
+  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
   if(l.meKey&&d.you===null){delete l.me;delete l.meKey;setTimeout(()=>toast('The commissioner reset your name on this phone — tap your name again to vote','bad'),80)}
   l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;if(d.updatedAt)l.sync.base=d.updatedAt;
   if(league()===l){S=season().data;ALLTIME=null}
@@ -912,7 +912,7 @@ function mergeMemberEdits(l,st){
 }
 async function push(l,retried){
   setSyncDot('busy');const seq=l.sync.seq||0;
-  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,features:l.features||{},clubName:l.clubName||'',baseRev:l.sync.rev}});
+  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,features:l.features||{},clubName:l.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
     if((l.sync.seq||0)===seq&&!pushT){delete l.sync.dirty;applyState(l,d);save();if(!quiet())render();else needRender=true}   // nothing new typed meanwhile: take the league as it now stands (votes, claims…)
     else{l.sync.rev=d.rev;if(d.updatedAt)l.sync.base=d.updatedAt;save()}                                         // more edits are queued: they push next
     setSyncDot('ok')}
@@ -961,7 +961,7 @@ async function adoptLink(id,key){
     let upload=!!(d.fresh&&hadLocal);   // brand-new league: this device's copy becomes the league
     if(hadLocal&&!upload){const ahead=aheadOf(l,d);if(ahead.length)upload=(await askWhichCopy(l.name,ahead))==='mine'}
     if(hadLocal)backupLeague(l);
-    if(upload){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,features:l.features||{},clubName:l.clubName||d.clubName||'',baseRev:d.rev}});applyState(l,d2)}
+    if(upload){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,features:l.features||{},clubName:l.clubName||d.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:d.rev}});applyState(l,d2)}
     else applyState(l,d);   // the league's copy; this device's edits push from now on
     delete l.sync.dirty;
     DB.leagues=DB.leagues.filter(x=>x===l||x.sync||hasContent(x));   // drop the empty placeholder a fresh phone starts with
@@ -1058,8 +1058,10 @@ function nextPlan(prev){   // what the next parlay in the Bozo chain is
 }
 function nextName(w){const n=nextMain(w);return n?wkName(n).replace(' · ',' '):nextPlan(w).name}
 const spIcon=n=>/thanksgiving/i.test(n||'')?'🦃':/christmas|xmas/i.test(n||'')?'🎄':'📅';
-function dayRule(w){if(w&&w.kind==='special'&&w.day)return{day:w.day,name:w.dayName||'special-day'};return{sunday:true}}
-const ruleText=r=>r.sunday?'Sunday games only':`${r.name} games only (${fmtDay(r.day)})`;
+const monOk=(l=league())=>!!l.mondayOk;   // league setting: Monday night games allowed too
+const gameDays=()=>monOk()?'Sunday or Monday':'Sunday';
+function dayRule(w){if(w&&w.kind==='special'&&w.day)return{day:w.day,name:w.dayName||'special-day'};return{sunday:true,monday:monOk()}}
+const ruleText=r=>r.sunday?`${r.monday?'Sunday or Monday':'Sunday'} games only`:`${r.name} games only (${fmtDay(r.day)})`;
 function newWeek(bozoId){
   const prev=lastWeek();const plan=nextPlan(prev);const early=(prev&&prev.next)||{};
   const w={id:uid(),num:plan.num,date:today(),bozoId,stake:S.stake,picks:{},votes:{},...plan.extra};
@@ -1213,7 +1215,7 @@ function renderWeekInner(){
   </div>${kindBar(w)}${c.graded&&(!nx||!revealSeen(w))?renderVote(w,c,isLast)+renderTicket(w,c):renderTicket(w,c)+renderVote(w,c,isLast)}${renderExtras(w)}`;   // the vote/reveal leads until this device has watched it
 }
 function kindBar(w){   // what kind of parlay this is, and the side parlay riding along with it
-  if(isSide(w)){const p=parentOf(w);return`<div class="kindbar"><span class="kb-ic">🎯</span><span class="kb-t"><b>Anytime TD side parlay</b>ATTD bets only · Sunday games · no Bozo, no vote${p?` · runs alongside <a href="#" data-act="open-week" data-wid="${p.id}">${h(wkName(p))}</a>`:''}</span></div>`}
+  if(isSide(w)){const p=parentOf(w);return`<div class="kindbar"><span class="kb-ic">🎯</span><span class="kb-t"><b>Anytime TD side parlay</b>ATTD bets only · ${gameDays()} games · no Bozo, no vote${p?` · runs alongside <a href="#" data-act="open-week" data-wid="${p.id}">${h(wkName(p))}</a>`:''}</span></div>`}
   let out='';
   if(w.kind==='special')out+=`<div class="kindbar"><span class="kb-ic">${spIcon(w.dayName)}</span><span class="kb-t"><b>${h(w.dayName||'Special')} parlay · ${h(fmtDay(w.day))}</b>${h(w.dayName||'Special-day')} games only. Its vote picks the Week ${w.num} Sunday Bozo.</span></div>`;
   const sd=sideOf(w);if(sd){const c=calc(sd);const inN=c.legs.filter(l=>String(l.text||'').trim()).length;out+=`<button class="kindbar" data-act="open-week" data-wid="${sd.id}"><span class="kb-ic">🎯</span><span class="kb-t"><b>Anytime TD side parlay this week</b>${c.graded?{won:'Cashed 🤑',lost:'Busted',void:'Void'}[c.result]||'Graded':`${inN} of ${c.n} picks in`}</span><span class="kb-go">Open →</span></button>`}
@@ -1223,7 +1225,7 @@ function renderExtras(w){   // commissioner: add a side or special parlay to the
   if(!isAdmin()||isSide(w)||w!==lastWeek()||season().id!==newestOf(league()).id)return'';
   const c=calc(w);const sd=sideOf(w);const up=specialsOf().filter(sp=>sunOf(sp.day)>(weekSun(w)||''));
   const side=sd?'':w.kind==='special'?`<div class="ex"><small class="muted">Side parlays ride with a Sunday parlay. Add one once Week ${w.num} Sunday opens.</small></div>`
-    :`<div class="ex"><button class="btn block" data-act="add-side">🎯 Add an Anytime TD side parlay</button><small class="muted">Runs alongside ${h(wkName(w))}. ATTD bets only, Sunday games. No Bozo and no vote, so win or lose it never touches the Bozo.</small></div>`;
+    :`<div class="ex"><button class="btn block" data-act="add-side">🎯 Add an Anytime TD side parlay</button><small class="muted">Runs alongside ${h(wkName(w))}. ATTD bets only, ${gameDays()} games. No Bozo and no vote, so win or lose it never touches the Bozo.</small></div>`;
   const special=(w.kind==='special'&&!c.legs.some(l=>l.status!=='pending')?`<div class="ex"><button class="btn ghost block sm" data-act="undo-special">Make ${h(wkName(w))} a regular Sunday parlay again</button></div>`:'')
     +`<div class="ex"><button class="btn block" data-act="add-special">📅 Add a special-day parlay</button><small class="muted">Thanksgiving, Christmas and other odd-day slates. It goes before that week's Sunday parlay, and its vote picks the Sunday Bozo.</small></div>`;
   return`<section class="card extras"><h3>Extra parlays</h3>${side}${special}${up.length?`<div class="pd-sub" style="margin:14px 0 6px">Coming up</div>${up.map(sp=>`<div class="row between ex-plan"><span>${spIcon(sp.name)} ${h(sp.name)} parlay · ${h(fmtDay(sp.day))}</span><button class="mini danger" data-act="drop-special" data-day="${sp.day}" title="Remove">×</button></div>`).join('')}`:''}</section>`;
@@ -1580,11 +1582,11 @@ function slipDate(w){const p=parentOf(w);return w.kind==='special'&&w.day?w.day:
 function liveSlip(w){const l=league();if(!w||season().id!==newestOf(l).id)return false;const lw=lastWeek();return w===lw||(isSide(w)&&(w.of===lw?.id||!calc(w).graded))}
 function slipNfl(w){if(!liveSlip(w)||!slipDate(w))return null;return nflData(slipDate(w),0)}
 const isAttd=t=>{const lo=' '+String(t||'').toLowerCase().replace(/[’']/g,'')+' ';return!TD_FIRST.test(lo)&&!TD_TWO.test(lo)&&(TD_ANY.test(lo)||/\btds?\b|touchdown|tuddy/.test(lo))};
-// game-day rules: every parlay is Sunday games only, a special parlay only its day; a side parlay takes Anytime TD bets only
+// game-day rules: every parlay is Sunday games only (or Sunday/Monday, per league), a special parlay only its day; a side parlay takes Anytime TD bets only
 function dayCheck(cl,items,rule,attd){cl.rule=rule;cl.off={};cl.notd={};
-  for(const x of items){const cm=cl.claims[x.mid];const d=cm&&cm.game?etDay(cm.game.at):'';if(d&&(rule.sunday?dowOf(d)!==0:d!==rule.day))cl.off[x.mid]={day:d,game:cm.game};if(attd&&!isAttd(x.text))cl.notd[x.mid]=true}
+  for(const x of items){const cm=cl.claims[x.mid];const d=cm&&cm.game?etDay(cm.game.at):'';if(d&&(rule.sunday?!(dowOf(d)===0||(rule.monday&&dowOf(d)===1)):d!==rule.day))cl.off[x.mid]={day:d,game:cm.game};if(attd&&!isAttd(x.text))cl.notd[x.mid]=true}
   cl.flags=Object.keys(cl.off).length+Object.keys(cl.notd).length;return cl}
-const offText=(o,rule)=>`${DOW[dowOf(o.day)]} game${rule.sunday?', Sunday games only':`, not ${rule.name}`}`;
+const offText=(o,rule)=>`${DOW[dowOf(o.day)]} game${rule.sunday?`, ${ruleText(rule)}`:`, not ${rule.name}`}`;
 const hasFlags=cl=>!!cl&&!!(cl.pairs.length||cl.flags);
 function slipClaims(w,c){if(!liveSlip(w)||!slipDate(w))return null;const nfl=nflData(slipDate(w),0);const ok=nfl&&nfl.games?nfl:null;const items=c.legs.filter(l=>String(l.text||'').trim()).map(l=>({mid:l.mid,text:l.text,teams:l.teams,tm:l.tm}));const cl=weekClaims(items,ok);cl.state=ok?'ok':nfl&&nfl.failed?'failed':'loading';return dayCheck(cl,items,dayRule(parentOf(w)?{}:w),isSide(w))}
 const TD_FIRST=/\b(first|1st) (td|touchdown|tuddy|scorer)\b|\bftd\b/,TD_TWO=/\b2 ?\+ ?(tds?|touchdowns?|tuddies)\b|\btwo (tds|touchdowns)\b/,TD_ANY=/\bany ?time\b|\batt?d\b|\btuddy\b|\bto score\b|\btd scorer\b|\bscores? an? (td|touchdown)\b/;
@@ -1624,7 +1626,7 @@ function cleanPick(text,nfl){
 }
 function pickTeamsFor(text,nfl){const t=detectTeams(text);if(t.length||!nfl||!nfl.full||betType(text)!=='Player prop')return t;const pl=matchPlayer(text,nfl);return pl?[pl.team]:t}
 function nextSlate(w){const p=nextPlan(w);return p.sunday?nflData(slipDate(w),0):p.special?nflData(p.special.day,0):nflData(w.date,1)}   // the NFL week the next parlay is on
-function nextRule(w){const p=nextPlan(w);return p.special?{day:p.special.day,name:p.special.name}:{sunday:true}}
+function nextRule(w){const p=nextPlan(w);return p.special?{day:p.special.day,name:p.special.name}:{sunday:true,monday:monOk()}}
 function nextPickList(w,c,me){
   const exp=c.legs.map(x=>x.mid);const next=w.next||{};
   const nfl=nextSlate(w);const ok=nfl&&nfl.games?nfl:null;
@@ -1902,7 +1904,8 @@ function renderCrew(){
     <label class="field"><span>Season name</span><input value="${h(S.season)}" placeholder="2026 NFL" data-bind="set|season"></label>
     <label class="field"><span>Bozo stake for new weeks</span><input type="number" class="mono" value="${S.stake}" min="1" data-bind="set|stake" inputmode="numeric"></label>
     <label class="field"><span>Name for the lone-miss club</span><input value="${h(league().clubName||'')}" placeholder="Parlay Killer Club" maxlength="40" data-bind="league|clubName" autocomplete="off"></label>
-    <ul class="rules"><li>Every pick must be <b>-200 or longer</b>. Heavier favorites get flagged on the slip.</li><li>The Bozo puts the stake on a parlay of every pick. If it cashes, the payout <b>splits evenly</b> across everyone with a leg.</li><li>Next week's Bozo is voted from whoever <b>did not hit</b>. If everyone hits, everyone's on the ballot. Ties get a coin flip.</li><li>Pushes drop out of the parlay at even money and don't count against you.</li></ul>
+    <label class="field"><span>Games allowed on the weekly parlay</span><select data-bind="league|mondayOk"><option value="" ${monOk()?'':'selected'}>Sunday only</option><option value="1" ${monOk()?'selected':''}>Sunday or Monday</option></select></label>
+    <ul class="rules"><li>Every pick must be <b>-200 or longer</b>. Heavier favorites get flagged on the slip.</li><li>Picks must be on a <b>${gameDays()}</b> game. A special-day parlay (Thanksgiving, Christmas) takes only that day's games.</li><li>The Bozo puts the stake on a parlay of every pick. If it cashes, the payout <b>splits evenly</b> across everyone with a leg.</li><li>Next week's Bozo is voted from whoever <b>did not hit</b>. If everyone hits, everyone's on the ballot. Ties get a coin flip.</li><li>Pushes drop out of the parlay at even money and don't count against you.</li></ul>
   </section>
   <section class="card"><h3>Data</h3>
     <div class="grid2"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button><button class="btn" data-act="sample">✨ Load sample</button><button class="btn danger" data-act="reset">🗑 Reset season</button></div>
@@ -2105,7 +2108,7 @@ const ACT={
   'share-slip'(el){shareSlip(week(el.dataset.wid))},
   'delete-week'(el){const w=week(el.dataset.wid);const sd=sideOf(w);const side=isSide(w);confirm2(`Delete ${wkName(w)}?`,`This removes the slip, grades and votes for this ${side?'side parlay':'week'}${sd?', and its Anytime TD side parlay':''}. There is no undo, so export a backup first if unsure.`,side?'Delete side parlay':'Delete week',()=>{S.weeks=S.weeks.filter(x=>x!==w&&x!==sd);S.currentWeekId=(side&&week(w.of)?.id)||lastWeek()?.id||null;commit();toast(`${wkName(w)} deleted`)})},
   'add-side'(){const w=lastWeek();if(!w||w.kind==='special'||sideOf(w))return;const prior=[...S.weeks].reverse().find(isSide);
-    modal({title:'Anytime TD side parlay',body:`<p>Runs alongside <b>${h(wkName(w))}</b>. <b>Anytime TD bets only</b>, Sunday games only.</p><p>No Bozo and no vote, so win or lose it never touches the Bozo.</p><p class="muted tiny">Everyone starts with an empty leg. Tap × on anyone sitting it out.</p><label class="fld"><span>Stake</span><input id="sideStake" class="mono" type="number" min="0" step="1" value="${prior?.stake??5}" inputmode="numeric"></label>`,
+    modal({title:'Anytime TD side parlay',body:`<p>Runs alongside <b>${h(wkName(w))}</b>. <b>Anytime TD bets only</b>, ${gameDays()} games only.</p><p>No Bozo and no vote, so win or lose it never touches the Bozo.</p><p class="muted tiny">Everyone starts with an empty leg. Tap × on anyone sitting it out.</p><label class="fld"><span>Stake</span><input id="sideStake" class="mono" type="number" min="0" step="1" value="${prior?.stake??5}" inputmode="numeric"></label>`,
       actions:[{label:'Cancel',cls:'ghost'},{label:'Add side parlay',cls:'primary',onClick:()=>addSide(w,Math.max(0,Number(document.getElementById('sideStake')?.value)||0))}]})},
   'add-special'(){const g=holidayGuess();
     modal({title:'Special-day parlay',body:`<p>For odd-day slates like Thanksgiving or Christmas. It happens <b>before</b> that week's Sunday parlay, and its vote picks the Sunday Bozo.</p><p class="muted tiny">Only games on that day count. Whoever is Bozo going into it fronts it.</p><label class="fld"><span>Which day?</span><div class="chiprow">${['Thanksgiving','Christmas','Other'].map(n=>`<button type="button" class="${n===g.name?'on':''}" data-act="sp-chip" data-n="${n}">${n}</button>`).join('')}</div><input id="spName" placeholder="Name it, e.g. Black Friday" value="${h(g.name)}" autocomplete="off" ${g.name?'hidden':''}></label><label class="fld"><span>Date of the games</span><input id="spDay" type="date" value="${h(g.day)}"></label>`,
@@ -2154,7 +2157,7 @@ const ACT={
   'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
   'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   'toggle-kind'(el){const k=el.dataset.key;if(openKinds.has(k))openKinds.delete(k);else openKinds.add(k);render()},
-  async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,features:{picks:false,votes:false},clubName:l.clubName||''})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features={picks:false,votes:false};save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
+  async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,features:{picks:false,votes:false},clubName:l.clubName||'',mondayOk:!!l.mondayOk})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features={picks:false,votes:false};save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
   'copy-share'(){const l=league();const site=siteFor(l);copyText(site?site.url:shareLink(l))},
   'nudge'(el){const w=week(el.dataset.wid)||currentWeek();const c=calc(w);const missing=c.legs.filter(l=>!String(l.text||'').trim()).map(l=>member(l.mid)?.name).filter(Boolean);
     const site=siteFor();const b=member(w.bozoId)?.name;
@@ -2213,7 +2216,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     save();if(c==='odds')patchTicket(w);
     const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin')schedulePush()}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
-  else if(k==='league'){const l=league();if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}}
+  else if(k==='league'){const l=league();if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}if(a==='mondayOk'){l.mondayOk=e.target.value==='1';save();render();if(l.sync&&l.sync.role==='admin')schedulePush();toast(`Picks must be on a ${gameDays()} game`,'good')}}
   else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=seasonLabelText()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
 });
 document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a]=b.split('|');
