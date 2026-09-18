@@ -43,6 +43,7 @@ a = s.index('/*@@SEEDS-START@@*/'); b = s.index('/*@@SEEDS-END@@*/')
 STUB = r"""/* league app: no seeds; one league, live from the sync server, this phone claims one name */
 const SHARE_LEAGUE={id:'__LEAGUE_ID__',key:'__MEMBER_KEY__',url:'__SYNC_URL__'};
 function migrateDB(d){return d}
+function isOwner(){return false}function setOwner(){}   // a club device is never the commissioner's
 function loadDB(){let d=null;try{const r=localStorage.getItem(KEY2);if(r)d=JSON.parse(r)}catch(e){}
   if(!d||!Array.isArray(d.leagues))d={leagues:[],active:null,seedV:99};
   d.leagues.forEach(l=>{l.seasons=(l.seasons||[]).map(x=>({...x,data:migrate(x.data||fresh())}))});
