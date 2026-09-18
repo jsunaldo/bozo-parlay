@@ -200,6 +200,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .sgp-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple);padding:10px 18px 0}
 .sgp .leg::before{display:none}
 .clashlines{display:flex;flex-direction:column;gap:4px}
+.pushcard p{margin:0 0 10px;font-size:14px;line-height:1.4}.pushrow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.pushrow .btns{display:flex;gap:6px}
 .kindbar{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--surface2);border-radius:14px;padding:10px 12px;margin:0 0 12px;font-size:13px;line-height:1.35}
 .kindbar .kb-ic{font-size:22px;line-height:1}.kindbar .kb-t{flex:1;min-width:0}.kindbar b{display:block;font-size:14px}
 button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.kindbar .kb-go{font-weight:700;color:var(--purple);white-space:nowrap}
@@ -621,7 +622,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.7';
+const APP_VERSION='2026-09-18.8';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -874,6 +875,41 @@ async function api(l,path,opts={}){
   if(!r.ok||!d.ok)throw Object.assign(new Error(d.error||('HTTP '+r.status)),{status:r.status,data:d});
   return d;
 }
+/* ---- phone notifications: this device subscribes once, the server pings it ---- */
+const VAPID_KEY='BIL6MS4YH2G9jmSMYi0PUZ5XYKdfwwcSfzUHuLGVS4x8bgEGafXgshLmhohGSv0QIaOl7DHfZl0R28-q37pyfl8';
+const PUSH={ok:'serviceWorker'in navigator&&'PushManager'in window&&'Notification'in window,sub:null,busy:false};
+const isIOS=()=>/iPhone|iPod/.test(navigator.userAgent)||isIPad();
+const iosTab=()=>isIOS()&&!navigator.standalone&&!matchMedia('(display-mode: standalone)').matches;
+const b64uBytes=s=>{let t=String(s).replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return Uint8Array.from(atob(t),c=>c.charCodeAt(0))};
+const pushWanted=(l=league())=>!!(l.sync&&l.features&&l.features.notify);
+const pushOnHere=(l=league())=>!!(PUSH.sub&&l.pushEp&&l.pushEp===PUSH.sub.endpoint&&(!l.pushMid||l.pushMid===l.me));
+const appUrl=l=>location.origin+location.pathname+(SHARE_MODE?'':'?league='+encodeURIComponent(l.id));
+function blockedFix(){return isIOS()?'On your '+(isIPad()?'iPad':'iPhone')+': <b>Settings → Notifications</b>, find this app, and turn on <b>Allow Notifications</b>. Then come back and tap Turn on notifications.':/Android/.test(navigator.userAgent)?'On Android: press and hold the app icon, tap <b>App info → Notifications</b>, and turn them on. Then come back and tap Turn on notifications.':'In your browser, click the icon just left of the web address, set <b>Notifications</b> to <b>Allow</b>, then reload the page.'}
+const pushDenied=()=>PUSH.ok&&!iosTab()&&Notification.permission==='denied';
+function pushHelp(){   // why this device can't turn them on yet, or '' when it can
+  if(iosTab())return'Notifications only work from the Home Screen app. Add it to your Home Screen (Share, then Add to Home Screen), open it from the icon, and turn them on there.';
+  if(!PUSH.ok)return isIOS()?'Notifications need iOS 16.4 or newer and the Home Screen app.':'This browser can\'t do notifications. Open the app in Chrome.';
+  if(Notification.permission==='denied')return'Notifications are blocked for this app. '+blockedFix();
+  return'';
+}
+async function pushCheck(){if(!PUSH.ok)return;let reg=null;try{reg=await navigator.serviceWorker.getRegistration();PUSH.sub=reg?await reg.pushManager.getSubscription():null}catch(e){PUSH.sub=null}
+  const l=league();
+  if(!PUSH.sub&&reg&&l.pushEp&&l.me&&l.pushMid===l.me&&pushWanted(l)&&Notification.permission==='granted'){   // the browser dropped it: quietly sign this device up again
+    try{const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uBytes(l.vapid||VAPID_KEY)});await api(l,'/push/subscribe',{method:'POST',body:{subscription:sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName()}});PUSH.sub=sub;l.pushEp=sub.endpoint;save()}catch(e){}}
+  else if(PUSH.sub&&l.pushEp===PUSH.sub.endpoint&&l.sync){try{const st=await api(l,'/push/status?endpoint='+encodeURIComponent(l.pushEp));if(!st.registered){delete l.pushEp;delete l.pushMid;save()}}catch(e){}}
+  softRender()}
+function pushCard(){
+  const l=league();if(!pushWanted(l)||pushOnHere(l))return'';
+  let later=0;try{later=+localStorage.getItem('bp-push-later:'+l.sync.id)||0}catch(e){}if(Date.now()-later<3*86400e3)return'';
+  const help=pushHelp();
+  return`<section class="card pushcard"><div class="row between"><h3>🔔 Notifications</h3><button class="mini" data-act="push-later" title="Not now">×</button></div><p>${help||'Get a ping the moment the votes are in, and a noon reminder on any day you still owe a pick or vote.'}</p>${help&&!pushDenied()?'':!l.me?`<button class="btn primary block" data-act="pick-me">Tap your name first</button>`:`<button class="btn primary block" data-act="push-on" ${PUSH.busy?'disabled':''}>${PUSH.busy?'Turning on…':'🔔 Turn on notifications'}</button>`}</section>`;
+}
+function pushBlock(l){
+  if(!pushWanted(l))return'';const help=pushHelp();
+  const mine=!l.me?`<p class="muted tiny" style="margin:0">Tap your name first, then turn them on.</p>`:pushOnHere(l)?`<div class="pushrow"><span>🔔 On for this ${h(deviceName())}</span><span class="btns"><button class="btn sm" data-act="push-test">Send a test</button><button class="btn sm ghost" data-act="push-off">Turn off</button></span></div>`
+    :help&&!pushDenied()?`<p class="muted tiny" style="margin:0">${help}</p>`:`${help?`<p class="muted tiny" style="margin:0 0 8px">${help}</p>`:''}<button class="btn primary block" data-act="push-on" ${PUSH.busy?'disabled':''}>${PUSH.busy?'Turning on…':'🔔 Turn on notifications'}</button>`;
+  return`<div class="pd-sub" style="margin:14px 0 6px">Notifications</div>${mine}${isAdmin(l)?`<button class="btn ghost block sm" style="margin-top:8px" data-act="push-remind">📣 Send reminders now</button><p class="muted tiny" style="margin:6px 0 0">Pings anyone who owes a pick or vote right now. The same reminder goes out on its own every day at noon Eastern.</p>`:''}`;
+}
 function applyState(l,d){
   const ui={};for(const x of (l.seasons||[]))ui[x.id]={cur:x.data?.currentWeekId,last:lastMain(x.data?.weeks)?.id};   // per-device UI state must not ride along with synced data
   l.seasons=d.seasons.map(x=>({...x,data:migrate(x.data||fresh())}));
@@ -882,8 +918,8 @@ function applyState(l,d){
     else if(cur&&!revealSeen(cur,l))x.data.currentWeekId=u.cur;               // hold them on the reveal they haven't watched yet
     else if(newest)x.data.currentWeekId=newest}                               // otherwise a freshly opened week pulls them to it
   if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
-  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
-  if(l.meKey&&d.you===null){delete l.me;delete l.meKey;setTimeout(()=>toast('The commissioner reset your name on this phone — tap your name again to vote','bad'),80)}
+  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.vapid)l.vapid=d.vapid;if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
+  if(l.meKey&&d.you===null){delete l.me;delete l.meKey;delete l.pushEp;delete l.pushMid;setTimeout(()=>toast('The commissioner reset your name on this phone — tap your name again to vote','bad'),80)}
   l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;if(d.updatedAt)l.sync.base=d.updatedAt;
   if(league()===l){S=season().data;ALLTIME=null}
 }
@@ -991,10 +1027,11 @@ async function joinFromUrl(){
 }
 function pickMe(l=league(),first=false){
   const act=S.members.filter(m=>m.active);const bound=!!l.sync&&!isAdmin(l);
-  const iosSafari=/iPhone|iPad/.test(navigator.userAgent)&&!window.navigator.standalone&&!window.matchMedia('(display-mode: standalone)').matches;
+  const iosSafari=(/iPhone/.test(navigator.userAgent)||isIPad())&&!window.navigator.standalone&&!window.matchMedia('(display-mode: standalone)').matches;
   modal({title:first?`You're in ${l.name}. Who are you?`:'Who are you?',body:`${bound&&iosSafari?`<div class="hint">📱 <b>Add this to your Home Screen first</b> (tap Share, then Add to Home Screen) and tap your name in that copy. A name sticks to the copy you tap it in.</div>`:''}<p class="tiny">${bound?'Tap your name. From then on this phone is you: your pick, your vote, your video. Nobody else can tap it.':'This device will enter picks and votes as this person.'}</p><div class="fb-grid">${act.map(m=>{const cl=l.claims?.[m.id];const taken=bound&&cl&&l.me!==m.id;return`<button class="fb ${l.me===m.id?'on':''} ${taken?'taken':''}" data-act="set-me" data-mid="${m.id}" ${taken?'disabled':''}><span class="avatar lg" style="--c:${m.color}">${h(initials(m.name))}</span>${h(m.name)}${taken?'<small>taken</small>':''}</button>`}).join('')}</div>${bound?'<p class="muted tiny" style="margin:0">Tapped the wrong one, or got a new phone? The commissioner can reset a name.</p>':''}`,actions:[{label:'Cancel',cls:'ghost'}]});
 }
-const deviceName=()=>{const u=navigator.userAgent;return /iPhone/.test(u)?'iPhone':/iPad/.test(u)?'iPad':/Android/.test(u)?'Android':/Mac/.test(u)?'Mac':'Browser'};
+const isIPad=()=>/iPad/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);   // iPadOS Safari says it's a Mac
+const deviceName=()=>{const u=navigator.userAgent;return /iPhone/.test(u)?'iPhone':isIPad()?'iPad':/Android/.test(u)?'Android':/Mac/.test(u)?'Mac':'Browser'};
 async function claimMe(l,mid){
   if(!l.sync||isAdmin(l)){l.me=mid;save();closeModal();render();toast(`Got it — you're ${member(mid)?.name}`,'good');if(l.sync)pull(l,false,true);return}
   setSyncDot('busy');
@@ -1208,7 +1245,7 @@ function renderWeekInner(){
   if(S.members.length<2)return SHARE_MODE?empty('No crew yet','The commissioner is still setting up this season.'):renderOnboard();
   if(!S.weeks.length)return renderFirstBozo();
   const w=currentWeek();const c=calc(w);const idx=S.weeks.indexOf(w);const isLast=w===lastWeek();const nx=nextMain(w);
-  return`<div class="week-nav">
+  return`${pushCard()}<div class="week-nav">
     <button class="icon-btn" data-act="week-prev" ${idx===0?'disabled':''}>‹</button>
     <div class="week-title"><strong>${h(wkName(w))}</strong><input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date"></div>
     <button class="icon-btn" data-act="week-next" ${idx===S.weeks.length-1?'disabled':''}>›</button>
@@ -1877,7 +1914,7 @@ const siteFor=(l=league())=>l.sync?(Object.values(SHARE_SITES).find(x=>x.sync&&x
 function siteCard(){const l=league();const site=siteFor(l);if(!site||l.sync||site.sync)return'';return`<section class="card"><h3>League site</h3><p class="muted tiny" style="margin-bottom:10px">${h(site.url)}</p><p class="muted tiny">Publish this league to the cloud below and the site turns into the group's live app: everyone taps their name once, enters their own pick, votes with a video.</p></section>`}
 function activityHtml(l){
   const nm=id=>member(id)?.name||'Someone';const ev=(l.events||[]).slice().reverse().slice(0,20);const ups=Object.entries(l.uploads||{});
-  const text=e=>({claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`})[e.type]||e.type;
+  const text=e=>({claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`,'notify-on':`${nm(e.mid)} turned on notifications${e.detail?' ('+e.detail+')':''}`,nextpick:`${nm(e.mid)} entered next week's pick`,'nextpick-clear':`${nm(e.mid)} cleared next week's pick`,unreveal:'Vote reopened'})[e.type]||e.type;
   const when=t=>new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   if(!ev.length&&!ups.length)return'';
   return`<div class="pd-sub" style="margin:14px 0 6px">Recent activity</div>${ups.length?`<div class="evlist">${ups.map(([k,u])=>`<div class="evrow warn"><span class="mono tiny">${h(when(u.at))}</span><span>${h(nm(u.mid))} has an upload that never finished${u.size?' ('+mb(u.size)+' MB)':''} — they can resume it from their phone</span></div>`).join('')}</div>`:''}<div class="evlist">${ev.map(e=>`<div class="evrow ${/error|rejected/.test(e.type)?'bad':''}"><span class="mono tiny">${h(when(e.at))}</span><span>${h(text(e))}</span></div>`).join('')}</div>`;
@@ -1890,8 +1927,8 @@ function renderShare(){
   if(!l.sync)return`<section class="card"><h3>Share with the group</h3><p class="muted tiny" style="margin-bottom:10px">Publish this league to the cloud and everyone gets a link: they pick their name, enter their own pick each week and cast their Bozo vote from their phone. You stay the commissioner — grading, crowning and edits are yours.</p><button class="btn primary block" data-act="publish-league">☁️ Publish ${h(l.name)}</button></section>`;
   const link=shareLink(l);
   const f=l.features||{};const tog=(k,label,sub)=>`<div class="featrow" data-act="feature" data-f="${k}"><div><b>${label}</b><small>${sub}</small></div><span class="toggle ${f[k]?'on':''}"><i></i></span></div>`;
-  const site=siteFor(l);const primary=site?site.url:link;const claimRows=S.members.filter(m=>m.active).map(m=>{const cl=l.claims?.[m.id];return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="mbody"><b>${h(m.name)}</b><small>${cl?`${h(cl.device||'phone')} · ${h(new Date(cl.at).toLocaleDateString([],{month:'short',day:'numeric'}))}`:'not yet'}</small></div>${cl?`<button class="btn sm ghost" data-act="reset-claim" data-mid="${m.id}">Reset</button>`:'<span class="muted tiny">—</span>'}</div>`}).join('');
-  return`<section class="card"><h3>Group</h3>${who}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only this device can grade and crown.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>${activityHtml(l)}`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
+  const site=siteFor(l);const primary=site?site.url:link;const claimRows=S.members.filter(m=>m.active).map(m=>{const cl=l.claims?.[m.id];return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="mbody"><b>${h(m.name)}${l.pushWho?.[m.id]?' 🔔':''}</b><small>${cl?`${h(cl.device||'phone')} · ${h(new Date(cl.at).toLocaleDateString([],{month:'short',day:'numeric'}))}`:'not yet'}</small></div>${cl?`<button class="btn sm ghost" data-act="reset-claim" data-mid="${m.id}">Reset</button>`:'<span class="muted tiny">—</span>'}</div>`}).join('');
+  return`<section class="card"><h3>Group</h3>${who}${pushBlock(l)}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only this device can grade and crown.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}${tog('notify','Phone notifications','A ping to everyone when the votes are in, plus a noon reminder to anyone who owes a pick or vote')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>${activityHtml(l)}`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
 }
 function renderCrew(){
   if(SHARE_MODE){const l=league();return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>{const cl=l.claims?.[m.id];return`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?(cl?'On the app':'Hasn\'t tapped their name yet'):'Benched'}</small></div>${cl?'<span class="tag ok">joined</span>':''}</div>`}).join('')}</div></section><section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`}
@@ -2143,7 +2180,7 @@ const ACT={
   'delete-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x||l.seasons.length<2)return;confirm2(`Delete the ${x.name} season?`,`Removes ${x.data.weeks.length} week${x.data.weeks.length===1?'':'s'} of ${l.name} from this browser. Export a backup first if you might want it back.`,'Delete season',()=>{l.seasons=l.seasons.filter(y=>y!==x);l.activeSeason=seasonSorted(l)[0].id;S=season().data;commit();toast(`${x.name} deleted`)})},
   'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;commit()}}]})},
   'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;if(l.sync&&l.sync.role!=='admin'){confirm2(`Leave ${l.name}?`,'Removes it from this device only. Open the group link again to rejoin.','Leave',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit()});return}confirm2(`Delete ${l.name}?`,`Removes this league and all ${l.seasons.length} season${l.seasons.length===1?'':'s'} from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit();toast(`${l.name} deleted`)})},
-  async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.filter(r=>r.scope.startsWith(location.origin+location.pathname)).map(r=>r.unregister()))}if(window.caches){const pre=CACHE_PREFIX;const ks=await caches.keys();await Promise.all(ks.filter(k=>k.startsWith(pre)).map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
+  async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=(await navigator.serviceWorker.getRegistrations()).filter(r=>r.scope.startsWith(location.origin+location.pathname));const keep=!!(PUSH.sub||DB.leagues.some(x=>x.pushEp));await Promise.all(rs.map(r=>keep?r.update().catch(()=>{}):r.unregister()))}if(window.caches){const pre=CACHE_PREFIX;const ks=await caches.keys();await Promise.all(ks.filter(k=>k.startsWith(pre)).map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
   'pick-team'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p||!canEdit(el.dataset.mid))return;const sel=[...(p.teams||[])];
     modal({title:'Team logo',body:`<p class="tiny">Pick up to two teams for this leg. Auto-detected from the pick text unless you set it here.</p><div class="teamgrid" id="teamgrid">${Object.keys(TEAMS).map(a=>`<button class="tp ${sel.includes(a)?'on':''}" data-act="tp-toggle" data-abbr="${a}"><img src="${LOGO(a)}" alt="">${a}</button>`).join('')}</div>`,
       actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit();const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===el.dataset.mid)sendPick(L,w,el.dataset.mid)}}]})},
@@ -2185,7 +2222,25 @@ const ACT={
   'rv-restart'(el){const w=(el&&el.dataset.wid&&week(el.dataset.wid))||currentWeek();S.currentWeekId=w.id;rvSet(w,{i:-1,f:false});save();render();window.scrollTo({top:0,behavior:'smooth'})},
 
   'share-refresh'(){pull(league(),true)},
-  'feature'(el){const l=league();l.features=l.features||{};const f=el.dataset.f;l.features[f]=!l.features[f];commit();toast(l.features[f]?(f==='picks'?'Members can now enter their own picks':'Members can now vote in the app'):(f==='picks'?'Picks are yours to enter again':'Voting in the app is off'),'good')},
+  async 'push-on'(){const l=league();if(!l.me){pickMe(l);return}const help=pushHelp();if(help&&Notification.permission!=='denied'){toast(help,'bad');return}
+    let perm='default';try{perm=await Notification.requestPermission()}catch(e){perm=Notification.permission}   // straight from the tap: iPhones insist
+    if(perm!=='granted'){render();modal({title:'Notifications are off',body:`<p>${perm==='denied'?'Your phone is blocking notifications for this app.':'Notifications weren\'t allowed.'}</p><p>${blockedFix()}</p>`,actions:[{label:'OK',cls:'primary'}]});return}
+    PUSH.busy=true;render();
+    try{const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,no)=>setTimeout(()=>no(new Error('The app is still setting up on this phone')),8000))]);const key=b64uBytes(l.vapid||VAPID_KEY);let sub=await reg.pushManager.getSubscription();
+      if(sub&&sub.options&&sub.options.applicationServerKey&&!new Uint8Array(sub.options.applicationServerKey).every((b,i)=>b===key[i])){await sub.unsubscribe();sub=null}
+      if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+      const d=await api(l,'/push/subscribe',{method:'POST',body:{subscription:sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName()}});
+      PUSH.sub=sub;l.pushEp=sub.endpoint;l.pushMid=l.me;if(!(l.sync.dirty||pushT||pendingPick))applyState(l,d);else if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};save();
+      const t=await api(l,'/push/test',{method:'POST',body:{memberId:l.me}}).catch(e=>({sent:0,errors:[e.message]}));
+      toast(t.sent?'🔔 Notifications are on. A test ping is on its way.':'Notifications are on, but the test ping didn\'t go through'+(t.errors&&t.errors[0]?': '+t.errors[0]:''),t.sent?'good':'bad')}
+    catch(e){modal({title:'Couldn\'t turn on notifications',body:`<p>${h(e.message)}</p><p>Nothing changed. Close the app completely, open it again, and tap Turn on notifications once more.</p>`,actions:[{label:'OK',cls:'primary'}]})}
+    finally{PUSH.busy=false;render()}},
+  async 'push-off'(){const l=league();try{await api(l,'/push/unsubscribe',{method:'POST',body:{endpoint:l.pushEp}});delete l.pushEp;delete l.pushMid;save();render();toast('Notifications are off on this device')}catch(e){toast('Couldn\'t turn them off: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}},
+  async 'push-test'(){const l=league();try{const t=await api(l,'/push/test',{method:'POST',body:{memberId:l.me}});toast(t.sent?`Test sent to ${t.sent} device${t.sent===1?'':'s'}. Check your lock screen.`:'The test didn\'t go through'+(t.errors&&t.errors[0]?': '+t.errors[0]:'. Turn notifications off and on again.'),t.sent?'good':'bad')}catch(e){toast('The test didn\'t go through: '+e.message,'bad')}},
+  async 'push-remind'(){const l=league();try{const r=await api(l,'/push/remind',{method:'POST',body:{}});const nm=ids=>ids.map(id=>member(id)?.name).filter(Boolean).join(', ');const off=(r.owed||[]).filter(id=>!l.pushWho?.[id]);
+      toast(!(r.owed||[]).length?'Nobody owes a pick or vote right now':`Reminded ${nm((r.owed||[]).filter(id=>l.pushWho?.[id]))||'nobody'}${off.length?`. No notifications on for ${nm(off)}`:''}`,'good')}catch(e){toast('Reminders didn\'t go out: '+e.message,'bad')}},
+  'push-later'(){const l=league();try{localStorage.setItem('bp-push-later:'+l.sync.id,String(Date.now()))}catch(e){}render();toast('You can turn them on any time from the Crew tab')},
+  'feature'(el){const l=league();l.features=l.features||{};const f=el.dataset.f;l.features[f]=!l.features[f];commit();toast(f==='notify'?(l.features[f]?'Notifications are on for this league. Each person turns them on in their app.':'Notifications are off for this league'):l.features[f]?(f==='picks'?'Members can now enter their own picks':'Members can now vote in the app'):(f==='picks'?'Picks are yours to enter again':'Voting in the app is off'),'good')},
   'sync-now'(){pull(league(),true)},
   'pick-me'(){pickMe(league())},
   'set-me'(el){claimMe(league(),el.dataset.mid)},
@@ -2256,9 +2311,10 @@ function sampleSeason(){
 render();save();loadPending();
 (async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined)pull();})();
 setInterval(()=>{if(document.visibilityState==='visible')pull()},45000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')pull()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){pull();if(pushWanted()&&!pushOnHere())softRender()}});   // back from Settings: the notification card re-checks permission
 if('serviceWorker'in navigator&&location.protocol.startsWith('http')){
-  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update().catch(()=>{})}).catch(()=>{});
+  navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update().catch(()=>{});pushCheck()}).catch(()=>{});
+  navigator.serviceWorker.addEventListener('message',e=>{if(!e.data||e.data.type!=='bp-open')return;try{const q=new URL(e.data.url).searchParams.get('league');if(q&&DB.leagues.find(x=>x.id===q)){DB.active=q;S=season().data}}catch(x){}VIEW='week';goNow();save();if(upl||(pickerOpen&&Date.now()-pickerOpen<15*60000))needRender=true;else render();pull(league(),false,true)});
   const hadController=!!navigator.serviceWorker.controller;let swapped=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(swapped||!hadController)return;swapped=true;toast('Updated — reloading');setTimeout(()=>location.reload(),600)});
 }
