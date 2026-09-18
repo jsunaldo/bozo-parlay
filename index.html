@@ -622,7 +622,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.9';
+const APP_VERSION='2026-09-18.10';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -949,7 +949,9 @@ function mergeMemberEdits(l,st){
 }
 async function push(l,retried){
   setSyncDot('busy');const seq=l.sync.seq||0;
-  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,features:l.features||{},clubName:l.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
+  const fd=!!l.featDirty;   // the switches only go up when this device flipped one: a stale copy never switches the league back
+  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,...(fd?{features:l.features||{}}:{}),clubName:l.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
+    if(fd)delete l.featDirty;
     if((l.sync.seq||0)===seq&&!pushT){delete l.sync.dirty;applyState(l,d);save();if(!quiet())render();else needRender=true}   // nothing new typed meanwhile: take the league as it now stands (votes, claims…)
     else{l.sync.rev=d.rev;if(d.updatedAt)l.sync.base=d.updatedAt;save()}                                         // more edits are queued: they push next
     setSyncDot('ok')}
@@ -2287,7 +2289,7 @@ const ACT={
   async 'push-remind'(){const l=league();try{const r=await api(l,'/push/remind',{method:'POST',body:{}});const nm=ids=>ids.map(id=>member(id)?.name).filter(Boolean).join(', ');const off=(r.owed||[]).filter(id=>!l.pushWho?.[id]);
       toast(!(r.owed||[]).length?'Nobody owes a pick or vote right now':`Reminded ${nm((r.owed||[]).filter(id=>l.pushWho?.[id]))||'nobody'}${off.length?`. No notifications on for ${nm(off)}`:''}`,'good')}catch(e){toast('Reminders didn\'t go out: '+e.message,'bad')}},
   'push-later'(){const l=league();try{localStorage.setItem('bp-push-later:'+l.sync.id,String(Date.now()))}catch(e){}render();toast('You can turn them on any time from the Crew tab')},
-  'feature'(el){const l=league();l.features=l.features||{};const f=el.dataset.f;l.features[f]=!l.features[f];commit();toast(f==='notify'?(l.features[f]?'Notifications are on for this league. Each person turns them on in their app.':'Notifications are off for this league'):l.features[f]?(f==='picks'?'Members can now enter their own picks':'Members can now vote in the app'):(f==='picks'?'Picks are yours to enter again':'Voting in the app is off'),'good')},
+  'feature'(el){const l=league();l.features=l.features||{};const f=el.dataset.f;l.features[f]=!l.features[f];l.featDirty=true;commit();toast(f==='notify'?(l.features[f]?'Notifications are on for this league. Each person turns them on in their app.':'Notifications are off for this league'):l.features[f]?(f==='picks'?'Members can now enter their own picks':'Members can now vote in the app'):(f==='picks'?'Picks are yours to enter again':'Voting in the app is off'),'good')},
   'sync-now'(){pull(league(),true)},
   'pick-me'(){pickMe(league())},
   'set-me'(el){claimMe(league(),el.dataset.mid)},
