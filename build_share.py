@@ -95,3 +95,7 @@ json.dump(m, open(os.path.join(OUT, 'manifest.json'), 'w'), indent=2)
 for f in ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png']:
     shutil.copy(os.path.join(ICONS, f), os.path.join(OUT, f))
 print('built ->', OUT, len(s), 'bytes')
+
+# every device checks this to know a newer build is out (the Commish reads the copy next to its own index.html)
+ver = re.search(r"APP_VERSION='([^']+)'", s).group(1)
+for d in (OUT, SRC): json.dump({'v': ver}, open(os.path.join(d, 'version.json'), 'w'))

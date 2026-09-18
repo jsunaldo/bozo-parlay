@@ -85,6 +85,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .claims{display:flex;flex-direction:column;gap:6px}
 .claimrow{display:flex;align-items:center;gap:10px;background:var(--surface2);border-radius:12px;padding:8px 10px}
 .tag.ok{background:var(--green-bg);color:var(--green)}
+.fb.guest{border-style:dashed}
 .fb.taken{opacity:.4}
 .fb small{font-size:9px;font-weight:700;text-transform:uppercase;color:var(--muted)}
 .rv-prog{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px}
@@ -229,6 +230,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .srow .edit .erow{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .srow .edit .seg{background:var(--surface3)}.srow .edit .seg button{color:var(--text)}
 .stag{font-size:11px;font-weight:700;padding:4px 9px;border-radius:980px;white-space:nowrap;letter-spacing:.02em}
+.stag.unsent{background:rgba(255,159,10,.18);color:var(--amber);border:0;font-family:inherit;cursor:pointer}
 .stag.hit{background:var(--green);color:#fff}.stag.miss{background:var(--red);color:#fff}.stag.push{background:var(--amber);color:#1d1d1f}.stag.in{background:var(--green-bg);color:var(--green)}.stag.none{background:var(--surface3);color:var(--muted)}
 .seg.q{padding:2px;background:var(--surface3)}.seg.q button{width:30px;height:26px;font-size:13px;color:var(--text)}
 .slip-group{display:flex;flex-direction:column;gap:6px;padding-left:8px;border-left:3px solid var(--purple);border-radius:3px}
@@ -663,7 +665,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.17';
+const APP_VERSION='2026-09-18.18';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -910,11 +912,14 @@ let S=season().data;let VIEW='week';
 /* ============================== CLOUD SYNC ============================== */
 const SYNC_URL=(()=>{try{return localStorage.getItem('bp-sync-url')}catch(e){}return null})()||'https://bozo-sync.jsunaldo.workers.dev';
 const isAdmin=(l=league())=>!SHARE_MODE&&(!l.sync||l.sync.role==='admin');
+const DEV_ID=(()=>{let d='';try{d=localStorage.getItem('bp-dev')||''}catch(e){}if(!/^[a-z0-9]{8,32}$/.test(d)){d=[...crypto.getRandomValues(new Uint8Array(14))].map(b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('');try{localStorage.setItem('bp-dev',d)}catch(e){}}return d})();   // this install: lets a person's devices be told apart
+const APP_KIND=SHARE_MODE?'club':'commish';
+const hdrs=l=>({'Content-Type':'application/json','X-BP-Key':l.sync.key,...(l.meKey?{'X-BP-Me':l.meKey}:{}),...(l.sync.role==='admin'&&l.me?{'X-BP-As':l.me}:{})});
 const canEdit=(mid,l=league())=>isAdmin(l)||l.me===mid;
 const memberCan=(f,l=league())=>isAdmin(l)||!!(l.features&&l.features[f]);
 const shareLink=l=>l.sync&&l.shareKey?`${location.origin}${location.pathname}?join=${l.sync.id}.${l.shareKey}`:'';
 async function api(l,path,opts={}){
-  const r=await fetch((l.sync.url||SYNC_URL)+'/leagues/'+l.sync.id+path,{method:opts.method||'GET',headers:{'Content-Type':'application/json','X-BP-Key':l.sync.key,...(l.meKey?{'X-BP-Me':l.meKey}:{}),...(l.sync.role==='admin'&&l.me?{'X-BP-As':l.me}:{})},body:opts.body?JSON.stringify(opts.body):undefined});
+  const r=await fetch((l.sync.url||SYNC_URL)+'/leagues/'+l.sync.id+path,{method:opts.method||'GET',headers:hdrs(l),body:opts.body?JSON.stringify(opts.body):undefined});
   const d=await r.json().catch(()=>({ok:false,error:'unreadable response'}));
   if(!r.ok||!d.ok)throw Object.assign(new Error(d.error||('HTTP '+r.status)),{status:r.status,data:d});
   return d;
@@ -936,36 +941,52 @@ function pushHelp(){   // why this device can't turn them on yet, or '' when it 
   if(Notification.permission==='denied')return'Notifications are blocked for this app. '+blockedFix();
   return'';
 }
+const devTagged=new Set();
 async function pushCheck(){if(!PUSH.ok)return;let reg=null;try{reg=await navigator.serviceWorker.getRegistration();PUSH.sub=reg?await reg.pushManager.getSubscription():null}catch(e){PUSH.sub=null}
   const l=league();
   if(!PUSH.sub&&reg&&l.pushEp&&l.me&&l.pushMid===l.me&&pushWanted(l)&&Notification.permission==='granted'){   // the browser dropped it: quietly sign this device up again
-    try{const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uBytes(l.vapid||VAPID_KEY)});await api(l,'/push/subscribe',{method:'POST',body:{subscription:sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName()}});PUSH.sub=sub;l.pushEp=sub.endpoint;save()}catch(e){}}
-  else if(PUSH.sub&&l.pushEp===PUSH.sub.endpoint&&l.sync){try{const st=await api(l,'/push/status?endpoint='+encodeURIComponent(l.pushEp));if(!st.registered){delete l.pushEp;delete l.pushMid;save()}}catch(e){}}
+    try{const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64uBytes(l.vapid||VAPID_KEY)});await api(l,'/push/subscribe',{method:'POST',body:{subscription:sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName(),dev:DEV_ID}});PUSH.sub=sub;l.pushEp=sub.endpoint;save()}catch(e){}}
+  else if(PUSH.sub&&l.sync&&l.pushEp===PUSH.sub.endpoint&&l.me&&l.pushMid&&l.pushMid!==l.me&&pushWanted(l)){try{await api(l,'/push/subscribe',{method:'POST',body:{subscription:PUSH.sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName(),dev:DEV_ID}});l.pushMid=l.me;save()}catch(e){}}   // the commissioner is someone else now (set on another device): this device's pings follow
+  else if(PUSH.sub&&l.pushEp===PUSH.sub.endpoint&&l.sync){try{const st=await api(l,'/push/status?endpoint='+encodeURIComponent(l.pushEp));if(!st.registered){delete l.pushEp;delete l.pushMid;save()}
+    else if(l.me&&l.person&&!(l.person.push||[]).some(x=>x.dev===DEV_ID)&&!devTagged.has(l.id)){devTagged.add(l.id);const d=await api(l,'/push/subscribe',{method:'POST',body:{subscription:PUSH.sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName(),dev:DEV_ID}});if(mergePerson(l,d.person))save()}}catch(e){}}   // turned on before devices were tracked: tag it as this one
   softRender()}
 function pushCard(){
-  const l=league();if(!pushWanted(l)||pushOnHere(l))return'';
-  let later=0;try{later=+localStorage.getItem('bp-push-later:'+l.sync.id)||0}catch(e){}if(Date.now()-later<3*86400e3)return'';
+  const l=league();if(!pushWanted(l)||pushOnHere(l)||l.guest)return'';
+  if(l.me&&(l.pushWho||{})[l.me]>0)return'';   // pings already reach one of their devices: the Crew tab offers this one too
+  let later=(l.person&&l.person.pushLater)||0;try{later=Math.max(later,+localStorage.getItem('bp-push-later:'+l.sync.id)||0)}catch(e){}if(Date.now()-later<3*86400e3)return'';
   const help=pushHelp();
   return`<section class="card pushcard"><div class="row between"><h3>🔔 Notifications</h3><button class="mini" data-act="push-later" title="Not now">×</button></div><p>${help||'Get a ping the moment the votes are in, and a noon reminder on any day you still owe a pick or vote.'}</p>${help&&!pushDenied()?'':!l.me?`<button class="btn primary block" data-act="pick-me">Tap your name first</button>`:`<button class="btn primary block" data-act="push-on" ${PUSH.busy?'disabled':''}>${PUSH.busy?'Turning on…':'🔔 Turn on notifications'}</button>`}</section>`;
 }
 function pushBlock(l){
   if(!pushWanted(l))return'';const help=pushHelp();
-  const mine=!l.me?`<p class="muted tiny" style="margin:0">Tap your name first, then turn them on.</p>`:pushOnHere(l)?`<div class="pushrow"><span>🔔 On for this ${h(deviceName())}</span><span class="btns"><button class="btn sm" data-act="push-test">Send a test</button><button class="btn sm ghost" data-act="push-off">Turn off</button></span></div>`
+  const devs=[];for(const x of (l.person&&l.person.push)||[]){const id=x.dev||x.device;if(!devs.some(y=>y.id===id))devs.push({id,name:x.device||'a device',here:!!x.dev&&x.dev===DEV_ID})}
+  const others=devs.filter(x=>!x.here);const where=others.length?`<p class="muted tiny" style="margin:0 0 8px">Pings also go to your ${others.map(x=>h(x.name)).join(', ')}.${devs.length>1?' <a href="#" data-act="push-off-all">Turn off on all my devices</a>':''}</p>`:'';
+  const mine=!l.me?`<p class="muted tiny" style="margin:0">Tap your name first, then turn them on.</p>`:pushOnHere(l)?`${where}<div class="pushrow"><span>🔔 On for this ${h(deviceName())}</span><span class="btns"><button class="btn sm" data-act="push-test">Send a test</button><button class="btn sm ghost" data-act="push-off">Turn off</button></span></div>`
+    :others.length&&!pushHelp()?`${where}<button class="btn block" data-act="push-on">🔔 Also turn them on for this ${h(deviceName())}</button>`
     :help&&!pushDenied()?`<p class="muted tiny" style="margin:0">${help}</p>`:`${help?`<p class="muted tiny" style="margin:0 0 8px">${help}</p>`:''}<button class="btn primary block" data-act="push-on" ${PUSH.busy?'disabled':''}>${PUSH.busy?'Turning on…':'🔔 Turn on notifications'}</button>`;
-  return`<div class="pd-sub" style="margin:14px 0 6px">Notifications</div>${mine}<div style="height:14px"></div>${isAdmin(l)?`<button class="btn ghost block sm" style="margin-top:0" data-act="push-remind">📣 Send reminders now</button><p class="muted tiny" style="margin:6px 0 0">Pings anyone who owes a pick or vote right now. The same reminder goes out on its own every day at noon Eastern.</p>`:''}`;
+  return`<div class="pd-sub" style="margin:14px 0 6px">Notifications</div>${l.me&&!pushOnHere(l)&&!(others.length&&!pushHelp())?where:''}${mine}<div style="height:14px"></div>${isAdmin(l)?`<button class="btn ghost block sm" style="margin-top:0" data-act="push-remind">📣 Send reminders now</button><p class="muted tiny" style="margin:6px 0 0">Pings anyone who owes a pick or vote right now. The same reminder goes out on its own every day at noon Eastern.</p>`:''}`;
 }
+const asSent=new Set();
+function sendAs(l){const p=l.asPend;if(!p||!l.sync)return;api(l,'/as',{method:'POST',body:p.guest?{guest:true}:{memberId:p.mid}}).then(d=>{if(l.asPend===p)delete l.asPend;save();takeState(l,d);render()}).catch(()=>{})}   // until the league has it
 function applyState(l,d){
   const ui={};for(const x of (l.seasons||[]))ui[x.id]={cur:x.data?.currentWeekId,last:lastMain(x.data?.weeks)?.id};   // per-device UI state must not ride along with synced data
+  const held={};for(const k of Object.keys(l.outbox||{})){const[sid,wid,mid]=k.split('|');const w=(l.seasons||[]).find(x=>x.id===sid)?.data.weeks.find(x=>x.id===wid);if(w&&w.picks[mid])held[k]=JSON.parse(JSON.stringify(w.picks[mid]))}
   l.seasons=d.seasons.filter(x=>x&&SAFE_ID.test(x.id)).map(x=>({...x,data:migrate(x.data||fresh())}));
+  if(d.person!==undefined)mergePerson(l,d.person);
+  for(const[k,p]of Object.entries(held)){const[sid,wid,mid]=k.split('|');const w=l.seasons.find(x=>x.id===sid)?.data.weeks.find(x=>x.id===wid);const q=w&&w.picks[mid];
+    const ent=l.outbox[k];if(!q||q.status!=='pending'||w.locked||(q.at&&ent&&'base' in ent&&q.at!==ent.base)){delete l.outbox[k];continue}for(const f of MEMBER_PICK){if(f in p)q[f]=p[f];else delete q[f]}}   // still waiting to go up: keep showing it
   if((d.role||l.sync.role)==='admin')l.sync.wh=syncSigs(l.seasons);else delete l.sync.wh;   // what the league looked like when this copy last matched it
+  const nwS=newestOf(l);
   for(const x of l.seasons){const u=ui[x.id]||{};const newest=lastMain(x.data.weeks)?.id;const cur=u.cur&&x.data.weeks.find(w=>w.id===u.cur);
-    if(cur&&u.last===newest)x.data.currentWeekId=u.cur;                       // nothing new
-    else if(cur&&!revealSeen(cur,l))x.data.currentWeekId=u.cur;               // hold them on the reveal they haven't watched yet
-    else if(newest)x.data.currentWeekId=newest}                               // otherwise a freshly opened week pulls them to it
+    if(cur&&(replaying(cur,l)||(BROWSED&&u.last===newest)))x.data.currentWeekId=u.cur;   // they went there on purpose (or are rewatching it) and nothing new came in
+    else x.data.currentWeekId=(x===nwS?homeWeekId(l,x):newest)||null}                  // otherwise: where This Week lands, the same on every device
   autoTidySoon();
   if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
-  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.vapid)l.vapid=d.vapid;if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
+  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.vapid)l.vapid=d.vapid;if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.devs!==undefined)l.devs=d.devs||{};if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
   if(l.meKey&&d.you===null){delete l.me;delete l.meKey;delete l.pushEp;delete l.pushMid;setTimeout(()=>toast('The commissioner reset your name on this device. Tap your name again on one device, then use a code for any others.','bad'),80)}
+  if(d.adminAs!==undefined&&(d.role||l.sync.role)==='admin'&&l.asPend){const a=d.adminAs||{};if((l.asPend.guest&&a.guest)||(l.asPend.mid&&a.mid===l.asPend.mid))delete l.asPend;else setTimeout(()=>sendAs(l),0)}   // this device's newer choice wins until it lands
+  else if(d.adminAs!==undefined&&(d.role||l.sync.role)==='admin'){const was=l.me;if(d.adminAs&&d.adminAs.mid){l.me=d.adminAs.mid;delete l.guest}else if(d.adminAs&&d.adminAs.guest){delete l.me;l.guest=true}else if((l.me||l.guest)&&!asSent.has(l.sync.id)){asSent.add(l.sync.id);api(l,'/as',{method:'POST',body:l.me?{memberId:l.me}:{guest:true}}).catch(()=>asSent.delete(l.sync.id))}   // who the commissioner is lives with the league
+    if(l.me!==was)setTimeout(()=>pull(l,false,true),60)}   // fetch again as that person (their vote, their progress)
   l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;if(d.updatedAt)l.sync.base=d.updatedAt;
   l.sync.known=[];for(const x of l.seasons)for(const w of x.data.weeks)l.sync.known.push(w.id);   // what the league had, to tell a delete from a week this copy never saw
   if(league()===l){S=season().data;ALLTIME=null}
@@ -978,10 +999,16 @@ const quiet=()=>!!(upl||videoPlaying()||document.querySelector('video.rv-video')
 async function pull(l=league(),loud=false,force=false){
   if(!l.sync||pullBusy||pushT||pendingPick)return;
   if(l.sync.role==='admin'&&l.sync.dirty){push(l);return}   // this device's edits go up before anything comes down
+  if(outboxHas(l))await flushOutbox(l);   // so does a pick that hasn't reached the league yet
   pullBusy=true;setSyncDot('busy');const asKey=l.meKey;
   try{const d=await api(l,'');if(l.meKey!==asKey){setSyncDot('ok');setTimeout(()=>pull(l,false,true),50)}   // this device became someone else mid-fetch: fetch again as them
     else if(pushT||pendingPick||l.sync.dirty){setSyncDot('ok')}   // an edit landed mid-fetch: it pushes first
-    else if(force||d.rev!==l.sync.rev){applyState(l,d);save();if(!quiet())render();else needRender=true}else if(needRender&&!quiet()){needRender=false;render()}setSyncDot('ok');if(loud)toast('Up to date','good');if(!upl)loadPending()}
+    else if(force||d.rev!==l.sync.rev){applyState(l,d);save();if(!quiet())render();else needRender=true}
+    else if(d.person&&(()=>{const ahead=rvAhead(l,d.person);if(!mergePerson(l,d.person))return false;save();if(ahead)afterPerson(l);else softRender();return true})()){}   // watched something on another device (or a device/upload changed)
+    else if(needRender&&!quiet()){needRender=false;render()}
+    if(Object.keys(l.personPend||{}).length)sendPerson(l);   // this device is still ahead of the server: send it again
+    hello(l);
+    setSyncDot('ok');if(loud)toast('Up to date','good');if(!upl)loadPending()}
   catch(e){setSyncDot('bad');if(loud)toast('Could not reach the cloud: '+e.message+'. Showing what this device has.','bad')}
   finally{pullBusy=false}
 }
@@ -1027,25 +1054,38 @@ function mergeMemberEdits(l,st){
   if(st.claims)l.claims=st.claims;return n;
 }
 async function push(l,retried,clash){
-  setSyncDot('busy');const seq=l.sync.seq||0;const sent=syncSigs(l.seasons);
+  setSyncDot('busy');const seq=l.sync.seq||0;const sent=syncSigs(l.seasons);const t0=Date.now();const sd={...(l.setDirty||{})};   // settings only go up when this device changed them
   const fd=!!l.featDirty;   // the switches only go up when this device flipped one: a stale copy never switches the league back
   const have=new Set();for(const x of l.seasons||[])for(const w of (x.data&&x.data.weeks)||[])have.add(w.id);
   const dw=[...new Set([...(l.dropWeeks||[]),...(l.sync.known||[]).filter(id=>!have.has(id))])];   // weeks removed here on purpose (delete, reset, import): the server keeps weeks it started unless told
-  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,...(fd?{features:l.features||{}}:{}),...(dw.length?{dropWeeks:dw}:{}),clubName:l.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
-    if(fd)delete l.featDirty;if(dw.length)l.dropWeeks=(l.dropWeeks||[]).filter(id=>!dw.includes(id));
+  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,...(sd.name?{name:l.name}:{}),...(fd?{features:l.features||{}}:{}),...(dw.length?{dropWeeks:dw}:{}),...(sd.clubName?{clubName:l.clubName||''}:{}),...(sd.mondayOk&&l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
+    if(fd)delete l.featDirty;if(l.setDirty)for(const k of Object.keys(l.setDirty))if(l.setDirty[k]<=t0)delete l.setDirty[k];if(dw.length)l.dropWeeks=(l.dropWeeks||[]).filter(id=>!dw.includes(id));
     if((l.sync.seq||0)===seq&&!pushT){delete l.sync.dirty;applyState(l,d);save();if(!quiet())render();else needRender=true}   // nothing new typed meanwhile: take the league as it now stands (votes, claims…)
     else{l.sync.rev=d.rev;if(d.updatedAt)l.sync.base=d.updatedAt;l.sync.wh=sent;save()}                         // more edits are queued: they push next
     setSyncDot('ok');if(clash&&clash.length)toast(`${clash.slice(0,3).join(', ')} ${clash.length>1?'were':'was'} also changed on another device just now. Kept that version, so check ${clash.length>1?'them':'it'} and redo your change if it's missing.`,'bad')}
   catch(e){if(e.status===409&&e.data?.state){
-      if(!retried){const c=mergeLeague(l,e.data.state);mergeMemberEdits(l,e.data.state);l.sync.rev=e.data.state.rev;if(e.data.state.updatedAt)l.sync.base=e.data.state.updatedAt;l.sync.wh=syncSigs((e.data.state.seasons||[]).filter(x=>x&&SAFE_ID.test(x.id)).map(x=>({...x,data:migrate(JSON.parse(JSON.stringify(x.data||fresh())))})));save();return push(l,true,c)}   // someone else acted meanwhile: keep both
+      if(!retried){const st=e.data.state;const dd=l.setDirty||{};if(!dd.name&&st.name)l.name=st.name;if(!dd.clubName&&st.clubName!==undefined)l.clubName=st.clubName||'';if(!dd.mondayOk&&st.mondayOk!==undefined)l.mondayOk=!!st.mondayOk;if(!l.featDirty&&st.features)l.features=st.features;   // settings this device didn't touch: the league's
+        const c=mergeLeague(l,e.data.state);mergeMemberEdits(l,e.data.state);l.sync.rev=e.data.state.rev;if(e.data.state.updatedAt)l.sync.base=e.data.state.updatedAt;l.sync.wh=syncSigs((e.data.state.seasons||[]).filter(x=>x&&SAFE_ID.test(x.id)).map(x=>({...x,data:migrate(JSON.parse(JSON.stringify(x.data||fresh())))})));save();return push(l,true,c)}   // someone else acted meanwhile: keep both
       applyState(l,e.data.state);delete l.sync.dirty;save();render();toast('Someone else changed the league at the same moment — reloaded it. Redo your last edit.','bad')}
     else{setSyncDot('bad');toast('Cloud save failed: '+e.message+'. Kept on this device — it goes up as soon as the connection is back.','bad')}}
 }
-async function sendPick(l,w,mid){
-  const p=w.picks[mid];if(!p)return;pendingPick=null;setSyncDot('busy');
-  try{await api(l,'/pick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,memberId:mid,pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,unit:p.unit,um:p.um,raw:p.raw||'',keep:!!p.keep}}});setSyncDot('ok');toast('Pick saved for the group','good')}
-  catch(e){setSyncDot('bad');toast(e.status===423?'Too late — '+e.message+'.':'Could not save your pick: '+e.message,'bad');pull(l)}
+const obKey=(l,w,mid)=>seasonOfWeek(l,w).id+'|'+w.id+'|'+mid;
+const outboxHas=l=>!!(l.outbox&&Object.keys(l.outbox).length);
+const unsent=(w,mid,l=league())=>!!(l.outbox&&l.outbox[obKey(l,w,mid)]);
+async function sendPick(l,w,mid,quietly){   // a member's own pick: it waits in the outbox until the league has it
+  const p=w.picks[mid];if(!p)return;pendingPick=null;const k=obKey(l,w,mid);const stamp=Date.now();l.outbox=l.outbox||{};const prev=l.outbox[k];const base=prev&&'base' in prev?prev.base:(p.at||'');l.outbox[k]={at:stamp,base};save();setSyncDot('busy');const sid=seasonOfWeek(l,w).id;
+  try{const d=await api(l,'/pick',{method:'POST',body:{seasonId:sid,weekId:w.id,memberId:mid,baseAt:base,pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,unit:p.unit,um:p.um,raw:p.raw||'',keep:!!p.keep}}});
+    const np=(d.seasons||[]).find(x=>x.id===sid)?.data?.weeks?.find(x=>x.id===w.id)?.picks?.[mid];if(np&&np.at)p.at=np.at;   // the league's stamp: the next edit starts from it
+    if(l.outbox[k]&&l.outbox[k].at===stamp)delete l.outbox[k];else if(l.outbox[k]&&np&&np.at)l.outbox[k].base=np.at;save();setSyncDot('ok');if(!quietly)toast('Pick saved for the group','good');softRender()}
+  catch(e){if(e.status===409&&e.data&&e.data.current){delete l.outbox[k];save();setSyncDot('ok');toast(`Your pick was changed on your other device to “${e.data.current.text||'nothing'}”, so this one wasn't saved. Change it again if you want.`,'bad');pull(l,false,true)}
+    else if(e.status>=400&&e.status<500&&e.status!==408&&e.status!==429){delete l.outbox[k];save();setSyncDot('bad');toast((e.status===423?'Too late: ':'')+e.message+'. Your pick was NOT saved.','bad');pull(l,false,true)}   // the league said no: show the league's copy
+    else{setSyncDot('bad');if(!quietly)toast('No signal, so your pick is only on this device for now. It goes up on its own as soon as you have signal.','bad');softRender()}}
 }
+let obBusy=false;
+async function flushOutbox(l){if(obBusy||!outboxHas(l))return;obBusy=true;
+  try{for(const k of Object.keys(l.outbox)){const[sid,wid,mid]=k.split('|');const sn=(l.seasons||[]).find(x=>x.id===sid);const w=sn&&sn.data.weeks.find(x=>x.id===wid);
+    if(!w||!w.picks[mid]||mid!==l.me){delete l.outbox[k];continue}await sendPick(l,w,mid,true)}}
+  finally{obBusy=false;save()}}
 async function sendVote(l,w,voterId,candidateId){
   setSyncDot('busy');
   try{const d=await api(l,'/vote',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,voterId,candidateId}});applyState(l,d);save();render();setSyncDot('ok');toast(candidateId?`Vote in: ${member(candidateId)?.name}`:'Vote withdrawn','good')}
@@ -1068,34 +1108,69 @@ function aheadOf(local,server){   // results on this device that the league does
   return out;
 }
 function backupLeague(l){try{const k='bp-bak:'+canonName(l.name);const list=JSON.parse(localStorage.getItem(k)||'[]');list.unshift({at:new Date().toISOString(),seasons:l.seasons});localStorage.setItem(k,JSON.stringify(list.slice(0,3)))}catch(e){}}
-function askWhichCopy(name,ahead){return new Promise(res=>{modal({title:`Which ${name} should win?`,body:`<p>This device has results the league doesn't: <b>${h(ahead.slice(0,6).join(', '))}${ahead.length>6?` and ${ahead.length-6} more`:''}</b>.</p><p><b>Use this device's copy</b> uploads it, replacing anything entered in the league since, including picks members typed in the app. <b>Use the league's copy</b> keeps the league as it is and drops this device's version (a backup is kept on this device).</p>`,actions:[{label:"Use this device's copy",cls:'ghost danger',onClick:()=>{res('mine')}},{label:"Use the league's copy",cls:'primary',onClick:()=>{res('server')}}]})})}
+function askWhichCopy(name,ahead){return new Promise(res=>{modal({title:`Which ${name} should win?`,body:`<p>This device has results the league doesn't: <b>${h(ahead.slice(0,6).join(', '))}${ahead.length>6?` and ${ahead.length-6} more`:''}</b>.</p><p><b>Use this device's copy</b> uploads it, replacing anything entered in the league since, including picks members typed in the app. <b>Use the league's copy</b> keeps the league as it is and drops this device's version (a backup is kept on this device).</p>`,actions:[{label:"Use this device's copy",cls:'ghost danger',onClick:()=>{res('mine')}},{label:"Use the league's copy",cls:'primary',onClick:()=>{res('server')}}],onClose:()=>res('server')})})}   // closed without choosing: the safe one
 async function adoptLink(id,key,opt={}){
   let l=null,created=false,prev=null;
   try{if(!opt.quiet)toast('Connecting as commissioner…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`);const d=await r.json().catch(()=>({}));if(!d.ok||d.role!=='admin')throw new Error(d.error||'that link doesn\'t work');
-    mergeBuiltIns();   // only a commissioner code gets here: this is the commish's device
+    if(!opt.quiet&&!DB.acct)mergeBuiltIns();   // only a commissioner link gets here: this is the commish's device (an account brings its own leagues)
     l=DB.leagues.find(x=>x.sync&&x.sync.id===id)||DB.leagues.find(x=>!x.sync&&canonName(x.name)===canonName(d.name));
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null};DB.leagues.push(l);created=true}
     prev={sync:l.sync,shareKey:l.shareKey,features:l.features,claims:l.claims};
     l.sync={url:SYNC_URL,id,key,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features=d.features||{};l.claims=d.claims||{};
     const hadLocal=!created&&l.seasons.length&&hasContent(l);
     let upload=!!(d.fresh&&hadLocal&&!opt.quiet);   // brand-new league: this device's copy becomes the league (never from a device link)
-    if(hadLocal&&!upload){const ahead=aheadOf(l,d);if(ahead.length)upload=(await askWhichCopy(l.name,ahead))==='mine'}   // results only this device has: ask
+    if(hadLocal&&!upload){const ahead=aheadOf(l,d);if(ahead.length){if(opt.quiet){if(opt.onReplaced)opt.onReplaced(l.name)}else upload=(await askWhichCopy(l.name,ahead))==='mine'}}   // results only this device has: ask (a device link keeps the league's copy and a backup here)
     if(hadLocal)backupLeague(l);
     if(upload){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,features:l.features||{},clubName:l.clubName||d.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:d.rev}});applyState(l,d2)}
     else applyState(l,d);   // the league's copy; this device's edits push from now on
     delete l.sync.dirty;
     DB.leagues=DB.leagues.filter(x=>x===l||x.sync||hasContent(x));   // drop the empty placeholder a fresh phone starts with
-    if(opt.me&&l.seasons.some(x=>x.data.members.some(m=>m.id===opt.me)))l.me=opt.me;
-    setOwner();DB.active=l.id;S=season().data;if(!opt.quiet){VIEW='crew';save();render();toast(`${l.name} is live — this device runs it`,'good')}else save();return true;
+    if(opt.me&&!(d.adminAs&&d.adminAs.mid)&&l.seasons.some(x=>x.data.members.some(m=>m.id===opt.me)))l.me=opt.me;   // the league's own answer wins
+    setOwner();if(!opt.quiet){DB.active=l.id;S=season().data;VIEW='crew';save();render();acctNote({leagues:{[id]:{key}}});toast(`${l.name} is live: you run it from here too`,'good')}else save();return true;
   }catch(e){
     if(l){if(created)DB.leagues=DB.leagues.filter(x=>x!==l);else if(prev){l.sync=prev.sync;l.shareKey=prev.shareKey;l.features=prev.features;l.claims=prev.claims;if(!l.sync)delete l.sync}}   // back to exactly how it was
     save();if(opt.quiet)return false;render();toast('Could not connect: '+e.message+'. Nothing on this device changed.','bad');return false}
 }
+/* ---- the Commish account: the commissioner's league list, the same on every device they link ---- */
+async function acctApi(path,opts={}){const a=DB.acct;const r=await fetch(`${SYNC_URL}/acct${path}`,{method:opts.method||'GET',headers:{'Content-Type':'application/json',...(a?{'X-BP-Acct':a.id+'.'+a.secret}:{})},body:opts.body?JSON.stringify(opts.body):undefined});
+  const d=await r.json().catch(()=>({ok:false,error:'unreadable response'}));if(!r.ok||!d.ok)throw Object.assign(new Error(d.error||('HTTP '+r.status)),{status:r.status,data:d});return d}
+const acctEntry=l=>({key:l.sync.key,...(l.meKey?{meKey:l.meKey}:{})});
+let acctMk=null;
+async function ensureAcct(){if(SHARE_MODE)return null;if(DB.acct)return DB.acct;if(acctMk)return acctMk;acctMk=(async()=>{const d=await acctApi('',{method:'POST'});DB.acct={id:d.id,secret:d.secret};save();await acctPatchAll();return DB.acct})().finally(()=>{acctMk=null});return acctMk}
+async function acctPatchAll(){if(SHARE_MODE||!DB.acct)return;const leagues={};for(const l of DB.leagues)if(l.sync)leagues[l.sync.id]=acctEntry(l);if(Object.keys(leagues).length)await acctApi('/patch',{method:'POST',body:{leagues}})}
+function acctNote(ch){if(SHARE_MODE||!DB.acct)return;const q=DB.acctQ=DB.acctQ||{leagues:{}};Object.assign(q.leagues,ch.leagues||{});if(ch.active)q.active=ch.active;save();acctFlush()}   // queued, so a change made without signal still gets there
+let acctBusy=false,acctSyncAt=0;
+async function acctFlush(){const q=DB.acctQ;if(SHARE_MODE||!DB.acct||acctBusy||!q||(!Object.keys(q.leagues||{}).length&&!q.active))return;acctBusy=true;DB.acctQ=null;save();
+  try{await acctApi('/patch',{method:'POST',body:q});if(DB.acctQ)setTimeout(acctFlush,50)}catch(e){const q2=DB.acctQ||{leagues:{}};DB.acctQ={leagues:{...q.leagues,...q2.leagues},active:q2.active||q.active};save()}finally{acctBusy=false}}
+let acctP=null;
+function acctSync(cold,boot){if(SHARE_MODE||!DB.acct)return Promise.resolve();if(acctP)return acctP;if(!cold&&Date.now()-acctSyncAt<60e3)return Promise.resolve();acctSyncAt=Date.now();acctP=acctSync0(boot).finally(()=>{acctP=null});return acctP}   // one at a time
+async function acctSync0(boot){   // bring this device in line with the account: add its leagues, drop removed ones, give one-device leagues a home
+  await acctFlush();let A;try{A=await acctApi('')}catch(e){return}acctBusy=true;let changed=false;
+  try{const mine=new Map(DB.leagues.filter(l=>l.sync).map(l=>[l.sync.id,l]));
+    for(const[id,e]of Object.entries(A.leagues||{})){const l=mine.get(id);
+      if(e.gone){if(l){DB.leagues=DB.leagues.filter(x=>x!==l);changed=true}continue}   // removed on another of their devices
+      if(!l){const ok=e.role==='admin'?await adoptLink(id,e.key,{quiet:true,onReplaced:nm=>toast(`This device had older results for ${nm}. It uses the league's copy now (a backup is saved here).`)}):await joinLink(id,e.key,{quiet:true,...(e.meKey?{meKey:e.meKey}:{})});if(ok)changed=true}
+      else if(e.role==='member'&&e.meKey&&!l.meKey){if(await joinLink(id,e.key,{quiet:true,meKey:e.meKey}))changed=true}}   // your name there, from another device
+    const add={};for(const l of DB.leagues)if(l.sync&&!(A.leagues||{})[l.sync.id])add[l.sync.id]=acctEntry(l);if(Object.keys(add).length){DB.acctQ={leagues:{...((DB.acctQ||{}).leagues||{}),...add},active:(DB.acctQ||{}).active};save()}   // leagues only this device knew about
+    const names=new Set(Object.values(A.leagues||{}).map(e=>canonName(e.name)));   // removed ones too: a stale copy here never brings one back
+    for(const l of [...DB.leagues]){if(l.sync||!hasContent(l)||SHARE_SITES[l.id]||names.has(canonName(l.name)))continue;try{await publishPrivate(l);changed=true}catch(e){}}   // a league on one device only: give it a private home in the cloud
+    if(boot&&A.active&&!new URLSearchParams(location.search).get('league')&&Date.parse(A.active.at)>(DB.activeAt||0)){const l=DB.leagues.find(x=>x.sync&&x.sync.id===A.active.id);if(l&&l.id!==DB.active){DB.active=l.id;S=season().data;goNow();changed=true}}   // open where they last were, on any device
+  }finally{acctBusy=false}
+  if(!DB.leagues.length){const g=guestDB();DB.leagues=g.leagues;DB.active=g.active}if(!DB.leagues.find(x=>x.id===DB.active))DB.active=DB.leagues[0].id;
+  if(changed){S=season().data;setOwner();save();render()}acctFlush()}
+const PUBLISHING=new Set();
+async function publishPrivate(l){   // the league's own cloud home, shared with nobody until the commissioner sends the link
+  if(PUBLISHING.has(l.id)||l.sync)return;PUBLISHING.add(l.id);try{await publishPrivate0(l)}finally{PUBLISHING.delete(l.id)}}
+async function publishPrivate0(l){
+  const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,features:{picks:false,votes:false,notify:false},clubName:l.clubName||'',mondayOk:!!l.mondayOk})});
+  const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);
+  l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features={picks:false,votes:false,notify:false};save();
+  DB.acctQ=DB.acctQ||{leagues:{}};DB.acctQ.leagues[d.id]={key:d.adminKey};save();try{const st=await api(l,'');applyState(l,st);save()}catch(e){}}
 const LINK_RE=/^\s*[A-Za-z2-9]{3}[-\s]?[A-Za-z2-9]{3}\s*$/;
 function linkEntries(){   // what this device can hand over: its name in a league (member), or every league it runs (commissioner)
   if(SHARE_MODE){const l=league();return l.sync&&l.me&&l.meKey?{kind:'member',leagues:[{id:l.sync.id,key:l.sync.key,meKey:l.meKey}],local:[]}:null}
   const leagues=[],local=[];
-  for(const l of DB.leagues){if(l.sync)leagues.push({id:l.sync.id,key:l.sync.key,me:l.me||null,...(l.meKey?{meKey:l.meKey}:{})});else if(hasContent(l))local.push({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,clubName:l.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{})})}
+  for(const l of DB.leagues){if(l.sync)leagues.push({id:l.sync.id,key:l.sync.key,me:l.me||null,...(l.meKey?{meKey:l.meKey}:{})});else if(hasContent(l))local.push({...(SHARE_SITES[l.id]?{id:l.id}:{}),name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,clubName:l.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{})})}
   return leagues.length||local.length?{kind:'commish',leagues,local}:null;
 }
 function linkedNote(inc){   // which leagues the code carries, and any this device couldn't hand over
@@ -1103,10 +1178,13 @@ function linkedNote(inc){   // which leagues the code carries, and any this devi
   for(const x of DB.leagues){if(x.sync){(ids.has(x.sync.id)?go:miss).push(x.name)}else if(hasContent(x))go.push(x.name+' (copy)')}
   return `<p class="muted tiny">Comes along: <b>${h(go.join(', ')||'nothing')}</b>.</p>`+(miss.length?`<p class="tiny" style="color:var(--red)">Not included: <b>${h(miss.join(', '))}</b>. This device can't reach ${miss.length>1?'those leagues':'that league'} any more (deleted, or the key changed). Nothing is wrong with the others.</p>`:'');
 }
-async function makeLinkCode(){
+let codeBusy=false;
+async function makeLinkCode(){if(codeBusy)return;codeBusy=true;try{await makeLinkCode0()}finally{codeBusy=false}}
+async function makeLinkCode0(){
+  if(!SHARE_MODE){toast('Getting your leagues ready…');try{await ensureAcct();acctSyncAt=0;await acctSync(true)}catch(e){}}   // the new device joins this account, so later changes follow too
   const b=linkEntries();if(!b){toast(SHARE_MODE?'Tap your name first, then you can add another device':'Nothing to link yet','bad');return}
   toast('Making a code…');
-  try{const r=await fetch(`${SYNC_URL}/link`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...b,from:deviceName()})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'HTTP '+r.status);
+  try{const r=await fetch(`${SYNC_URL}/link`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...b,from:deviceName(),...(!SHARE_MODE&&DB.acct?{acct:DB.acct}:{})})});const d=await r.json().catch(()=>({}));if(!r.ok||!d.ok)throw new Error(d.error||'HTTP '+r.status);
     const code=d.code.slice(0,3)+'-'+d.code.slice(3);const exp=Date.parse(d.exp);const url=location.origin+location.pathname;
     const steps=SHARE_MODE?`<ol class="linksteps"><li>On the other phone or tablet, open <b>${h(url.replace('https://',''))}</b>. On an iPhone or iPad, add it to the Home Screen first and open it from there.</li><li>Tap <b>I have a code</b> (on the Crew tab, or under the names).</li><li>Type the code above.</li></ol><p class="muted tiny">You'll be ${h(member(league().me)?.name||'you')} on both. Notifications get turned on separately on each device.</p>`
       :`<ol class="linksteps"><li>On your Mac, iPad or other phone, open <b>${h(url.replace('https://',''))}</b>. On an iPhone or iPad, add it to the Home Screen first and open it from there.</li><li>Go to <b>Crew</b>. In the <b>Leagues</b> box, type the code above and tap <b>Go</b>.</li></ol>${linkedNote(d.included)}<p class="tiny"><b>Only type this on your own devices.</b> Whoever types it runs these leagues.</p>`;
@@ -1114,7 +1192,7 @@ async function makeLinkCode(){
     const t=setInterval(()=>{const el=document.getElementById('linkLeft');if(!el){clearInterval(t);return}const left=Math.max(0,exp-Date.now());el.textContent=left?`${Math.floor(left/60000)}:${String(Math.floor(left%60000/1000)).padStart(2,'0')}`:'expired, make a new one';if(!left)clearInterval(t)},1000);
   }catch(e){toast('Couldn\'t make a code: '+e.message,'bad')}
 }
-function enterLinkCode(){modal({title:'I have a code',body:`<p>On the device that's already set up: ${SHARE_MODE?'<b>Crew</b> tab → <b>Use this on another device</b>':'<b>Crew</b> tab → <b>Link another device</b>'}. Then type the 6-character code here.</p><input id="linkIn2" class="linkin" maxlength="7" placeholder="ABC-123" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go">`,
+function enterLinkCode(stack){modal({stack:!!stack,title:'I have a code',body:`<p>On the device that's already set up: ${SHARE_MODE?'<b>Crew</b> tab → <b>Use this on another device</b>':'<b>Crew</b> tab → <b>Link another device</b>'}. Then type the 6-character code here.</p><input id="linkIn2" class="linkin" maxlength="7" placeholder="ABC-123" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go">`,
   actions:[{label:'Cancel',cls:'ghost'},{label:'Link this device',cls:'primary',onClick:()=>{const v=document.getElementById('linkIn2')?.value||'';if(!LINK_RE.test(v)){toast('Type the 6-character code, like K7M-4QX','bad');return false}redeemLinkCode(v);}}],
   onOpen:r=>{const i=r.querySelector('#linkIn2');if(!i)return;i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();r.querySelector('[data-act="modal-action"][data-i="1"]')?.click()}});setTimeout(()=>i.focus(),60)}})}
 let linking=false;
@@ -1135,24 +1213,26 @@ async function redeemLinkCode2(code){
     if(!e||e.role!=='member'){modal({title:'That code is for a different app',body:`<p>${b.kind==='commish'?'That code came from the Commish app. Open the Commish app on this device and type it there.':'That code is for another league\'s app.'}</p>`,actions:[{label:'OK',cls:'primary'}]});return false}
     const l=league();const was=l.me;
     if(l.pushEp&&l.meKey&&l.meKey!==e.meKey){try{await api(l,'/push/unsubscribe',{method:'POST',body:{endpoint:l.pushEp}})}catch(x){}}   // this device's pings were for the old name
-    l.me=e.me;l.meKey=e.meKey;delete l.pushEp;delete l.pushMid;save();closeModal();
-    try{const d=await api(l,'');applyState(l,d);save()}catch(x){}render();
+    l.me=e.me;l.meKey=e.meKey;delete l.guest;delete l.pushEp;delete l.pushMid;save();modalStack.length=0;closeModal();
+    try{const d=await api(l,'');applyState(l,d);save()}catch(x){}sendPerson(l,true);hello(l);render();
     toast(`You're ${member(e.me)?.name||'set'} on this device too${was&&was!==e.me?` (was ${member(was)?.name||'someone else'})`:''}`,'good');return true}
   // the Commish app: every league, the way the other device has it
-  let n=0;const names=[],failed=[],kept=[];closeModal();
+  let n=0;const names=[],failed=[],kept=[],replaced=[];closeModal();
+  if(b.acct&&b.acct.id&&b.acct.secret){DB.acct={id:b.acct.id,secret:b.acct.secret};DB.acctQ=null;save()}   // this device joins the other one's account
   for(const e of b.leagues||[]){
-    const ok=e.role==='admin'?await adoptLink(e.id,e.key,{quiet:true,me:e.me}):await joinLink(e.id,e.key,{quiet:true,...(e.meKey?{meKey:e.meKey}:{})});
+    const ok=e.role==='admin'?await adoptLink(e.id,e.key,{quiet:true,me:e.me,onReplaced:nm=>replaced.push(nm)}):await joinLink(e.id,e.key,{quiet:true,...(e.meKey?{meKey:e.meKey}:{})});
     if(ok){n++;names.push(e.name)}else failed.push(e.name)}
   for(const x of b.local||[]){   // leagues that live only on the other device: copied here (they don't sync)
     const inc={name:String(x.name||'League'),seasons:(x.seasons||[]).filter(sn=>sn&&SAFE_ID.test(sn.id)).map(sn=>({...sn,data:migrate(JSON.parse(JSON.stringify(sn.data||fresh())))}))};
     const old=DB.leagues.find(y=>!y.sync&&canonName(y.name)===canonName(inc.name));
     if(old&&hasContent(old)&&aheadOf(old,inc).length){kept.push(old.name);continue}   // this device's copy has results the other one doesn't: keep it
     if(old){backupLeague(old);DB.leagues=DB.leagues.filter(y=>y!==old)}
-    const l={id:uid(),name:inc.name,seasons:inc.seasons,activeSeason:x.activeSeason,clubName:String(x.clubName||''),...(x.mondayOk!==undefined?{mondayOk:!!x.mondayOk}:{})};if(!l.seasons.find(sn=>sn.id===l.activeSeason))l.activeSeason=l.seasons[0]?.id;DB.leagues.push(l);n++;names.push(inc.name+' (copy)')}
+    const l={id:x.id&&SHARE_SITES[x.id]&&!DB.leagues.some(y=>y.id===x.id)?x.id:uid(),name:inc.name,seasons:inc.seasons,activeSeason:x.activeSeason,clubName:String(x.clubName||''),...(x.mondayOk!==undefined?{mondayOk:!!x.mondayOk}:{})};if(!l.seasons.find(sn=>sn.id===l.activeSeason))l.activeSeason=l.seasons[0]?.id;DB.leagues.push(l);n++;names.push(inc.name+' (copy)')}
   if(!n&&!kept.length){modal({title:'Nothing linked',body:'<p>None of the leagues on that code could be connected. Nothing changed on this device. Make a new code on your other device and try again.</p>',actions:[{label:'OK',cls:'primary'}]});render();return false}
   DB.leagues=DB.leagues.filter(x=>x.sync||hasContent(x));if(!DB.leagues.find(x=>x.id===DB.active))DB.active=DB.leagues[0]?.id;
   S=season().data;setOwner();VIEW='week';save();render();
-  modal({title:'This device is linked',body:`${n?`<p>Now on this device: <b>${names.map(h).join(', ')}</b>. It stays in sync on its own from here.</p>`:''}${kept.length?`<p>Kept this device's own <b>${kept.map(h).join(', ')}</b>: it has results the other device's copy doesn't.</p>`:''}${failed.length?`<p style="color:var(--red)">Couldn't connect <b>${failed.map(h).join(', ')}</b>. Make a new code on your other device to bring ${failed.length>1?'them':'it'} over.</p>`:''}`,actions:[{label:'OK',cls:'primary'}]});return n>0;
+  if(DB.acct){try{await acctPatchAll()}catch(e){}acctSyncAt=0;acctSync(true)}   // this device's own leagues join the account too
+  modal({title:'This device is linked',body:`${n?`<p>Now on this device: <b>${names.map(h).join(', ')}</b>. It stays in sync on its own from here.</p>`:''}${kept.length?`<p>Kept this device's own <b>${kept.map(h).join(', ')}</b>: it has results the other device's copy doesn't.</p>`:''}${replaced.length?`<p class="muted tiny">This device had older results for <b>${replaced.map(h).join(', ')}</b>. The league's copy is used now, and a backup of the old one is saved on this device.</p>`:''}${failed.length?`<p style="color:var(--red)">Couldn't connect <b>${failed.map(h).join(', ')}</b>. Make a new code on your other device to bring ${failed.length>1?'them':'it'} over.</p>`:''}`,actions:[{label:'OK',cls:'primary'}]});return n>0;
 }
 async function useLink(text){if(LINK_RE.test(text||''))return redeemLinkCode(text);const p=parseLink(text);if(!p){toast('That doesn\'t look like a league link. Paste the whole link.','bad');return false}return p.kind==='admin'?adoptLink(p.id,p.key):joinLink(p.id,p.key)}
 async function adoptFromUrl(){
@@ -1168,32 +1248,33 @@ async function joinLink(id,key,opt={}){
     if(opt.meKey&&d.you){l.me=d.you;l.meKey=opt.meKey}
     applyState(l,d);DB.leagues=DB.leagues.filter(x=>x===l||(x.sync&&x.sync.id!==id)||(hasContent(x)&&canonName(x.name)!==canonName(l.name)));   // drop the built-in copy of the same league and the empty placeholder
     if(opt.quiet){save();return true}
-    DB.active=l.id;S=season().data;VIEW='week';save();render();
-    if(!l.me&&(l.features?.picks||l.features?.votes))pickMe(l,true);else toast(l.me?`Welcome back, ${member(l.me)?.name||''}`:`You're in ${l.name}`,'good');return true;
+    acctNote({leagues:{[id]:acctEntry(l)}});DB.active=l.id;S=season().data;VIEW='week';save();render();
+    if(!l.me&&!l.guest)pickMe(l,true,true);else toast(l.me?`Welcome back, ${member(l.me)?.name||''}`:`You're in ${l.name}`,'good');return true;
   }catch(e){if(!opt.quiet)toast('Could not join: '+e.message,'bad');return false}
 }
 async function joinFromUrl(){
   const q=new URLSearchParams(location.search).get('join');if(!q)return false;const[id,key]=q.split('.');if(!id||!key)return false;
   const ok=await joinLink(id,key);if(ok)history.replaceState(null,'',location.pathname);return ok;
 }
-function pickMe(l=league(),first=false){
-  const act=S.members.filter(m=>m.active);const bound=!!l.sync&&!isAdmin(l);
+function pickMe(l=league(),first=false,must=false){
+  const act=S.members.filter(m=>m.active);const bound=!!l.sync&&!isAdmin(l);const run=isAdmin(l);
   const iosSafari=(/iPhone/.test(navigator.userAgent)||isIPad())&&!window.navigator.standalone&&!window.matchMedia('(display-mode: standalone)').matches;
-  modal({title:first?`You're in ${l.name}. Who are you?`:'Who are you?',body:`${bound&&iosSafari?`<div class="hint">📱 <b>Add this to your Home Screen first</b> (tap Share, then Add to Home Screen) and tap your name in that copy. A name sticks to the copy you tap it in.</div>`:''}<p class="tiny">${bound?'Tap your name. From then on this phone is you: your pick, your vote, your video. Nobody else can tap it.':'This device will enter picks and votes as this person.'}</p>${bound?`<p class="tiny" style="margin-top:-4px">Already set up on another phone? <a href="#" data-act="link-enter">Enter a code from it</a>.</p>`:''}<div class="fb-grid">${act.map(m=>{const cl=l.claims?.[m.id];const taken=bound&&cl&&l.me!==m.id;return`<button class="fb ${l.me===m.id?'on':''} ${taken?'taken':''}" data-act="set-me" data-mid="${m.id}" ${taken?'disabled':''}><span class="avatar lg" style="--c:${m.color}">${h(initials(m.name))}</span>${h(m.name)}${taken?'<small>taken</small>':''}</button>`}).join('')}</div>${bound?'<p class="muted tiny" style="margin:0">Tapped the wrong one, or got a new phone? The commissioner can reset a name.</p>':''}`,actions:[{label:'Cancel',cls:'ghost'}]});
+  modal({title:first?`You're in ${l.name}. Who are you?`:must?`Who are you in ${l.name}?`:'Who are you?',body:`${bound&&iosSafari?`<div class="hint">📱 <b>Add this to your Home Screen first</b> (tap Share, then Add to Home Screen) and tap your name in that copy. Safari and the Home Screen app are kept separate on iPhones.</div>`:''}<p class="tiny">${bound?'Tap your name. It\'s yours on every device you link: your pick, your vote, your video. Nobody else can tap it.':'Picks and votes from here go in as this person, on every device you link.'}</p>${bound?`<p class="tiny" style="margin-top:-4px">Already set up on another device? <a href="#" data-act="link-enter" data-stack="1">Enter a code from it</a>.</p>`:''}${bound&&!l.me?'<p class="muted tiny" style="margin-top:-4px">A guest can watch everything but can\'t pick or vote.</p>':''}<div class="fb-grid">${act.map(m=>{const cl=l.claims?.[m.id];const taken=bound&&cl&&l.me!==m.id;return`<button class="fb ${l.me===m.id?'on':''} ${taken?'taken':''}" data-act="${taken?'taken-me':'set-me'}" data-mid="${m.id}"><span class="avatar lg" style="--c:${m.color}">${h(initials(m.name))}</span>${h(m.name)}${taken?'<small>on another device</small>':''}</button>`}).join('')}${!l.sync||(bound&&l.me)?'':`<button class="fb guest ${l.guest?'on':''}" data-act="set-guest"><span class="avatar lg" style="--c:#8e8e93">👀</span>${run?'Not playing':'Guest'}<small>${run?'I just run it':'just watching'}</small></button>`}</div>${bound?'<p class="muted tiny" style="margin:0">Tapped the wrong one? The commissioner can reset a name. New phone? Enter a code from your old one, or ask the commissioner for a reset.</p>':''}`,actions:must?[]:[{label:'Cancel',cls:'ghost'}],required:must});
 }
 const isIPad=()=>/iPad/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);   // iPadOS Safari says it's a Mac
 const deviceName=()=>{const u=navigator.userAgent;return /iPhone/.test(u)?'iPhone':isIPad()?'iPad':/Android/.test(u)?'Android':/Mac/.test(u)?'Mac':'Browser'};
 async function claimMe(l,mid){
-  if(!l.sync||isAdmin(l)){l.me=mid;save();closeModal();render();toast(`Got it — you're ${member(mid)?.name}`,'good');if(l.sync)pull(l,false,true);return}
+  if(!l.sync||isAdmin(l)){l.me=mid;delete l.guest;save();closeModal();render();toast(`Got it: you're ${member(mid)?.name}`,'good');
+    if(l.sync){l.asPend={mid,at:Date.now()};save();sendAs(l)}return}   // every commissioner device agrees on who you are (retried until the league has it)
   setSyncDot('busy');
-  try{const d=await api(l,'/claim',{method:'POST',body:{memberId:mid,device:deviceName()}});l.me=d.memberId;l.meKey=d.meKey;applyState(l,d);save();closeModal();render();setSyncDot('ok');toast(`Got it — you're ${member(mid)?.name}. This phone is yours now.`,'good')}
+  try{const d=await api(l,'/claim',{method:'POST',body:{memberId:mid,device:deviceName()}});l.me=d.memberId;l.meKey=d.meKey;delete l.guest;applyState(l,d);save();modalStack.length=0;closeModal();render();setSyncDot('ok');sendPerson(l,true);hello(l);acctNote({leagues:{[l.sync.id]:acctEntry(l)}});toast(`Got it: you're ${member(mid)?.name}. Add your other devices from the Crew tab.`,'good')}
   catch(e){setSyncDot('bad');toast(e.status===409?'That name is already set up on another device. If that\'s you: on that device go to Crew, tap Use this on another device, and type the code here.':'Could not claim that name: '+e.message,'bad')}
 }
 function ballotCount(w,id){return (w.votes?.[id]||0)+Object.values(w.ballots||{}).filter(c=>c===id).length}
 
 let saveT;
 function save(){clearTimeout(saveT);saveT=setTimeout(()=>{try{localStorage.setItem(KEY2,JSON.stringify(DB))}catch(e){toast('Could not save — storage full or blocked. Export a backup.','bad')}},60)}
-function commit(){ALLTIME=null;save();render();schedulePush()}
+function commit(){ALLTIME=null;const l=league();if(l.sync&&l.sync.role!=='admin'){save();render();setTimeout(()=>pull(l,false,true),400);return}save();render();schedulePush()}   // a member's device never keeps league edits of its own: the league's copy comes back
 
 /* ============================== HELPERS ============================== */
 const member=id=>S.members.find(m=>m.id===id);
@@ -1261,7 +1342,7 @@ function newWeek(bozoId){
 function addSide(w,stake){
   const sd={id:uid(),kind:'side',of:w.id,num:w.num+.5,date:w.date,bozoId:null,stake,picks:{},votes:{},label:`Week ${w.num} · Anytime TD parlay`,short:`W${w.num} TD`};
   S.members.filter(m=>m.active).forEach(m=>sd.picks[m.id]={text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]});
-  S.weeks.splice(S.weeks.indexOf(w)+1,0,sd);S.currentWeekId=sd.id;commit();window.scrollTo({top:0,behavior:'smooth'});toast('Side parlay is up. Everyone can add an Anytime TD pick.','good');
+  S.weeks.splice(S.weeks.indexOf(w)+1,0,sd);S.currentWeekId=sd.id;BROWSED=true;commit();window.scrollTo({top:0,behavior:'smooth'});toast('Side parlay is up. Everyone can add an Anytime TD pick.','good');
 }
 function addSpecial(name,day){
   name=String(name||'').trim().replace(/\s+/g,' ').slice(0,24);
@@ -1371,6 +1452,9 @@ function awards(per){
 
 /* ============================== RENDER ============================== */
 function autosize(t){t.style.height='auto';t.style.height=Math.max(40,t.scrollHeight)+'px'}
+let BROWSED=false;   // this session the person went to another week on purpose (This Week clears it)
+function homeWeekId(l,sn){const ws=sn.data.weeks;const lw=lastMain(ws);if(!lw)return null;let p=null;for(let k=ws.indexOf(lw)-1;k>=0;k--)if(!isSide(ws[k])){p=ws[k];break}
+  return p&&p.reveal&&l.sync&&!revealSeen(p,l)?p.id:lw.id}   // the newest week, or the reveal before it they haven't watched yet
 function spoilerHidden(l=league()){   // weeks this phone mustn't see yet: whatever came after the latest reveal it hasn't watched (current season only)
   if(!l||!l.sync)return null;const ws=newestOf(l).data.weeks;const lw=lastMain(ws);if(!lw)return null;let p=null;
   for(let k=ws.indexOf(lw)-1;k>=0;k--)if(!isSide(ws[k])){p=ws[k];break}
@@ -1379,7 +1463,9 @@ function spoilerHidden(l=league()){   // weeks this phone mustn't see yet: whate
 function render(){const hid=spoilerHidden();if(!hid||S!==newestOf(league()).data)return render0();
   if(hid.has(S.currentWeekId)){const p=prevMain(week(S.currentWeekId));if(p){S.currentWeekId=p.id;save()}}   // keep the page and the buttons on the same week
   const real=S.weeks;S.weeks=real.filter(w=>!hid.has(w.id));ALLTIME=null;try{render0()}finally{S.weeks=real}}
+const needWho=(l=league())=>!!(l&&l.sync&&l.sync.rev&&!l.me&&!l.guest&&S.members.some(m=>m.active));
 function render0(){
+  if(needWho())setTimeout(()=>{if(needWho()&&!document.getElementById('modal-root')._open)pickMe(league(),false,true)},250);   // who are you? a crew name, or Guest
   const v=VIEW;
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const main=document.getElementById('view');
@@ -1443,7 +1529,7 @@ function renderWeekInner(){
   if(UPCOMING)return pushCard()+renderUpcoming(w,c);
   return`${pushCard()}<div class="week-nav">
     <button class="icon-btn" data-act="week-prev" ${idx===0?'disabled':''}>‹</button>
-    <div class="week-title"><strong>${h(wkName(w))}</strong><input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date"></div>
+    <div class="week-title"><strong>${h(wkName(w))}</strong>${isAdmin()?`<input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date">`:w.date?`<small class="muted tiny">${h(new Date(w.date+'T12:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}))}</small>`:''}</div>
     <button class="icon-btn" data-act="week-next" ${idx===S.weeks.length-1?'disabled':''}>›</button>
   </div>${kindBar(w)}${renderVote(w,c,isLast)}${upcomingBtn(w,c)}${renderTicket(w,c)}${renderExtras(w)}`;   // the Bozo part leads, the slip below
 }
@@ -1509,7 +1595,7 @@ function renderLeg(w,l,cl){
   const flags=cl?[...(cl.clashes[l.mid]||[]).map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`),...(cl.off&&cl.off[l.mid]?[`⚠ ${h(offText(cl.off[l.mid],cl.rule))}`]:[]),...(cl.notd&&cl.notd[l.mid]?['⚠ Not an Anytime TD bet. This side parlay is ATTD only.']:[])]:[];
   const tag={hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status];
   const quick=isAdmin()&&l.status==='pending'&&!empty&&!open?`<div class="seg q">${['hit','miss','push'].map(st=>`<button class="${st}" data-act="status" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('')}</div>`:'';
-  const right=tag?`<span class="stag ${l.status}">${tag}</span>`:empty?`<span class="stag none">no pick yet</span>`:quick||`<span class="stag in">✓ pick in</span>`;
+  const right=tag?`<span class="stag ${l.status}">${tag}</span>`:empty?`<span class="stag none">no pick yet</span>`:mine&&unsent(w,l.mid)?`<button class="stag unsent" data-act="retry-pick">Not sent yet · Retry</button>`:quick||`<span class="stag in">✓ pick in</span>`;
   const marginTxt=(l.status==='hit'||l.status==='miss')&&l.margin!=null&&unit!=='none'?`${l.status==='hit'?'Covered by':'Missed by'} ${h(fmtMargin(l.margin,unit))}`:'';
   const needMargin=isAdmin()&&!open&&(l.status==='hit'||l.status==='miss')&&l.margin==null&&unit!=='none';
   const marginRow=`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${l.status==='hit'?'Covered by':'Missed by'}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal" ${isAdmin()?'':'disabled'}>`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit" ${isAdmin()?'':'disabled'}>${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`;
@@ -1636,7 +1722,7 @@ function ticketFoot(w,c){
   const priced=!c.missingOdds&&c.n>0;const b=member(w.bozoId);
   return`<div class="foot-grid">
     <div><small>Parlay</small><b class="mono" id="f-odds">${c.n?amer(c.dec):'—'}</b></div>
-    <div><small>Stake</small><b class="mono">$<input type="number" class="inline-num" value="${c.stake}" min="0" step="1" data-bind="week|${w.id}|stake" inputmode="numeric"></b></div>
+    <div><small>Stake</small><b class="mono">$${isAdmin()?`<input type="number" class="inline-num" value="${c.stake}" min="0" step="1" data-bind="week|${w.id}|stake" inputmode="numeric">`:c.stake}</b></div>
     <div><small>${c.result==='won'?'Paid':'To win'}</small><b class="mono ${c.result==='won'?'good':''}" id="f-win">${priced?fmt$(c.potential):'—'}</b></div>
     <div><small>Each</small><b class="mono" id="f-each">${priced?fmt$(c.potential/c.n):'—'}</b></div>
   </div>
@@ -1669,7 +1755,7 @@ const IDB={open(){return new Promise((res,rej)=>{if(!('indexedDB'in window))retu
   async get(k){const db=await this.open();try{return await new Promise((res,rej)=>{const r=db.transaction('pending').objectStore('pending').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})}finally{db.close()}},
   async del(k){const db=await this.open();try{return await new Promise((res,rej)=>{const t=db.transaction('pending','readwrite');t.objectStore('pending').delete(k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}finally{db.close()}}};
 const pendKey=(l,w,mid=l.me)=>`pend:${l.sync?.id||l.id}:${w.id}:${mid||''}`;
-async function loadPending(){try{const l=league();if(!l.sync||!S.weeks.length||!l.me){pendingUp=null;return}const w=currentWeek();const p=await IDB.get(pendKey(l,w));const st=w.sub?.[l.me];const vidAt=st&&st.video&&typeof st.video==='object'&&!st.video.deleted?Date.parse(st.video.at||0):0;const done=!!(p&&vidAt&&vidAt>=(p.at||0));   // a finished video newer than the pending one means it went through after all
+async function loadPending(){try{const l=league();if(!l.sync||!S.weeks.length||!l.me){pendingUp=null;return}const w=lastMain(newestOf(l).data.weeks)||currentWeek();const p=await IDB.get(pendKey(l,w));const st=w.sub?.[l.me];const vidAt=st&&st.video&&typeof st.video==='object'&&!st.video.deleted?Date.parse(st.video.at||0):0;const done=!!(p&&vidAt&&vidAt>=(p.at||0));   // a finished video newer than the pending one means it went through after all
   const stale=!!(p&&Date.now()-(p.at||0)>2*86400e3);
   if(p&&p.file&&!done&&!stale&&p.mid===l.me){if(!pendingUp||pendingUp.key!==p.key){pendingUp={...p,weekId:w.id};if(!quiet())render()}}else{if(p&&(done||stale)){try{await IDB.del(pendKey(l,w))}catch(e){}}pendingUp=null}}catch(e){pendingUp=null}}
 const mb=n=>Math.round(n/1048576);
@@ -1678,7 +1764,7 @@ function expectedVoters(w,c){return c.legs.map(x=>x.mid).filter(mid=>!(w.skip&&w
 async function sendSub(l,w,cid){setSyncDot('busy');
   try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:cid,memberId:l.me}});subEdit.delete(w.id);takeState(l,d);save();render();setSyncDot('ok');toast(w.reveal?'That was the last one — the votes are in':'Vote sealed. Now the video.','good')}
   catch(e){setSyncDot('bad');toast('Vote didn\'t go through: '+e.message,'bad')}}
-async function uploadVideo(l,w,file,resume){
+async function uploadVideo(l,w,file,resume,replace){
   const max=(l.limits&&l.limits.videoMax)||400*1048576;if(!file)return;
   if(!resume){
     if(!/^video\//.test(file.type||'')&&!/\.(mp4|mov|m4v|webm)$/i.test(file.name||'')){modal({title:'That isn\'t a video',body:`<p>The file you picked (${h(file.name||'unnamed')}) doesn\'t look like a video. Pick the clip from your camera roll or record a new one.</p>`,actions:[{label:'OK',cls:'primary'}]});return}
@@ -1688,11 +1774,13 @@ async function uploadVideo(l,w,file,resume){
   const bar=()=>{const b=document.getElementById('upbar');const t=document.getElementById('uplabel');const pc=document.getElementById('uppct');if(b)b.style.width=upl.pct+'%';if(t)t.textContent=upl.label;if(pc)pc.textContent=upl.pct+'%'};
   const hdr={'Content-Type':'application/octet-stream','X-BP-Key':l.sync.key,'X-BP-Me':l.meKey||'','X-BP-As':l.sync.role==='admin'&&l.me?l.me:''};
   upCancel=false;let lock=null;try{lock=await navigator.wakeLock?.request('screen')}catch(e){}
-  try{let key,ps,have=new Set();
+  let key=null;try{let ps,have=new Set();
     if(resume){const st=await api(l,'/video/status?key='+encodeURIComponent(resume.key));
       if(st.done){try{await IDB.del(pendKey(l,w))}catch(e){}pendingUp=null;upl=null;await pull(l,false,true);render();toast('✓ That video had already made it','good');return}
-      if(!st.alive){await IDB.del(pendKey(l,w)).catch(()=>{});pendingUp=null;throw new Error('that upload expired — pick the video again')}key=st.key;ps=st.partSize;have=new Set(st.parts||[])}
-    else{const st=await api(l,'/video/start',{method:'POST',body:{seasonId:s.id,weekId:w.id,size:file.size,type:file.type||'video/mp4',memberId:l.me}});key=st.key;ps=st.partSize;try{await IDB.put(pendKey(l,w),{key,file,mid:l.me,weekId:w.id,size:file.size,name:file.name||'',at:Date.now()})}catch(e){}}
+      if(!st.alive){await IDB.del(pendKey(l,w)).catch(()=>{});pendingUp=null;throw new Error(st.replaced?`you started a different video from your ${st.replaced.device||'other device'}, so this one was dropped`:'that upload expired — pick the video again')}key=st.key;ps=st.partSize;have=new Set(st.parts||[])}
+    else{let st;try{st=await api(l,'/video/start',{method:'POST',body:{seasonId:s.id,weekId:w.id,size:file.size,type:file.type||'video/mp4',memberId:l.me,dev:DEV_ID,device:deviceName(),...(replace?{replace:true}:{})}})}
+      catch(e){if(e.status===409&&e.data&&e.data.inflight){upl=null;render();if(await askReplace(e.data.inflight))return uploadVideo(l,w,file,null,true);return}throw e}   // already uploading from their other device
+      key=st.key;ps=st.partSize;try{await IDB.put(pendKey(l,w),{key,file,mid:l.me,weekId:w.id,size:file.size,name:file.name||'',at:Date.now()})}catch(e){}}
     const total=Math.ceil(file.size/ps);const parts=[];const partUrl=`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/video/part`;
     for(let n=1;n<=total;n++){
       if(have.has(n)){parts.push({partNumber:n});continue}
@@ -1703,16 +1791,54 @@ async function uploadVideo(l,w,file,resume){
     upl.label='Finishing…';bar();
     const d=await api(l,'/video/finish',{method:'POST',body:{seasonId:s.id,weekId:w.id,key,uploadId:'do',parts,type:file.type||'video/mp4',memberId:l.me}});
     try{await IDB.del(pendKey(l,w))}catch(e){}pendingUp=null;upl=null;applyState(l,d);save();render();toast(week(w.id)?.reveal?'That was the last one — the votes are in':'✓ Video uploaded','good')}
-  catch(e){upl=null;try{pendingUp=await IDB.get(pendKey(l,w));if(pendingUp)pendingUp.weekId=w.id}catch(e2){pendingUp=null}render();if(e.message==='cancelled'){toast('Upload paused — resume it any time from the vote card');return}modal({title:pendingUp?'Upload stopped partway':'Upload didn\'t go through',body:`<p>${h(e.message)}.</p><p>${pendingUp?'Your video is saved on this phone. Tap <b>Resume the upload</b> on the vote card and keep the app open until it says uploaded.':'Nothing was uploaded. Pick the video again to retry.'}</p>`,actions:[{label:'OK',cls:'primary'}]})}
+  catch(e){upl=null;
+    if(key&&/no such upload/.test(e.message||'')){try{const st=await api(l,'/video/status?key='+encodeURIComponent(key));if(st.replaced){await IDB.del(pendKey(l,w)).catch(()=>{});pendingUp=null;render();modal({title:'Replaced from your other device',body:`<p>You started a different video from your ${h(st.replaced.device||'other device')}, so this one stopped. Nothing else to do here.</p>`,actions:[{label:'OK',cls:'primary'}]});return}}catch(x){}}
+    try{pendingUp=await IDB.get(pendKey(l,w));if(pendingUp)pendingUp.weekId=w.id}catch(e2){pendingUp=null}render();if(e.message==='cancelled'){toast('Upload paused — resume it any time from the vote card');return}modal({title:pendingUp?'Upload stopped partway':'Upload didn\'t go through',body:`<p>${h(e.message)}.</p><p>${pendingUp?'Your video is saved on this phone. Tap <b>Resume the upload</b> on the vote card and keep the app open until it says uploaded.':'Nothing was uploaded. Pick the video again to retry.'}</p>`,actions:[{label:'OK',cls:'primary'}]})}
   finally{try{await lock?.release()}catch(e){}}
 }
+function askReplace(x){const pct=x.size?Math.round((x.got||0)/x.size*100):0;return new Promise(res=>modal({title:`Already uploading from your ${x.device||'other device'}`,body:`<p>Your video is on its way up from your <b>${h(x.device||'other device')}</b>: ${pct}% so far, started ${h(new Date(x.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}.</p><p>Easiest: finish it there. Or upload this one instead, which stops the ${h(x.device||'other')} upload.</p>`,
+  actions:[{label:`Keep the ${x.device||'other'} one`,cls:'ghost',onClick:()=>res(false)},{label:'Upload this one instead',cls:'primary',onClick:()=>res(true)}],onClose:()=>res(false)}))}
 function videoUrl(l,w,mid){const s=season(l);const k=l.sync.role==='admin'&&l.shareKey?l.shareKey:l.sync.key;return`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/video?season=${encodeURIComponent(s.id)}&week=${encodeURIComponent(w.id)}&member=${encodeURIComponent(mid)}&k=${encodeURIComponent(k)}`}
-function rvKey(w,l=league(),R){return'bp-rv:'+(l.sync?.id||l.id)+':'+w.id+(R===2?':2':'')}
-function rvGet(w,l,R){try{return JSON.parse(localStorage.getItem(rvKey(w,l||league(),R)))||{i:-1,f:false}}catch(e){return{i:-1,f:false}}}
-function rvSet(w,v,R){try{localStorage.setItem(rvKey(w,league(),R),JSON.stringify(v))}catch(e){}}
 const rvOf=(w,R)=>R===2?(w.revote&&w.revote.reveal):w.reveal;
-// has THIS device watched the reveal through to the vote board? nothing to watch counts as seen
-function revealSeen(w,l){if(!w||!w.reveal)return true;if(rvGet(w,l).i<w.reveal.order.length)return false;const r2=w.revote&&w.revote.reveal;return!r2||rvGet(w,l,2).i>=r2.order.length}   // a revote has to be watched too
+const REPLAY=new Map();   // '<weekId>|<round>' → {i,f}: a rewatch on this screen only, never changes what the person has seen
+const rvTop=(w,R)=>{const r=rvOf(w,R);return r?2*(r.order.length+1):0};
+const replaying=(w,l=league())=>!!w&&[1,2].some(R=>REPLAY.has(w.id+'|'+R)&&rvOf(w,R)&&rvStep(w,l,R)>=rvTop(w,R));   // a rewatch of something already seen
+function seasonOfWeek(l,w){return(l.seasons||[]).find(sn=>sn.data&&(sn.data.weeks.includes(w)||sn.data.weeks.some(x=>x.id===w.id)))||season(l)}
+const rvK=(l,w,R)=>seasonOfWeek(l,w).id+'|'+w.id+'|'+(R===2?2:1);
+const stepOf=v=>2*(v.i+1)+(v.f?1:0),fromStep=n=>({i:Math.floor(n/2)-1,f:n%2===1});   // 0 = not started … 2·(votes+1) = on the vote board
+function rvStep(w,l,R){const r=rvOf(w,R);if(!r)return 0;const e=l.person&&l.person.rv&&l.person.rv[rvK(l,w,R)];return e&&e.at===r.at?e.s:0}   // how far the PERSON has watched, on any of their devices
+function rvGet(w,l,R){l=l||league();const rp=REPLAY.get(w.id+'|'+(R===2?2:1));return rp&&rvStep(w,l,R)>=rvTop(w,R)?{...rp}:fromStep(rvStep(w,l,R))}
+function rvSet(w,v,R){const l=league();const r=rvOf(w,R);if(!r)return;const rk=w.id+'|'+(R===2?2:1);
+  if(REPLAY.has(rk)&&rvStep(w,l,R)>=rvTop(w,R)){REPLAY.set(rk,{i:v.i,f:!!v.f});return}   // a rewatch moves only this screen
+  const n=stepOf(v);if(n<=rvStep(w,l,R))return;const k=rvK(l,w,R);if(n>=2*(r.order.length+1)&&currentWeek()===w)BROWSED=true;   // finished it here: stay on its board until This Week
+  l.person={...(l.person||{}),rv:{...((l.person&&l.person.rv)||{}),[k]:{at:r.at,s:n}}};(l.personPend=l.personPend||{})[k]={at:r.at,s:n};save();sendPerson(l)}
+// has this PERSON watched the reveal through to the vote board (on any device)? nothing to watch counts as seen
+function revealSeen(w,l){if(!w||!w.reveal)return true;l=l||league();if(rvStep(w,l,1)<2*(w.reveal.order.length+1))return false;const r2=w.revote&&w.revote.reveal;return!r2||rvStep(w,l,2)>=2*(r2.order.length+1)}   // a revote has to be watched too
+function curRevealAt(l,k){const[sid,wid,R]=k.split('|');const sn=(l.seasons||[]).find(x=>x.id===sid);const w=sn&&sn.data.weeks.find(x=>x.id===wid);const r=w&&rvOf(w,+R);return r&&r.at}
+function mergePerson(l,p){   // the server's copy of the person, plus anything this device watched that hasn't reached it yet
+  if(!p)return false;const pend=l.personPend||{};const rv={...(p.rv||{})};
+  for(const[k,e]of Object.entries(pend)){const sv=rv[k];if(e.at!==curRevealAt(l,k)){delete pend[k];continue}if(sv&&sv.at===e.at&&sv.s>=e.s){delete pend[k];continue}rv[k]=e}
+  const nx={...p,rv};const was=JSON.stringify(l.person||null);l.person=nx;l.personPend=pend;return was!==JSON.stringify(nx)}
+const personT={};
+function hello(l){if(!l||!l.sync||!l.me)return;const k='bp-hello:'+l.sync.id+':'+l.me;let last=0;try{last=+localStorage.getItem(k)||0}catch(e){}const known=l.person&&l.person.devices&&l.person.devices[DEV_ID];
+  if(known&&Date.now()-last<86400e3)return;try{localStorage.setItem(k,String(Date.now()))}catch(e){}
+  api(l,'/me',{method:'POST',body:{hello:{dev:DEV_ID,name:deviceName(),app:APP_KIND}}}).then(d=>{if(mergePerson(l,d.person)){save();softRender()}}).catch(()=>{try{localStorage.removeItem(k)}catch(e){}})}
+function sendPerson(l,now){if(!l.sync||!l.me)return;clearTimeout(personT[l.id]);personT[l.id]=setTimeout(()=>flushPerson(l),now?0:700)}
+async function flushPerson(l,leaving){const pend=l.personPend||{};if(!l.sync||!l.me||!Object.keys(pend).length)return;const body={rv:{...pend}};
+  if(leaving){try{fetch((l.sync.url||SYNC_URL)+'/leagues/'+l.sync.id+'/me',{method:'POST',keepalive:true,headers:hdrs(l),body:JSON.stringify(body)})}catch(e){}return}   // the app is going to the background
+  try{const d=await api(l,'/me',{method:'POST',body});if(mergePerson(l,d.person))save()}catch(e){}}   // no signal: it goes with the next pull (the reply is our own echo: nothing to re-land)
+function rvAhead(l,p){if(!p||!p.rv)return false;for(const[k,e]of Object.entries(p.rv)){const cur=curRevealAt(l,k);if(!cur||e.at!==cur)continue;const m=l.person&&l.person.rv&&l.person.rv[k];if(!m||m.at!==e.at||e.s>m.s)return true}return false}   // watched further on another device
+function afterPerson(l){   // what the person has seen changed (maybe on another device): land where they would land there
+  if(league()===l)ALLTIME=null;const nw=newestOf(l);if(!nw)return;const cur=nw.data.weeks.find(w=>w.id===nw.data.currentWeekId);
+  if(!BROWSED&&!replaying(cur,l)){const hw=homeWeekId(l,nw);if(hw)nw.data.currentWeekId=hw}
+  if(league()===l){S=season().data;softRender()}}
+function migrateRv(){   // reveal progress this device kept before it followed the person: hand it over once
+  try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('bp-rv:'))ks.push(k)}if(!ks.length)return;
+    for(const k of ks){const[,lid,wid,two]=k.split(':');const l=DB.leagues.find(x=>(x.sync?.id||x.id)===lid);let v=null;try{v=JSON.parse(localStorage.getItem(k)||'null')}catch(e){}
+      const sn=l&&l.seasons.find(x=>x.data.weeks.some(w=>w.id===wid));const w=sn&&sn.data.weeks.find(x=>x.id===wid);const R=two==='2'?2:1;const r=w&&rvOf(w,R);
+      if(r&&v&&typeof v.i==='number'){const n=stepOf(v);const key=sn.id+'|'+wid+'|'+R;if(n>rvStep(w,l,R)){l.person={...(l.person||{}),rv:{...((l.person&&l.person.rv)||{}),[key]:{at:r.at,s:n}}};(l.personPend=l.personPend||{})[key]={at:r.at,s:n}}}
+      if(l)localStorage.removeItem(k)}   // another app on this site owns the rest: leave them for it
+    save()}catch(e){}}
 function takeState(l,d){if(isAdmin(l)&&(l.sync.dirty||pushT)){setTimeout(()=>pull(l,false,true),900);return}applyState(l,d)}   // unsent commissioner edits go up first, then the league comes down
 async function adminCall(path,extra,okMsg){const l=league();const w=currentWeek();setSyncDot('busy');
   try{const d=await api(l,path,{method:'POST',body:{seasonId:season(l).id,weekId:w.id,...extra}});takeState(l,d);save();render();setSyncDot('ok');if(okMsg)toast(okMsg,'good')}
@@ -1726,7 +1852,7 @@ function renderRevoteBallot(w,c){   // just a vote among the tied: no video, sea
   const mine=me?sub[me]:null;const iVote=!!me&&exp.includes(me);const editing=subEdit.has(w.id+':2');const names=rv.cands.map(id=>h(member(id)?.name||'?')).join(' vs ');
   const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b><span class="muted tiny">sealed until everyone's in</span></div><div class="subavs">${exp.map(mid=>{const m=member(mid);const ok=inn(mid);return`<span class="subav ${ok?'ok':''}" title="${h(m?.name||'')}: ${ok?'in':'not yet'}"><span class="avatar sm" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><i>${ok?'✓':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${missing.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}</div>`;
   let yours='';
-  if(!me)yours=`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
+  if(!me)yours=l.guest?`<p class="muted tiny" style="margin:0">${isAdmin()?'You\'re not playing in this league.':'👀 You\'re watching as a guest.'} <a href="#" data-act="pick-me">${isAdmin()?'I\'m playing':'I\'m in the crew'}</a></p>`:`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
   else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${rv.skip?.[me]?'The commissioner skipped you for the revote.':'No leg this week for you, so no vote. Sit tight for the reveal.'}</p>`;
   else if(mine&&mine.candidateId&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> Your revote: ${spoiler(mine.candidateId,w.id+':2')}. <button class="btn sm ghost" data-act="change-revote">Change</button></div>`;
   else yours=`<div class="pd-sub" style="margin:12px 0 6px">Your revote</div><div class="cands">${rv.cands.map(id=>{const m=member(id);const lg=c.legs.find(x=>x.mid===id);const on=mine&&mine.candidateId===id;return`<div class="cand ${on?'sel':''}" data-act="revote-cand" data-mid="${id}"><div class="avatar" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</div><div class="cand-body"><b>${h(m?.name||'?')}${id===me?' (you)':''}</b><small>${lg&&lg.text?betChip(lg.text,lg.teams):''}</small></div><span class="chk ${on?'on':''}">${on?'✓':''}</span></div>`}).join('')}</div>${editing?`<button class="btn ghost block sm" data-act="change-revote-done">Done changing</button>`:''}`;
@@ -1743,7 +1869,7 @@ function renderSealedVote(w,c,el,reason){
   const mine=me?st(me):null;const iVote=!!me&&exp.includes(me);const editing=subEdit.has(w.id);
   const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b><span class="muted tiny">sealed until everyone's in</span></div><div class="subavs">${exp.map(mid=>{const m=member(mid);const x=st(mid);const ok=x.voted&&x.video;return`<span class="subav ${ok?'ok':x.voted||x.video?'half':''}" title="${h(m.name)}: ${ok?'in':x.video?'video in, no vote yet':x.voted?'voted, no video yet':'nothing yet'}"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><i>${ok?'✓':x.voted||x.video?'½':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${missing.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${skipped.length?`<small class="muted">Skipped: ${skipped.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}</div>`;
   let yours='';
-  if(!me)yours=`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
+  if(!me)yours=l.guest?`<p class="muted tiny" style="margin:0">${isAdmin()?'You\'re not playing in this league.':'👀 You\'re watching as a guest.'} <a href="#" data-act="pick-me">${isAdmin()?'I\'m playing':'I\'m in the crew'}</a></p>`:`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
   else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${w.skip?.[me]?'The commissioner skipped you this week.':'No leg this week for you, so no vote this week. Sit tight for the reveal.'}</p>`;
   else if(mine.voted&&mine.video&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> ${mine.cand?`Your vote: ${spoiler(mine.cand,w.id)}. Video uploaded.`:'Your vote and video are sealed.'} <button class="btn sm ghost" data-act="change-sub">Change</button></div>`;
   else{
@@ -1754,7 +1880,8 @@ function renderSealedVote(w,c,el,reason){
     <div class="cands" ${showBallot?'':'hidden'}>${el.list.map(id=>{const m=member(id);const lg=c.legs.find(x=>x.mid===id);const sub=lg.status==='miss'?(lg.margin!=null?`missed by ${fmtMargin(lg.margin,lg.unit)}`:'missed'):lg.status==='push'?'pushed':'hit';const self=id===me;const on=mine.cand===id;
       return`<div class="cand ${on?'sel':''}" data-act="pick-cand" data-mid="${id}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)}${self?' (you)':''} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${lg.text?betChip(lg.text,lg.teams):''}</small></div><span class="chk ${on?'on':''}">${on?'✓':''}</span></div>`}).join('')}</div>
     <div class="pd-sub" style="margin:12px 0 6px">2 · Your video ${mine.video?'<span class="good">✓ in</span>':''}</div>
-    <div class="vidbox ${mine.voted&&!mine.video?'hot':''}">${(()=>{const pendNewer=!!(pendingUp&&(!mine.video||!(w.sub?.[me]?.video?.at)||Date.parse(w.sub[me].video.at)<(pendingUp.at||0)));return upl?`<div class="upbox"><b>Uploading your video… <span id="uppct">${upl.pct}%</span></b><div class="progress"><div id="upbar" style="width:${upl.pct}%"></div></div><small id="uplabel">${h(upl.label)}</small><small class="warnline">Keep the app open until it says uploaded.</small><button class="btn sm ghost" data-act="cancel-upload">Pause</button></div>`
+    <div class="vidbox ${mine.voted&&!mine.video?'hot':''}">${(()=>{const pendNewer=!!(pendingUp&&(!mine.video||!(w.sub?.[me]?.video?.at)||Date.parse(w.sub[me].video.at)<(pendingUp.at||0)));const vAt=Date.parse(w.sub?.[me]?.video?.at||0)||0;const away=!upl&&!pendingUp&&(l.person?.uploads||[]).find(u=>u.week===w.id&&u.dev!==DEV_ID&&Date.parse(u.at)>vAt);return upl?`<div class="upbox"><b>Uploading your video… <span id="uppct">${upl.pct}%</span></b><div class="progress"><div id="upbar" style="width:${upl.pct}%"></div></div><small id="uplabel">${h(upl.label)}</small><small class="warnline">Keep the app open until it says uploaded.</small><button class="btn sm ghost" data-act="cancel-upload">Pause</button></div>`
+      :away?`<div class="upbox warn"><b>Your video is uploading from your ${h(away.device||'other device')}</b><small>${away.size?Math.round((away.got||0)/away.size*100)+'% so far · ':''}started ${h(new Date(away.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}</small><small>Finish it on your ${h(away.device||'other device')}${mine.video?'. Your earlier video counts until it lands':''}. Or choose a different video here, which stops that upload.</small><label class="btn ghost block sm">Choose a different video<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
       :mine.video&&!pendNewer?`<div class="row between"><span>✓ Video uploaded${mine.cand?'':' — now pick a name above'}</span><label class="btn sm ghost">Replace<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
       :pendingUp?`<div class="upbox warn"><b>Your video didn't finish uploading</b><small>${pendingUp.size?mb(pendingUp.size)+' MB · ':''}picked ${h(new Date(pendingUp.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}</small><button class="btn primary block" data-act="resume-upload">↑ Resume the upload</button><label class="btn ghost block sm">Choose a different video<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
       :`<label class="btn primary block">🎥 Record or choose your vote video<input type="file" id="vidIn" accept="video/*" hidden></label><small class="muted tiny">Say who you're voting for and why. Up to ${mb(max)} MB: several minutes at 1080p, about 2 minutes at 4K. Nobody sees it until everyone's in.</small>`})()}</div>
@@ -2016,7 +2143,7 @@ function renderReveal(w,c,R=1){
 function renderVote(w,c,isLast){
   if(isSide(w))return'';
   const next=nextMain(w);
-  if(next&&!revealSeen(w)){const el0=eligible(w);return renderSealedVote(w,c,el0,{miss:'Only the people who missed were on the ballot.',push:'Nobody missed — the pushes were on the ballot.',all:'Everyone hit. Everyone was on the ballot.'}[el0.reason]||'')}
+  if(next&&(!revealSeen(w)||replaying(w))){const el0=eligible(w);return renderSealedVote(w,c,el0,{miss:'Only the people who missed were on the ballot.',push:'Nobody missed — the pushes were on the ballot.',all:'Everyone hit. Everyone was on the ballot.'}[el0.reason]||'')}
   const reopen=isAdmin()&&next&&next===lastWeek()&&w.crowned&&w.crowned.weekId===next.id&&calc(next).legs.every(x=>x.status==='pending')?`<button class="btn ghost block sm" data-act="unreveal">Reopen the vote (removes ${h(wkName(next))} while it's untouched)</button>`:'';
   if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div>${randomCard(w)}${w.reveal?`<div class="pd-sub" style="margin:12px 0 6px">How the vote went${w.revote?' · round 1':''}</div>${voteBoard(w,w.reveal)}${w.revote&&w.revote.reveal?`<div class="pd-sub" style="margin:12px 0 6px">The revote</div>${voteBoard(w,w.revote.reveal,2)}`:''}<button class="btn ghost block sm" data-act="rv-restart" data-wid="${w.id}">↺ Watch the reveal again</button>`:''}${reopen}</section>`}
   if(!c.n)return'';
@@ -2032,7 +2159,7 @@ function renderVote(w,c,isLast){
   return`<section class="card vote next"><h3>${h(wkName(w))} is in the books. Who's the ${h(nextName(w))} Bozo?</h3><p class="muted tiny">${reason} ${votingOpen?`Everyone votes from their own phone${isAdmin()?', then you crown the winner':''}. Send your video in the chat as usual. ${voted}/${voters} votes in.`:synced&&!isAdmin()?`Send your video in the chat as usual — the commissioner tallies the votes here.`:`Tap + as each person votes, then crown the winner to open ${h(nextName(w))}.`}</p>
     <div class="cands">${el.list.map(id=>{const m=member(id);const l=c.legs.find(x=>x.mid===id);const v=votes[id]||0;
       const sub=l.status==='miss'?(l.margin!=null?`missed by ${fmtMargin(l.margin,l.unit)}`:'missed'):l.status==='push'?'pushed':'hit';
-      return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${l.text?betChip(l.text,l.teams):''}</small>${synced&&Object.keys(ballots).some(v=>ballots[v]===id)?`<div class="voters">votes: ${Object.keys(ballots).filter(v=>ballots[v]===id).map(v=>h(member(v)?.name||'?')).join(', ')}</div>`:''}</div>${!manual?`<div class="tally"><b class="mono">${cnt(id)}</b>${votingOpen&&me?`<button class="btn sm ${myVote===id?'voted':''}" data-act="cast-vote" data-mid="${id}">${myVote===id?'✓ Voted':'Vote'}</button>`:''}</div>`:`<div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${cnt(id)}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div>`}</div>`}).join('')}</div>
+      return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${l.text?betChip(l.text,l.teams):''}</small>${synced&&Object.keys(ballots).some(v=>ballots[v]===id)?`<div class="voters">votes: ${Object.keys(ballots).filter(v=>ballots[v]===id).map(v=>h(member(v)?.name||'?')).join(', ')}</div>`:''}</div>${!manual?`<div class="tally"><b class="mono">${cnt(id)}</b>${votingOpen&&me?`<button class="btn sm ${myVote===id?'voted':''}" data-act="cast-vote" data-mid="${id}">${myVote===id?'✓ Voted':'Vote'}</button>`:''}</div>`:isAdmin()?`<div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${cnt(id)}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div>`:`<div class="tally"><b class="mono">${cnt(id)}</b></div>`}</div>`}).join('')}</div>
     ${votingOpen&&!me?`<button class="btn block sm" data-act="pick-me">Tell the app who you are to vote</button>`:''}
     ${isAdmin()?`<div class="vote-actions">
       ${leaders.length===1?`<button class="btn primary block" data-act="crown" data-mid="${leaders[0]}">🤡 Crown ${h(member(leaders[0]).name)} · start ${h(nextName(w))}</button>`
@@ -2060,6 +2187,7 @@ function renderOnboard(){
   <button class="btn ghost block sm" data-act="sample">✨ Or load a sample season to poke around</button>`;
 }
 function renderFirstBozo(){
+  if(!isAdmin())return empty('Week 1 is almost here','The commissioner picks the first Bozo. The slip shows up here the moment they do.');
   const act=S.members.filter(m=>m.active);
   return`<div class="hero"><span class="big">🎩</span><h2>Who's Bozo first?</h2><p>Pick a volunteer, or let fate decide.</p></div>
   <div class="steps"><i class="on"></i><i class="on"></i></div>
@@ -2110,8 +2238,8 @@ const seasonYear=x=>parseInt(String(x.name).match(/\d{4}/)?.[0]||0);
 function newestSeason(){return[...league().seasons].sort((a,b)=>seasonYear(b)-seasonYear(a))[0]}
 function seasonOver(){const cur=season();return league().seasons.some(x=>x!==cur&&seasonYear(x)>seasonYear(cur))}
 function scopeBar(){const l=league();if(l.seasons.length<2)return'';const cur=season().id;return`<div class="scope seasons">${seasonSorted(l).reverse().map(x=>`<button class="${statScope==='season'&&x.id===cur?'on':''}" data-act="pick-season" data-sid="${x.id}">${h(x.name)}</button>`).join('')}<button class="${statScope==='all'?'on':''}" data-act="stat-scope" data-scope="all">All-time</button></div>`}
-function goNow(){UPCOMING=null;const l=league();l.activeSeason=newestOf(l).id;S=season().data;statScope='season';ALLTIME=null;
-  const cur=currentWeek(),last=lastWeek();if(last&&cur!==last&&revealSeen(cur,l))S.currentWeekId=last.id}
+function goNow(){UPCOMING=null;BROWSED=false;REPLAY.clear();const l=league();l.activeSeason=newestOf(l).id;S=season().data;statScope='season';ALLTIME=null;
+  const hw=homeWeekId(l,season(l));if(hw)S.currentWeekId=hw}
 function oldBanner(){const l=league();if(l.seasons.length<2||season().id===newestOf(l).id)return'';return`<div class="oldbanner"><span>Browsing the ${h(season().name)} season</span><button class="pillbtn" data-act="go-now">This week →</button></div>`}
 function renderStatsInner(){
   if(!S.weeks.length)return scopeBar()+empty('Nothing to crunch','Stats show up once Week 1 is graded.');
@@ -2203,10 +2331,10 @@ function closeCalls(per){
 /* ---- crew ---- */
 function renderLeagues(){
   const L=league();
-  return`<section class="card"><h3>Leagues</h3><div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;const n=l.seasons.length;return`<div class="mrow" style="${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${n} season${n===1?'':'s'}${on?' · active':''}</small></div>${on?(isAdmin(l)?`<button class="mini" data-act="rename-league" data-lid="${l.id}" title="Rename">✎</button>`:'')+(DB.leagues.length>1?`<button class="mini danger" data-act="delete-league" data-lid="${l.id}" title="${isAdmin(l)?'Delete league':'Leave league'}">×</button>`:''):`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>
+  return`<section class="card"><h3>Leagues</h3><div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;const n=l.seasons.length;return`<div class="mrow" style="${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${n} season${n===1?'':'s'}${on?' · active':''}${l.sync&&l.sync.dirty?' · <span style="color:var(--amber)">changes not sent yet</span>':''}</small></div>${on?(isAdmin(l)?`<button class="mini" data-act="rename-league" data-lid="${l.id}" title="Rename">✎</button>`:'')+(DB.leagues.length>1?`<button class="mini danger" data-act="delete-league" data-lid="${l.id}" title="${isAdmin(l)?'Delete league':'Leave league'}">×</button>`:''):`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}</div>`}).join('')}</div>
   <button class="btn block" data-act="new-league">＋ New league</button>
   <div class="linkbox" style="margin-top:8px"><input id="linkIn" placeholder="League link, or a code from your other device" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn" data-act="use-link">Go</button></div>
-  <button class="btn ghost block sm" style="margin-top:8px" data-act="link-make">📱 Link another device</button>
+  <button class="btn ghost block sm" style="margin-top:8px" data-act="link-make">📱 Link another device</button>${DB.acct?'<p class="muted tiny" style="margin-top:6px">Your leagues stay the same on every device you\'ve linked.</p>':''}
   <p class="muted tiny" style="margin-top:8px">A league is a group of people. Each league has its own seasons, and each season its own crew, weeks and stats.</p></section>
   ${isAdmin(L)?`<section class="card"><h3>${h(L.name)} · seasons</h3><div class="mlist">${seasonSorted(L).map(x=>{const on=x.id===L.activeSeason;return`<div class="mrow" style="${on?'border-color:rgba(0,113,227,.5)':''}"><div class="avatar" style="--c:${on?'var(--blue)':'#8e8e93'}">${h(String(x.name).slice(-2))}</div><div class="mbody"><b>${h(x.name)}</b><small>${seasonSummary(x)}${on?' · viewing':''}</small></div>${on?`<button class="mini" data-act="rename-season" data-sid="${x.id}" title="Rename">✎</button>${L.seasons.length>1?`<button class="mini danger" data-act="delete-season" data-sid="${x.id}" title="Delete season">×</button>`:''}`:`<button class="btn sm" data-act="switch-season" data-sid="${x.id}">Open</button>`}</div>`}).join('')}</div>
   <button class="btn block" data-act="new-season">＋ New season</button>
@@ -2218,21 +2346,22 @@ const siteFor=(l=league())=>l.sync?(Object.values(SHARE_SITES).find(x=>x.sync&&x
 function siteCard(){const l=league();const site=siteFor(l);if(!site||l.sync||site.sync)return'';return`<section class="card"><h3>League site</h3><p class="muted tiny" style="margin-bottom:10px">${h(site.url)}</p><p class="muted tiny">Publish this league to the cloud below and the site turns into the group's live app: everyone taps their name once, enters their own pick, votes with a video.</p></section>`}
 function activityHtml(l){
   const nm=id=>member(id)?.name||'Someone';const ev=(l.events||[]).slice().reverse().slice(0,20);const ups=Object.entries(l.uploads||{});
-  const text=e=>({claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`,'notify-on':`${nm(e.mid)} turned on notifications${e.detail?' ('+e.detail+')':''}`,revote:`${nm(e.mid)} voted in the revote`,nextpick:`${nm(e.mid)} entered next week's pick`,'nextpick-clear':`${nm(e.mid)} cleared next week's pick`,unreveal:'Vote reopened'})[e.type]||e.type;
+  const text=e=>({claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`,'notify-on':`${nm(e.mid)} turned on notifications${e.detail?' ('+e.detail+')':''}`,device:`${nm(e.mid)} added a device${e.detail?': '+e.detail:''}`,revote:`${nm(e.mid)} voted in the revote`,nextpick:`${nm(e.mid)} entered next week's pick`,'nextpick-clear':`${nm(e.mid)} cleared next week's pick`,unreveal:'Vote reopened'})[e.type]||e.type;
   const when=t=>new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   if(!ev.length&&!ups.length)return'';
-  return`<div class="pd-sub" style="margin:14px 0 6px">Recent activity</div>${ups.length?`<div class="evlist">${ups.map(([k,u])=>`<div class="evrow warn"><span class="mono tiny">${h(when(u.at))}</span><span>${h(nm(u.mid))} has an upload that never finished${u.size?' ('+mb(u.size)+' MB)':''} — they can resume it from their phone</span></div>`).join('')}</div>`:''}<div class="evlist">${ev.map(e=>`<div class="evrow ${/error|rejected/.test(e.type)?'bad':''}"><span class="mono tiny">${h(when(e.at))}</span><span>${h(text(e))}</span></div>`).join('')}</div>`;
+  return`<div class="pd-sub" style="margin:14px 0 6px">Recent activity</div>${ups.length?`<div class="evlist">${ups.map(([k,u])=>`<div class="evrow warn"><span class="mono tiny">${h(when(u.at))}</span><span>${h(nm(u.mid))} has an upload that never finished${u.size?' ('+mb(u.size)+' MB)':''}. They can resume it from their ${h(u.device||'phone')}</span></div>`).join('')}</div>`:''}<div class="evlist">${ev.map(e=>`<div class="evrow ${/error|rejected/.test(e.type)?'bad':''}"><span class="mono tiny">${h(when(e.at))}</span><span>${h(text(e))}</span></div>`).join('')}</div>`;
 }
 function renderShare(){
   const l=league();const me=l.me?member(l.me):null;
-  const who=`<div class="row between" style="margin-bottom:10px"><div class="chip-lg">${me?`<span class="avatar sm" style="--c:${me.color}">${h(initials(me.name))}</span><span>You are <b>${h(me.name)}</b></span>`:'<span class="muted">Who are you on this device?</span>'}</div><button class="btn sm" data-act="pick-me">${me?'Change':'Choose'}</button></div>${SHARE_MODE&&l.sync?(me&&l.meKey?`<button class="btn ghost block sm" style="margin-bottom:10px" data-act="link-make">📱 Use this on another device</button>`:`<button class="btn ghost block sm" style="margin-bottom:10px" data-act="link-enter">I have a code from my other device</button>`):''}`;
+  const myDevs=Object.entries((l.person&&l.person.devices)||{}).sort((a,b)=>String(b[1].last).localeCompare(String(a[1].last))).map(([id,x])=>h(x.name)+(id===DEV_ID?' (this one)':''));
+  const who=`<div class="row between" style="margin-bottom:${myDevs.length>1?4:10}px"><div class="chip-lg">${me?`<span class="avatar sm" style="--c:${me.color}">${h(initials(me.name))}</span><span>You are <b>${h(me.name)}</b></span>`:l.guest?`<span>👀 ${isAdmin(l)?'Not playing':'Watching as a guest'}</span>`:'<span class="muted">Who are you?</span>'}</div><button class="btn sm" data-act="pick-me">${me?'Change':l.guest?(isAdmin(l)?'I\'m playing':'I\'m in the crew'):'Choose'}</button></div>${me&&myDevs.length>1?`<p class="muted tiny" style="margin:0 0 10px">Signed in on your ${myDevs.join(', ')}</p>`:''}${SHARE_MODE&&l.sync?(me&&l.meKey?`<button class="btn ghost block sm" style="margin-bottom:10px" data-act="link-make">📱 Use this on another device</button>`:`<button class="btn ghost block sm" style="margin-bottom:10px" data-act="link-enter">I have a code from my other device</button>`):''}`;
   const site0=siteFor(l);
   if(!l.sync&&site0&&site0.sync)return`<section class="card"><h3>${h(l.name)} app</h3><p class="muted tiny" style="margin-bottom:10px">This league has its own app for the group at <b>${h(site0.url.replace('https://',''))}</b>. Paste your commissioner link here to run it from this device. If this device has results the league doesn't, you'll be asked which copy to keep.</p><div class="linkbox"><input id="linkIn" placeholder="Paste the commissioner link" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn primary" data-act="use-link">Connect</button></div></section>`;
   if(!l.sync)return`<section class="card"><h3>Share with the group</h3><p class="muted tiny" style="margin-bottom:10px">Publish this league to the cloud and everyone gets a link: they pick their name, enter their own pick each week and cast their Bozo vote from their phone. You stay the commissioner — grading, crowning and edits are yours.</p><button class="btn primary block" data-act="publish-league">☁️ Publish ${h(l.name)}</button></section>`;
   const link=shareLink(l);
   const f=l.features||{};const tog=(k,label,sub)=>`<div class="featrow" data-act="feature" data-f="${k}"><div><b>${label}</b><small>${sub}</small></div><span class="toggle ${f[k]?'on':''}"><i></i></span></div>`;
-  const site=siteFor(l);const primary=site?site.url:link;const claimRows=S.members.filter(m=>m.active).map(m=>{const cl=l.claims?.[m.id];return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="mbody"><b>${h(m.name)}${l.pushWho?.[m.id]?' 🔔':''}</b><small>${cl?`${h(cl.device||'phone')} · ${h(new Date(cl.at).toLocaleDateString([],{month:'short',day:'numeric'}))}`:'not yet'}</small></div>${cl?`<button class="btn sm ghost" data-act="reset-claim" data-mid="${m.id}">Reset</button>`:'<span class="muted tiny">—</span>'}</div>`}).join('');
-  return`<section class="card"><h3>Group</h3>${who}${pushBlock(l)}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only this device can grade and crown.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}${tog('notify','Phone notifications','A ping to everyone when the votes are in, plus a noon reminder to anyone who owes a pick or vote')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>${activityHtml(l)}`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
+  const site=siteFor(l);const primary=site?site.url:link;const claimRows=S.members.filter(m=>m.active).map(m=>{const cl=l.claims?.[m.id];return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="mbody"><b>${h(m.name)}${l.pushWho?.[m.id]?' 🔔':''}</b><small>${cl?`${h(((l.devs||{})[m.id]||[]).join(' · ')||cl.device||'phone')} · ${h(new Date(cl.at).toLocaleDateString([],{month:'short',day:'numeric'}))}`:'not yet'}</small></div>${cl?`<button class="btn sm ghost" data-act="reset-claim" data-mid="${m.id}">Reset</button>`:'<span class="muted tiny">—</span>'}</div>`}).join('');
+  return`<section class="card"><h3>Group</h3>${who}${pushBlock(l)}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only you can grade and crown, from any of your commissioner devices.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}${tog('notify','Phone notifications','A ping to everyone when the votes are in, plus a noon reminder to anyone who owes a pick or vote')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>${activityHtml(l)}`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
 }
 function renderCrew(){
   if(SHARE_MODE){const l=league();return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>{const cl=l.claims?.[m.id];return`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?(cl?'On the app':'Hasn\'t tapped their name yet'):'Benched'}${m.active&&cl&&pushWanted(l)&&l.pushWho?(l.pushWho[m.id]?' · 🔔 notifications on':' · 🔕 notifications off'):''}</small></div>${cl?'<span class="tag ok">joined</span>':''}</div>`}).join('')}</div></section><section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`}
@@ -2389,13 +2518,16 @@ const modalStack=[];let lockY=0;
 function lockScroll(){const b=document.body;if(b.classList.contains('locked'))return;lockY=window.scrollY;b.style.top=-lockY+'px';b.classList.add('locked')}
 function unlockScroll(){const b=document.body;if(!b.classList.contains('locked'))return;b.classList.remove('locked');b.style.top='';window.scrollTo({top:lockY,behavior:'instant'})}
 document.addEventListener('touchmove',e=>{const sc=e.target.closest?.('.scrim');if(sc&&!e.target.closest('.modal'))e.preventDefault()},{passive:false});
-function modal({title,body,actions=[],onOpen,stack,px}){
+function modal({title,body,actions=[],onOpen,stack,px,required,onClose}){
   const root=document.getElementById('modal-root');
-  if(stack&&root._open)modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal-body')?.scrollTop||0,px});else modalStack.length=0;
-  root.innerHTML=`<div class="scrim" data-act="modal-close"><div class="modal" role="dialog"><div class="modal-head"><h2>${h(title)}</h2><button class="mclose" data-act="modal-close-btn" aria-label="Close">×</button></div><div class="modal-body">${body}</div>${actions.length?`<div class="modal-actions">${actions.map((a,i)=>`<button class="btn ${a.cls||''}" data-act="modal-action" data-i="${i}">${h(a.label)}</button>`).join('')}</div>`:''}</div></div>`;
+  if(stack&&root._open)modalStack.push({html:root.innerHTML,actions:root._actions,scroll:root.querySelector('.modal-body')?.scrollTop||0,px,required:!!root._required,onClose:root._onClose});
+  else{modalStack.length=0;if(root._open&&root._onClose){const oc=root._onClose;setTimeout(oc,0)}}   // a question being replaced counts as closed
+  root._onClose=onClose||null;
+  root._required=!!required;
+  root.innerHTML=`<div class="scrim" ${required?'':'data-act="modal-close"'}><div class="modal" role="dialog"><div class="modal-head"><h2>${h(title)}</h2>${required?'':'<button class="mclose" data-act="modal-close-btn" aria-label="Close">×</button>'}</div><div class="modal-body">${body}</div>${actions.length?`<div class="modal-actions">${actions.map((a,i)=>`<button class="btn ${a.cls||''}" data-act="modal-action" data-i="${i}">${h(a.label)}</button>`).join('')}</div>`:''}</div></div>`;
   root._actions=actions;root._open=true;lockScroll();requestAnimationFrame(()=>root.firstElementChild?.classList.add('in'));onOpen&&onOpen(root);
 }
-function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root._actions=prev.actions;if(prev.px){pxNode=prev.px.node;pxMode=prev.px.mode}const m=root.querySelector('.modal-body');if(m)m.scrollTop=prev.scroll;return}root._open=false;unlockScroll();s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250)}
+function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root._actions=prev.actions;root._required=!!prev.required;root._onClose=prev.onClose||null;if(prev.px){pxNode=prev.px.node;pxMode=prev.px.mode}const m=root.querySelector('.modal-body');if(m)m.scrollTop=prev.scroll;return}root._open=false;root._required=false;{const oc=root._onClose;root._onClose=null;if(oc)setTimeout(oc,0)}unlockScroll();s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250);setTimeout(()=>{if(needWho()&&!root._open)pickMe(league(),false,true)},400)}   // still nobody picked (e.g. a code that didn't work): ask again
 function confirm2(title,body,label,fn,cls='danger'){modal({title,body:`<p>${body}</p>`,actions:[{label:'Cancel',cls:'ghost'},{label,cls,onClick:fn}]})}
 function toast(msg,cls=''){const r=document.getElementById('toast-root');const t=document.createElement('div');t.className='toast '+cls;t.textContent=msg;r.appendChild(t);requestAnimationFrame(()=>t.classList.add('in'));setTimeout(()=>{t.classList.remove('in');setTimeout(()=>t.remove(),320)},2600)}
 function spin(cands,onDone){
@@ -2433,9 +2565,9 @@ const ACT={
   'go-now'(){goNow();VIEW='week';save();render();window.scrollTo({top:0})},
   'use-link'(el){const box=el&&el.closest?el.closest('.linkbox'):null;const v=(box?box.querySelector('input'):document.getElementById('linkIn'))?.value||'';useLink(v)},
   'pick-season'(el){const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid)){l.activeSeason=el.dataset.sid;S=season().data}statScope='season';ALLTIME=null;xNode={};detailOpen=null;save();render()},
-  'week-prev'(){const i=S.weeks.indexOf(currentWeek());if(i>0){S.currentWeekId=S.weeks[i-1].id;save();render();loadPending()}},
-  'week-next'(){const i=S.weeks.indexOf(currentWeek());if(i<S.weeks.length-1){S.currentWeekId=S.weeks[i+1].id;save();render();loadPending()}},
-  'open-week'(el){const wid=el.dataset.wid;if(wid.includes('|')){const[sid,w]=wid.split('|');const l=league();if(l.seasons.find(x=>x.id===sid)){l.activeSeason=sid;S=season().data}S.currentWeekId=w}else S.currentWeekId=wid;VIEW='week';save();render();window.scrollTo({top:0,behavior:'smooth'})},
+  'week-prev'(){const i=S.weeks.indexOf(currentWeek());if(i>0){BROWSED=true;REPLAY.clear();S.currentWeekId=S.weeks[i-1].id;save();render();loadPending()}},
+  'week-next'(){const i=S.weeks.indexOf(currentWeek());if(i<S.weeks.length-1){BROWSED=true;REPLAY.clear();S.currentWeekId=S.weeks[i+1].id;save();render();loadPending()}},
+  'open-week'(el){BROWSED=true;REPLAY.clear();const wid=el.dataset.wid;if(wid.includes('|')){const[sid,w]=wid.split('|');const l=league();if(l.seasons.find(x=>x.id===sid)){l.activeSeason=sid;S=season().data}S.currentWeekId=w}else S.currentWeekId=wid;VIEW='week';save();render();window.scrollTo({top:0,behavior:'smooth'})},
   status(el){
     const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p)return;const st=el.dataset.st;const was=calc(w).result;
     segOpen.delete(el.dataset.mid);p.status=p.status===st?'pending':st;if(p.status==='push'||p.status==='pending')p.margin=null;
@@ -2482,19 +2614,25 @@ const ACT={
   sample(){const go=()=>{setS(sampleSeason());commit();toast('Sample season loaded — reset from Crew when you\'re ready','good')};if(S.weeks.length||S.members.length)confirm2('Replace current data?','Loading the sample overwrites what\'s here. Export a backup first if you want it.','Load sample',go,'primary');else go()},
   reset(){confirm2('Reset everything?','Wipes the crew, every week and all stats from this browser. Export a backup first if you want to keep it.','Reset',()=>{setS(fresh());commit();toast('Fresh slate')})},
   leagues(){if(SHARE_MODE)return;modal({title:'Leagues & seasons',body:`<div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;return`<div class="mrow" style="flex-wrap:wrap;${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${l.seasons.length} season${l.seasons.length===1?'':'s'}</small></div>${on?'<span class="tag bozo">Active</span>':`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}<div class="seasonchips">${seasonSorted(l).map(x=>`<button class="chip ${on&&x.id===l.activeSeason?'on':''}" data-act="switch-season" data-lid="${l.id}" data-sid="${x.id}">${h(x.name)}</button>`).join('')}</div></div>`}).join('')}</div>`,actions:[{label:'Close',cls:'ghost'},{label:'＋ New league',cls:'primary',onClick:()=>{ACT['new-league']();return false}}]})},
-  'switch-league'(el){DB.active=el.dataset.lid;S=season().data;ALLTIME=null;closeModal();save();render();toast(`Switched to ${league().name}`);window.scrollTo({top:0});if(league().sync)pull(league(),false,true)},
-  'switch-season'(el){if(el.dataset.lid)DB.active=el.dataset.lid;const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid))l.activeSeason=el.dataset.sid;S=season().data;ALLTIME=null;closeModal();save();render();toast(`${l.name} · ${season().name}`);window.scrollTo({top:0})},
+  'switch-league'(el){DB.active=el.dataset.lid;DB.activeAt=Date.now();if(league().sync)acctNote({active:{id:league().sync.id}});S=season().data;goNow();ALLTIME=null;closeModal();save();render();toast(`Switched to ${league().name}`);window.scrollTo({top:0});if(league().sync)pull(league(),false,true)},
+  'switch-season'(el){if(el.dataset.lid&&el.dataset.lid!==DB.active){DB.active=el.dataset.lid;DB.activeAt=Date.now();if(league().sync)acctNote({active:{id:league().sync.id}})}const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid))l.activeSeason=el.dataset.sid;S=season().data;ALLTIME=null;closeModal();save();render();toast(`${l.name} · ${season().name}`);window.scrollTo({top:0})},
   'new-league'(){modal({title:'New league',body:`<p>A fresh group with its own crew and seasons.</p><input id="lgName" placeholder="League name — e.g. Work guys" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n){toast('Give it a name','bad');return false}const d=fresh();const yr=String(new Date().getFullYear());d.season=yr+' NFL';const id=uid(),sid=uid();DB.leagues.push({id,name:n,seasons:[{id:sid,name:yr,data:d}],activeSeason:sid});DB.active=id;S=d;commit();toast(`${n} created — add the crew`);window.scrollTo({top:0})}}],onOpen:()=>setTimeout(()=>document.getElementById('lgName')?.focus(),80)})},
   'new-season'(){const l=league();const yr=String(Math.max(...l.seasons.map(x=>parseInt(x.name)||0),new Date().getFullYear()-1)+1);
     modal({title:`New ${h(l.name)} season`,body:`<p>Starts with this season's active crew and no weeks. Past seasons stay as they are.</p><input id="ssName" value="${h(yr)}" placeholder="Season name — e.g. 2024" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n){toast('Give it a name','bad');return false}if(l.seasons.find(x=>x.name===n)){toast('That season already exists','bad');return false}const d=fresh();d.season=/^\d{4}$/.test(n)?n+' NFL':n;d.stake=S.stake;d.members=S.members.filter(m=>m.active).map(m=>({...m}));const sid=uid();l.seasons.push({id:sid,name:n,data:d});l.activeSeason=sid;S=d;commit();toast(`${l.name} ${n} started`);window.scrollTo({top:0})}}],onOpen:()=>setTimeout(()=>document.getElementById('ssName')?.select(),80)})},
   'rename-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x)return;modal({title:'Rename season',body:`<input id="ssName" value="${h(x.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n)return false;x.name=n;if(/^\d{4}$/.test(n))x.data.season=n+' NFL';commit()}}]})},
   'delete-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x||l.seasons.length<2)return;confirm2(`Delete the ${x.name} season?`,`Removes ${x.data.weeks.length} week${x.data.weeks.length===1?'':'s'} of ${l.name} from this browser. Export a backup first if you might want it back.`,'Delete season',()=>{l.seasons=l.seasons.filter(y=>y!==x);l.activeSeason=seasonSorted(l)[0].id;S=season().data;commit();toast(`${x.name} deleted`)})},
-  'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;commit()}}]})},
-  'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;if(l.sync&&l.sync.role!=='admin'){confirm2(`Leave ${l.name}?`,'Removes it from this device only. Open the group link again to rejoin.','Leave',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit()});return}confirm2(`Delete ${l.name}?`,`Removes this league and all ${l.seasons.length} season${l.seasons.length===1?'':'s'} from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit();toast(`${l.name} deleted`)})},
+  'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;l.setDirty={...(l.setDirty||{}),name:Date.now()};commit()}}]})},
+  'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(!l||DB.leagues.length<2)return;const everywhere=DB.acct?'every device you\'ve linked':'this device';
+    const drop=()=>{DB.leagues=DB.leagues.filter(x=>x!==l);if(l.sync)acctNote({leagues:{[l.sync.id]:{gone:true}}});DB.active=DB.leagues[0].id;S=season().data;save();render()};
+    if(!l.sync){confirm2(`Delete ${l.name}?`,`Removes this league and all ${l.seasons.length} season${l.seasons.length===1?'':'s'}. Export a backup first if you might want it back.`,'Delete league',()=>{drop();toast(`${l.name} deleted`)});return}
+    if(l.sync.role!=='admin'){confirm2(`Leave ${l.name}?`,`Removes it from ${everywhere}. Open the group link again to rejoin.`,'Leave',()=>{drop();toast(`Left ${l.name}`)});return}
+    modal({title:`Remove ${l.name}?`,body:`<p><b>Remove from my devices</b> takes it off ${everywhere}. The league keeps going for everyone else, and your commissioner link brings it back.</p><p><b>Delete for everyone</b> ends it for the whole group: every season, pick and video. It can't be undone.</p>`,
+      actions:[{label:'Cancel',cls:'ghost'},{label:'Remove from my devices',cls:'primary',onClick:()=>{drop();toast(`${l.name} removed from your devices`)}},{label:'Delete for everyone',cls:'ghost danger',onClick:()=>{setTimeout(()=>confirm2(`Delete ${l.name} for everyone?`,`Everyone in ${l.name} loses it: all ${l.seasons.length} season${l.seasons.length===1?'':'s'}, every pick and every video. This can't be undone.`,'Delete for everyone',async()=>{try{await api(l,'',{method:'DELETE',body:{confirm:l.sync.id}});drop();toast(`${l.name} deleted for everyone`)}catch(e){toast('Couldn\'t delete it: '+e.message+'. Nothing changed.','bad')}}),60)}}]})},
   async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=(await navigator.serviceWorker.getRegistrations()).filter(r=>r.scope.startsWith(location.origin+location.pathname));const keep=!!(PUSH.sub||DB.leagues.some(x=>x.pushEp));await Promise.all(rs.map(r=>keep?r.update().catch(()=>{}):r.unregister()))}if(window.caches){const pre=CACHE_PREFIX;const ks=await caches.keys();await Promise.all(ks.filter(k=>k.startsWith(pre)).map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
   'pick-team'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p||!canEdit(el.dataset.mid))return;const sel=[...(p.teams||[])];
     modal({title:'Team logo',body:`<p class="tiny">Pick up to two teams for this leg. Auto-detected from the pick text unless you set it here.</p><div class="teamgrid" id="teamgrid">${Object.keys(TEAMS).map(a=>`<button class="tp ${sel.includes(a)?'on':''}" data-act="tp-toggle" data-abbr="${a}"><img src="${LOGO(a)}" alt="">${a}</button>`).join('')}</div>`,
-      actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit();const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===el.dataset.mid)sendPick(L,w,el.dataset.mid)}}]})},
+      actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);done()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];done()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);done()}}]});
+    function done(){const L=league();if(L.sync&&L.sync.role!=='admin'){save();render();if(L.me===el.dataset.mid)sendPick(L,w,el.dataset.mid)}else commit()}},
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
   'leg-open'(el,e){if(e&&e.target&&e.target.closest&&e.target.closest('input,select,textarea,label'))return;slipOpen.add(el.dataset.wid+'|'+el.dataset.mid);render();const t=document.querySelector(`[data-bind="pick|${el.dataset.wid}|${el.dataset.mid}|text"]`);if(t&&!t.value)t.focus()},
@@ -2512,7 +2650,7 @@ const ACT={
     modal({title:`☠️ ${m.name}`,body:`<p class="muted" style="margin:0 0 12px">${pkLine(p)}. Each one: the only miss on a slip everyone else hit.</p><div class="pk-list">${p.killers.map(k=>`<div class="pk-item"><div class="pk-top"><span class="mono muted tiny">${h(k.wk)}</span><span class="mono muted tiny">${k.odds!=null?fmtOdds(k.odds):''}</span></div>${betChip(k.text,k.teams)}${k.margin!=null||k.lost?`<div class="pk-bot">${k.margin!=null?`<span class="tiny bad">Missed by ${fmtMargin(k.margin,k.unit)}</span>`:''}${k.lost?`<span class="tiny muted">${fmt$0(k.lost)} that got away</span>`:''}</div>`:''}</div>`).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   'teams-all'(el){withStats(()=>{const{per,g}=stats();const mid=el.dataset.mid;const m=mid?member(mid):null;if(mid&&!m)return;const all=mostBet(m?(per[mid]||{}).byTeam:g.byTeam);
     modal({stack:!!m,title:m?`${m.name}: every team`:'Every team',body:`<p class="muted tiny" style="margin:0 0 10px">${m?`Every team ${h(m.name)} has bet on, most bet first. Tap one to see those bets.`:'How the group does when a slip touches each team, most bet first. Tap one to see everyone\'s record on it.'}</p><div class="typerows">${all.map(([a,o],i)=>statRow({label:NICK[a]||a,logo:a,rec:o,rank:i+1,act:m?'show-bets':'x-go',data:`data-node="${encNode(m?{team:a,mid}:{team:a})}"`,nav:!m})).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
-  async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,features:{picks:false,votes:false},clubName:l.clubName||'',mondayOk:!!l.mondayOk})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features={picks:false,votes:false};save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
+  async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,features:{picks:false,votes:false},clubName:l.clubName||'',mondayOk:!!l.mondayOk})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features={picks:false,votes:false};save();render();setSyncDot('ok');acctNote({leagues:{[d.id]:{key:d.adminKey}}});toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
   'copy-share'(){const l=league();const site=siteFor(l);copyText(site?site.url:shareLink(l))},
   'nudge'(el){const w=week(el.dataset.wid)||currentWeek();const c=calc(w);const missing=c.legs.filter(l=>!String(l.text||'').trim()).map(l=>member(l.mid)?.name).filter(Boolean);
     const site=siteFor();const b=member(w.bozoId)?.name;
@@ -2526,12 +2664,12 @@ const ACT={
   'next-edit'(){nextEdit.add(currentWeek().id);render()},
   'next-untidy'(el,e){e.preventDefault();const l=league();const w=currentWeek();const np=w.next?.[l.me];if(!np||!np.raw)return;sendNext(l,w,np.raw,np.odds,'',true)},
   'next-cancel'(el,e){e.preventDefault();nextEdit.delete(currentWeek().id);render()},
-  'resume-upload'(){const l=league();if(!pendingUp||!pendingUp.file)return;if(!l.me){pickMe(l);return}const w=week(pendingUp.weekId)||currentWeek();if(pendingUp.mid!==l.me){toast('That upload belongs to a different name on this phone','bad');return}uploadVideo(l,w,pendingUp.file,pendingUp)},
+  'resume-upload'(){const l=league();if(!pendingUp||!pendingUp.file)return;if(!l.me){pickMe(l);return}const w=week(pendingUp.weekId)||currentWeek();if(pendingUp.mid!==l.me){toast('That upload belongs to a different name on this device','bad');return}uploadVideo(l,w,pendingUp.file,pendingUp)},
   'cancel-upload'(){upCancel=true;toast('Pausing after this piece…')},
   'change-sub-done'(){subEdit.delete(currentWeek().id);render()},
   'reveal-now'(){const w=currentWeek();const c=calc(w);const st=subStatus(w);const exp=expectedVoters(w,c);const done=exp.filter(mid=>{const x=st(mid);return x.voted&&x.video}).length;confirm2('Reveal now?',`Only the ${done} ${done===1?'person':'people'} who finished count. The other ${exp.length-done} are out of this week's vote.`,'Reveal',()=>adminCall('/reveal',{},'The votes are in'),'primary')},
   'skip-sub'(el){adminCall('/skip',{memberId:el.dataset.mid,skip:el.dataset.skip==='1',...(el.dataset.r==='2'?{round:2}:{})},el.dataset.skip==='1'?`${member(el.dataset.mid)?.name} skipped this week`:`${member(el.dataset.mid)?.name} is back in`)},
-  'reset-claim'(el){const m=member(el.dataset.mid);const mid=el.dataset.mid;modal({title:`Reset ${m?.name}'s phone?`,body:`<p>Only frees the name: every phone or tablet acting as ${h(m?.name||'them')} stops being them. They tap their name again on one device, then use a code for any others.</p><p><b>Nothing else changes.</b> Their picks, votes, video and history all stay exactly as they are.</p>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Reset',cls:'primary',onClick:()=>adminCall('/claim/reset',{memberId:mid},`${m?.name}'s name is free. Nothing else changed.`)}]})},
+  'reset-claim'(el){const m=member(el.dataset.mid);const mid=el.dataset.mid;modal({title:`Reset ${m?.name}'s name?`,body:`<p>Only frees the name: every phone or tablet acting as ${h(m?.name||'them')} stops being them. They tap their name again on one device, then use a code for any others.</p><p><b>Nothing else changes.</b> Their picks, votes, video and history all stay exactly as they are.</p>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Reset',cls:'primary',onClick:()=>adminCall('/claim/reset',{memberId:mid},`${m?.name}'s name is free. Nothing else changed.`)}]})},
   'unreveal'(){confirm2('Reopen the vote?','The reveal disappears for everyone and voting reopens. Videos already uploaded stay.','Reopen',()=>adminCall('/unreveal',{},'Voting is open again'))},
   'rv-start'(el){const R=+(el&&el.dataset.r)||1;rvSet(currentWeek(),{i:0,f:false},R);render();window.scrollTo({top:0,behavior:'smooth'})},
   'rv-flip'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const st=rvGet(w,undefined,R);rvSet(w,{i:st.i,f:true},R);render()},
@@ -2540,7 +2678,7 @@ const ACT={
   'rv-close'(){closePlayer(true)},
   'rv-next'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const st=rvGet(w,undefined,R);rvSet(w,{i:st.i+1,f:false},R);render();document.querySelector('.reveal')?.scrollIntoView({block:'start',behavior:'smooth'})},
   'rv-end'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const r=rvOf(w,R);rvSet(w,{i:r?r.order.length:0,f:false},R);render()},
-  'rv-restart'(el){const R=+(el&&el.dataset.r)||1;const w=(el&&el.dataset.wid&&week(el.dataset.wid))||currentWeek();S.currentWeekId=w.id;rvSet(w,{i:-1,f:false},R);if(R===1&&w.revote&&w.revote.reveal)rvSet(w,{i:-1,f:false},2);save();render();window.scrollTo({top:0,behavior:'smooth'})},
+  'rv-restart'(el){const R=+(el&&el.dataset.r)||1;const w=(el&&el.dataset.wid&&week(el.dataset.wid))||currentWeek();S.currentWeekId=w.id;REPLAY.set(w.id+'|'+R,{i:-1,f:false});if(R===1&&w.revote&&w.revote.reveal&&rvStep(w,league(),2)>=rvTop(w,2))REPLAY.set(w.id+'|2',{i:-1,f:false});save();render();window.scrollTo({top:0,behavior:'smooth'})},
   async 'revote-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}setSyncDot('busy');
     try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:el.dataset.mid,memberId:l.me,round:2}});subEdit.delete(w.id+':2');takeState(l,d);save();render();setSyncDot('ok');toast(week(w.id)?.revote?.reveal?'That was the last one — the revote is in':'Revote sealed','good')}
     catch(e){setSyncDot('bad');toast('Revote didn\'t go through: '+e.message,'bad')}},
@@ -2556,7 +2694,7 @@ const ACT={
     try{const reg=await Promise.race([navigator.serviceWorker.ready,new Promise((_,no)=>setTimeout(()=>no(new Error('The app is still setting up on this phone')),8000))]);const key=b64uBytes(l.vapid||VAPID_KEY);let sub=await reg.pushManager.getSubscription();
       if(sub&&sub.options&&sub.options.applicationServerKey&&!new Uint8Array(sub.options.applicationServerKey).every((b,i)=>b===key[i])){await sub.unsubscribe();sub=null}
       if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
-      const d=await api(l,'/push/subscribe',{method:'POST',body:{subscription:sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName()}});
+      const d=await api(l,'/push/subscribe',{method:'POST',body:{subscription:sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName(),dev:DEV_ID}});
       PUSH.sub=sub;l.pushEp=sub.endpoint;l.pushMid=l.me;if(!(l.sync.dirty||pushT||pendingPick))applyState(l,d);else if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};save();
       const t=await api(l,'/push/test',{method:'POST',body:{memberId:l.me}}).catch(e=>({sent:0,errors:[e.message]}));
       toast(t.sent?'🔔 Notifications are on. A test ping is on its way.':'Notifications are on, but the test ping didn\'t go through'+(t.errors&&t.errors[0]?': '+t.errors[0]:''),t.sent?'good':'bad')}
@@ -2566,12 +2704,20 @@ const ACT={
   async 'push-test'(){const l=league();try{const t=await api(l,'/push/test',{method:'POST',body:{memberId:l.me}});toast(t.sent?`Test sent to ${t.sent} device${t.sent===1?'':'s'}. Check your lock screen.`:'The test didn\'t go through'+(t.errors&&t.errors[0]?': '+t.errors[0]:'. Turn notifications off and on again.'),t.sent?'good':'bad')}catch(e){toast('The test didn\'t go through: '+e.message,'bad')}},
   async 'push-remind'(){const l=league();try{const r=await api(l,'/push/remind',{method:'POST',body:{}});const nm=ids=>ids.map(id=>member(id)?.name).filter(Boolean).join(', ');const off=(r.owed||[]).filter(id=>!l.pushWho?.[id]);
       toast(!(r.owed||[]).length?'Nobody owes a pick or vote right now':`Reminded ${nm((r.owed||[]).filter(id=>l.pushWho?.[id]))||'nobody'}${off.length?`. No notifications on for ${nm(off)}`:''}`,'good')}catch(e){toast('Reminders didn\'t go out: '+e.message,'bad')}},
-  'push-later'(){const l=league();try{localStorage.setItem('bp-push-later:'+l.sync.id,String(Date.now()))}catch(e){}render();toast('You can turn them on any time from the Crew tab')},
+  'push-later'(){const l=league();const t=Date.now();try{localStorage.setItem('bp-push-later:'+l.sync.id,String(t))}catch(e){}l.person={...(l.person||{}),pushLater:t};if(l.me)api(l,'/me',{method:'POST',body:{pushLater:t}}).then(d=>{if(mergePerson(l,d.person))save()}).catch(()=>{});render();toast('You can turn them on any time from the Crew tab')},   // 'not now' holds on every device
+  async 'push-off-all'(){const l=league();try{const d=await api(l,'/push/unsubscribe',{method:'POST',body:{all:true,memberId:l.me,endpoint:l.pushEp||''}});delete l.pushEp;delete l.pushMid;takeState(l,d);save();render();toast('Notifications are off on all your devices')}catch(e){toast('Couldn\'t turn them off: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}},
+  'retry-pick'(){const l=league();toast('Sending…');flushOutbox(l)},
   'feature'(el){const l=league();l.features=l.features||{};const f=el.dataset.f;l.features[f]=!l.features[f];l.featDirty=true;commit();toast(f==='notify'?(l.features[f]?'Notifications are on for this league. Each person turns them on in their app.':'Notifications are off for this league'):l.features[f]?(f==='picks'?'Members can now enter their own picks':'Members can now vote in the app'):(f==='picks'?'Picks are yours to enter again':'Voting in the app is off'),'good')},
   'sync-now'(){pull(league(),true)},
   'pick-me'(){pickMe(league())},
   'link-make'(){makeLinkCode()},
-  'link-enter'(el,e){if(e)e.preventDefault();enterLinkCode()},
+  'link-enter'(el,e){if(e)e.preventDefault();enterLinkCode(!!(el&&el.dataset.stack))},
+  'taken-me'(el){const m=member(el.dataset.mid);modal({stack:true,title:`Is that you, ${m?.name||''}?`,body:`<p>${h(m?.name||'That name')} is already set up on another device. If that's you, add this one with a code:</p><ol class="linksteps"><li>On the device that's already you, go to <b>Crew</b> and tap <b>Use this on another device</b>.</li><li>Type the code it shows here.</li></ol><input id="linkIn2" class="linkin" maxlength="7" placeholder="ABC-123" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"><p class="muted tiny">Not you? Go back and pick your own name, or Guest.</p>`,
+    actions:[{label:'Back',cls:'ghost'},{label:'Link this device',cls:'primary',onClick:()=>{const v=document.getElementById('linkIn2')?.value||'';if(!LINK_RE.test(v)){toast('Type the 6-character code, like K7M-4QX','bad');return false}redeemLinkCode(v)}}],
+    onOpen:r=>{const i=r.querySelector('#linkIn2');if(!i)return;i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();r.querySelector('[data-act="modal-action"][data-i="1"]')?.click()}});setTimeout(()=>i.focus(),60)}})},
+  'set-guest'(){const l=league();modalStack.length=0;closeModal();l.guest=true;delete l.me;save();render();
+    if(isAdmin(l)&&l.sync){l.asPend={guest:true,at:Date.now()};save();sendAs(l)}   // every commissioner device knows you're not playing
+    toast(isAdmin(l)?'Got it: you run it but aren\'t playing':'Watching as a guest. Join the crew from the Crew tab any time.','good')},
   'set-me'(el){claimMe(league(),el.dataset.mid)},
   'cast-vote'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}const cand=el.dataset.mid;sendVote(l,w,l.me,(w.ballots||{})[l.me]===cand?null:cand)},
   'toggle-lock'(el){const w=week(el.dataset.wid);w.locked=!w.locked;commit();toast(w.locked?'Picks locked — nobody can change their pick':'Picks unlocked')},
@@ -2598,9 +2744,9 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     else p[c]=e.target.value;
     if(c==='text'){delete p.unsure;if(e.target.tagName==='TEXTAREA')autosize(e.target);if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=pickTeamsFor(p.text,slipNfl(w));if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
     save();if(c==='odds')patchTicket(w);
-    const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin')schedulePush()}
+    const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){L.outbox=L.outbox||{};const ok0=obKey(L,w,b2);const e0=L.outbox[ok0];L.outbox[ok0]={at:Date.now(),base:e0&&'base' in e0?e0.base:(p.at||'')};save();clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin')schedulePush()}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
-  else if(k==='league'){const l=league();if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}if(a==='mondayOk'){l.mondayOk=e.target.value==='1';save();render();if(l.sync&&l.sync.role==='admin')schedulePush();toast(`Picks must be on a ${gameDays()} game`,'good')}}
+  else if(k==='league'){const l=league();l.setDirty={...(l.setDirty||{}),[a]:Date.now()};if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}if(a==='mondayOk'){l.mondayOk=e.target.value==='1';save();render();if(l.sync&&l.sync.role==='admin')schedulePush();toast(`Picks must be on a ${gameDays()} game`,'good')}}
   else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=seasonLabelText()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save();if(league().sync&&league().sync.role==='admin')schedulePush()}
 });
 document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a]=b.split('|');
@@ -2613,7 +2759,7 @@ document.addEventListener('ended',e=>{if(e.target.classList&&e.target.classList.
 document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input:not([type=file]),textarea,select'))document.body.classList.add('typing')});
 document.addEventListener('focusout',e=>{const t=e.target;if(t&&t.matches&&t.matches('textarea.pick-in')&&t.dataset.bind){const[k,wid,mid,c]=t.dataset.bind.split('|');if(k==='pick'&&c==='text')tidyLeg(wid,mid,t)}
   setTimeout(()=>{const a=document.activeElement;if(!a||!a.matches('input:not([type=file]),textarea,select')){document.body.classList.remove('typing');if(needRender&&!quiet()){needRender=false;render()}}},120)});
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(PLAYER){closePlayer(true);return}closeModal()}if(e.key==='Enter'&&e.target.classList?.contains('pick-in')){e.preventDefault();const n=e.target.closest('.leg-inputs')?.querySelector('[data-odds]');n?n.focus():e.target.blur()}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(PLAYER){closePlayer(true);return}if(!document.getElementById('modal-root')._required)closeModal()}if(e.key==='Enter'&&e.target.classList?.contains('pick-in')){e.preventDefault();const n=e.target.closest('.leg-inputs')?.querySelector('[data-odds]');n?n.focus():e.target.blur()}});
 document.getElementById('importFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.members)||!Array.isArray(o.weeks))throw new Error('not a Bozo Parlay backup');
     const go=()=>{setS(migrate(o));commit();toast(`Imported ${S.members.length} players, ${S.weeks.length} weeks`,'good')};
@@ -2637,13 +2783,26 @@ function sampleSeason(){
 }
 
 /* ============================== BOOT ============================== */
+migrateRv();for(const l of DB.leagues){const nw=newestOf(l);for(const sn of l.seasons||[]){const hw=sn===nw?homeWeekId(l,sn):lastMain(sn.data.weeks)?.id;if(hw)sn.data.currentWeekId=hw}}S=season().data;
 render();save();loadPending();if(!SHARE_MODE)setTimeout(()=>{tidySeasons()},6000);
 (async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined)pull();})();
 setInterval(()=>{if(document.visibilityState==='visible')pull()},45000);
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){pull();if(pushWanted()&&!pushOnHere())softRender()}});   // back from Settings: the notification card re-checks permission
+if(!SHARE_MODE)setTimeout(()=>acctSync(true,true),1500);setTimeout(checkVersion,8000);
+let hiddenAt=0;
+function pushDirty(){for(const l of DB.leagues)if(l.sync&&l.sync.role==='admin'&&l.sync.dirty&&!(pushT&&l===league()))push(l)}   // edits waiting on any league, not just the open one
+const verNewer=(a,b)=>{const[da,na]=String(a).split('.'),[db,nb]=String(b).split('.');return da>db||(da===db&&(+na||0)>(+nb||0))};
+let verAt=0,reloadT=null;
+async function checkVersion(){if(Date.now()-verAt<5*60e3)return;verAt=Date.now();try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.json()).v;if(v&&verNewer(v,APP_VERSION))reloadWhenIdle(v)}catch(e){}}   // every device runs the same build
+function reloadWhenIdle(v){if(reloadT)return;try{const was=JSON.parse(localStorage.getItem(CACHE_PREFIX+'reload-for')||'null');if(was&&was.v===v&&Date.now()-was.at<30*60e3)return}catch(e){}   // already reloaded for this one: the new page is still on its way, don't loop
+  const go=()=>{if(quiet()||upl||pendingPick||pushT||document.getElementById('modal-root')._open||obBusy){reloadT=setTimeout(go,5000);return}
+    try{localStorage.setItem(CACHE_PREFIX+'reload-for',JSON.stringify({v,at:Date.now()}))}catch(e){}for(const l of DB.leagues)if(l.sync&&Object.keys(l.personPend||{}).length)flushPerson(l,true);toast('Updating to the newest version…');setTimeout(()=>location.reload(),800)};go()}
+window.addEventListener('online',()=>{pushDirty();for(const x of DB.leagues)if(x.asPend)sendAs(x);const l=league();if(l.sync){flushOutbox(l);sendPerson(l,true)}acctFlush()});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){hiddenAt=Date.now();for(const l of DB.leagues)if(l.sync&&Object.keys(l.personPend||{}).length)flushPerson(l,true);return}
+  if(hiddenAt&&Date.now()-hiddenAt>10*60e3&&!quiet()&&!document.getElementById('modal-root')._open){VIEW='week';goNow();render()}   // away a while: open where This Week opens, like a fresh launch
+  pushDirty();pull();acctSync();checkVersion();if(pushWanted()&&!pushOnHere())softRender()});   // back from Settings: the notification card re-checks permission
 if('serviceWorker'in navigator&&location.protocol.startsWith('http')){
   navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(r=>{r.update().catch(()=>{});pushCheck()}).catch(()=>{});
-  navigator.serviceWorker.addEventListener('message',e=>{if(!e.data||e.data.type!=='bp-open')return;try{const q=new URL(e.data.url).searchParams.get('league');if(q&&DB.leagues.find(x=>x.id===q)){DB.active=q;S=season().data}}catch(x){}VIEW='week';goNow();save();if(upl||(pickerOpen&&Date.now()-pickerOpen<15*60000))needRender=true;else render();pull(league(),false,true)});
+  navigator.serviceWorker.addEventListener('message',e=>{if(!e.data||e.data.type!=='bp-open')return;try{const q=new URL(e.data.url).searchParams.get('league');if(q&&DB.leagues.find(x=>x.id===q)){DB.active=q;DB.activeAt=Date.now();S=season().data}}catch(x){}VIEW='week';goNow();save();if(upl||(pickerOpen&&Date.now()-pickerOpen<15*60000))needRender=true;else render();pull(league(),false,true)});
   const hadController=!!navigator.serviceWorker.controller;let swapped=false;
   navigator.serviceWorker.addEventListener('controllerchange',()=>{if(swapped||!hadController)return;swapped=true;toast('Updated — reloading');setTimeout(()=>location.reload(),600)});
 }
