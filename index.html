@@ -612,7 +612,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.20';
+const APP_VERSION='2026-09-18.1';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -636,6 +636,7 @@ function migrate(s){s.members??=[];s.weeks??=[];s.stake??=10;s.view??='week';s.w
   return s}
 const KEY2='bozo-parlay-v2';
 const SHARE_MODE=false;   // build_share.py flips this for the read-only league site
+const CACHE_PREFIX='bozo-parlay-';   // this app's service-worker caches (each club app on this origin has its own)
 let DB={leagues:[],active:null};
 function league(){return DB.leagues.find(l=>l.id===DB.active)||DB.leagues[0]}
 function season(l=league()){return l.seasons.find(x=>x.id===l.activeSeason)||l.seasons[0]}
@@ -721,6 +722,7 @@ function migrateDB(d){
     }
     d.seedV=13;
   }
+  if(!(d.seedV>=14)){const bu=d.leagues.find(l=>l.id==='lg3');if(bu&&!bu.clubName)bu.clubName='C+F+B Club';d.seedV=14}
   return d;
 }
 const OWNER_KEY='bp-owner';
@@ -870,7 +872,7 @@ function applyState(l,d){
     else if(cur&&!revealSeen(cur,l))x.data.currentWeekId=u.cur;               // hold them on the reveal they haven't watched yet
     else if(newest)x.data.currentWeekId=newest}                               // otherwise a freshly opened week pulls them to it
   if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
-  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
+  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
   if(l.meKey&&d.you===null){delete l.me;delete l.meKey;setTimeout(()=>toast('The commissioner reset your name on this phone — tap your name again to vote','bad'),80)}
   l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;
   if(league()===l){S=season().data;ALLTIME=null}
@@ -889,7 +891,7 @@ async function pull(l=league(),loud=false,force=false){
 function schedulePush(){const l=league();if(!l.sync||l.sync.role!=='admin')return;clearTimeout(pushT);pushT=setTimeout(()=>{pushT=null;push(l)},700)}
 async function push(l){
   setSyncDot('busy');
-  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:l.activeSeason,name:l.name,features:l.features||{},baseRev:l.sync.rev}});l.sync.rev=d.rev;save();setSyncDot('ok')}
+  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:l.activeSeason,name:l.name,features:l.features||{},clubName:l.clubName||'',baseRev:l.sync.rev}});l.sync.rev=d.rev;save();setSyncDot('ok')}
   catch(e){if(e.status===409&&e.data?.state){applyState(l,e.data.state);save();render();toast('Someone else changed the league first — reloaded their version. Redo your last edit.','bad')}
     else{setSyncDot('bad');toast('Cloud save failed: '+e.message+'. Kept on this device — it retries on your next change.','bad')}}
 }
@@ -910,7 +912,8 @@ async function adoptLink(id,key){
     let l=DB.leagues.find(x=>x.sync&&x.sync.id===id)||DB.leagues.find(x=>!x.sync&&canonName(x.name)===canonName(d.name));
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null};DB.leagues.push(l)}
     l.sync={url:SYNC_URL,id,key,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features=d.features||{};l.claims=d.claims||{};
-    applyState(l,d);   // the server is the truth from here on; this device's edits push from now
+    if(d.fresh&&l.seasons.length&&hasContent(l)){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:l.activeSeason,name:l.name,features:l.features||{},clubName:l.clubName||d.clubName||'',baseRev:d.rev}});applyState(l,d2)}   // brand-new league: this device's copy (with anything entered since) becomes the league
+    else applyState(l,d);   // otherwise the server is the truth; this device's edits push from now
     DB.leagues=DB.leagues.filter(x=>x===l||x.sync||hasContent(x));   // drop the empty placeholder a fresh phone starts with
     setOwner();DB.active=l.id;S=season().data;VIEW='crew';save();render();toast(`${l.name} is live — this device runs it`,'good');return true;
   }catch(e){toast('Could not connect: '+e.message,'bad');return false}
@@ -1677,12 +1680,13 @@ function teamsCard(g){
   const rows=Object.entries(g.byTeam||{}).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,10);if(!rows.length)return'';
   return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team. Tap a team to see everyone's record on it.</p><div class="typerows">${rows.map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'x-go',data:`data-node="${encNode({team:a})}"`,nav:true})).join('')}</div></section>`;
 }
+const clubName=(l=league())=>String(l.clubName||'').trim()||'Parlay Killer Club';
 function killerClubCard(per){
   const rows=S.members.filter(m=>per[m.id]&&per[m.id].killer>0).sort((a,b)=>per[b.id].killer-per[a.id].killer||per[b.id].killed-per[a.id].killed);
   const body=rows.length?rows.map(m=>{const p=per[m.id];const key='pk:'+m.id;const open=openKinds.has(key);
     return`<div class="pk-row expandable" data-act="toggle-kind" data-key="${key}"><span class="avatar" style="--c:${m.color}">${h(initials(m.name))}</span><div class="pk-who"><b>${h(m.name)}</b><small>${p.killer===1?'1 solo kill':p.killer+' solo kills'}${p.killed?` · ${fmt$0(p.killed)} that got away`:''}</small></div><span class="pk-badge">☠️ ×${p.killer}</span>${chev(open)}</div>${open?`<div class="pk-kills">${p.killers.map(k=>`<div class="pk-kill"><span class="mono muted tiny">${h(k.wk)}</span>${betChip(k.text,k.teams)}<span class="mono muted tiny">${k.odds!=null?fmtOdds(k.odds):''}</span>${k.margin!=null?`<span class="tiny bad">missed by ${fmtMargin(k.margin,k.unit)}</span>`:''}</div>`).join('')}</div>`:''}`}).join('')
   :`<p class="muted" style="margin:0">No members yet. Every miss so far has had company.</p>`;
-  return`<section class="card pk-card"><h3>☠️ Parlay Killer Club</h3><p class="muted tiny" style="margin:-4px 0 10px">The lone miss on a slip everyone else hit. Membership is for life. Tap a name to relive the pain.</p><div class="pk-rows">${body}</div></section>`;
+  return`<section class="card pk-card"><h3>☠️ ${h(clubName())}</h3><p class="muted tiny" style="margin:-4px 0 10px">The lone miss on a slip everyone else hit. Membership is for life. Tap a name to relive the pain.</p><div class="pk-rows">${body}</div></section>`;
 }
 function kingsCard(per){
   const people=S.members.filter(m=>per[m.id]&&per[m.id].picks>0);if(!people.length)return'';
@@ -1719,8 +1723,9 @@ function renderLeagues(){
   <p class="muted tiny" style="margin-top:8px">A new season starts with this season's crew and a clean slate of weeks.</p></section>`:`<section class="card"><h3>${h(L.name)} · seasons</h3><div class="seasonchips">${seasonSorted(L).map(x=>`<button class="chip ${x.id===L.activeSeason?'on':''}" data-act="switch-season" data-lid="${L.id}" data-sid="${x.id}">${h(x.name)}</button>`).join('')}</div></section>`}`;
 }
 // ---- Read-only league site (GitHub Pages) — one league, published from the commissioner's device ----
-const SHARE_SITES={lg2:{repo:'jsunaldo/bozo-parlay-club',url:'https://jsunaldo.github.io/bozo-parlay-club/'}};
-function siteCard(){const l=league();const site=SHARE_SITES[l.id];if(!site||l.sync)return'';return`<section class="card"><h3>League site</h3><p class="muted tiny" style="margin-bottom:10px">${h(site.url)}</p><p class="muted tiny">Publish this league to the cloud below and the site turns into the group's live app: everyone taps their name once, enters their own pick, votes with a video.</p></section>`}
+const SHARE_SITES={lg2:{repo:'jsunaldo/bozo-parlay-club',url:'https://jsunaldo.github.io/bozo-parlay-club/',sync:'o77nefhml4',app:'Bozo Parlay Club'},lg3:{repo:'jsunaldo/bozo-university',url:'https://jsunaldo.github.io/bozo-university/',sync:'vr317zq7ne',app:'Bozo University'}};
+const siteFor=(l=league())=>SHARE_SITES[l.id]||Object.values(SHARE_SITES).find(x=>x.sync&&l.sync&&x.sync===l.sync.id)||null;
+function siteCard(){const l=league();const site=siteFor(l);if(!site||l.sync||site.sync)return'';return`<section class="card"><h3>League site</h3><p class="muted tiny" style="margin-bottom:10px">${h(site.url)}</p><p class="muted tiny">Publish this league to the cloud below and the site turns into the group's live app: everyone taps their name once, enters their own pick, votes with a video.</p></section>`}
 function activityHtml(l){
   const nm=id=>member(id)?.name||'Someone';const ev=(l.events||[]).slice().reverse().slice(0,20);const ups=Object.entries(l.uploads||{});
   const text=e=>({claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`})[e.type]||e.type;
@@ -1731,10 +1736,12 @@ function activityHtml(l){
 function renderShare(){
   const l=league();const me=l.me?member(l.me):null;
   const who=`<div class="row between" style="margin-bottom:10px"><div class="chip-lg">${me?`<span class="avatar sm" style="--c:${me.color}">${h(initials(me.name))}</span><span>You are <b>${h(me.name)}</b></span>`:'<span class="muted">Who are you on this device?</span>'}</div><button class="btn sm" data-act="pick-me">${me?'Change':'Choose'}</button></div>`;
+  const site0=siteFor(l);
+  if(!l.sync&&site0&&site0.sync)return`<section class="card"><h3>${h(l.name)} app</h3><p class="muted tiny" style="margin-bottom:10px">This league has its own app for the group at <b>${h(site0.url.replace('https://',''))}</b>. Paste your commissioner link here to run it from this device. Your picks, grades and history here are what the group will see.</p><div class="linkbox"><input id="linkIn" placeholder="Paste the commissioner link" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn primary" data-act="use-link">Connect</button></div></section>`;
   if(!l.sync)return`<section class="card"><h3>Share with the group</h3><p class="muted tiny" style="margin-bottom:10px">Publish this league to the cloud and everyone gets a link: they pick their name, enter their own pick each week and cast their Bozo vote from their phone. You stay the commissioner — grading, crowning and edits are yours.</p><button class="btn primary block" data-act="publish-league">☁️ Publish ${h(l.name)}</button></section>`;
   const link=shareLink(l);
   const f=l.features||{};const tog=(k,label,sub)=>`<div class="featrow" data-act="feature" data-f="${k}"><div><b>${label}</b><small>${sub}</small></div><span class="toggle ${f[k]?'on':''}"><i></i></span></div>`;
-  const site=SHARE_SITES[l.id];const primary=site?site.url:link;const claimRows=S.members.filter(m=>m.active).map(m=>{const cl=l.claims?.[m.id];return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="mbody"><b>${h(m.name)}</b><small>${cl?`${h(cl.device||'phone')} · ${h(new Date(cl.at).toLocaleDateString([],{month:'short',day:'numeric'}))}`:'not yet'}</small></div>${cl?`<button class="btn sm ghost" data-act="reset-claim" data-mid="${m.id}">Reset</button>`:'<span class="muted tiny">—</span>'}</div>`}).join('');
+  const site=siteFor(l);const primary=site?site.url:link;const claimRows=S.members.filter(m=>m.active).map(m=>{const cl=l.claims?.[m.id];return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="mbody"><b>${h(m.name)}</b><small>${cl?`${h(cl.device||'phone')} · ${h(new Date(cl.at).toLocaleDateString([],{month:'short',day:'numeric'}))}`:'not yet'}</small></div>${cl?`<button class="btn sm ghost" data-act="reset-claim" data-mid="${m.id}">Reset</button>`:'<span class="muted tiny">—</span>'}</div>`}).join('');
   return`<section class="card"><h3>Group</h3>${who}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only this device can grade and crown.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>${activityHtml(l)}`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
 }
 function renderCrew(){
@@ -1747,6 +1754,7 @@ function renderCrew(){
   <section class="card"><h3>Rules & settings</h3>
     <label class="field"><span>Season name</span><input value="${h(S.season)}" placeholder="2026 NFL" data-bind="set|season"></label>
     <label class="field"><span>Bozo stake for new weeks</span><input type="number" class="mono" value="${S.stake}" min="1" data-bind="set|stake" inputmode="numeric"></label>
+    <label class="field"><span>Name for the lone-miss club</span><input value="${h(league().clubName||'')}" placeholder="Parlay Killer Club" maxlength="40" data-bind="league|clubName" autocomplete="off"></label>
     <ul class="rules"><li>Every pick must be <b>-200 or longer</b>. Heavier favorites get flagged on the slip.</li><li>The Bozo puts the stake on a parlay of every pick. If it cashes, the payout <b>splits evenly</b> across everyone with a leg.</li><li>Next week's Bozo is voted from whoever <b>did not hit</b>. If everyone hits, everyone's on the ballot. Ties get a coin flip.</li><li>Pushes drop out of the parlay at even money and don't count against you.</li></ul>
   </section>
   <section class="card"><h3>Data</h3>
@@ -1974,7 +1982,7 @@ const ACT={
   'delete-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x||l.seasons.length<2)return;confirm2(`Delete the ${x.name} season?`,`Removes ${x.data.weeks.length} week${x.data.weeks.length===1?'':'s'} of ${l.name} from this browser. Export a backup first if you might want it back.`,'Delete season',()=>{l.seasons=l.seasons.filter(y=>y!==x);l.activeSeason=seasonSorted(l)[0].id;S=season().data;commit();toast(`${x.name} deleted`)})},
   'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;commit()}}]})},
   'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(DB.leagues.length<2)return;if(l.sync&&l.sync.role!=='admin'){confirm2(`Leave ${l.name}?`,'Removes it from this device only. Open the group link again to rejoin.','Leave',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit()});return}confirm2(`Delete ${l.name}?`,`Removes this league and all ${l.seasons.length} season${l.seasons.length===1?'':'s'} from this browser. Export a backup first if you might want it back.`,'Delete league',()=>{DB.leagues=DB.leagues.filter(x=>x!==l);DB.active=DB.leagues[0].id;S=season().data;commit();toast(`${l.name} deleted`)})},
-  async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.filter(r=>r.scope.startsWith(location.origin+location.pathname)).map(r=>r.unregister()))}if(window.caches){const pre=SHARE_MODE?'bozo-club-':'bozo-parlay-';const ks=await caches.keys();await Promise.all(ks.filter(k=>k.startsWith(pre)).map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
+  async 'update-app'(){toast('Fetching the latest version…');try{if('serviceWorker'in navigator){const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.filter(r=>r.scope.startsWith(location.origin+location.pathname)).map(r=>r.unregister()))}if(window.caches){const pre=CACHE_PREFIX;const ks=await caches.keys();await Promise.all(ks.filter(k=>k.startsWith(pre)).map(k=>caches.delete(k)))}}catch(e){}location.replace(location.pathname+'?r='+Date.now())},
   'pick-team'(el){const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p||!canEdit(el.dataset.mid))return;const sel=[...(p.teams||[])];
     modal({title:'Team logo',body:`<p class="tiny">Pick up to two teams for this leg. Auto-detected from the pick text unless you set it here.</p><div class="teamgrid" id="teamgrid">${Object.keys(TEAMS).map(a=>`<button class="tp ${sel.includes(a)?'on':''}" data-act="tp-toggle" data-abbr="${a}"><img src="${LOGO(a)}" alt="">${a}</button>`).join('')}</div>`,
       actions:[{label:'Auto',cls:'ghost',onClick:()=>{p.tm=false;p.teams=detectTeams(p.text);commit()}},{label:'None',cls:'ghost',onClick:()=>{p.tm=true;p.teams=[];commit()}},{label:'Save',cls:'primary',onClick:()=>{p.tm=true;p.teams=[...document.querySelectorAll('.tp.on')].map(b=>b.dataset.abbr).slice(0,2);commit();const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===el.dataset.mid)sendPick(L,w,el.dataset.mid)}}]})},
@@ -1988,10 +1996,10 @@ const ACT={
   'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
   'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   'toggle-kind'(el){const k=el.dataset.key;if(openKinds.has(k))openKinds.delete(k);else openKinds.add(k);render()},
-  async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,features:{picks:false,votes:false}})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features={picks:false,votes:false};save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
-  'copy-share'(){const l=league();const site=SHARE_SITES[l.id];copyText(site?site.url:shareLink(l))},
+  async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,features:{picks:false,votes:false},clubName:l.clubName||''})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features={picks:false,votes:false};save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
+  'copy-share'(){const l=league();const site=siteFor(l);copyText(site?site.url:shareLink(l))},
   'nudge'(el){const w=week(el.dataset.wid)||currentWeek();const c=calc(w);const missing=c.legs.filter(l=>!String(l.text||'').trim()).map(l=>member(l.mid)?.name).filter(Boolean);
-    const site=SHARE_SITES[league().id];const b=member(w.bozoId)?.name;
+    const site=siteFor();const b=member(w.bozoId)?.name;
     copyText(`🤡 ${wkName(w)} — still need picks from ${missing.join(', ')}. ${b?b+' is fronting it':''}${site?'\n'+site.url:''}`.trim())},
   'pick-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}sendSub(l,w,el.dataset.mid)},
   'change-sub'(){subEdit.add(currentWeek().id);render()},
@@ -2047,6 +2055,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     save();if(c==='odds')patchTicket(w);
     const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin')schedulePush()}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
+  else if(k==='league'){const l=league();if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}}
   else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=leagueLabel()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
 });
 document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a]=b.split('|');
