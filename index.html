@@ -200,6 +200,14 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .sgp-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple);padding:10px 18px 0}
 .sgp .leg::before{display:none}
 .clashlines{display:flex;flex-direction:column;gap:4px}
+.kindbar{display:flex;align-items:center;gap:10px;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--surface2);border-radius:14px;padding:10px 12px;margin:0 0 12px;font-size:13px;line-height:1.35}
+.kindbar .kb-ic{font-size:22px;line-height:1}.kindbar .kb-t{flex:1;min-width:0}.kindbar b{display:block;font-size:14px}
+button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.kindbar .kb-go{font-weight:700;color:var(--purple);white-space:nowrap}
+.extras .ex{display:flex;flex-direction:column;gap:6px;margin-top:10px}.extras .ex small{line-height:1.35}
+.ex-plan{background:var(--surface2);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:600}
+.fld{display:flex;flex-direction:column;gap:6px;margin:12px 0 0}.fld>span{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.fld input{font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text);width:100%;box-sizing:border-box}
+.chiprow{display:flex;flex-wrap:wrap;gap:6px}.chiprow button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:6px 12px;cursor:pointer}.chiprow button.on{background:var(--purple);border-color:var(--purple);color:#fff}
 .clashline{font-size:12px;color:var(--red);background:var(--red-bg);border-radius:10px;padding:6px 10px;line-height:1.35}
 .np-group{display:flex;flex-direction:column;gap:4px;padding-left:8px;border-left:3px solid var(--purple);border-radius:3px}
 .np-sg{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);margin:2px 0}
@@ -613,7 +621,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.4';
+const APP_VERSION='2026-09-18.5';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -632,7 +640,8 @@ const h=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 
 function fresh(){return{v:1,season:'',stake:10,members:[],weeks:[],currentWeekId:null,view:'week',pendingBozo:null}}
 const SEED_MARGINS={m1:13,m2:9.5,m3:3.5,m4:22.5,m5:7.5};
-function migrate(s){s.members??=[];s.weeks??=[];s.stake??=10;s.view??='week';s.weeks.forEach(w=>{w.picks??={};w.votes??={};w.stake??=s.stake;Object.values(w.picks).forEach(p=>{p.unit??=unitFor(p.text);p.teams??=detectTeams(p.text)})});
+function markSides(s){for(const w of s.weeks||[]){if(w.kind||w.bozoId!=null||!/anytime td parlay/i.test(w.label||''))continue;w.kind='side';const p=s.weeks.find(x=>x!==w&&!/anytime td parlay/i.test(x.label||'')&&x.num===Math.floor(w.num));if(p)w.of=p.id}}   // the 2025 side ATTD slates were plain weeks with no Bozo
+function migrate(s){s.members??=[];s.weeks??=[];s.stake??=10;s.view??='week';markSides(s);s.weeks.forEach(w=>{w.picks??={};w.votes??={};w.stake??=s.stake;Object.values(w.picks).forEach(p=>{p.unit??=unitFor(p.text);p.teams??=detectTeams(p.text)})});
   if(!(s.seedV>=2)){const w=s.weeks.find(w=>w.id==='w1');if(w)for(const[k,v]of Object.entries(SEED_MARGINS)){const p=w.picks[k];if(p&&p.margin==null&&(p.status==='hit'||p.status==='miss'))p.margin=v}s.seedV=2}
   return s}
 const KEY2='bozo-parlay-v2';
@@ -866,9 +875,9 @@ async function api(l,path,opts={}){
   return d;
 }
 function applyState(l,d){
-  const ui={};for(const x of (l.seasons||[]))ui[x.id]={cur:x.data?.currentWeekId,last:x.data?.weeks?.[x.data.weeks.length-1]?.id};   // per-device UI state must not ride along with synced data
+  const ui={};for(const x of (l.seasons||[]))ui[x.id]={cur:x.data?.currentWeekId,last:lastMain(x.data?.weeks)?.id};   // per-device UI state must not ride along with synced data
   l.seasons=d.seasons.map(x=>({...x,data:migrate(x.data||fresh())}));
-  for(const x of l.seasons){const u=ui[x.id]||{};const newest=x.data.weeks[x.data.weeks.length-1]?.id;const cur=u.cur&&x.data.weeks.find(w=>w.id===u.cur);
+  for(const x of l.seasons){const u=ui[x.id]||{};const newest=lastMain(x.data.weeks)?.id;const cur=u.cur&&x.data.weeks.find(w=>w.id===u.cur);
     if(cur&&u.last===newest)x.data.currentWeekId=u.cur;                       // nothing new
     else if(cur&&!revealSeen(cur,l))x.data.currentWeekId=u.cur;               // hold them on the reveal they haven't watched yet
     else if(newest)x.data.currentWeekId=newest}                               // otherwise a freshly opened week pulls them to it
@@ -1003,7 +1012,14 @@ const member=id=>S.members.find(m=>m.id===id);
 const midx=id=>S.members.findIndex(m=>m.id===id);
 const initials=n=>String(n||'?').trim().split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
 const week=id=>S.weeks.find(w=>w.id===id);
-const lastWeek=()=>S.weeks[S.weeks.length-1]||null;
+// the Bozo chain is every parlay except side parlays (a side parlay rides along with a Sunday parlay: no Bozo, no vote)
+const isSide=w=>!!w&&w.kind==='side';
+const lastMain=ws=>{for(let i=(ws||[]).length-1;i>=0;i--)if(!isSide(ws[i]))return ws[i];return null};
+const lastWeek=()=>lastMain(S.weeks);
+function nextMain(w){const i=S.weeks.indexOf(w);if(i<0)return null;for(let k=i+1;k<S.weeks.length;k++)if(!isSide(S.weeks[k]))return S.weeks[k];return null}
+function prevMain(w){for(let k=S.weeks.indexOf(w)-1;k>=0;k--)if(!isSide(S.weeks[k]))return S.weeks[k];return null}
+const sideOf=w=>w&&!isSide(w)?S.weeks.find(x=>isSide(x)&&x.of===w.id)||null:null;
+const parentOf=w=>isSide(w)?week(w.of)||null:null;
 function currentWeek(){return week(S.currentWeekId)||lastWeek()}
 function parseOdds(v){if(v===''||v==null)return null;const n=Number(String(v).replace(/[^\d.+-]/g,''));return Number.isFinite(n)&&n!==0?n:null}
 const dec=a=>a==null?null:a>0?1+a/100:1+100/Math.abs(a);
@@ -1015,14 +1031,68 @@ const fmt$0=n=>(n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFra
 const pct=v=>v==null?'—':Math.round(v*100)+'%';
 function fmtDate(d){if(!d)return'';const[y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
 const today=()=>new Date().toISOString().slice(0,10);
+const addDays=(d,n)=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd+n)).toISOString().slice(0,10)};
+const dowOf=d=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd)).getUTCDay()};
+const DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const sunOf=d=>{const k=dowOf(d);return k===0?d:k===1?addDays(d,-1):addDays(d,7-k)};   // the Sunday of the NFL week a game day belongs to (Monday night counts with the Sunday before)
+let ETF=null;
+function etDay(iso){try{ETF??=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'});const p=Object.fromEntries(ETF.formatToParts(new Date(iso)).map(x=>[x.type,x.value]));return`${p.year}-${p.month}-${p.day}`}catch(e){return''}}   // the game's date on the East Coast, so a late Sunday kickoff is still Sunday
+function fmtDay(d){if(!d)return'';const[y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}
 
 const wkName=w=>w.label||`Week ${w.num}`;const wkShort=w=>w.short||`W${w.num}`;
+// the Sunday of the NFL week a Bozo-chain parlay covers
+function weekSun(w){
+  if(!w)return null;if(w.kind==='special'&&w.day)return sunOf(w.day);
+  const p=prevMain(w);if(p&&p.kind==='special'&&p.num===w.num&&p.day)return sunOf(p.day);
+  const nfl=w.date?nflData(w.date,0):null;const g=nfl&&nfl.games&&nfl.games[0];const gd=g&&etDay(g.at);if(gd)return sunOf(gd);
+  if(!w.date)return null;const k=dowOf(w.date);return k===0?w.date:addDays(w.date,7-k);
+}
+const specialsOf=()=>(S.specials||[]).filter(sp=>!S.weeks.some(w=>w.kind==='special'&&w.day===sp.day));   // planned and not started yet
+function dueSpecial(prev){if(!specialsOf().length)return null;const ws=weekSun(prev);if(!ws)return null;const want=addDays(ws,7);return specialsOf().find(sp=>sunOf(sp.day)===want)||null}
+function nextPlan(prev){   // what the next parlay in the Bozo chain is
+  if(!prev)return{num:1,name:'Week 1',extra:{}};
+  if(prev.kind==='special')return{num:prev.num,name:`Week ${prev.num} Sunday`,sunday:true,extra:{label:`Week ${prev.num} · Sunday`,short:`W${prev.num}b`}};
+  const num=Math.floor(Math.max(...S.weeks.filter(w=>!isSide(w)).map(w=>w.num)))+1;const sp=dueSpecial(prev);
+  if(sp)return{num,name:`Week ${num} ${sp.name}`,special:sp,extra:{kind:'special',day:sp.day,dayName:sp.name,label:`Week ${num} · ${sp.name}`,short:`W${num}a`}};
+  return{num,name:`Week ${num}`,extra:{}};
+}
+function nextName(w){const n=nextMain(w);return n?wkName(n).replace(' · ',' '):nextPlan(w).name}
+const spIcon=n=>/thanksgiving/i.test(n||'')?'🦃':/christmas|xmas/i.test(n||'')?'🎄':'📅';
+function dayRule(w){if(w&&w.kind==='special'&&w.day)return{day:w.day,name:w.dayName||'special-day'};return{sunday:true}}
+const ruleText=r=>r.sunday?'Sunday games only':`${r.name} games only (${fmtDay(r.day)})`;
 function newWeek(bozoId){
-  const num=(S.weeks.length?Math.max(...S.weeks.map(w=>w.num)):0)+1;
-  const prev=S.weeks[S.weeks.length-1];const early=(prev&&prev.next)||{};
-  const w={id:uid(),num,date:today(),bozoId,stake:S.stake,picks:{},votes:{}};
+  const prev=lastWeek();const plan=nextPlan(prev);const early=(prev&&prev.next)||{};
+  const w={id:uid(),num:plan.num,date:today(),bozoId,stake:S.stake,picks:{},votes:{},...plan.extra};
   S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:!!(np.teams&&np.teams.length),...(np.raw?{raw:np.raw}:{}),...(np.keep?{keep:true}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
-  S.weeks.push(w);S.currentWeekId=w.id;return w;
+  S.weeks.push(w);S.currentWeekId=w.id;
+  const sd=prev&&prev.kind==='special'?sideOf(prev):null;if(sd){sd.of=w.id;S.weeks.splice(S.weeks.indexOf(sd),1);S.weeks.push(sd)}   // a side parlay belongs with the Sunday parlay
+  return w;
+}
+function addSide(w,stake){
+  const sd={id:uid(),kind:'side',of:w.id,num:w.num+.5,date:w.date,bozoId:null,stake,picks:{},votes:{},label:`Week ${w.num} · Anytime TD parlay`,short:`W${w.num} TD`};
+  S.members.filter(m=>m.active).forEach(m=>sd.picks[m.id]={text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]});
+  S.weeks.splice(S.weeks.indexOf(w)+1,0,sd);S.currentWeekId=sd.id;commit();window.scrollTo({top:0,behavior:'smooth'});toast('Side parlay is up. Everyone can add an Anytime TD pick.','good');
+}
+function addSpecial(name,day){
+  name=String(name||'').trim().replace(/\s+/g,' ').slice(0,24);
+  if(!name){toast('Name the day first, like Thanksgiving','bad');return false}
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(day||'')){toast('Pick the date of the games','bad');return false}
+  const k=dowOf(day);if(k===0||k===1){toast('A special parlay comes before Sunday. Pick a Tuesday through Saturday.','bad');return false}
+  const w=lastWeek();const sun=sunOf(day);const ws=weekSun(w);
+  if(ws&&sun<ws){toast('That day has already passed','bad');return false}
+  const plan=()=>{S.specials=[...(S.specials||[]).filter(sp=>sunOf(sp.day)!==sun),{day,name}].sort((a,b)=>a.day<b.day?-1:1)};
+  if(ws&&sun===ws){   // this week: the open parlay becomes the special, and the Sunday parlay follows its vote
+    if(w.kind==='special'){toast(`${wkName(w)} is already this week's special parlay`,'bad');return false}
+    const p=prevMain(w);if(p&&p.kind==='special'&&p.num===w.num){toast(`Week ${w.num} already had its special parlay`,'bad');return false}
+    if(calc(w).legs.some(l=>l.status!=='pending')){toast(`${wkName(w)} is already being graded, too late to make it special`,'bad');return false}
+    plan();Object.assign(w,{kind:'special',day,dayName:name,label:`Week ${w.num} · ${name}`,short:`W${w.num}a`});
+    commit();toast(`${wkName(w)} is set. Its vote picks the Week ${w.num} Sunday Bozo.`,'good');return true}
+  plan();commit();toast(`Saved. ${name} gets its own parlay before that week's Sunday parlay.`,'good');return true;
+}
+function holidayGuess(){   // the next Thanksgiving or Christmas
+  const t=today();const y=+t.slice(0,4);const tg=yr=>{const n1=dowOf(`${yr}-11-01`);return`${yr}-11-${String(1+((4-n1+7)%7)+21).padStart(2,'0')}`};
+  for(const yr of[y,y+1]){if(tg(yr)>=t)return{name:'Thanksgiving',day:tg(yr)};if(`${yr}-12-25`>=t)return{name:'Christmas',day:`${yr}-12-25`}}
+  return{name:'',day:''};
 }
 
 /* ============================== ENGINE ============================== */
@@ -1076,7 +1146,7 @@ function stats(){
         if(l.margin!=null&&(l.unit||'pts')==='pts'){p.hitMargins.push(+l.margin);if(p.sweat==null||+l.margin<p.sweat.m)p.sweat={m:+l.margin,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams}}
       }else if(l.status==='miss'){
         p.misses++;if(p.cur>=0){p.streakStart=wkShort(w);p.curLegs=[]}p.curLegs.push(l._leg);p.cur=p.cur<=0?p.cur-1:-1;if(-p.cur>p.worstMiss){p.worstMiss=-p.cur;p.worstMissSpan=[p.streakStart,wkShort(w)];p.worstMissLegs=p.curLegs.slice()}
-        if(c.graded&&c.misses===1){p.killer++;const lost=c.missingOdds?0:c.potential;p.killed+=lost;p.killers.push({wk:wkShort(w),text:l.text,teams:l.teams,margin:l.margin,unit:l.unit,odds:l.oddsN,lost})}
+        if(c.graded&&c.misses===1&&!isSide(w)){p.killer++;const lost=c.missingOdds?0:c.potential;p.killed+=lost;p.killers.push({wk:wkShort(w),text:l.text,teams:l.teams,margin:l.margin,unit:l.unit,odds:l.oddsN,lost})}
         if(l.margin!=null&&(l.unit||'pts')==='pts'){const m=+l.margin;p.missMargins.push(m);
           if(p.closest==null||m<p.closest.m)p.closest={m,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams};
           if(p.choke==null||m>p.choke.m)p.choke={m,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams}}
@@ -1135,22 +1205,38 @@ function renderWeekInner(){
   if(SHARE_MODE&&!league().sync?.rev)return empty('Loading the league…','Hang on a second. If this sticks, check your connection and pull down to refresh.');
   if(S.members.length<2)return SHARE_MODE?empty('No crew yet','The commissioner is still setting up this season.'):renderOnboard();
   if(!S.weeks.length)return renderFirstBozo();
-  const w=currentWeek();const c=calc(w);const idx=S.weeks.indexOf(w);const isLast=idx===S.weeks.length-1;
+  const w=currentWeek();const c=calc(w);const idx=S.weeks.indexOf(w);const isLast=w===lastWeek();const nx=nextMain(w);
   return`<div class="week-nav">
     <button class="icon-btn" data-act="week-prev" ${idx===0?'disabled':''}>‹</button>
     <div class="week-title"><strong>${h(wkName(w))}</strong><input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date"></div>
-    <button class="icon-btn" data-act="week-next" ${isLast?'disabled':''}>›</button>
-  </div>${c.graded&&(!S.weeks[idx+1]||!revealSeen(w))?renderVote(w,c,isLast)+renderTicket(w,c):renderTicket(w,c)+renderVote(w,c,isLast)}`;   // the vote/reveal leads until this device has watched it
+    <button class="icon-btn" data-act="week-next" ${idx===S.weeks.length-1?'disabled':''}>›</button>
+  </div>${kindBar(w)}${c.graded&&(!nx||!revealSeen(w))?renderVote(w,c,isLast)+renderTicket(w,c):renderTicket(w,c)+renderVote(w,c,isLast)}${renderExtras(w)}`;   // the vote/reveal leads until this device has watched it
 }
-function clashLines(cl){if(!cl||!cl.pairs.length)return'';return`<div class="clashlines">${cl.pairs.map(p=>`<div class="clashline">⚠ <b>${h(member(p.a)?.name||'')}</b> and <b>${h(member(p.b)?.name||'')}</b> ${CLASH_SUM[p.kind]}${p.game?' · '+h(p.game.name):''}</div>`).join('')}</div>`}
+function kindBar(w){   // what kind of parlay this is, and the side parlay riding along with it
+  if(isSide(w)){const p=parentOf(w);return`<div class="kindbar"><span class="kb-ic">🎯</span><span class="kb-t"><b>Anytime TD side parlay</b>ATTD bets only · Sunday games · no Bozo, no vote${p?` · runs alongside <a href="#" data-act="open-week" data-wid="${p.id}">${h(wkName(p))}</a>`:''}</span></div>`}
+  let out='';
+  if(w.kind==='special')out+=`<div class="kindbar"><span class="kb-ic">${spIcon(w.dayName)}</span><span class="kb-t"><b>${h(w.dayName||'Special')} parlay · ${h(fmtDay(w.day))}</b>${h(w.dayName||'Special-day')} games only. Its vote picks the Week ${w.num} Sunday Bozo.</span></div>`;
+  const sd=sideOf(w);if(sd){const c=calc(sd);const inN=c.legs.filter(l=>String(l.text||'').trim()).length;out+=`<button class="kindbar" data-act="open-week" data-wid="${sd.id}"><span class="kb-ic">🎯</span><span class="kb-t"><b>Anytime TD side parlay this week</b>${c.graded?{won:'Cashed 🤑',lost:'Busted',void:'Void'}[c.result]||'Graded':`${inN} of ${c.n} picks in`}</span><span class="kb-go">Open →</span></button>`}
+  return out;
+}
+function renderExtras(w){   // commissioner: add a side or special parlay to the week that's open now
+  if(!isAdmin()||isSide(w)||w!==lastWeek()||season().id!==newestOf(league()).id)return'';
+  const c=calc(w);const sd=sideOf(w);const up=specialsOf().filter(sp=>sunOf(sp.day)>(weekSun(w)||''));
+  const side=sd?'':w.kind==='special'?`<div class="ex"><small class="muted">Side parlays ride with a Sunday parlay. Add one once Week ${w.num} Sunday opens.</small></div>`
+    :`<div class="ex"><button class="btn block" data-act="add-side">🎯 Add an Anytime TD side parlay</button><small class="muted">Runs alongside ${h(wkName(w))}. ATTD bets only, Sunday games. No Bozo and no vote, so win or lose it never touches the Bozo.</small></div>`;
+  const special=(w.kind==='special'&&!c.legs.some(l=>l.status!=='pending')?`<div class="ex"><button class="btn ghost block sm" data-act="undo-special">Make ${h(wkName(w))} a regular Sunday parlay again</button></div>`:'')
+    +`<div class="ex"><button class="btn block" data-act="add-special">📅 Add a special-day parlay</button><small class="muted">Thanksgiving, Christmas and other odd-day slates. It goes before that week's Sunday parlay, and its vote picks the Sunday Bozo.</small></div>`;
+  return`<section class="card extras"><h3>Extra parlays</h3>${side}${special}${up.length?`<div class="pd-sub" style="margin:14px 0 6px">Coming up</div>${up.map(sp=>`<div class="row between ex-plan"><span>${spIcon(sp.name)} ${h(sp.name)} parlay · ${h(fmtDay(sp.day))}</span><button class="mini danger" data-act="drop-special" data-day="${sp.day}" title="Remove">×</button></div>`).join('')}`:''}</section>`;
+}
+function clashLines(cl){if(!hasFlags(cl))return'';const nm=mid=>h(member(mid)?.name||'');return`<div class="clashlines">${cl.pairs.map(p=>`<div class="clashline">⚠ <b>${nm(p.a)}</b> and <b>${nm(p.b)}</b> ${CLASH_SUM[p.kind]}${p.game?' · '+h(p.game.name):''}</div>`).join('')}${Object.entries(cl.off||{}).map(([mid,o])=>`<div class="clashline">⚠ <b>${nm(mid)}</b> picked a ${h(offText(o,cl.rule))} · ${h(o.game.name)}</div>`).join('')}${Object.keys(cl.notd||{}).map(mid=>`<div class="clashline">⚠ <b>${nm(mid)}</b>'s pick isn't an Anytime TD bet. This side parlay is ATTD only.</div>`).join('')}</div>`}
 function pickStatus(w,c,cl){
   if(!c.n)return'';
   const untidy=isAdmin()&&cl&&cl.state==='ok'?untidyList(w):[];
   const tidyBtn=untidy.length?`<button class="btn sm ghost" style="align-self:flex-start" data-act="tidy-all" data-wid="${w.id}">✨ Tidy up ${untidy.length} pick${untidy.length===1?'':'s'}</button>`:'';
   const note=cl&&cl.state==='failed'?`<small class="muted tiny">Couldn't load this week's NFL schedule, so same-game grouping and clash checks are off for now.</small>`:'';
-  if(c.graded)return cl&&cl.pairs.length?`<div class="pickstat">${clashLines(cl)}</div>`:'';
+  if(c.graded)return hasFlags(cl)?`<div class="pickstat">${clashLines(cl)}</div>`:'';
   const missing=c.legs.filter(l=>!String(l.text||'').trim());const inCount=c.n-missing.length;
-  if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}<div class="pickstat all"><b>All ${c.n} picks are in</b><span class="muted tiny">${w.locked?'Locked.':cl&&cl.pairs.length?'Sort out the clash first.':'Ready for the Bozo to place it.'}</span></div>${cl&&cl.pairs.length?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
+  if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}<div class="pickstat all"><b>All ${c.n} picks are in</b><span class="muted tiny">${w.locked?'Locked.':hasFlags(cl)?'Sort out the flagged picks first.':isSide(w)?'Ready to place it.':'Ready for the Bozo to place it.'}</span></div>${hasFlags(cl)?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
   const names=missing.map(l=>member(l.mid)?.name).filter(Boolean);
   return`<div class="pickstat"><div class="row between"><b>${inCount} of ${c.n} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div><div class="pickstat-who">Waiting on ${names.map(n=>`<span class="waitchip">${h(n)}</span>`).join('')}</div>${clashLines(cl)}${tidyBtn}${note}</div>`;
 }
@@ -1160,7 +1246,7 @@ function renderTicket(w,c){
   return`<section class="ticket ${c.result}" id="ticket">
     <div class="ticket-head">
       <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c)}</div></div>
-      <div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':(isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown')}</span>${isAdmin()?`<button class="mini" data-act="change-bozo" title="Change bozo">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked for this week">🔒 locked</span>':''}</div>
+      ${isSide(w)?`<div class="bozo-line"><span class="clown">🎯</span><span class="bozo-name">Side parlay</span><span class="is-bozo">no Bozo, no vote</span>${w.locked?'<span class="tag warn" title="Picks are locked">🔒 locked</span>':''}</div>`:`<div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':(isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown')}</span>${isAdmin()?`<button class="mini" data-act="change-bozo" title="Change bozo">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked for this week">🔒 locked</span>':''}</div>`}
     </div>
     ${pickStatus(w,c,cl)}
     <div class="legs">${renderLegs(w,c,cl)}</div>
@@ -1185,13 +1271,13 @@ function renderLeg(w,l,cl){
   const empty=!String(l.text||'').trim()&&l.status==='pending';
   const cm=cl&&cl.claims[l.mid];const shown=(l.teams&&l.teams.length)||!cm||!cm.teams.length?l:{...l,teams:cm.teams};
   const tidyRow=l.raw&&l.raw!==l.text&&canEdit(l.mid)?`<div class="leg-tidy">Tidied from “${h(l.raw)}” · <a href="#" data-act="untidy" data-wid="${w.id}" data-mid="${l.mid}">Undo</a></div>`:'';
-  const clashRow=(cl&&cl.clashes[l.mid]||[]).length?`<div class="leg-clash">${cl.clashes[l.mid].map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`).join('<br>')}</div>`:'';
+  const flags=cl?[...(cl.clashes[l.mid]||[]).map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`),...(cl.off&&cl.off[l.mid]?[`⚠ ${h(offText(cl.off[l.mid],cl.rule))}`]:[]),...(cl.notd&&cl.notd[l.mid]?['⚠ Not an Anytime TD bet. This side parlay is ATTD only.']:[])]:[];const clashRow=flags.length?`<div class="leg-clash">${flags.join('<br>')}</div>`:'';
   return`<div class="leg ${l.status} ${mine?'mine':''} ${empty?'nopick':''}" data-leg="${l.mid}">
     <div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div>
     <div class="leg-top"><span class="leg-name">${h(m.name)}</span>${isBozo?'<span class="bz-ic" title="This week\'s Bozo">🤡</span>':''}<span class="tag warn" data-warn="${l.mid}" ${bad?'':'hidden'}>Too heavy</span>${l.unsure?(SHARE_MODE?`<span class="tag unsure" title="Who made this pick was pieced together from the group chat">unverified</span>`:`<button type="button" class="tag unsure" data-act="verify-pick" data-mid="${l.mid}" title="This pick came from the shared slip; who owns it was inferred. Tap to mark verified.">unverified</button>`):''}${isAdmin()?`<button class="mini danger" data-act="remove-leg" data-mid="${l.mid}" title="Remove leg">×</button>`:''}</div>
     ${empty?`<span class="badge none">no pick yet</span>`:isAdmin()?`<div class="seg ${open?'':'graded'}">${seg}</div>`:l.status==='pending'?`<span class="badge in">✓ pick in</span>`:`<div class="seg graded"><button class="${l.status} on" disabled>${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status]}</button></div>`}
     <div class="leg-inputs">
-      <div class="pickbox">${pickIcon(shown)}<textarea class="pick-in" rows="1" placeholder="${editable?'Pick — e.g. Chiefs -3.5':'No pick yet'}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next" ${editable?'':'disabled'}>${h(l.text)}</textarea></div>
+      <div class="pickbox">${pickIcon(shown)}<textarea class="pick-in" rows="1" placeholder="${editable?(isSide(w)?'Pick, e.g. Bijan Robinson Anytime TD':'Pick, e.g. Chiefs -3.5'):'No pick yet'}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next" ${editable?'':'disabled'}>${h(l.text)}</textarea></div>
       <input class="mono ${bad?'bad':''}" placeholder="-110" value="${h(l.odds)}" data-bind="pick|${w.id}|${l.mid}|odds" data-odds="${l.mid}" autocomplete="off" inputmode="text" ${editable?'':'disabled'}>
     </div>
     ${tidyRow}${clashRow}
@@ -1306,9 +1392,10 @@ function ticketFoot(w,c){
     <div><small>Each</small><b class="mono" id="f-each">${priced?fmt$(c.potential/c.n):'—'}</b></div>
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
-  <div id="f-won">${c.result==='won'?`<div class="won-line">🎉 Everyone collects ${fmt$(c.share)}. ${h(b?.name||'The Bozo')} nets ${fmt$(c.share-c.stake)} after fronting the stake.</div>`:''}</div>
-  <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&lastWeek()===w?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">Delete week</button>`:''}</div>`;
+  <div id="f-won">${wonLine(w,c)}</div>
+  <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastWeek()===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`;
 }
+function wonLine(w,c){if(c.result!=='won')return'';const b=member(w.bozoId);return`<div class="won-line">🎉 Everyone collects ${fmt$(c.share)}.${isSide(w)||!b?'':` ${h(b.name)} nets ${fmt$(c.share-c.stake)} after fronting the stake.`}</div>`}
 function patchTicket(w){
   const c=calc(w);const priced=!c.missingOdds&&c.n>0;const $=id=>document.getElementById(id);
   if(!$('tfoot'))return;
@@ -1318,7 +1405,7 @@ function patchTicket(w){
   $('f-hint').hidden=!(c.missingOdds&&c.n);
   $('tbadge').innerHTML=resultBadge(c);
   const b=member(w.bozoId);
-  $('f-won').innerHTML=c.result==='won'?`<div class="won-line">🎉 Everyone collects ${fmt$(c.share)}. ${h(b?.name||'The Bozo')} nets ${fmt$(c.share-c.stake)} after fronting the stake.</div>`:'';
+  $('f-won').innerHTML=wonLine(w,c);
   for(const l of c.legs){
     const bad=l.odds!==''&&l.odds!=null&&!legal(l.oddsN);
     const inp=document.querySelector(`[data-odds="${l.mid}"]`);if(inp)inp.classList.toggle('bad',bad);
@@ -1404,11 +1491,11 @@ function renderSealedVote(w,c,el,reason){
     ${editing?`<button class="btn ghost block sm" data-act="change-sub-done">Done changing</button>`:''}`;
   }
   const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now" ${done.length?'':'disabled'}>🎬 Reveal now with ${done.length} of ${exp.length}</button>${missing.length?`<div class="skiprow">${missing.map(mid=>{const x=st(mid);return`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="1">${x.voted&&!x.video?`Count ${h(member(mid)?.name)} without a video`:`Skip ${h(member(mid)?.name)}`}</button>`}).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose the Bozo manually instead</button></div>`:'';
-  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Everyone with a leg votes with a name and a video. The reveal starts when the last one lands. A vote without a video still counts if the commissioner reveals without it.</p>${status}${yours}${nextPickBox(w,c)}${admin}</section>`;
+  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books. Who's the ${h(nextName(w))} Bozo?</h3><p class="muted tiny">${reason} Everyone with a leg votes with a name and a video. The reveal starts when the last one lands. A vote without a video still counts if the commissioner reveals without it.</p>${status}${yours}${nextPickBox(w,c)}${admin}</section>`;
 }
 const nextEdit=new Set();
 async function sendNext(l,w,text,odds,raw,keep){setSyncDot('busy');
-  try{const teams=pickTeamsFor(text,nflData(w.date,1));const d=await api(l,'/nextpick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,text,odds,teams,memberId:l.me,raw:raw||'',keep:!!keep}});nextEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(text?`Week ${w.num+1} pick saved — it's on the slip the moment the Bozo is crowned`:'Next week\'s pick cleared','good')}
+  try{const teams=pickTeamsFor(text,nflOk(nextSlate(w)));const d=await api(l,'/nextpick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,text,odds,teams,memberId:l.me,raw:raw||'',keep:!!keep}});nextEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(text?`${nextName(w)} pick saved. It's on the slip the moment the Bozo is crowned.`:'Next week\'s pick cleared','good')}
   catch(e){setSyncDot('bad');toast('Pick didn\'t save: '+e.message,'bad')}}
 /* ---- NFL slate: this week's games and who plays for whom, for same-game grouping and clash checks ---- */
 const NFL={};
@@ -1489,8 +1576,17 @@ function tidyLeg(wid,mid,el){
   needRender=true;
 }
 function untidyList(w){const nfl=nflOk(slipNfl(w));return Object.entries(w.picks).filter(([mid,p])=>member(mid)&&!p.keep&&String(p.text||'').trim()&&p.status==='pending').map(([mid,p])=>({mid,from:p.text,to:cleanPick(p.text,nfl)})).filter(x=>x.to&&x.to!==x.from)}
-function slipNfl(w){const l=league();if(!w||!w.date||w!==lastWeek()||season().id!==newestOf(l).id)return null;return nflData(w.date,0)}
-function slipClaims(w,c){const l=league();if(!w||!w.date||w!==lastWeek()||season().id!==newestOf(l).id)return null;const nfl=nflData(w.date,0);const ok=nfl&&nfl.games?nfl:null;const cl=weekClaims(c.legs.filter(l=>String(l.text||'').trim()).map(l=>({mid:l.mid,text:l.text,teams:l.teams,tm:l.tm})),ok);cl.state=ok?'ok':nfl&&nfl.failed?'failed':'loading';return cl}
+function slipDate(w){const p=parentOf(w);return w.kind==='special'&&w.day?w.day:p?slipDate(p):w.date}
+function liveSlip(w){const l=league();if(!w||season().id!==newestOf(l).id)return false;const lw=lastWeek();return w===lw||(isSide(w)&&(w.of===lw?.id||!calc(w).graded))}
+function slipNfl(w){if(!liveSlip(w)||!slipDate(w))return null;return nflData(slipDate(w),0)}
+const isAttd=t=>{const lo=' '+String(t||'').toLowerCase().replace(/[’']/g,'')+' ';return!TD_FIRST.test(lo)&&!TD_TWO.test(lo)&&(TD_ANY.test(lo)||/\btds?\b|touchdown|tuddy/.test(lo))};
+// game-day rules: every parlay is Sunday games only, a special parlay only its day; a side parlay takes Anytime TD bets only
+function dayCheck(cl,items,rule,attd){cl.rule=rule;cl.off={};cl.notd={};
+  for(const x of items){const cm=cl.claims[x.mid];const d=cm&&cm.game?etDay(cm.game.at):'';if(d&&(rule.sunday?dowOf(d)!==0:d!==rule.day))cl.off[x.mid]={day:d,game:cm.game};if(attd&&!isAttd(x.text))cl.notd[x.mid]=true}
+  cl.flags=Object.keys(cl.off).length+Object.keys(cl.notd).length;return cl}
+const offText=(o,rule)=>`${DOW[dowOf(o.day)]} game${rule.sunday?', Sunday games only':`, not ${rule.name}`}`;
+const hasFlags=cl=>!!cl&&!!(cl.pairs.length||cl.flags);
+function slipClaims(w,c){if(!liveSlip(w)||!slipDate(w))return null;const nfl=nflData(slipDate(w),0);const ok=nfl&&nfl.games?nfl:null;const items=c.legs.filter(l=>String(l.text||'').trim()).map(l=>({mid:l.mid,text:l.text,teams:l.teams,tm:l.tm}));const cl=weekClaims(items,ok);cl.state=ok?'ok':nfl&&nfl.failed?'failed':'loading';return dayCheck(cl,items,dayRule(parentOf(w)?{}:w),isSide(w))}
 const TD_FIRST=/\b(first|1st) (td|touchdown|tuddy|scorer)\b|\bftd\b/,TD_TWO=/\b2 ?\+ ?(tds?|touchdowns?|tuddies)\b|\btwo (tds|touchdowns)\b/,TD_ANY=/\bany ?time\b|\batt?d\b|\btuddy\b|\bto score\b|\btd scorer\b|\bscores? an? (td|touchdown)\b/;
 const STATS=[[/rush(ing)? ?(\+|and|&|n) ?rec(eiving)?|scrimmage|total y(ar)?ds/,'Rush + Rec Yds'],[/longest rec(eption)?/,'Longest Reception'],[/longest rush/,'Longest Rush'],[/pass(ing)? ?(tds?|touchdowns?)/,'Passing TDs'],[/rec(eiving)? ?y(ar)?ds?|receiving\b/,'Receiving Yds'],[/rush(ing)? ?y(ar)?ds?|rushing\b/,'Rushing Yds'],[/pass(ing)? ?y(ar)?ds?|passing\b/,'Passing Yds'],[/pass(ing)? att(empt)?s?|\battempts\b/,'Pass Attempts'],[/completions?|\bcomps?\b/,'Completions'],[/rush(ing)? att(empt)?s?|carries/,'Rush Attempts'],[/receptions?|catches|\brecs?\b/,'Receptions'],[/interceptions?|\bints?\b|\bpicks thrown\b/,'Interceptions'],[/field goals?|\bfgs?\b/,'Field Goals Made'],[/kick(ing)? p(oin)?ts/,'Kicking Points']];
 // sportsbook wording for a pick, or null when the app isn't sure (then the text is left exactly as typed)
@@ -1509,7 +1605,7 @@ function cleanPick(text,nfl){
   if(/team total|\btt\b/.test(lo)){if(teams.length!==1||!side)return null;return`${N(teams[0])}${half} Team Total ${side} ${line}`}
   // a player prop: needs a player the app is sure about and a market it recognises
   if(pl&&!teams.length){
-    const td=TD_FIRST.test(lo)?'First TD':TD_TWO.test(lo)?'2+ TDs':TD_ANY.test(lo)?'Anytime TD':null;
+    const td=TD_FIRST.test(lo)?'First TD':TD_TWO.test(lo)?'2+ TDs':TD_ANY.test(lo)||(/\b(td|touchdown)\b/.test(lo)&&!/pass|over|under|\d/.test(lo))?'Anytime TD':null;
     if(td)return`${pl.name} ${td}`;
     const st=(STATS.find(([re])=>re.test(lo))||[])[1];if(!st)return null;
     if(plus)return`${pl.name} ${plus}+ ${st}`;if(side)return`${pl.name} ${side} ${line} ${st}`;return null;
@@ -1527,38 +1623,41 @@ function cleanPick(text,nfl){
   return null;
 }
 function pickTeamsFor(text,nfl){const t=detectTeams(text);if(t.length||!nfl||!nfl.full||betType(text)!=='Player prop')return t;const pl=matchPlayer(text,nfl);return pl?[pl.team]:t}
+function nextSlate(w){const p=nextPlan(w);return p.sunday?nflData(slipDate(w),0):p.special?nflData(p.special.day,0):nflData(w.date,1)}   // the NFL week the next parlay is on
+function nextRule(w){const p=nextPlan(w);return p.special?{day:p.special.day,name:p.special.name}:{sunday:true}}
 function nextPickList(w,c,me){
   const exp=c.legs.map(x=>x.mid);const next=w.next||{};
-  const nfl=nflData(w.date,1);const ok=nfl&&nfl.games?nfl:null;
+  const nfl=nextSlate(w);const ok=nfl&&nfl.games?nfl:null;
   const items=exp.filter(mid=>next[mid]&&String(next[mid].text||'').trim()).map(mid=>({mid,text:next[mid].text,teams:next[mid].teams,tm:false,odds:next[mid].odds}));
   if(!items.length)return'';
-  const cl=weekClaims(items,ok);const groups=bunch(items,x=>cl.claims[x.mid]?.game?.id);
-  const row=x=>{const m=member(x.mid);const cm=cl.claims[x.mid];const f=(cl.clashes[x.mid]||[])[0];return`<div class="np-row ${x.mid===me?'mine':''} ${f?'clash':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span>${f?`<span class="tag bad">${CLASH[f.kind]} ${h(member(f.with)?.name||'')}</span>`:'<span></span>'}<span class="np-pick">${betChip(x.text,cm?.teams||x.teams)}<span class="mono muted">${h(x.odds||'')}</span></span></div>`};
+  const cl=dayCheck(weekClaims(items,ok),items,nextRule(w),false);const groups=bunch(items,x=>cl.claims[x.mid]?.game?.id);
+  const row=x=>{const m=member(x.mid);const cm=cl.claims[x.mid];const f=(cl.clashes[x.mid]||[])[0];const off=cl.off[x.mid];return`<div class="np-row ${x.mid===me?'mine':''} ${f||off?'clash':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span>${f?`<span class="tag bad">${CLASH[f.kind]} ${h(member(f.with)?.name||'')}</span>`:off?`<span class="tag bad">${h(offText(off,cl.rule))}</span>`:'<span></span>'}<span class="np-pick">${betChip(x.text,cm?.teams||x.teams)}<span class="mono muted">${h(x.odds||'')}</span></span></div>`};
   const missing=exp.filter(mid=>!(next[mid]&&String(next[mid].text||'').trim()));
-  return`<div class="pd-sub" style="margin:12px 0 6px">Week ${w.num+1} picks so far <span class="muted">· ${items.length} of ${exp.length}</span></div><div class="np-list">${groups.map(g=>g.game&&g.items.length>1?`<div class="np-group"><div class="np-sg">Same game · ${h(gameLabel(cl.claims[g.items[0].mid].game))}</div>${g.items.map(row).join('')}</div>`:g.items.map(row).join('')).join('')}${missing.map(mid=>{const m=member(mid);return`<div class="np-row"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="muted tiny">not in yet</span></div>`}).join('')}</div>${cl.pairs.length?`<small class="muted tiny">Flagged picks can't all win together, or a sportsbook won't take them in one parlay. Same-game picks that work together are just grouped.</small>`:''}${nfl&&nfl.failed?`<small class="muted tiny">Couldn't load next week's NFL schedule, so only exact duplicates are checked right now.</small>`:''}`;
+  return`<div class="pd-sub" style="margin:12px 0 6px">${h(nextName(w))} picks so far <span class="muted">· ${items.length} of ${exp.length}</span></div><div class="np-list">${groups.map(g=>g.game&&g.items.length>1?`<div class="np-group"><div class="np-sg">Same game · ${h(gameLabel(cl.claims[g.items[0].mid].game))}</div>${g.items.map(row).join('')}</div>`:g.items.map(row).join('')).join('')}${missing.map(mid=>{const m=member(mid);return`<div class="np-row"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="muted tiny">not in yet</span></div>`}).join('')}</div>${hasFlags(cl)?`<small class="muted tiny">Flagged picks can't all win together, a sportsbook won't take them in one parlay, or the game is on the wrong day. ${h(ruleText(cl.rule))}. Same-game picks that work together are just grouped.</small>`:''}${nfl&&nfl.failed?`<small class="muted tiny">Couldn't load next week's NFL schedule, so only exact duplicates are checked right now.</small>`:''}`;
 }
 function nextPickBox(w,c){
   const l=league();const me=l.me;if(!me||!memberCan('picks'))return'';
   const st=subStatus(w)(me);const mineIn=!!(st.voted&&st.video)||isAdmin();const hasLeg=c.legs.some(x=>x.mid===me);if(!hasLeg)return'';
-  if(S.weeks[S.weeks.indexOf(w)+1])return'';   // that week's slip is open now — picks go on the slip
+  if(nextMain(w))return'';   // that week's slip is open now — picks go on the slip
+  const nn=h(nextName(w));const rule=nextRule(w);
   const exp=expectedVoters(w,c);const inCount=exp.filter(mid=>w.next?.[mid]?.text).length;
   const np=w.next?.[me];const editing=nextEdit.has(w.id)||!np;
-  if(!mineIn)return`<div class="nextpick locked"><div class="pd-sub">Your Week ${w.num+1} pick</div><p class="muted tiny" style="margin:0">Unlocks once your vote and video are in.</p>${nextPickList(w,c,me)}</div>`;
+  if(!mineIn)return`<div class="nextpick locked"><div class="pd-sub">Your ${nn} pick</div><p class="muted tiny" style="margin:0">Unlocks once your vote and video are in.</p>${nextPickList(w,c,me)}</div>`;
   const oddsN=np?parseOdds(np.odds):null;const heavy=np&&np.odds&&!legal(oddsN);
-  return`<div class="nextpick"><div class="pd-sub">Your Week ${w.num+1} pick</div>${editing?`<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="Pick — e.g. Chiefs -3.5" autocomplete="off" enterkeyhint="next">${h(np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">Must be -200 or longer. It lands on the Week ${w.num+1} slip when the Bozo is crowned.${np?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small>`
+  return`<div class="nextpick"><div class="pd-sub">Your ${nn} pick</div>${editing?`<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="${rule.sunday?'Pick, e.g. Chiefs -3.5':`Pick a ${h(rule.name)} game`}" autocomplete="off" enterkeyhint="next">${h(np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">${h(ruleText(rule))}. Must be -200 or longer. It lands on the ${nn} slip when the Bozo is crowned.${np?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small>`
     :`<div class="np-saved"><div class="np-bet">${betChip(np.text,np.teams)}<span class="mono">${np.odds?h(np.odds):''}</span>${heavy?'<span class="tag warn">Too heavy</span>':''}</div><button class="btn sm ghost" data-act="next-edit">Edit</button></div>${np.raw?`<div class="leg-tidy">Tidied from “${h(np.raw)}” · <a href="#" data-act="next-untidy">Undo</a></div>`:''}`}${nextPickList(w,c,me)}</div>`;
 }
 function tallyAt(r,i){const t={};for(let k=0;k<=i&&k<r.order.length;k++){const c=r.order[k].candidate;t[c]=(t[c]||0)+1}return t}
 function tallyBars(t,n,bump){return`<div class="rv-tally">${Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([cid,k])=>{const m=member(cid);return`<div class="rv-trow ${cid===bump?'bump':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="bar"><i style="width:${Math.round(k/n*100)}%"></i></span><b class="mono">${k}</b></div>`}).join('')}</div>`}
 function crownBlock(w,c,r){
-  const next=S.weeks[S.weeks.indexOf(w)+1];
-  if(next){const nb=member(next.bozoId);return`<button class="btn primary block" style="margin-top:12px" data-act="open-week" data-wid="${next.id}">🤡 ${h(nb?.name||'')} is the Week ${next.num} Bozo — open Week ${next.num} →</button>`}
+  const next=nextMain(w);
+  if(next){const nb=member(next.bozoId);return`<button class="btn primary block" style="margin-top:12px" data-act="open-week" data-wid="${next.id}">🤡 ${h(nb?.name||'')} is the ${h(nextName(w))} Bozo. Open it →</button>`}
   if(!isAdmin())return`<p class="muted tiny" style="margin-top:10px">The commissioner crowns the Bozo.</p>`;
   if(lastWeek()!==w)return'';
-  return`<div class="vote-actions" style="margin-top:12px">${r.winner?`<button class="btn primary block" data-act="crown" data-mid="${r.winner}">🤡 Crown ${h(member(r.winner)?.name)} · start Week ${w.num+1}</button>`:`<button class="btn primary block" data-act="flip" data-ids="${r.tie.join(',')}">🪙 ${r.tie.length}-way tie — flip for it</button>`}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button><button class="btn ghost block sm" data-act="unreveal">Reopen the vote</button></div>`;
+  return`<div class="vote-actions" style="margin-top:12px">${r.winner?`<button class="btn primary block" data-act="crown" data-mid="${r.winner}">🤡 Crown ${h(member(r.winner)?.name)} · start ${h(nextName(w))}</button>`:`<button class="btn primary block" data-act="flip" data-ids="${r.tie.join(',')}">🪙 ${r.tie.length}-way tie — flip for it</button>`}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button><button class="btn ghost block sm" data-act="unreveal">Reopen the vote</button></div>`;
 }
 function voteBoard(w,r){const n=r.order.length;const fin=tallyAt(r,n-1);
-  return`<div class="board">${r.order.map((o,i)=>{const v=member(o.voter),cd=member(o.candidate);return`<div class="brow ${i===r.clinch?'clinch':''}"><span class="mono muted">${i+1}</span><span class="avatar xs" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><span class="nm">${h(v?.name||'?')}</span><span class="muted">votes</span><b style="color:${cd?.color||'inherit'}">${h(cd?.name||'?')}</b>${i===r.clinch?'<em>the tribe has spoken</em>':''}</div>`}).join('')}</div>${tallyBars(fin,n)}<p class="rv-final">${r.winner?`🤡 ${h(member(r.winner)?.name)} is the Week ${w.num+1} Bozo`:`Tied between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')} — coin flip`}</p>`}
+  return`<div class="board">${r.order.map((o,i)=>{const v=member(o.voter),cd=member(o.candidate);return`<div class="brow ${i===r.clinch?'clinch':''}"><span class="mono muted">${i+1}</span><span class="avatar xs" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><span class="nm">${h(v?.name||'?')}</span><span class="muted">votes</span><b style="color:${cd?.color||'inherit'}">${h(cd?.name||'?')}</b>${i===r.clinch?'<em>the tribe has spoken</em>':''}</div>`}).join('')}</div>${tallyBars(fin,n)}<p class="rv-final">${r.winner?`🤡 ${h(member(r.winner)?.name)} is the ${h(nextName(w))} Bozo`:`Tied between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')} — coin flip`}</p>`}
 function renderReveal(w,c){
   const l=league();const r=w.reveal;const n=r.order.length;const st=rvGet(w);
   const head=`<h3>${h(wkName(w))} — the votes are in</h3>`;
@@ -1571,13 +1670,14 @@ function renderReveal(w,c){
     <div class="rv-who"><span class="avatar" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><div><b>${h(v?.name||'?')}'s vote</b><small class="muted">${noVideo?'skipped the video — vote still counts':expired?'this video has expired':st.f?'':'watch it, then read the vote'}</small></div></div>
     ${noVideo||expired?`<div class="rv-novid">🎥 ${noVideo?'No video from '+h(v?.name||'?'):'Video expired'}</div>`:`<video class="rv-video" controls playsinline preload="metadata" src="${videoUrl(l,w,o.voter)}"></video>`}
     ${st.f?`<div class="rv-card ${isClinch?'clinch':''}"><div class="rv-read"><span>${h(v?.name||'?')} votes…</span><b style="color:${cand?.color||'inherit'}">${h(cand?.name||'?')}</b></div>${tallyBars(t,n,o.candidate)}
-        ${isClinch?`<div class="tribe"><div class="tribe-ic">🤡</div><b>${t[o.candidate]} votes. That's enough. The tribe has spoken.</b><span>${h(cand?.name||'?')} is the Week ${w.num+1} Bozo.</span></div>`:''}
+        ${isClinch?`<div class="tribe"><div class="tribe-ic">🤡</div><b>${t[o.candidate]} votes. That's enough. The tribe has spoken.</b><span>${h(cand?.name||'?')} is the ${h(nextName(w))} Bozo.</span></div>`:''}
         ${after?`<button class="btn ${isClinch?'':'primary'} block" data-act="rv-next">${isClinch?`Watch the remaining ${after} vote${after===1?'':'s'} anyway`:'Next vote →'}</button>`:''}${isClinch&&after?`<button class="btn primary block" data-act="rv-end">See the vote board</button>`:''}${!after?`<button class="btn primary block" data-act="rv-end">See the vote board</button>`:''}</div>`
       :`<button class="btn primary block" data-act="rv-flip">Read the vote</button>`}
   </section>`;
 }
 function renderVote(w,c,isLast){
-  const next=S.weeks[S.weeks.indexOf(w)+1];
+  if(isSide(w))return'';
+  const next=nextMain(w);
   if(next&&!revealSeen(w)){const el0=eligible(w);return renderSealedVote(w,c,el0,{miss:'Only the people who missed were on the ballot.',push:'Nobody missed — the pushes were on the ballot.',all:'Everyone hit. Everyone was on the ballot.'}[el0.reason]||'')}
   if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div>${w.reveal?`<div class="pd-sub" style="margin:12px 0 6px">How the vote went</div>${voteBoard(w,w.reveal)}<button class="btn ghost block sm" data-act="rv-restart" data-wid="${w.id}">↺ Watch the reveal again</button>`:''}</section>`}
   if(!c.n)return'';
@@ -1589,13 +1689,13 @@ function renderVote(w,c,isLast){
   const reason={miss:'Only the people who missed are on the ballot.',push:'Nobody missed — the pushes are on the ballot.',all:'Everyone hit. Everyone is on the ballot.'}[el.reason];
   if(synced&&!!league().features?.votes)return renderSealedVote(w,c,el,reason);
   const votingOpen=false;const manual=true;
-  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} ${votingOpen?`Everyone votes from their own phone${isAdmin()?', then you crown the winner':''}. Send your video in the chat as usual. ${voted}/${voters} votes in.`:synced&&!isAdmin()?`Send your video in the chat as usual — the commissioner tallies the votes here.`:`Tap + as each person votes, then crown the winner to open Week ${w.num+1}.`}</p>
+  return`<section class="card vote next"><h3>${h(wkName(w))} is in the books. Who's the ${h(nextName(w))} Bozo?</h3><p class="muted tiny">${reason} ${votingOpen?`Everyone votes from their own phone${isAdmin()?', then you crown the winner':''}. Send your video in the chat as usual. ${voted}/${voters} votes in.`:synced&&!isAdmin()?`Send your video in the chat as usual — the commissioner tallies the votes here.`:`Tap + as each person votes, then crown the winner to open ${h(nextName(w))}.`}</p>
     <div class="cands">${el.list.map(id=>{const m=member(id);const l=c.legs.find(x=>x.mid===id);const v=votes[id]||0;
       const sub=l.status==='miss'?(l.margin!=null?`missed by ${fmtMargin(l.margin,l.unit)}`:'missed'):l.status==='push'?'pushed':'hit';
       return`<div class="cand ${leaders.includes(id)?'lead':''}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${l.text?betChip(l.text,l.teams):''}</small>${synced&&Object.keys(ballots).some(v=>ballots[v]===id)?`<div class="voters">votes: ${Object.keys(ballots).filter(v=>ballots[v]===id).map(v=>h(member(v)?.name||'?')).join(', ')}</div>`:''}</div>${!manual?`<div class="tally"><b class="mono">${cnt(id)}</b>${votingOpen&&me?`<button class="btn sm ${myVote===id?'voted':''}" data-act="cast-vote" data-mid="${id}">${myVote===id?'✓ Voted':'Vote'}</button>`:''}</div>`:`<div class="tally"><button class="mini" data-act="vote" data-mid="${id}" data-d="-1">−</button><b class="mono">${cnt(id)}</b><button class="mini" data-act="vote" data-mid="${id}" data-d="1">+</button></div>`}</div>`}).join('')}</div>
     ${votingOpen&&!me?`<button class="btn block sm" data-act="pick-me">Tell the app who you are to vote</button>`:''}
     ${isAdmin()?`<div class="vote-actions">
-      ${leaders.length===1?`<button class="btn primary block" data-act="crown" data-mid="${leaders[0]}">🤡 Crown ${h(member(leaders[0]).name)} · start Week ${w.num+1}</button>`
+      ${leaders.length===1?`<button class="btn primary block" data-act="crown" data-mid="${leaders[0]}">🤡 Crown ${h(member(leaders[0]).name)} · start ${h(nextName(w))}</button>`
       :leaders.length>1?`<button class="btn primary block" data-act="flip" data-ids="${leaders.join(',')}">🪙 ${leaders.length}-way tie — flip for it</button>`
       :`<button class="btn block" data-act="flip" data-ids="${el.list.join(',')}">🪙 No votes yet — flip among all ${el.list.length}</button>`}
       <button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button>
@@ -1646,7 +1746,7 @@ function renderHistoryInner(){
   </div>
   ${[...S.weeks].reverse().map(w=>{const c=calc(w);const b=member(w.bozoId);
     return`<button class="wk ${c.result}" data-act="open-week" data-wid="${w.id}">
-      <div class="wk-l"><div class="wk-num">${h(wkShort(w))}</div><div><div class="wk-title">🤡 ${h(b?.name||'Unknown')}</div><div class="wk-sub">${fmtDate(w.date)}${w.date?' · ':''}${c.n} legs · ${c.n?amer(c.dec):'—'}${c.result==='won'?' · '+fmt$(c.payout):''}</div></div></div>
+      <div class="wk-l"><div class="wk-num">${h(wkShort(w))}</div><div><div class="wk-title">${isSide(w)?'🎯 Anytime TD side parlay':`🤡 ${h(b?.name||'Unknown')}${w.kind==='special'?` · ${h(w.dayName||'special')}`:''}`}</div><div class="wk-sub">${fmtDate(w.date)}${w.date?' · ':''}${c.n} legs · ${c.n?amer(c.dec):'—'}${c.result==='won'?' · '+fmt$(c.payout):''}</div></div></div>
       <div class="wk-r"><div class="dots">${c.legs.map(l=>`<span class="dot ${l.status}" style="--c:${member(l.mid)?.color}" title="${h(member(l.mid)?.name)}"></span>`).join('')}</div>${c.result==='lost'?`<span class="wk-count">${c.hits}/${c.n-c.pushes} hit</span>`:resultBadge(c)}</div>
     </button>`}).join('')}`;
 }
@@ -1659,7 +1759,7 @@ function allTimeSeason(){
   const l=league();const v=fresh();v.season='All-time';v.view='stats';const byName={};let n=0;
   for(const sn of seasonSorted(l).reverse()){const d=sn.data;const map={};
     for(const m of d.members){const k=canonName(m.name);if(!byName[k]){byName[k]={id:'a'+(++n),name:m.name,color:m.color,active:m.active};v.members.push(byName[k])}else if(m.active)byName[k].active=true;map[m.id]=byName[k].id}
-    for(const w of [...d.weeks].sort((a,b)=>a.num-b.num)){const nw={id:sn.id+'|'+w.id,num:v.weeks.length+1,date:w.date,stake:w.stake,bozoId:map[w.bozoId]||null,votes:{},picks:{},label:`${sn.name} · ${wkName(w)}`,short:`'${String(sn.name).slice(-2)} ${wkShort(w)}`,col:wkShort(w),seasonName:String(sn.name)};
+    for(const w of [...d.weeks].sort((a,b)=>a.num-b.num)){const nw={id:sn.id+'|'+w.id,num:v.weeks.length+1,date:w.date,stake:w.stake,bozoId:map[w.bozoId]||null,votes:{},picks:{},...(w.kind?{kind:w.kind}:{}),label:`${sn.name} · ${wkName(w)}`,short:`'${String(sn.name).slice(-2)} ${wkShort(w)}`,col:wkShort(w),seasonName:String(sn.name)};
       for(const[mid,p]of Object.entries(w.picks))if(map[mid])nw.picks[map[mid]]=p;v.weeks.push(nw)}}
   return v;
 }
@@ -1814,7 +1914,7 @@ function renderCrew(){
 /* ============================== RECAP ============================== */
 function recap(w){
   const c=calc(w);const b=member(w.bozoId);
-  const L=[`🤡 Bozo Parlay — ${wkName(w)}${S.season?' · '+S.season:''}`,`Bozo: ${b?.name||'Unknown'} (${fmt$0(c.stake)})`,''];
+  const L=[`🤡 Bozo Parlay — ${wkName(w)}${S.season?' · '+S.season:''}`,isSide(w)?`Side parlay, no Bozo (${fmt$0(c.stake)})`:`Bozo: ${b?.name||'Unknown'} (${fmt$0(c.stake)})`,''];
   for(const l of c.legs){const m=member(l.mid);const ic={hit:'✅',miss:'❌',push:'➖',pending:'⏳'}[l.status];
     let s=`${ic} ${m?.name}: ${l.text||'(no pick)'}${l.oddsN!=null?' ('+fmtOdds(l.oddsN)+')':''}`;
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss'))s+=` — ${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`;L.push(s)}
@@ -1856,9 +1956,9 @@ async function slipImage(w){
   rr(x,R-pw,92,pw,48,24);x.fillStyle=pill[1];x.fill();
   x.fillStyle=pill[2];x.textAlign='center';x.fillText(pill[0],R-pw/2,125);try{x.letterSpacing='0px'}catch(e){}
   // bozo line
-  x.textAlign='left';x.font='60px "Apple Color Emoji","Segoe UI Emoji",sans-serif';x.fillText('🤡',L,218);
-  x.font=F(700,58);x.fillStyle=b?.color||MU;const bn=b?.name||'Unknown';x.fillText(bn,L+84,216);
-  const bw=x.measureText(bn).width;x.font=F(500,36);x.fillStyle=MU;x.fillText('is the Bozo',L+84+bw+18,216);
+  x.textAlign='left';x.font='60px "Apple Color Emoji","Segoe UI Emoji",sans-serif';x.fillText(isSide(w)?'🎯':'🤡',L,218);
+  x.font=F(700,58);x.fillStyle=isSide(w)?PURPLE:b?.color||MU;const bn=isSide(w)?'Anytime TD side parlay':b?.name||'Unknown';x.fillText(bn,L+84,216);
+  const bw=x.measureText(bn).width;x.font=F(500,36);x.fillStyle=MU;if(!isSide(w))x.fillText('is the Bozo',L+84+bw+18,216);
   // legs
   let y=262;x.strokeStyle='rgba(0,0,0,.08)';x.lineWidth=2;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();
   for(const l of c.legs){const m=member(l.mid);const col={hit:GREEN,miss:RED,push:AMBER,pending:DIM}[l.status];
@@ -1973,7 +2073,7 @@ function confetti(){
 function memberSelect(id,sel){return`<select id="${id}">${S.members.filter(m=>m.active||m.id===sel).map(m=>`<option value="${m.id}" ${m.id===sel?'selected':''}>${h(m.name)}</option>`).join('')}</select>`}
 function crown(id){
   const w=currentWeek();if(lastWeek()!==w){toast('Only the latest week can crown the next Bozo','bad');return}
-  const nw=newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week ${nw.num} Bozo`);window.scrollTo({top:0,behavior:'smooth'});
+  const nw=newWeek(id);commit();toast(`🤡 ${member(id).name} is the ${wkName(nw)} Bozo`);window.scrollTo({top:0,behavior:'smooth'});
 }
 function download(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 
@@ -1998,12 +2098,23 @@ const ACT={
   crown(el){crown(el.dataset.mid)},
   flip(el){const ids=el.dataset.ids.split(',').filter(Boolean);if(!ids.length)return;
     spin(ids,id=>{if(el.dataset.first){S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} drew the short straw`)}else crown(id)})},
-  'pick-bozo-manual'(){const w=currentWeek();modal({title:`Week ${w.num+1} Bozo`,body:`<p>Skip the vote and just pick.</p>${memberSelect('bozoSel')}`,actions:[{label:'Cancel',cls:'ghost'},{label:'Crown & start week',cls:'primary',onClick:()=>crown(document.getElementById('bozoSel').value)}]})},
+  'pick-bozo-manual'(){const w=currentWeek();modal({title:`${nextName(w)} Bozo`,body:`<p>Skip the vote and just pick.</p>${memberSelect('bozoSel')}`,actions:[{label:'Cancel',cls:'ghost'},{label:'Crown & start week',cls:'primary',onClick:()=>crown(document.getElementById('bozoSel').value)}]})},
   'change-bozo'(){const w=currentWeek();modal({title:`${wkName(w)} Bozo`,body:memberSelect('bozoSel',w.bozoId),actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{w.bozoId=document.getElementById('bozoSel').value;commit()}}]})},
   'remove-leg'(el){const w=currentWeek();const m=member(el.dataset.mid);confirm2('Remove leg?',`Drop ${h(m?.name)} from the ${h(wkName(w))} slip. They sat this one out.`,'Remove',()=>{delete w.picks[el.dataset.mid];w.votes={};commit()})},
   'copy-recap'(el){copyText(recap(week(el.dataset.wid)))},
   'share-slip'(el){shareSlip(week(el.dataset.wid))},
-  'delete-week'(el){const w=week(el.dataset.wid);confirm2(`Delete ${wkName(w)}?`,'This removes the slip, grades and votes for this week. There is no undo — export a backup first if unsure.','Delete week',()=>{S.weeks=S.weeks.filter(x=>x!==w);S.currentWeekId=lastWeek()?.id||null;commit();toast(`${wkName(w)} deleted`)})},
+  'delete-week'(el){const w=week(el.dataset.wid);const sd=sideOf(w);const side=isSide(w);confirm2(`Delete ${wkName(w)}?`,`This removes the slip, grades and votes for this ${side?'side parlay':'week'}${sd?', and its Anytime TD side parlay':''}. There is no undo, so export a backup first if unsure.`,side?'Delete side parlay':'Delete week',()=>{S.weeks=S.weeks.filter(x=>x!==w&&x!==sd);S.currentWeekId=(side&&week(w.of)?.id)||lastWeek()?.id||null;commit();toast(`${wkName(w)} deleted`)})},
+  'add-side'(){const w=lastWeek();if(!w||w.kind==='special'||sideOf(w))return;const prior=[...S.weeks].reverse().find(isSide);
+    modal({title:'Anytime TD side parlay',body:`<p>Runs alongside <b>${h(wkName(w))}</b>. <b>Anytime TD bets only</b>, Sunday games only.</p><p>No Bozo and no vote, so win or lose it never touches the Bozo.</p><p class="muted tiny">Everyone starts with an empty leg. Tap × on anyone sitting it out.</p><label class="fld"><span>Stake</span><input id="sideStake" class="mono" type="number" min="0" step="1" value="${prior?.stake??5}" inputmode="numeric"></label>`,
+      actions:[{label:'Cancel',cls:'ghost'},{label:'Add side parlay',cls:'primary',onClick:()=>addSide(w,Math.max(0,Number(document.getElementById('sideStake')?.value)||0))}]})},
+  'add-special'(){const g=holidayGuess();
+    modal({title:'Special-day parlay',body:`<p>For odd-day slates like Thanksgiving or Christmas. It happens <b>before</b> that week's Sunday parlay, and its vote picks the Sunday Bozo.</p><p class="muted tiny">Only games on that day count. Whoever is Bozo going into it fronts it.</p><label class="fld"><span>Which day?</span><div class="chiprow">${['Thanksgiving','Christmas','Other'].map(n=>`<button type="button" class="${n===g.name?'on':''}" data-act="sp-chip" data-n="${n}">${n}</button>`).join('')}</div><input id="spName" placeholder="Name it, e.g. Black Friday" value="${h(g.name)}" autocomplete="off" ${g.name?'hidden':''}></label><label class="fld"><span>Date of the games</span><input id="spDay" type="date" value="${h(g.day)}"></label>`,
+      actions:[{label:'Cancel',cls:'ghost'},{label:'Add special parlay',cls:'primary',onClick:()=>addSpecial(document.getElementById('spName')?.value,document.getElementById('spDay')?.value)}]})},
+  'sp-chip'(el){const n=el.dataset.n;const box=el.closest('.modal-body');box.querySelectorAll('.chiprow button').forEach(b=>b.classList.toggle('on',b===el));const nm=box.querySelector('#spName');const dy=box.querySelector('#spDay');const y=+today().slice(0,4);
+    if(n==='Other'){nm.hidden=false;nm.value='';nm.focus();return}nm.hidden=true;nm.value=n;
+    const g=holidayGuess();if(g.name===n)dy.value=g.day;else if(n==='Christmas')dy.value=`${(g.day||today()).slice(0,4)}-12-25`;else{const n1=dowOf(`${y}-11-01`);dy.value=`${y}-11-${String(1+((4-n1+7)%7)+21).padStart(2,'0')}`}},
+  'undo-special'(){const w=lastWeek();if(!w||w.kind!=='special')return;confirm2('Make it a regular parlay?',`${h(wkName(w))} goes back to a normal Week ${w.num} Sunday parlay, and its picks stay.`,'Make it regular',()=>{S.specials=(S.specials||[]).filter(sp=>sp.day!==w.day);for(const k of['kind','day','dayName','label','short'])delete w[k];commit()},'primary')},
+  'drop-special'(el){const sp=(S.specials||[]).find(x=>x.day===el.dataset.day);if(!sp)return;confirm2(`Remove the ${h(sp.name)} parlay?`,`No special parlay on ${h(fmtDay(sp.day))}. That week stays one Sunday parlay.`,'Remove',()=>{S.specials=S.specials.filter(x=>x!==sp);commit()})},
   'first-bozo'(el){S.pendingBozo=el.dataset.mid;commit()},
   'first-start'(){if(!S.pendingBozo)return;const id=S.pendingBozo;S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
   'remove-member'(el){S.members=S.members.filter(m=>m.id!==el.dataset.mid);commit()},
@@ -2053,7 +2164,7 @@ const ACT={
   'untidy'(el,e){e.preventDefault();const w=week(el.dataset.wid);const mid=el.dataset.mid;const p=w?.picks[mid];if(!p||!p.raw)return;p.text=p.raw;delete p.raw;p.keep=true;if(!p.tm)p.teams=pickTeamsFor(p.text,nflOk(slipNfl(w)));if(!p.um)p.unit=unitFor(p.text);const L=league();save();if(L.sync&&L.sync.role!=='admin')sendPick(L,w,mid);else if(L.sync)schedulePush();render();toast('Back to how it was typed — the app will leave it alone')},
   'tidy-all'(el){const w=week(el.dataset.wid);const list=untidyList(w);if(!list.length)return;modal({title:`Tidy up ${list.length} pick${list.length===1?'':'s'}?`,body:`<p>Rewrites them in sportsbook wording. Anyone can undo their own afterwards.</p><div class="tidylist">${list.map(x=>`<div class="tidyrow"><b>${h(member(x.mid)?.name||'')}</b><span class="muted">${h(x.from)}</span><span>→ ${h(x.to)}</span></div>`).join('')}</div>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Tidy up',cls:'primary',onClick:()=>{const nfl=nflOk(slipNfl(w));for(const x of list){const p=w.picks[x.mid];if(!String(p.odds||'').trim()&&priceIn(p.text))p.odds=priceIn(p.text);p.raw=p.raw||p.text;p.text=x.to;if(!p.tm)p.teams=pickTeamsFor(x.to,nfl);if(!p.um)p.unit=unitFor(x.to)}commit();toast(`Tidied ${list.length} pick${list.length===1?'':'s'}`,'good')}}]})},
   'peek'(el){const wid=el.dataset.wid;peek.add(wid);render();clearTimeout(peekT);peekT=setTimeout(()=>{peek.delete(wid);if(!quiet())render()},4000)},
-  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');{const nfl=nflOk(nflData(w.date,1));const prev=w.next?.[l.me];const keep=!!(prev&&prev.keep&&prev.text===text);const clean=keep?null:cleanPick(text,nfl);sendNext(l,w,clean||text,odds,clean&&clean!==text?text:'',keep)}},
+  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');{const nfl=nflOk(nextSlate(w));const prev=w.next?.[l.me];const keep=!!(prev&&prev.keep&&prev.text===text);const clean=keep?null:cleanPick(text,nfl);sendNext(l,w,clean||text,odds,clean&&clean!==text?text:'',keep)}},
   'next-edit'(){nextEdit.add(currentWeek().id);render()},
   'next-untidy'(el,e){e.preventDefault();const l=league();const w=currentWeek();const np=w.next?.[l.me];if(!np||!np.raw)return;sendNext(l,w,np.raw,np.odds,'',true)},
   'next-cancel'(el,e){e.preventDefault();nextEdit.delete(currentWeek().id);render()},
