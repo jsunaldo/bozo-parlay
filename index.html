@@ -676,7 +676,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.23';
+const APP_VERSION='2026-09-18.24';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1356,7 +1356,7 @@ const ruleText=r=>r.sunday?`${r.monday?'Sunday or Monday':'Sunday'} games only`:
 function newWeek(bozoId){
   const prev=lastWeek();const plan=nextPlan(prev);const early=(prev&&prev.next)||{};
   const w={id:uid(),num:plan.num,date:today(),bozoId,stake:S.stake,picks:{},votes:{},...plan.extra};
-  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:!!(np.teams&&np.teams.length),...(np.raw?{raw:np.raw}:{}),...(np.keep?{keep:true}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
+  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:!!(np.teams&&np.teams.length),...(np.raw?{raw:np.raw}:{}),...(np.keep?{keep:true}:{}),by:np.by||m.id,...(np.at?{at:np.at}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
   S.weeks.push(w);S.currentWeekId=w.id;
   const sd=prev&&prev.kind==='special'?sideOf(prev):null;if(sd){sd.of=w.id;S.weeks.splice(S.weeks.indexOf(sd),1);S.weeks.push(sd)}   // a side parlay belongs with the Sunday parlay
   return w;
@@ -1608,7 +1608,7 @@ function legInfo(w,mid){   // everything about one leg: what was typed, what the
   const tidied=p.raw&&p.raw!==p.text;
   row('Pick',String(p.text||'').trim()?`<b>${h(p.text)}</b>`:'<span class="muted">No pick entered</span>');
   if(String(p.text||'').trim())row('Typed',tidied?`“${h(p.raw)}”`:'Exactly as shown above');
-  row('Entered',p.by?`By ${h(member(p.by)?.name||m.name)} in the app${p.at&&t(p.at)?`, ${t(p.at)}`:''}`:'By the commissioner');
+  row('Entered',(p.by==='admin'?'By the commissioner':p.by?`By ${h(member(p.by)?.name||m.name)} in the app`:'Not recorded (entered before the app kept track)')+(p.by&&p.at&&t(p.at)?`, ${t(p.at)}`:'')+(p.eby?`<br><span class="muted">Changed by the commissioner${p.eat&&t(p.eat)?`, ${t(p.eat)}`:''}</span>`:''));
   if(tidied)row('Wording','The app rewrote it in sportsbook wording, matching team and player names to ESPN’s schedule and rosters. The meaning didn’t change.');
   row('Odds',p.oddsBy==='espn'?`<b>${h(p.odds)}</b> from DraftKings (via ESPN), taken before kickoff. ${p.oddsTyped?`They typed ${h(p.oddsTyped)}.`:'They didn’t type a price.'}`:String(p.odds||'').trim()?`<b>${h(p.odds)}</b>, as typed`:'None entered');
   const t0=p.teams&&p.teams.length?p.teams:detectTeams(p.text).length?detectTeams(p.text):(teamOfPlayer(p.text)||[]);const tms=t0.slice(0,2).map(x=>TEAM_NM(x)).filter(Boolean);
@@ -2921,7 +2921,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     if(c==='odds'){p.oddsBy='typed';delete p.oddsTyped}   // a price they typed themselves stays theirs
     if(c==='text'){delete p.unsure;delete p.oddsBy;delete p.oddsTyped;if(e.target.tagName==='TEXTAREA')autosize(e.target);if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=pickTeamsFor(p.text,slipNfl(w));if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
     save();if(c==='odds')patchTicket(w);
-    const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){L.outbox=L.outbox||{};const ok0=obKey(L,w,b2);const e0=L.outbox[ok0];L.outbox[ok0]={at:Date.now(),base:e0&&'base' in e0?e0.base:(p.at||'')};save();clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin')schedulePush()}
+    const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){L.outbox=L.outbox||{};const ok0=obKey(L,w,b2);const e0=L.outbox[ok0];L.outbox[ok0]={at:Date.now(),base:e0&&'base' in e0?e0.base:(p.at||'')};save();clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin'){if(c==='text'||c==='odds'){const now=new Date().toISOString();if(b2===L.me){p.by=b2;p.at=now;delete p.eby;delete p.eat}else if(p.by&&p.by!=='admin'){p.eby='admin';p.eat=now}else{p.by='admin';p.at=now}}schedulePush()}}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
   else if(k==='league'){const l=league();l.setDirty={...(l.setDirty||{}),[a]:Date.now()};if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}if(a==='mondayOk'){l.mondayOk=e.target.value==='1';save();render();if(l.sync&&l.sync.role==='admin')schedulePush();toast(`Picks must be on a ${gameDays()} game`,'good')}}
   else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=seasonLabelText()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save();if(league().sync&&league().sync.role==='admin')schedulePush()}
