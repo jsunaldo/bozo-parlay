@@ -231,6 +231,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .srow .edit .seg{background:var(--surface3)}.srow .edit .seg button{color:var(--text)}
 .stag{font-size:11px;font-weight:700;padding:4px 9px;border-radius:980px;white-space:nowrap;letter-spacing:.02em}
 .checkrow{padding:0 16px 10px}
+.li{display:flex;flex-direction:column}.li-row{display:grid;grid-template-columns:74px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.li-row:last-child{border-bottom:0}.li-k{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding-top:2px}.li-v{font-size:14px;line-height:1.4;overflow-wrap:anywhere}.li-v .stag{display:inline-block;margin-right:4px}
 .devrows{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.devrow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border-radius:10px;padding:7px 10px}.devrow .dv{display:flex;flex-direction:column;font-size:13px;min-width:0}.devrow small{font-size:11px}
 .odds .dk{font-style:normal;font-size:9px;font-weight:700;color:var(--muted);margin-left:3px;vertical-align:super}
 .lvline:empty,#lvb-empty{display:none}.lv{font-size:12px;font-weight:600}.lv.hit,.lv.up{color:var(--green)}.lv.miss,.lv.down{color:var(--red)}.lv.push,.lv.even{color:var(--amber)}
@@ -675,7 +676,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.22';
+const APP_VERSION='2026-09-18.23';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -969,6 +970,13 @@ function pushCard(){
   const help=pushHelp();
   return`<section class="card pushcard"><div class="row between"><h3>🔔 Notifications</h3><button class="mini" data-act="push-later" title="Not now">×</button></div><p>${help||'Get a ping the moment the votes are in, and a noon reminder on any day you still owe a pick or vote.'}</p>${help&&!pushDenied()?'':!l.me?`<button class="btn primary block" data-act="pick-me">Tap your name first</button>`:`<button class="btn primary block" data-act="push-on" ${PUSH.busy?'disabled':''}>${PUSH.busy?'Turning on…':'🔔 Turn on notifications'}</button>`}</section>`;
 }
+function gdCard(){   // one time, for people who already get pings: game-day pings are theirs to turn on
+  const l=league();if(!l.sync||!l.me||l.guest||!pushWanted(l)||!l.person||l.person.gameday!=null||!(l.person.push||[]).length)return'';
+  return`<section class="card pushcard"><div class="row between"><h3>🏈 Game-day pings</h3><button class="mini" data-act="gd-no" title="No thanks">×</button></div><p>Want a ping as games finish? Your leg hits or misses, the slip dies, it's down to one leg, the slip cashes. Goes to all your devices.</p><button class="btn primary block" data-act="gd-on">🏈 Turn on game-day pings</button><p class="muted tiny" style="margin:8px 0 0">You can change this any time on the Crew tab.</p></section>`}
+const GD_PEND=new Map();   // a game-day switch on its way to the league: a pull meanwhile keeps showing it
+async function setGameday(l,v){if(!l.me||!l.sync||GD_PEND.has(l.id))return;const was=l.person?l.person.gameday:null;GD_PEND.set(l.id,v);l.person={...(l.person||{}),gameday:v};render();
+  try{const d=await api(l,'/me',{method:'POST',body:{gameday:v}});GD_PEND.delete(l.id);if(mergePerson(l,d.person))save();softRender();toast(v?'Game-day pings are on for all your devices':'Game-day pings are off. Turn them on any time on the Crew tab.','good')}
+  catch(e){GD_PEND.delete(l.id);l.person={...(l.person||{}),gameday:was};softRender();toast('Couldn\'t change that: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}}
 function pushBlock(l){
   if(!pushWanted(l))return'';const help=pushHelp();
   const ps=(l.person&&l.person.push)||[];const twin=HW_FP&&ps.find(x=>x.fp===HW_FP&&x.dev!==DEV_ID);   // this same phone, through its other app
@@ -977,7 +985,8 @@ function pushBlock(l){
   const mine=!l.me?`<p class="muted tiny" style="margin:0">Tap your name first, then turn them on.</p>`:twin&&!pushOnHere(l)?`<p class="muted tiny" style="margin:0 0 8px">Pings for ${h(l.name)} go to your ${h(appLabel(twin.app,l))} on this ${h(deviceName())}, so you get each one once.</p><button class="btn block sm" data-act="push-on">Send them to this app instead</button>`:pushOnHere(l)?`${where}<div class="pushrow"><span>🔔 On for this ${h(deviceName())}</span><span class="btns"><button class="btn sm" data-act="push-test">Send a test</button><button class="btn sm ghost" data-act="push-off">Turn off</button></span></div>`
     :others.length&&!pushHelp()?`${where}<button class="btn block" data-act="push-on">🔔 Also turn them on for this ${h(deviceName())}</button>`
     :help&&!pushDenied()?`<p class="muted tiny" style="margin:0">${help}</p>`:`${help?`<p class="muted tiny" style="margin:0 0 8px">${help}</p>`:''}<button class="btn primary block" data-act="push-on" ${PUSH.busy?'disabled':''}>${PUSH.busy?'Turning on…':'🔔 Turn on notifications'}</button>`;
-  return`<div class="pd-sub" style="margin:14px 0 6px">Notifications</div>${l.me&&!twin&&!pushOnHere(l)&&!(others.length&&!pushHelp())?where:''}${mine}<div style="height:14px"></div>${isAdmin(l)?`<button class="btn ghost block sm" style="margin-top:0" data-act="push-remind">📣 Send reminders now</button><p class="muted tiny" style="margin:6px 0 0">Pings anyone who owes a pick or vote right now. The same reminder goes out on its own every day at noon Eastern.</p>`:''}`;
+  const gdOn=!!(l.person&&l.person.gameday);const gdRow=l.me&&(ps.length||pushOnHere(l))?`<div class="featrow" data-act="gd-toggle" style="margin-top:10px"><div><b>🏈 Game-day pings</b><small>As games finish: your leg hits or misses, the slip dies, it's down to one leg, the slip cashes. On all your devices.</small></div><span class="toggle ${gdOn?'on':''}"><i></i></span></div>`:'';
+  return`<div class="pd-sub" style="margin:14px 0 6px">Notifications</div>${l.me&&!twin&&!pushOnHere(l)&&!(others.length&&!pushHelp())?where:''}${mine}${gdRow}<div style="height:14px"></div>${isAdmin(l)?`<button class="btn ghost block sm" style="margin-top:0" data-act="push-remind">📣 Send reminders now</button><p class="muted tiny" style="margin:6px 0 0">Pings anyone who owes a pick or vote right now. The same reminder goes out on its own every day at noon Eastern.</p>`:''}`;
 }
 const asSent=new Set();
 function sendAs(l){const p=l.asPend;if(!p||!l.sync)return;api(l,'/as',{method:'POST',body:p.guest?{guest:true}:{memberId:p.mid}}).then(d=>{if(l.asPend===p)delete l.asPend;save();takeState(l,d);render()}).catch(()=>{})}   // until the league has it
@@ -1540,8 +1549,8 @@ function renderWeekInner(){
   if(!S.weeks.length)return renderFirstBozo();
   const w=currentWeek();const c=calc(w);const idx=S.weeks.indexOf(w);const isLast=w===lastWeek();const nx=nextMain(w);
   if(UPCOMING&&(UPCOMING!==w.id||w.final||nx||!c.graded||(w.reveal&&!revealSeen(w))||!(isAdmin()||league().features?.votes)))UPCOMING=null;
-  if(UPCOMING)return pushCard()+renderUpcoming(w,c);
-  return`${pushCard()}<div class="week-nav">
+  if(UPCOMING)return(pushCard()||gdCard())+renderUpcoming(w,c);
+  return`${pushCard()||gdCard()}<div class="week-nav">
     <button class="icon-btn" data-act="week-prev" ${idx===0?'disabled':''}>‹</button>
     <div class="week-title"><strong>${h(wkName(w))}</strong>${isAdmin()?`<input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date">`:w.date?`<small class="muted tiny">${h(new Date(w.date+'T12:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}))}</small>`:''}</div>
     <button class="icon-btn" data-act="week-next" ${idx===S.weeks.length-1?'disabled':''}>›</button>
@@ -1593,6 +1602,24 @@ function renderTicket(w,c){
   </section>`;
 }
 const segOpen=new Set();
+function legInfo(w,mid){   // everything about one leg: what was typed, what the app changed and where from, how it was graded
+  const p=w.picks[mid];const m=member(mid);if(!p||!m)return;const unit=p.um&&p.unit?p.unit:unitFor(p.text);const rows=[];const row=(k,v)=>rows.push(`<div class="li-row"><span class="li-k">${k}</span><span class="li-v">${v}</span></div>`);
+  const t=x=>{const d=new Date(x);return isNaN(d)?'':d.toLocaleString([],{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})};
+  const tidied=p.raw&&p.raw!==p.text;
+  row('Pick',String(p.text||'').trim()?`<b>${h(p.text)}</b>`:'<span class="muted">No pick entered</span>');
+  if(String(p.text||'').trim())row('Typed',tidied?`“${h(p.raw)}”`:'Exactly as shown above');
+  row('Entered',p.by?`By ${h(member(p.by)?.name||m.name)} in the app${p.at&&t(p.at)?`, ${t(p.at)}`:''}`:'By the commissioner');
+  if(tidied)row('Wording','The app rewrote it in sportsbook wording, matching team and player names to ESPN’s schedule and rosters. The meaning didn’t change.');
+  row('Odds',p.oddsBy==='espn'?`<b>${h(p.odds)}</b> from DraftKings (via ESPN), taken before kickoff. ${p.oddsTyped?`They typed ${h(p.oddsTyped)}.`:'They didn’t type a price.'}`:String(p.odds||'').trim()?`<b>${h(p.odds)}</b>, as typed`:'None entered');
+  const t0=p.teams&&p.teams.length?p.teams:detectTeams(p.text).length?detectTeams(p.text):(teamOfPlayer(p.text)||[]);const tms=t0.slice(0,2).map(x=>TEAM_NM(x)).filter(Boolean);
+  if(String(p.text||'').trim())row('Teams',tms.length?`${h(tms.join(' vs '))} · ${p.tm?'set by hand':'read from the pick, using ESPN’s schedule and rosters'}`:'None found in the pick');
+  const st=p.status||'pending';
+  if(st==='pending'){const R=RESULTS[checkDate(w)];const lv=R&&String(p.text||'').trim()?gradeLeg(p,R,true):null;
+    row('Result',`Not graded yet${lv&&lv.status&&lv.detail?`<br><span class="muted">Right now: ${h(lv.detail)}</span>`:lv&&lv.wait?`<br><span class="muted">${h(lv.wait)}</span>`:''}`)}
+  else{row('Result',`<span class="stag ${st}">${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[st]||h(st)}</span>${p.margin!=null&&unit!=='none'&&st!=='push'?` ${st==='hit'?'covered':'missed'} by ${h(fmtMargin(p.margin,unit))}`:''}`);
+    const how=p.gby==='check'?'With the Check button, from ESPN’s box score':p.gby==='hand'?'By hand, by the commissioner':p.gby==='auto'||p.auto?'Automatically, from ESPN’s box score':'By the commissioner';
+    const when=p.gat||(p.gby!=='hand'&&p.gby!=='check'&&p.auto);row('Graded',`${how}${when&&t(when)?`, ${t(when)}`:''}${p.gdet?`<br><span class="muted">${h(p.gdet)}</span>`:''}`)}
+  modal({title:`${m.name}’s leg · ${wkName(w)}`,body:`<div class="li">${rows.join('')}</div>`,actions:[{label:'Close',cls:'primary'}]})}
 const slipOpen=new Set();   // legs opened for editing on this device: "weekId|memberId"
 function renderLegs(w,c,cl){
   if(!c.legs.length)return`<p class="muted tiny" style="margin:4px 2px">No legs yet — add one below.</p>`;
@@ -1623,9 +1650,10 @@ function renderLeg(w,l,cl){
       ${tidyRow}
       ${isAdmin()?`<div class="erow"><div class="seg">${['hit','miss','push'].map(st=>`<button class="${st} ${l.status===st?'on':''}" data-act="status" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('')}</div>${l.status!=='pending'?`<span class="muted tiny">Tap the lit one again to set it back to pending</span>`:''}</div>`:''}
       ${isAdmin()&&(l.status==='hit'||l.status==='miss')?marginRow:''}
-      <div class="erow"><button class="btn sm primary" data-act="leg-done" data-wid="${w.id}" data-mid="${l.mid}">Done</button>${isAdmin()?`<button class="btn sm ghost danger" data-act="remove-leg" data-mid="${l.mid}">Remove leg</button>`:''}</div>
+      <div class="erow"><button class="btn sm primary" data-act="leg-done" data-wid="${w.id}" data-mid="${l.mid}">Done</button>${empty?'':`<button class="btn sm ghost" data-act="leg-info" data-wid="${w.id}" data-mid="${l.mid}">ⓘ Details</button>`}${isAdmin()?`<button class="btn sm ghost danger" data-act="remove-leg" data-mid="${l.mid}">Remove leg</button>`:''}</div>
     </div>`:'';
-  return`<div class="srow ${mine?'mine':''} ${open?'open':''} ${editable&&!open?'tap':''}" data-leg="${l.mid}" ${editable&&!open?`data-act="leg-open" data-wid="${w.id}" data-mid="${l.mid}"`:''}>
+  const info=!editable&&!empty;
+  return`<div class="srow ${mine?'mine':''} ${open?'open':''} ${(editable&&!open)||info?'tap':''}" data-leg="${l.mid}" ${editable&&!open?`data-act="leg-open" data-wid="${w.id}" data-mid="${l.mid}"`:info?`data-act="leg-info" data-wid="${w.id}" data-mid="${l.mid}"`:''}>
     <span class="avatar xs" style="--c:${m.color}">${h(initials(m.name))}</span>
     <span class="nm">${h(m.name)}${isBozo?'<span title="This week\'s Bozo">🤡</span>':''}${mine?'<span class="muted tiny" style="font-weight:500">you</span>':''}</span>
     <span class="rt">${unsure}<span class="tag warn" data-warn="${l.mid}" ${bad?'':'hidden'}>Too heavy</span>${right}</span>
@@ -1837,7 +1865,7 @@ function curRevealAt(l,k){const[sid,wid,R]=k.split('|');const sn=(l.seasons||[])
 function mergePerson(l,p){   // the server's copy of the person, plus anything this device watched that hasn't reached it yet
   if(!p)return false;const pend=l.personPend||{};const rv={...(p.rv||{})};
   for(const[k,e]of Object.entries(pend)){const sv=rv[k];if(e.at!==curRevealAt(l,k)){delete pend[k];continue}if(sv&&sv.at===e.at&&sv.s>=e.s){delete pend[k];continue}rv[k]=e}
-  const nx={...p,rv};const was=JSON.stringify(l.person||null);l.person=nx;l.personPend=pend;return was!==JSON.stringify(nx)}
+  const nx={...p,rv};if(GD_PEND.has(l.id))nx.gameday=GD_PEND.get(l.id);const was=JSON.stringify(l.person||null);l.person=nx;l.personPend=pend;return was!==JSON.stringify(nx)}
 const personT={};
 let binding=false;
 function bindKey(l){if(binding||!l.sync||!l.meKey)return;binding=true;   // swap a shared key for this device's own, so any one device can be signed out
@@ -2135,7 +2163,7 @@ function gradeLeg(p,R,live){   // → {status,margin,detail,final,locked} | {wai
     if(g&&open(g))return wait(g);if(!st0&&g&&done(g)&&!R.box[g.id])return{wait:'That box score isn\'t in yet',pre:false,at:g.at};if(!st0&&(!g||done(g)))return{no:`${pl.name} has no stats that week (didn't play?)`};
     if(half)return{no:'1st-half player props are graded by hand (box scores only have full-game stats)'};const s=st0||{};const b=g&&R.box[g.id];
     const tdN=Math.max((b&&b.tds&&b.tds[pl.name+'|'+pl.team])||0,(s.rushTD||0)+(s.recTD||0)+(s.krTD||0)+(s.prTD||0)+(s.intTD||0));const tdl=`${pl.name}: ${tdN} TD${tdN===1?'':'s'}${clock(g)}`;
-    if(TD_FIRST.test(lo)){const f=b&&b.firstTD;if(!(f&&f.name))return done(g)?res(-1,null,'No touchdowns that game'):res(-1,null,'No touchdown yet'+clock(g),false);const hit=nameKey(f.name)===nameKey(pl.name);return res(hit?1:-1,null,`First TD: ${f.name}`,true)}
+    if(TD_FIRST.test(lo)){const f=b&&b.firstTD;if(!(f&&f.name))return done(g)?res(-1,null,'No touchdowns that game'):res(-1,null,'No touchdown yet'+clock(g),false);if(pl.name==='No stats yet')return res(-1,null,`First TD: ${f.name}`,f.team!==pl.team);const hit=nameKey(f.name)===nameKey(pl.name);return res(hit?1:-1,null,`First TD: ${f.name}`,true)}
     if(TD_TWO.test(lo))return res(tdN>=2?1:-1,null,tdl,tdN>=2);
     if(TD_ANY.test(lo)||(/\b(td|touchdown)s?\b/.test(lo)&&!/pass|over|under|\d/.test(lo)))return res(tdN>=1?1:-1,null,tdl,tdN>=1);
     const st=(STATS.find(([re])=>re.test(lo))||[])[1]||(/\bsacks?\b/.test(lo)?'Sacks':(pl.pos==='K'||s.kPts!=null)&&/\bpoints?\b|\bpts\b/.test(lo)?'Kicking Points':null);if(!st)return{no:'Couldn\'t tell which stat'};
@@ -2186,7 +2214,7 @@ async function checkSlip(w){   // the commissioner's Check button: look up every
   const chip=r=>r.status?`<span class="stag ${r.status}">${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[r.status]}</span>`:r.wait?'<span class="stag none">⏳ Not final</span>':'<span class="stag none">? By hand</span>';
   const mg=(x)=>x.r.margin!=null?` · ${x.r.status==='hit'?'covered by':x.r.status==='miss'?'missed by':'by'} ${fmtMargin(x.r.margin,x.p.um&&x.p.unit?x.p.unit:unitFor(x.p.text))}`:'';
   modal({title:`Check ${wkName(w)}`,body:`<p class="muted tiny" style="margin:0 0 10px">From the final box scores. ${ready.length?`Tap <b>Grade ${ready.length}</b> to mark ${ready.length===1?'it':'them'}; you can still change any leg after.`:'Nothing is final yet.'}</p><div class="chk-list">${rows.map(x=>{const m=member(x.mid);return`<div class="chk-row"><div class="chk-top"><span class="avatar xs" style="--c:${m.color}">${h(initials(m.name))}</span><b>${h(m.name)}</b>${chip(x.r)}</div><div class="chk-pick">${h(x.p.text)}</div><small class="muted">${h(x.r.detail||x.r.wait||x.r.no||'')}${x.r.status?h(mg(x)):''}</small></div>`}).join('')}</div>`,
-    actions:ready.length?[{label:'Cancel',cls:'ghost'},{label:`Grade ${ready.length}`,cls:'primary',onClick:()=>{const ww=week(w.id)||w;let n=0;for(const x of ready){const p=ww.picks[x.mid];if(!p||p.status!=='pending')continue;p.status=x.r.status;if(x.r.margin!=null)p.margin=x.r.margin;else if(x.r.status!=='push')p.margin=p.margin??null;n++}commit();toast(`Graded ${n} leg${n===1?'':'s'}${rows.length>n?`. ${rows.length-n} still to go`:''}`,'good')}}]:[{label:'OK',cls:'primary'}]})}
+    actions:ready.length?[{label:'Cancel',cls:'ghost'},{label:`Grade ${ready.length}`,cls:'primary',onClick:()=>{const ww=week(w.id)||w;let n=0;for(const x of ready){const p=ww.picks[x.mid];if(!p||p.status!=='pending')continue;p.status=x.r.status;if(x.r.margin!=null)p.margin=x.r.margin;else if(x.r.status!=='push')p.margin=p.margin??null;p.gby='check';p.gat=new Date().toISOString();p.gdet=String(x.r.detail||'').slice(0,160);n++}commit();toast(`Graded ${n} leg${n===1?'':'s'}${rows.length>n?`. ${rows.length-n} still to go`:''}`,'good')}}]:[{label:'OK',cls:'primary'}]})}
 const checkable=(w,c)=>isAdmin()&&!!checkDate(w)&&checkDate(w)<=etDay(new Date().toISOString())&&c.legs.some(x=>x.status==='pending'&&String(x.text||'').trim());
 async function auditGrader(l=league(),log=console.log){   // developer check: grade every already-graded leg and compare with what the commissioner marked
   const out={n:0,same:0,diff:[],no:[],byType:{}};const prevS=S;
@@ -2708,6 +2736,7 @@ const ACT={
   status(el){
     const w=currentWeek();const p=w.picks[el.dataset.mid];if(!p)return;const st=el.dataset.st;const was=calc(w).result;
     segOpen.delete(el.dataset.mid);p.status=p.status===st?'pending':st;if(p.status==='push'||p.status==='pending')p.margin=null;
+    if(p.status==='pending'){delete p.gby;delete p.gat;delete p.gdet}else{p.gby='hand';p.gat=new Date().toISOString();delete p.gdet}
     if(p.status==='pending')w.votes={};
     commit();const now=calc(w).result;
     if(now==='won'&&was!=='won'){confetti();toast('PARLAY CASHED 🤑 the Bozo is a hero','good')}
@@ -2773,6 +2802,7 @@ const ACT={
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
   'leg-open'(el,e){if(e&&e.target&&e.target.closest&&e.target.closest('input,select,textarea,label'))return;slipOpen.add(el.dataset.wid+'|'+el.dataset.mid);render();const t=document.querySelector(`[data-bind="pick|${el.dataset.wid}|${el.dataset.mid}|text"]`);if(t&&!t.value)t.focus()},
+  'leg-info'(el,e){if(e&&e.target&&e.target.closest&&e.target.closest('input,select,textarea,label'))return;const w=week(el.dataset.wid);if(w)legInfo(w,el.dataset.mid)},
   'leg-done'(el){const a=document.activeElement;if(a&&a.blur)a.blur();slipOpen.delete(el.dataset.wid+'|'+el.dataset.mid);setTimeout(render,60)},
   'upcoming'(el){UPCOMING=el.dataset.wid;render();window.scrollTo({top:0,behavior:'smooth'})},
   'upcoming-back'(){UPCOMING=null;render();window.scrollTo({top:0,behavior:'smooth'})},
@@ -2849,6 +2879,9 @@ const ACT={
       try{const d=await api(l,'/me/signout',{method:'POST',body:{dev}});if(here){delete l.me;delete l.meKey;delete l.keyBound;delete l.pushEp;delete l.pushMid;save();render();toast('Signed out on this device','good');return}
         if(mergePerson(l,d.person))save();if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};render();toast(`Your ${nm} is signed out of ${l.name}`,'good')}
       catch(e){toast('Couldn\'t sign it out: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}})},
+  'gd-toggle'(){const l=league();setGameday(l,!(l.person&&l.person.gameday))},
+  'gd-on'(){setGameday(league(),true)},
+  'gd-no'(){setGameday(league(),false)},
   'retry-pick'(){const l=league();toast('Sending…');flushOutbox(l)},
   'feature'(el){const l=league();l.features=l.features||{};const f=el.dataset.f;if(f==='autograde'&&l.features.autograde===undefined)l.features.autograde=true;l.features[f]=!l.features[f];l.featDirty=true;commit();toast(f==='notify'?(l.features[f]?'Notifications are on for this league. Each person turns them on in their app.':'Notifications are off for this league'):l.features[f]?(f==='picks'?'Members can now enter their own picks':'Members can now vote in the app'):(f==='picks'?'Picks are yours to enter again':'Voting in the app is off'),'good');if(f==='autograde')toast(l.features.autograde?'Slips grade themselves once the games are final':'Grading is back in your hands','good')},
   'sync-now'(){pull(league(),true)},
