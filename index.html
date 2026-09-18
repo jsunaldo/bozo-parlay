@@ -454,6 +454,7 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .tlogo{width:22px;height:22px;object-fit:contain;flex:none}
 .typerow>.chev{color:var(--dim);font-size:16px;line-height:1}
 .typerow.nav{grid-template-columns:1fr 70px 52px 40px 12px}
+@media (max-width:430px){.typerow,.teamrow{grid-template-columns:minmax(0,1fr) 56px 52px 36px;gap:8px}.typerow.nav{grid-template-columns:minmax(0,1fr) 40px 52px 36px 10px}}   /* phones: shorter bars so team names fit */
 .crumbs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;margin-bottom:12px}
 .crumb{background:var(--surface2);border-radius:999px;padding:5px 11px;font-weight:600;cursor:pointer;color:var(--muted)}
 .crumb.cur{background:var(--blue);color:#fff;cursor:default}
@@ -507,6 +508,10 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .pk-kills{display:flex;flex-direction:column;gap:6px;padding:0 0 8px 10px;margin-left:15px;border-left:2px solid var(--line)}
 .pk-kill{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
 .pk-kill .bet-chip,.pk-kill .betchip{flex:1;min-width:140px}
+.pk-row .chev{color:var(--dim);font-size:18px}
+.pk-list{display:flex;flex-direction:column;gap:8px}
+.pk-item{background:var(--surface2);border-left:3px solid var(--red);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.pk-top,.pk-bot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
 .kingrows{display:flex;flex-direction:column;gap:6px}
 .kingrow{display:grid;grid-template-columns:1fr 1.25fr 1.25fr;align-items:center;gap:8px;font-size:13px}
 .kingrow.head{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
@@ -514,9 +519,10 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .kingrow.subrow .tname{padding-left:14px;font-weight:500;color:var(--muted)}
 .kingrow.subrow .tname::before{content:'↳ ';color:var(--dim)}
 .kingrow.expandable{cursor:pointer}
-.king{display:inline-flex;align-items:center;gap:6px;min-width:0}
+.king{display:flex;align-items:center;gap:6px;min-width:0}
+.king .kw{display:flex;flex-direction:column;min-width:0;line-height:1.25}
 .king b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.king small{color:var(--muted);font-size:11px;flex:none}
+.king small{color:var(--muted);font-size:11px;white-space:nowrap}
 .kg-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px}
 .kg{border-collapse:separate;border-spacing:3px;font-size:11px}
 .kg th{font-weight:600;color:var(--muted);text-align:left;white-space:nowrap;padding:2px 6px 2px 0;position:sticky;left:0;background:var(--surface)}
@@ -657,7 +663,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.16';
+const APP_VERSION='2026-09-18.17';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -946,7 +952,7 @@ function pushBlock(l){
   if(!pushWanted(l))return'';const help=pushHelp();
   const mine=!l.me?`<p class="muted tiny" style="margin:0">Tap your name first, then turn them on.</p>`:pushOnHere(l)?`<div class="pushrow"><span>🔔 On for this ${h(deviceName())}</span><span class="btns"><button class="btn sm" data-act="push-test">Send a test</button><button class="btn sm ghost" data-act="push-off">Turn off</button></span></div>`
     :help&&!pushDenied()?`<p class="muted tiny" style="margin:0">${help}</p>`:`${help?`<p class="muted tiny" style="margin:0 0 8px">${help}</p>`:''}<button class="btn primary block" data-act="push-on" ${PUSH.busy?'disabled':''}>${PUSH.busy?'Turning on…':'🔔 Turn on notifications'}</button>`;
-  return`<div class="pd-sub" style="margin:14px 0 6px">Notifications</div>${mine}${isAdmin(l)?`<button class="btn ghost block sm" style="margin-top:8px" data-act="push-remind">📣 Send reminders now</button><p class="muted tiny" style="margin:6px 0 0">Pings anyone who owes a pick or vote right now. The same reminder goes out on its own every day at noon Eastern.</p>`:''}`;
+  return`<div class="pd-sub" style="margin:14px 0 6px">Notifications</div>${mine}<div style="height:14px"></div>${isAdmin(l)?`<button class="btn ghost block sm" style="margin-top:0" data-act="push-remind">📣 Send reminders now</button><p class="muted tiny" style="margin:6px 0 0">Pings anyone who owes a pick or vote right now. The same reminder goes out on its own every day at noon Eastern.</p>`:''}`;
 }
 function applyState(l,d){
   const ui={};for(const x of (l.seasons||[]))ui[x.id]={cur:x.data?.currentWeekId,last:lastMain(x.data?.weeks)?.id};   // per-device UI state must not ride along with synced data
@@ -1620,8 +1626,6 @@ function refreshSheet(){withStats(()=>{const root=document.getElementById('modal
 function showBets(n){openSheet(n,n.mid?'stats':'bets')}
 function withStats(fn){return(VIEW==='stats'||VIEW==='history')?withAll(fn):fn()}
 
-const openKinds=new Set();
-const chev=open=>`<span class="chev ${open?'open':''}">›</span>`;
 function typeRows(byType,mid){return TYPE_ORDER.filter(k=>byType[k]).map(k=>statRow({label:k,rec:byType[k],act:'show-bets',data:`data-node="${encNode({type:k,mid})}"`})).join('')}
 function betChip(text,teams,cls=''){const t=((teams&&teams.length)?teams:teamOfPlayer(text||'')).slice(0,2);return`<span class="betchip ${cls}">${t.map(a=>`<img src="${LOGO(a)}" alt="" decoding="async">`).join('')}<span class="bt">${h(text||'—')}</span></span>`}
 function resultBadge(c){
@@ -2150,7 +2154,7 @@ function playerDetail(r){
       ${cell('Best at',r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>')}
     </div>
     ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type <span class="muted">· tap to dig in</span></div><div class="typerows">${typeRows(r.byType,r.m.id)}</div>`:''}
-    ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most <span class="muted">· tap to dig in</span></div><div class="typerows">${Object.entries(r.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,5).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'show-bets',data:`data-node="${encNode({team:a,mid:r.m.id})}"`})).join('')}</div>`:''}
+    ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most <span class="muted">· tap to dig in</span></div><div class="typerows">${mostBet(r.byTeam).slice(0,5).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'show-bets',data:`data-node="${encNode({team:a,mid:r.m.id})}"`})).join('')}</div>${Object.keys(r.byTeam).length>5?`<button class="btn ghost block sm" style="margin-top:8px" data-act="teams-all" data-mid="${r.m.id}">See all ${Object.keys(r.byTeam).length} teams</button>`:''}`:''}
     <div class="pd-bets">
       <div class="pd-bet good-l"><small>Best hit</small>${bet(r.longestHit)}</div>
       <div class="pd-bet"><small>Easiest hit</small>${bet(r.easiestHit)}</div>
@@ -2159,22 +2163,24 @@ function playerDetail(r){
       ${r.sweat?`<div class="pd-bet good-l"><small>Sweatiest hit</small><b>by ${fmtMargin(r.sweat.m,'pts')}</b>${betChip(r.sweat.text,r.sweat.teams)}<small>${h(r.sweat.wk)}</small></div>`:''}
     </div></div>`;
 }
+const mostBet=src=>Object.entries(src||{}).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p));
 function teamsCard(g){
-  const rows=Object.entries(g.byTeam||{}).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p)).slice(0,10);if(!rows.length)return'';
-  return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team. Tap a team to see everyone's record on it.</p><div class="typerows">${rows.map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'x-go',data:`data-node="${encNode({team:a})}"`,nav:true})).join('')}</div></section>`;
+  const all=mostBet(g.byTeam);if(!all.length)return'';
+  return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team. Tap a team to see everyone's record on it.</p><div class="typerows">${all.slice(0,10).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'x-go',data:`data-node="${encNode({team:a})}"`,nav:true})).join('')}</div>${all.length>10?`<button class="btn ghost block sm" style="margin-top:10px" data-act="teams-all">See all ${all.length} teams</button>`:''}</section>`;
 }
 const clubName=(l=league())=>String(l.clubName||'').trim()||'Parlay Killer Club';
+const pkLine=p=>`${p.killer===1?'1 solo kill':p.killer+' solo kills'}${p.killed?` · ${fmt$0(p.killed)} that got away`:''}`;
 function killerClubCard(per){
   const rows=S.members.filter(m=>per[m.id]&&per[m.id].killer>0).sort((a,b)=>per[b.id].killer-per[a.id].killer||per[b.id].killed-per[a.id].killed);
-  const body=rows.length?rows.map(m=>{const p=per[m.id];const key='pk:'+m.id;const open=openKinds.has(key);
-    return`<div class="pk-row expandable" data-act="toggle-kind" data-key="${key}"><span class="avatar" style="--c:${m.color}">${h(initials(m.name))}</span><div class="pk-who"><b>${h(m.name)}</b><small>${p.killer===1?'1 solo kill':p.killer+' solo kills'}${p.killed?` · ${fmt$0(p.killed)} that got away`:''}</small></div><span class="pk-badge">☠️ ×${p.killer}</span>${chev(open)}</div>${open?`<div class="pk-kills">${p.killers.map(k=>`<div class="pk-kill"><span class="mono muted tiny">${h(k.wk)}</span>${betChip(k.text,k.teams)}<span class="mono muted tiny">${k.odds!=null?fmtOdds(k.odds):''}</span>${k.margin!=null?`<span class="tiny bad">missed by ${fmtMargin(k.margin,k.unit)}</span>`:''}</div>`).join('')}</div>`:''}`}).join('')
+  const body=rows.length?rows.map(m=>{const p=per[m.id];
+    return`<div class="pk-row" data-act="pk-show" data-mid="${m.id}"><span class="avatar" style="--c:${m.color}">${h(initials(m.name))}</span><div class="pk-who"><b>${h(m.name)}</b><small>${pkLine(p)}</small></div><span class="pk-badge">☠️ ×${p.killer}</span><span class="chev">›</span></div>`}).join('')
   :`<p class="muted" style="margin:0">No members yet. Every miss so far has had company.</p>`;
   return`<section class="card pk-card"><h3>☠️ ${h(clubName())}</h3><p class="muted tiny" style="margin:-4px 0 10px">The lone miss on a slip everyone else hit. Membership is for life. Tap a name to relive the pain.</p><div class="pk-rows">${body}</div></section>`;
 }
 function kingsCard(per){
   const people=S.members.filter(m=>per[m.id]&&per[m.id].picks>0);if(!people.length)return'';
   const who=(get,mode)=>{let best=null;for(const m of people){const o=get(per[m.id]);if(!o)continue;const n=o.w+o.l;if(mode==='rate'&&(n<3||o.w/n<.5))continue;const v=mode==='wins'?o.w+(n?o.w/n:0)/10:o.w/n+o.w/1000;if(mode==='wins'&&!o.w)continue;if(!best||v>best.v)best={m,o,v}}return best};
-  const cell=(b,mode)=>b?`<span class="king"><span class="avatar sm" style="--c:${b.m.color}">${h(initials(b.m.name))}</span><b>${h(b.m.name)}</b><small class="mono">${b.o.w}-${b.o.l}${mode==='rate'?' · '+Math.round(b.o.w/(b.o.w+b.o.l)*100)+'%':''}</small></span>`:'<span class="muted tiny">—</span>';
+  const cell=(b,mode)=>b?`<span class="king"><span class="avatar sm" style="--c:${b.m.color}">${h(initials(b.m.name))}</span><span class="kw"><b>${h(b.m.name)}</b><small class="mono">${b.o.w}-${b.o.l}${mode==='rate'?' · '+Math.round(b.o.w/(b.o.w+b.o.l)*100)+'%':''}</small></span></span>`:'<span class="muted tiny">—</span>';
   const rows=TYPE_ORDER.filter(t=>t!=='Other'&&people.some(m=>per[m.id].byType[t])).map(t=>`<div class="kingrow tap" data-act="x-go" data-node="${encNode({type:t})}"><span class="tname">${h(t)}</span>${cell(who(p=>p.byType[t],'wins'),'wins')}${cell(who(p=>p.byType[t],'rate'),'rate')}</div>`).join('');
   return`<section class="card"><h3>Kings of each bet</h3><p class="muted tiny" style="margin:-4px 0 10px">Most wins and best rate (3+ bets and a winning record to qualify). Tap a row to open it in the explorer.</p><div class="kingrow head"><span></span><span>Most wins</span><span>Best rate</span></div><div class="kingrows">${rows}</div></section>`;
 }
@@ -2502,7 +2508,10 @@ const ACT={
   'px-mode'(el){pxMode=el.dataset.mode;refreshSheet()},
   'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
   'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${i+1}</span><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
-  'toggle-kind'(el){const k=el.dataset.key;if(openKinds.has(k))openKinds.delete(k);else openKinds.add(k);render()},
+  'pk-show'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;
+    modal({title:`☠️ ${m.name}`,body:`<p class="muted" style="margin:0 0 12px">${pkLine(p)}. Each one: the only miss on a slip everyone else hit.</p><div class="pk-list">${p.killers.map(k=>`<div class="pk-item"><div class="pk-top"><span class="mono muted tiny">${h(k.wk)}</span><span class="mono muted tiny">${k.odds!=null?fmtOdds(k.odds):''}</span></div>${betChip(k.text,k.teams)}${k.margin!=null||k.lost?`<div class="pk-bot">${k.margin!=null?`<span class="tiny bad">Missed by ${fmtMargin(k.margin,k.unit)}</span>`:''}${k.lost?`<span class="tiny muted">${fmt$0(k.lost)} that got away</span>`:''}</div>`:''}</div>`).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
+  'teams-all'(el){withStats(()=>{const{per,g}=stats();const mid=el.dataset.mid;const m=mid?member(mid):null;if(mid&&!m)return;const all=mostBet(m?(per[mid]||{}).byTeam:g.byTeam);
+    modal({stack:!!m,title:m?`${m.name}: every team`:'Every team',body:`<p class="muted tiny" style="margin:0 0 10px">${m?`Every team ${h(m.name)} has bet on, most bet first. Tap one to see those bets.`:'How the group does when a slip touches each team, most bet first. Tap one to see everyone\'s record on it.'}</p><div class="typerows">${all.map(([a,o],i)=>statRow({label:NICK[a]||a,logo:a,rec:o,rank:i+1,act:m?'show-bets':'x-go',data:`data-node="${encNode(m?{team:a,mid}:{team:a})}"`,nav:!m})).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   async 'publish-league'(){const l=league();if(l.sync)return;toast('Publishing…');try{const r=await fetch(SYNC_URL+'/leagues',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:l.name,seasons:l.seasons,activeSeason:l.activeSeason,features:{picks:false,votes:false},clubName:l.clubName||'',mondayOk:!!l.mondayOk})});const d=await r.json().catch(()=>({}));if(!d.ok)throw new Error(d.error||'HTTP '+r.status);l.sync={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features={picks:false,votes:false};save();render();setSyncDot('ok');toast(`${l.name} is live — copy the link and send it to the crew`,'good');if(!l.me)pickMe(l)}catch(e){toast('Could not publish: '+e.message+'. Nothing changed on this device.','bad')}},
   'copy-share'(){const l=league();const site=siteFor(l);copyText(site?site.url:shareLink(l))},
   'nudge'(el){const w=week(el.dataset.wid)||currentWeek();const c=calc(w);const missing=c.legs.filter(l=>!String(l.text||'').trim()).map(l=>member(l.mid)?.name).filter(Boolean);
