@@ -27,7 +27,7 @@ ap.add_argument('--short', default='Bozo Club', help='home-screen name')
 ap.add_argument('--name', default='Bozo Parlay', help='league name shown before the first sync')
 ap.add_argument('--desc', default='The Bozo Parlay league: every slip, every stat.')
 ap.add_argument('--site', default='https://jsunaldo.github.io/bozo-parlay-club/', help="this app's own URL")
-ap.add_argument('--icons', default='', help='folder with icon.svg, icon-192.png, icon-512.png, apple-touch-icon.png')
+ap.add_argument('--icons', default='icons/parlay', help='folder with icon.svg, icon-192.png, icon-512.png, apple-touch-icon.png')
 A = ap.parse_args()
 
 SRC = os.path.dirname(os.path.abspath(__file__))
@@ -64,10 +64,11 @@ sub("const CACHE_PREFIX='bozo-parlay-';", f"const CACHE_PREFIX='{P}-';")
 s, n = re.subn(r"^const SHARE_SITES=\{.*\};$", lambda m: "const SHARE_SITES={self:" + json.dumps({'url': A.site, 'sync': A.league, 'app': A.title}) + "};", s, flags=re.M)
 assert n == 1, 'SHARE_SITES line not found'
 s = re.sub(r"^const SEED_MARGINS=.*$", "const SEED_MARGINS={};", s, flags=re.M)
+s, n = re.subn(r"^const LEAGUE_LOGOS=\{.*\};$", "const LEAGUE_LOGOS={};", s, flags=re.M); assert n == 1, 'LEAGUE_LOGOS line not found'   # a club app only ever shows its own icon
 sub("(async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined)pull();})();", "pull(league(),false);")
 s = s.replace("__LEAGUE_ID__", A.league).replace("__MEMBER_KEY__", A.key).replace("__SYNC_URL__", A.url).replace("__LEAGUE_NAME__", A.name.replace("'", "\\'"))
-sub("<title>Bozo Parlay</title>", f"<title>{A.title}</title>")
-sub('<meta name="apple-mobile-web-app-title" content="Bozo Parlay">', f'<meta name="apple-mobile-web-app-title" content="{A.short}">')
+sub("<title>Bozo Commish</title>", f"<title>{A.title}</title>")
+sub('<meta name="apple-mobile-web-app-title" content="Bozo Commish">', f'<meta name="apple-mobile-web-app-title" content="{A.short}">')
 
 # nothing from the other leagues may ship: no seeds, no other league's app link
 for bad in ['seedStags', 'OG25', 'STAGS24', 'MARGINS={"', 'seedOG', 'seedLeague2', 'SEED1=', 'Stags Bozo', '__BU_SYNC_ID__']:
@@ -75,8 +76,8 @@ for bad in ['seedStags', 'OG25', 'STAGS24', 'MARGINS={"', 'seedOG', 'seedLeague2
 for site in ['https://jsunaldo.github.io/bozo-parlay-club/', 'https://jsunaldo.github.io/bozo-university/']:
     if site != A.site: assert site not in s, 'leaked another app link: ' + site
 other_names = {'Bozo University', 'Bozo Parlay Club'} - {A.title, A.name}
-for nm in other_names:
-    assert nm not in s, 'leaked another league name: ' + nm
+for nm in other_names | {'Stags Bozo Parlay'}:
+    assert nm.lower() not in s.lower(), 'leaked another league name: ' + nm
 
 open(os.path.join(OUT, 'index.html'), 'w').write(s)
 js = re.search(r'<script>(.*)</script>', s, re.S).group(1); open('/tmp/club.js', 'w').write(js)

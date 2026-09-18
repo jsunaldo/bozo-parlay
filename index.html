@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Bozo Parlay">
-<title>Bozo Parlay</title>
+<meta name="apple-mobile-web-app-title" content="Bozo Commish">
+<title>Bozo Commish</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/svg+xml" href="icon.svg">
@@ -134,7 +134,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .toggle.on i{transform:translateX(18px)}
 .share-link{font-family:var(--mono);font-size:12px;word-break:break-all;background:var(--surface2);border-radius:12px;padding:10px 12px;margin:8px 0}
 .logo{width:40px;height:40px;border-radius:12px;background:url("icon.svg") center/cover;box-shadow:var(--shadow);flex:none}
-.brand h1{font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+.brand h1{font-size:19px;font-weight:700;letter-spacing:-.03em;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand-text{min-width:0;max-width:calc(100vw - 190px)}
 .brand small{display:block;color:var(--muted);font-size:12px;font-weight:500;margin-top:2px}
 #view{animation:fadeUp .3s cubic-bezier(.2,.8,.2,1)}
 #view.enter{animation:fadeUp .3s cubic-bezier(.2,.8,.2,1)}
@@ -593,7 +594,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 <body>
 <div id="app">
   <header class="top">
-    <button class="brand" data-act="leagues" title="Switch league"><div class="logo"></div><div><h1>Bozo Parlay</h1><small id="seasonLabel">Season</small><span id="syncDot" class="syncdot off"></span></div></button>
+    <button class="brand" data-act="leagues" title="Switch league"><div class="logo" id="brandLogo"></div><div class="brand-text"><h1 id="brandName">Bozo Parlay</h1><small id="seasonLabel">Season</small><span id="syncDot" class="syncdot off"></span></div></button>
     <div id="topRight"></div>
   </header>
   <main id="view"></main>
@@ -612,7 +613,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.1';
+const APP_VERSION='2026-09-18.2';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -907,8 +908,16 @@ async function sendVote(l,w,voterId,candidateId){
 }
 function parseLink(text){const t=String(text||'').trim();let m=/[?&#]admin=([a-z0-9]+)\.([a-z0-9]+)/i.exec(t);if(m)return{kind:'admin',id:m[1],key:m[2]};m=/[?&#]join=([a-z0-9]+)\.([a-z0-9]+)/i.exec(t);if(m)return{kind:'join',id:m[1],key:m[2]};m=/^([a-z0-9]{6,20})\.([a-z0-9]{16,40})$/i.exec(t);if(m)return{kind:m[2].length>=26?'admin':'join',id:m[1],key:m[2]};return null}
 const hasContent=x=>(x.seasons||[]).some(sn=>sn.data?.members?.length||sn.data?.weeks?.length);
+function mergeBuiltIns(){
+  if(SHARE_MODE||typeof seedSeason!=='function')return 0;let n=0;
+  try{const data=seedSeason();const seeded=migrateDB({leagues:[{id:uid(),name:data.season||'League 1',data}],active:null});
+    for(const x of seeded.leagues||[]){if(!DB.leagues.some(y=>canonName(y.name)===canonName(x.name))){DB.leagues.push(x);n++}}}
+  catch(e){console.warn('built-in history not merged',e)}
+  return n;
+}
 async function adoptLink(id,key){
   try{toast('Connecting as commissioner…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`);const d=await r.json().catch(()=>({}));if(!d.ok||d.role!=='admin')throw new Error(d.error||'that link doesn\'t work');
+    mergeBuiltIns();   // only a commissioner code gets here: this is the commish's device
     let l=DB.leagues.find(x=>x.sync&&x.sync.id===id)||DB.leagues.find(x=>!x.sync&&canonName(x.name)===canonName(d.name));
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null};DB.leagues.push(l)}
     l.sync={url:SYNC_URL,id,key,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features=d.features||{};l.claims=d.claims||{};
@@ -1075,11 +1084,15 @@ function render(){
   main.innerHTML=v==='week'?renderWeek():v==='history'?renderHistory():v==='stats'?renderStats():renderCrew();
   main.classList.remove('enter');void main.offsetWidth;main.classList.add('enter');
   main.querySelectorAll('textarea.pick-in').forEach(autosize);
-  document.getElementById('seasonLabel').textContent=leagueLabel();
+  document.getElementById('seasonLabel').textContent=seasonLabelText();
+  const bn=document.getElementById('brandName');if(bn)bn.textContent=league().name||'Bozo Parlay';
+  const bl=document.getElementById('brandLogo');if(bl){const u=leagueLogo();if(bl.dataset.src!==u){bl.dataset.src=u;bl.style.backgroundImage=`url("${u}")`}}
   const st=S.weeks.length?stats().g:null;
   document.getElementById('topRight').innerHTML=st?`<span class="badge ${st.paid-st.staked>=0?'won':'lost'}" style="font-size:11px">${st.won}–${st.lost} · ${fmt$0(st.paid-st.staked)}</span>`:'';
 }
-function leagueLabel(){const l=league();const n=l.name||'League';const sn=S.season||season().name;return sn&&sn!==n?`${n} · ${sn}`:n}
+function seasonLabelText(){const sn=String(S.season||season().name||'').trim();return sn||'Season'}
+const LEAGUE_LOGOS={'bozo parlay':'icons/parlay/icon.svg','bozo university':'icons/university/icon.svg','stags bozo parlay':'icons/stags/icon.svg'};
+function leagueLogo(l=league()){if(SHARE_MODE)return'icon.svg';return LEAGUE_LOGOS[canonName(l.name)]||'icons/parlay/icon.svg'}   // each league's own app icon
 const empty=(t,s)=>`<div class="empty"><div class="empty-ic">🤡</div><b>${t}</b><p class="muted">${s}</p></div>`;
 
 /* ---- week ---- */
@@ -2056,7 +2069,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin')schedulePush()}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
   else if(k==='league'){const l=league();if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}}
-  else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=leagueLabel()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
+  else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=seasonLabelText()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
 });
 document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a]=b.split('|');
   if(k==='add-leg'&&e.target.value){const w=week(a);w.picks[e.target.value]={text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]};w.votes={};commit()}
