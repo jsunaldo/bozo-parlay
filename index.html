@@ -677,7 +677,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.30';
+const APP_VERSION='2026-09-18.31';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1396,7 +1396,7 @@ function wholeSpread(text){   // the spread's line when it's a whole number (a p
   const t=String(text||'');const lo=' '+t.toLowerCase()+' ';if(/\bpk\b|pick ?em/.test(lo)&&detectTeams(t).length===1&&!/\bml\b|money ?line/.test(lo))return 0;if(betType(t)!=='Spread')return null;
   const x=[...lo.matchAll(/([+-]) ?(\d+(?:\.\d+)?)(?![\d.])/g)].find(x=>+x[2]<50);return x&&Number.isInteger(+x[2])?(x[1]==='-'?-1:1)*+x[2]:null}
 const halfAlts=L=>{const f=v=>v>0?'+'+v:String(v);return L===0?'+0.5 or -0.5':[L-0.5,L+0.5].sort((a,b)=>Math.abs(a)-Math.abs(b)).map(f).join(' or ')};   // +7 → "+6.5 or +7.5", -3 → "-2.5 or -3.5"
-const halfWarn=t=>{const L=wholeSpread(t);return L==null?'':`Whole-number spread. If it lands exactly on the number (a push), you’re left out of any league winnings. It’s recommended to take ${halfAlts(L)} instead so it can’t push.`};   // league setting: Monday night games allowed too
+const halfWarn=(t,they)=>{const L=wholeSpread(t);return L==null?'':`Potential push. Push results in auto-bozo and ${they?'they are':'you are'} left out of winnings if all others hit. Recommend changing to ${halfAlts(L)}`};   // league setting: Monday night games allowed too
 const gameDays=()=>monOk()?'Sunday or Monday':'Sunday';
 function dayRule(w){if(w&&w.kind==='special'&&w.day)return{day:w.day,name:w.dayName||'special-day'};return{sunday:true,monday:monOk()}}
 const ruleText=r=>r.sunday?`${r.monday?'Sunday or Monday':'Sunday'} games only`:`${r.name} games only (${fmtDay(r.day)})`;
@@ -1727,7 +1727,7 @@ function renderLeg(w,l,cl){
     ${!open&&marginTxt?`<div class="sx muted">${marginTxt}</div>`:''}
     ${!open&&mine&&tidyRow?`<div class="sx">${tidyRow}</div>`:''}
     ${needMargin?`<div class="sx">${marginRow}</div>`:''}
-    ${(()=>{const f=[...flags,...(halfPtOn()&&l.status==='pending'&&wholeSpread(l.text)!=null?[`⚠ Whole-number spread. A push leaves this leg out of the league winnings; ${halfAlts(wholeSpread(l.text))} can’t push.`]:[])];return f.length?`<div class="sx flag">${f.join('<br>')}</div>`:''})()}
+    ${(()=>{const f=[...flags,...(halfPtOn()&&l.status==='pending'&&wholeSpread(l.text)!=null?['⚠ '+halfWarn(l.text,!mine)]:[])];return f.length?`<div class="sx flag">${f.join('<br>')}</div>`:''})()}
     ${!open&&l.status==='pending'&&!empty&&sweatable(w)?`<div class="sx lvline" id="lv-${w.id}-${l.mid}">${liveLine(w,l.mid)}</div>`:''}
     ${edit}
   </div>`;
@@ -2686,9 +2686,9 @@ function renderCrew(){
     <label class="field"><span>Season name</span><input value="${h(S.season)}" placeholder="2026 NFL" data-bind="set|season"></label>
     <label class="field"><span>Bozo stake for new weeks</span><input type="number" class="mono" value="${S.stake}" min="1" data-bind="set|stake" inputmode="numeric"></label>
     <label class="field"><span>Name for the lone-miss club</span><input value="${h(league().clubName||'')}" placeholder="Parlay Killer Club" maxlength="40" data-bind="league|clubName" autocomplete="off"></label>
-    <div class="featrow" data-act="halfpt-toggle" style="margin-bottom:10px"><div><b>Warn on whole-number spreads</b><small>A push is left out of the league winnings, so anyone taking a spread like -3 gets a heads-up to add or take half a point.</small></div><span class="toggle ${halfPtOn()?'on':''}"><i></i></span></div>
+    <div class="featrow" data-act="halfpt-toggle" style="margin-bottom:10px"><div><b>Warn on whole-number spreads</b><small>A push results in auto-bozo and is left out of winnings if all others hit, so anyone taking a spread like -3 is told to change it to -2.5 or -3.5.</small></div><span class="toggle ${halfPtOn()?'on':''}"><i></i></span></div>
     <label class="field"><span>Games allowed on the weekly parlay</span><select data-bind="league|mondayOk"><option value="" ${monOk()?'':'selected'}>Sunday only</option><option value="1" ${monOk()?'selected':''}>Sunday or Monday</option></select></label>
-    <ul class="rules"><li>Every pick must be <b>-200 or longer</b>. Heavier favorites get flagged on the slip.</li>${halfPtOn()?'<li>Spreads should end in <b>.5</b>: a push is left out of the league winnings, so add or take half a point.</li>':''}<li>Picks must be on a <b>${gameDays()}</b> game. A special-day parlay (Thanksgiving, Christmas) takes only that day's games.</li><li>The Bozo puts the stake on a parlay of every pick. If it cashes, the payout <b>splits evenly</b> across everyone with a leg.</li><li>Next week's Bozo is voted from whoever <b>did not hit</b>. If everyone hits, everyone's on the ballot. Ties get a coin flip.</li><li>Pushes drop out of the parlay at even money and don't count against you.</li></ul>
+    <ul class="rules"><li>Every pick must be <b>-200 or longer</b>. Heavier favorites get flagged on the slip.</li>${halfPtOn()?'<li>Spreads should end in <b>.5</b>. A push results in auto-bozo and you are left out of winnings if all others hit.</li>':''}<li>Picks must be on a <b>${gameDays()}</b> game. A special-day parlay (Thanksgiving, Christmas) takes only that day's games.</li><li>The Bozo puts the stake on a parlay of every pick. If it cashes, the payout <b>splits evenly</b> across everyone with a leg.</li><li>Next week's Bozo is voted from whoever <b>did not hit</b>. If everyone hits, everyone's on the ballot. Ties get a coin flip.</li><li>Pushes drop out of the parlay at even money and don't count against you.</li></ul>
   </section>
   <section class="card"><h3>Data</h3>
     <div class="grid2"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button><button class="btn" data-act="sample">✨ Load sample</button><button class="btn danger" data-act="reset">🗑 Reset season</button></div>
