@@ -97,6 +97,9 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .rv-player{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.94);display:flex;align-items:center;justify-content:center;animation:fadeUp .2s}
 .rv-player .rv-video{width:100%;max-width:100vw;max-height:calc(100vh - 120px);max-height:calc(100dvh - 120px);height:auto;object-fit:contain;border-radius:0}
 .rv-x{position:absolute;top:calc(env(safe-area-inset-top,0px) + 14px);right:14px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.2);color:#fff;font-size:26px;line-height:1;cursor:pointer;z-index:1}
+.rv-random{background:linear-gradient(135deg,var(--amber),var(--pink));color:#fff;border-radius:16px;padding:16px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:4px;margin:10px 0;animation:fadeUp .4s}
+.rv-random .dice{font-size:40px;line-height:1}.rv-random b{font-size:17px}.rv-random span{font-size:14px;opacity:.95}
+.rv-tiebar{background:var(--surface2);border-radius:14px;padding:10px 12px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
 .rv-stand{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
 .rv-card{margin-top:12px;background:var(--surface2);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;animation:fadeUp .35s}
 .rv-read{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font-size:15px}
@@ -651,7 +654,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.12';
+const APP_VERSION='2026-09-18.13';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -911,6 +914,8 @@ const isIOS=()=>/iPhone|iPod/.test(navigator.userAgent)||isIPad();
 const iosTab=()=>isIOS()&&!navigator.standalone&&!matchMedia('(display-mode: standalone)').matches;
 const b64uBytes=s=>{let t=String(s).replace(/-/g,'+').replace(/_/g,'/');while(t.length%4)t+='=';return Uint8Array.from(atob(t),c=>c.charCodeAt(0))};
 const pushWanted=(l=league())=>!!(l.sync&&l.features&&l.features.notify);
+const noPings=(mid,l=league())=>pushWanted(l)&&!!l.pushWho&&!l.pushWho[mid];   // notifications are on for the league but not for this person
+const pingTag=mid=>noPings(mid)?' 🔕':'';
 const pushOnHere=(l=league())=>!!(PUSH.sub&&l.pushEp&&l.pushEp===PUSH.sub.endpoint&&(!l.pushMid||l.pushMid===l.me));
 const appUrl=l=>location.origin+location.pathname+(SHARE_MODE?'':'?league='+encodeURIComponent(l.id));
 function blockedFix(){return isIOS()?'On your '+(isIPad()?'iPad':'iPhone')+': <b>Settings → Notifications</b>, find this app, and turn on <b>Allow Notifications</b>. Then come back and tap Turn on notifications.':/Android/.test(navigator.userAgent)?'On Android: press and hold the app icon, tap <b>App info → Notifications</b>, and turn them on. Then come back and tap Turn on notifications.':'In your browser, click the icon just left of the web address, set <b>Notifications</b> to <b>Allow</b>, then reload the page.'}
@@ -951,6 +956,7 @@ function applyState(l,d){
   if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.vapid)l.vapid=d.vapid;if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
   if(l.meKey&&d.you===null){delete l.me;delete l.meKey;delete l.pushEp;delete l.pushMid;setTimeout(()=>toast('The commissioner reset your name on this phone — tap your name again to vote','bad'),80)}
   l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;if(d.updatedAt)l.sync.base=d.updatedAt;
+  l.sync.known=[];for(const x of l.seasons)for(const w of x.data.weeks)l.sync.known.push(w.id);   // what the league had, to tell a delete from a week this copy never saw
   if(league()===l){S=season().data;ALLTIME=null}
 }
 function setSyncDot(state){const d=document.getElementById('syncDot');if(!d)return;const l=league();d.className='syncdot '+(l.sync?state:'off');d.title={ok:'Synced with the group',bad:'Cloud sync failed — your changes are saved on this device',busy:'Syncing…'}[state]||''}
@@ -969,7 +975,16 @@ async function pull(l=league(),loud=false,force=false){
 }
 function schedulePush(){const l=league();if(!l.sync||l.sync.role!=='admin')return;l.sync.dirty=true;l.sync.seq=(l.sync.seq||0)+1;clearTimeout(pushT);pushT=setTimeout(()=>{pushT=null;push(l)},700)}
 // members' own picks that reached the league after this device last synced: fold them into this device's copy
+function adoptServerWeeks(l,st){   // weeks the server started (auto-crown) that this copy hasn't seen: take them, in place
+  let n=0;const drop=new Set(l.dropWeeks||[]);
+  for(const x of st.seasons||[]){const lx=(l.seasons||[]).find(y=>y.id===x.id);if(!lx||!lx.data)continue;const lws=lx.data.weeks;const sws=(x.data&&x.data.weeks)||[];
+    sws.forEach((sw,i)=>{if(drop.has(sw.id)||(l.sync.known||[]).includes(sw.id)||lws.some(y=>y.id===sw.id))return;
+      let at=-1;if(sw.after){at=lws.findIndex(y=>y.id===sw.after);if(at<0)return;let k=at+1;while(k<lws.length&&isSide(lws[k]))k++;if(k<lws.length&&!isSide(lws[k]))return;while(at+1<lws.length&&isSide(lws[at+1])&&lws[at+1].of===sw.after)at++}
+      else{for(let k=i-1;k>=0&&at<0;k--)at=lws.findIndex(y=>y.id===sws[k].id);if(at<0&&i>0)at=lws.length-1}
+      const nw=JSON.parse(JSON.stringify(sw));nw.picks??={};nw.votes??={};for(const p of Object.values(nw.picks)){p.unit??=unitFor(p.text);p.teams??=detectTeams(p.text)}lws.splice(at+1,0,nw);n++})}
+  return n}
 function mergeMemberEdits(l,st){
+  adoptServerWeeks(l,st);
   const base=l.sync.base||'';const srv={};for(const x of st.seasons||[])for(const w of (x.data&&x.data.weeks)||[])srv[x.id+'|'+w.id]=w;let n=0;
   for(const x of l.seasons||[])for(const w of (x.data&&x.data.weeks)||[]){const o=srv[x.id+'|'+w.id];if(!o)continue;
     for(const[mid,sp]of Object.entries(o.picks||{})){if(!sp||!sp.at||!(sp.at>base))continue;const lp=w.picks[mid]||(w.picks[mid]={status:'pending',margin:null,unit:'pts',teams:[]});
@@ -979,8 +994,10 @@ function mergeMemberEdits(l,st){
 async function push(l,retried){
   setSyncDot('busy');const seq=l.sync.seq||0;
   const fd=!!l.featDirty;   // the switches only go up when this device flipped one: a stale copy never switches the league back
-  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,...(fd?{features:l.features||{}}:{}),clubName:l.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
-    if(fd)delete l.featDirty;
+  const have=new Set();for(const x of l.seasons||[])for(const w of (x.data&&x.data.weeks)||[])have.add(w.id);
+  const dw=[...new Set([...(l.dropWeeks||[]),...(l.sync.known||[]).filter(id=>!have.has(id))])];   // weeks removed here on purpose (delete, reset, import): the server keeps weeks it started unless told
+  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,...(fd?{features:l.features||{}}:{}),...(dw.length?{dropWeeks:dw}:{}),clubName:l.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
+    if(fd)delete l.featDirty;if(dw.length)l.dropWeeks=(l.dropWeeks||[]).filter(id=>!dw.includes(id));
     if((l.sync.seq||0)===seq&&!pushT){delete l.sync.dirty;applyState(l,d);save();if(!quiet())render();else needRender=true}   // nothing new typed meanwhile: take the league as it now stands (votes, claims…)
     else{l.sync.rev=d.rev;if(d.updatedAt)l.sync.base=d.updatedAt;save()}                                         // more edits are queued: they push next
     setSyncDot('ok')}
@@ -1191,15 +1208,15 @@ function eligible(w){
   return{list:c.legs.map(l=>l.mid),reason:'all'};
 }
 function stats(){
-  const weeks=[...S.weeks].sort((a,b)=>a.num-b.num);
+  const hid=spoilerHidden();const weeks=[...S.weeks].filter(w=>!(hid&&hid.has(w.id))).sort((a,b)=>a.num-b.num);
   const per={};
   S.members.forEach(m=>per[m.id]={id:m.id,picks:0,hits:0,misses:0,pushes:0,pending:0,decSum:0,decN:0,bozo:0,spent:0,earned:0,cur:0,bestHit:0,worstMiss:0,killer:0,killed:0,curLegs:[],bestHitLegs:[],worstMissLegs:[],missMargins:[],closest:null,choke:null,sweat:null,history:[],plus:{w:0,l:0,p:0},minus:{w:0,l:0,p:0},winDec:[],loseDec:[],longestHit:null,easiestHit:null,worstMissOdds:null,bozoWeeks:[],byType:{},byTeam:{},bozoLegs:0,bozoLegsHit:0,bozoCashed:0,hitMargins:[],bySub:{},killers:[],streakStart:null,bestHitSpan:null,worstMissSpan:null});
   const g={weeks:weeks.length,graded:0,won:0,lost:0,staked:0,paid:0,bestLegs:0,legsTotal:0,legsHit:0,bestOdds:null,byType:{},byTeam:{},bySub:{},closestWeek:null,legs:[]};
   for(const w of weeks){
     const c=calc(w);
-    if(per[w.bozoId]){const pb=per[w.bozoId];pb.bozo++;pb.spent+=c.stake;pb.bozoWeeks.push(wkShort(w));if(c.graded){pb.bozoLegs+=c.hits+c.misses;pb.bozoLegsHit+=c.hits;if(c.result==='won')pb.bozoCashed++}}
+    if(per[w.bozoId]){const pb=per[w.bozoId];pb.bozo++;if(c.graded)pb.spent+=c.stake;pb.bozoWeeks.push(wkShort(w));if(c.graded){pb.bozoLegs+=c.hits+c.misses;pb.bozoLegsHit+=c.hits;if(c.result==='won')pb.bozoCashed++}}
     if(c.graded&&c.n&&(!g.closestWeek||c.hits/(c.n-c.pushes||1)>g.closestWeek.rate))g.closestWeek={wk:wkShort(w),hits:c.hits,n:c.n-c.pushes,rate:c.hits/(c.n-c.pushes||1)};
-    g.staked+=c.stake;
+    if(c.graded)g.staked+=c.stake;else g.liveStake=(g.liveStake||0)+c.stake;   // money counts once the week is settled
     if(c.result==='won'){g.won++;g.paid+=c.payout;if(g.bestOdds==null||c.dec>g.bestOdds)g.bestOdds=c.dec}
     if(c.result==='lost')g.lost++;
     if(c.graded)g.graded++;
@@ -1252,7 +1269,15 @@ function awards(per){
 
 /* ============================== RENDER ============================== */
 function autosize(t){t.style.height='auto';t.style.height=Math.max(40,t.scrollHeight)+'px'}
-function render(){
+function spoilerHidden(l=league()){   // weeks this phone mustn't see yet: whatever came after the latest reveal it hasn't watched (current season only)
+  if(!l||!l.sync)return null;const ws=newestOf(l).data.weeks;const lw=lastMain(ws);if(!lw)return null;let p=null;
+  for(let k=ws.indexOf(lw)-1;k>=0;k--)if(!isSide(ws[k])){p=ws[k];break}
+  if(!p||!p.reveal||revealSeen(p,l))return null;return new Set(ws.filter(x=>x===lw||(isSide(x)&&x.of===lw.id)).map(x=>x.id));
+}
+function render(){const hid=spoilerHidden();if(!hid||S!==newestOf(league()).data)return render0();
+  if(hid.has(S.currentWeekId)){const p=prevMain(week(S.currentWeekId));if(p){S.currentWeekId=p.id;save()}}   // keep the page and the buttons on the same week
+  const real=S.weeks;S.weeks=real.filter(w=>!hid.has(w.id));ALLTIME=null;try{render0()}finally{S.weeks=real}}
+function render0(){
   const v=VIEW;
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const main=document.getElementById('view');
@@ -1295,13 +1320,13 @@ function renderUpcoming(w,c){   // next week's slip during the vote: the same ro
       <span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}${isMe?'<span class="muted tiny" style="font-weight:500">you</span>':''}</span>
       <span class="rt">${heavy?'<span class="tag warn">Too heavy</span>':''}${has?'<span class="stag in">✓ pick in</span>':'<span class="stag none">not in yet</span>'}</span>
       ${editing?`<div class="edit"><div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="${rule.sunday?'Pick, e.g. Chiefs -3.5':`Pick a ${h(rule.name)} game`}" autocomplete="off" enterkeyhint="next">${h(np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">${h(ruleText(rule))}. Must be -200 or longer.${has?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small></div>`
-        :`<div class="sp">${has?betChip((ok&&cleanPick(np.text,ok))||np.text,cm?.teams||np.teams):`<span class="muted">${isMe?(mineIn?'Tap to enter your pick':'Unlocks once your vote and video are in'):'Waiting on their pick'}</span>`}<span class="odds mono">${h(has?np.odds||'':'')}</span></div>`}
+        :`<div class="sp">${has?betChip((ok&&cleanPick(np.text,ok))||np.text,cm?.teams?.length?cm.teams:np.teams?.length?np.teams:teamOfPlayer(np.text)):`<span class="muted">${isMe?(mineIn?'Tap to enter your pick':'Unlocks once your vote and video are in'):'Waiting on their pick'}</span>`}<span class="odds mono">${h(has?np.odds||'':'')}</span></div>`}
       ${isMe&&has&&np.raw&&!editing?`<div class="sx"><span class="leg-tidy">Tidied from “${h(np.raw)}” · <a href="#" data-act="next-untidy">Undo</a></span></div>`:''}
       ${fl.length?`<div class="sx flag">${fl.join('<br>')}</div>`:''}
     </div>`};
   const groups=bunch(exp.map(mid=>({mid})),x=>cl.claims[x.mid]?.game?.id);
   return`<div class="week-nav"><button class="icon-btn" data-act="upcoming-back" aria-label="Back">‹</button><div class="week-title"><strong>${h(nextName(w))}</strong><small class="muted tiny">upcoming slip</small></div><span style="width:40px"></span></div>
-  <div class="kindbar"><span class="kb-ic">🤡</span><span class="kb-t"><b>${bz?`${h(bz.name)} is the Bozo`:r?'Bozo: tie, coin flip coming':`Bozo: decided by the ${h(wkName(w))} vote`}</b>These picks land on the slip the moment the Bozo is crowned. ${h(ruleText(rule))}.</span></div>
+  <div class="kindbar"><span class="kb-ic">🤡</span><span class="kb-t"><b>${bz?`${h(bz.name)} is the Bozo`:r?'Bozo: tie, revote under way':`Bozo: decided by the ${h(wkName(w))} vote`}</b>These picks land on the slip the moment the Bozo is crowned. ${h(ruleText(rule))}.</span></div>
   <section class="ticket"><div class="ticket-head"><div class="row between"><div class="eyebrow">Upcoming slip · ${exp.length} leg${exp.length===1?'':'s'}</div><span class="badge pending">${items.length}/${exp.length} in</span></div></div>
   <div class="legs slip">${groups.map(g=>g.game&&g.items.length>1?`<div class="slip-group"><div class="slip-sg">Same game · ${h(gameLabel(cl.claims[g.items[0].mid].game))}</div>${g.items.map(x=>row(x.mid)).join('')}</div>`:g.items.map(x=>row(x.mid)).join('')).join('')}</div>
   ${nfl&&nfl.failed?`<p class="muted tiny" style="padding:0 16px 14px">Couldn't load next week's NFL schedule, so only exact duplicates are checked right now.</p>`:''}</section>
@@ -1334,7 +1359,8 @@ function renderExtras(w){   // commissioner: add a side or special parlay to the
     :`<div class="ex"><button class="btn block" data-act="add-side">🎯 Add an Anytime TD side parlay</button><small class="muted">Runs alongside ${h(wkName(w))}. ATTD bets only, ${gameDays()} games. No Bozo and no vote, so win or lose it never touches the Bozo.</small></div>`;
   const special=(w.kind==='special'&&!c.legs.some(l=>l.status!=='pending')?`<div class="ex"><button class="btn ghost block sm" data-act="undo-special">Make ${h(wkName(w))} a regular Sunday parlay again</button></div>`:'')
     +`<div class="ex"><button class="btn block" data-act="add-special">📅 Add a special-day parlay</button><small class="muted">Thanksgiving, Christmas and other odd-day slates. It goes before that week's Sunday parlay, and its vote picks the Sunday Bozo.</small></div>`;
-  return`<section class="card extras"><h3>Extra parlays</h3>${side}${special}${up.length?`<div class="pd-sub" style="margin:14px 0 6px">Coming up</div>${up.map(sp=>`<div class="row between ex-plan"><span>${spIcon(sp.name)} ${h(sp.name)} parlay · ${h(fmtDay(sp.day))}</span><button class="mini danger" data-act="drop-special" data-day="${sp.day}" title="Remove">×</button></div>`).join('')}`:''}</section>`;
+  const fin=`<div class="ex"><button class="btn ghost block sm" data-act="toggle-final">${w.final?'🏁 Final week of the season (tap to undo)':'🏁 Mark as the season\'s final week'}</button><small class="muted">${w.final?'No Bozo vote after this one and no next week.':'The last parlay of the season: no Bozo vote afterwards, and the app won\'t start a next week.'}</small></div>`;
+  return`<section class="card extras"><h3>Extra parlays</h3>${side}${special}${fin}${up.length?`<div class="pd-sub" style="margin:14px 0 6px">Coming up</div>${up.map(sp=>`<div class="row between ex-plan"><span>${spIcon(sp.name)} ${h(sp.name)} parlay · ${h(fmtDay(sp.day))}</span><button class="mini danger" data-act="drop-special" data-day="${sp.day}" title="Remove">×</button></div>`).join('')}`:''}</section>`;
 }
 function clashLines(cl){if(!hasFlags(cl))return'';const nm=mid=>h(member(mid)?.name||'');return`<div class="clashlines">${cl.pairs.map(p=>`<div class="clashline">⚠ <b>${nm(p.a)}</b> and <b>${nm(p.b)}</b> ${CLASH_SUM[p.kind]}${p.game?' · '+h(p.game.name):''}</div>`).join('')}${Object.entries(cl.off||{}).map(([mid,o])=>`<div class="clashline">⚠ <b>${nm(mid)}</b> picked a ${h(offText(o,cl.rule))} · ${h(o.game.name)}</div>`).join('')}${Object.keys(cl.notd||{}).map(mid=>`<div class="clashline">⚠ <b>${nm(mid)}</b>'s pick isn't an Anytime TD bet. This side parlay is ATTD only.</div>`).join('')}</div>`}
 function pickStatus(w,c,cl){
@@ -1346,7 +1372,7 @@ function pickStatus(w,c,cl){
   const missing=c.legs.filter(l=>!String(l.text||'').trim());const inCount=c.n-missing.length;
   if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}<div class="pickstat all"><b>All ${c.n} picks are in</b><span class="muted tiny">${w.locked?'Locked.':hasFlags(cl)?'Sort out the flagged picks first.':isSide(w)?'Ready to place it.':'Ready for the Bozo to place it.'}</span></div>${hasFlags(cl)?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
   const names=missing.map(l=>member(l.mid)?.name).filter(Boolean);
-  return`<div class="pickstat"><div class="row between"><b>${inCount} of ${c.n} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div><div class="pickstat-who">Waiting on ${names.map(n=>`<span class="waitchip">${h(n)}</span>`).join('')}</div>${clashLines(cl)}${tidyBtn}${note}</div>`;
+  return`<div class="pickstat"><div class="row between"><b>${inCount} of ${c.n} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div><div class="pickstat-who">Waiting on ${missing.filter(l=>member(l.mid)).map(l=>`<span class="waitchip" ${noPings(l.mid)?'title="Notifications off: give them a text"':''}>${h(member(l.mid).name)}${pingTag(l.mid)}</span>`).join('')}</div>${pushWanted()&&missing.some(l=>noPings(l.mid))?`<small class="muted tiny">🔕 = notifications off, so they won't get the reminder. Give them a text.</small>`:''}${clashLines(cl)}${tidyBtn}${note}</div>`;
 }
 function renderTicket(w,c){
   const b=member(w.bozoId);const cl=slipClaims(w,c);
@@ -1377,7 +1403,7 @@ function renderLeg(w,l,cl){
   const empty=!String(l.text||'').trim()&&l.status==='pending';
   if(editable&&empty&&mine&&!isAdmin())slipOpen.add(key);   // your own empty leg opens as a form and stays open until Done
   const open=editable&&slipOpen.has(key);
-  const cm=cl&&cl.claims[l.mid];const shown=(l.teams&&l.teams.length)||!cm||!cm.teams.length?l:{...l,teams:cm.teams};
+  const cm=cl&&cl.claims[l.mid];const shown=(l.teams&&l.teams.length)?l:cm&&cm.teams.length?{...l,teams:cm.teams}:{...l,teams:teamOfPlayer(l.text)};
   const flags=cl?[...(cl.clashes[l.mid]||[]).map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`),...(cl.off&&cl.off[l.mid]?[`⚠ ${h(offText(cl.off[l.mid],cl.rule))}`]:[]),...(cl.notd&&cl.notd[l.mid]?['⚠ Not an Anytime TD bet. This side parlay is ATTD only.']:[])]:[];
   const tag={hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status];
   const quick=isAdmin()&&l.status==='pending'&&!empty&&!open?`<div class="seg q">${['hit','miss','push'].map(st=>`<button class="${st}" data-act="status" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('')}</div>`:'';
@@ -1501,7 +1527,7 @@ function withStats(fn){return(VIEW==='stats'||VIEW==='history')?withAll(fn):fn()
 const openKinds=new Set();
 const chev=open=>`<span class="chev ${open?'open':''}">›</span>`;
 function typeRows(byType,mid){return TYPE_ORDER.filter(k=>byType[k]).map(k=>statRow({label:k,rec:byType[k],act:'show-bets',data:`data-node="${encNode({type:k,mid})}"`})).join('')}
-function betChip(text,teams,cls=''){const t=(teams||[]).slice(0,2);return`<span class="betchip ${cls}">${t.map(a=>`<img src="${LOGO(a)}" alt="" decoding="async">`).join('')}<span class="bt">${h(text||'—')}</span></span>`}
+function betChip(text,teams,cls=''){const t=((teams&&teams.length)?teams:teamOfPlayer(text||'')).slice(0,2);return`<span class="betchip ${cls}">${t.map(a=>`<img src="${LOGO(a)}" alt="" decoding="async">`).join('')}<span class="bt">${h(text||'—')}</span></span>`}
 function resultBadge(c){
   const map={pending:['pending',c.n?`${c.n-c.pending}/${c.n} graded`:'empty'],won:['won','Cashed'],lost:['lost',`Lost · ${c.hits}/${c.n-c.pushes}`],void:['void','Void']};
   const[cls,txt]=map[c.result];return`<span class="badge ${cls}">${txt}</span>`;
@@ -1550,10 +1576,10 @@ const mb=n=>Math.round(n/1048576);
 function subStatus(w){const s=w.sub||{};return mid=>{const x=s[mid];if(!x)return{voted:false,video:false,cand:null};const vid=x.video;return{voted:!!(x.candidateId||x.voted),video:!!(vid&&(typeof vid==='boolean'?vid:!vid.deleted)),cand:x.candidateId||null}}}
 function expectedVoters(w,c){return c.legs.map(x=>x.mid).filter(mid=>!(w.skip&&w.skip[mid]))}
 async function sendSub(l,w,cid){setSyncDot('busy');
-  try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:cid,memberId:l.me}});subEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(w.reveal?'That was the last one — the votes are in':'Vote sealed. Now the video.','good')}
+  try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:cid,memberId:l.me}});subEdit.delete(w.id);takeState(l,d);save();render();setSyncDot('ok');toast(w.reveal?'That was the last one — the votes are in':'Vote sealed. Now the video.','good')}
   catch(e){setSyncDot('bad');toast('Vote didn\'t go through: '+e.message,'bad')}}
 async function uploadVideo(l,w,file,resume){
-  const max=(l.limits&&l.limits.videoMax)||150*1048576;if(!file)return;
+  const max=(l.limits&&l.limits.videoMax)||400*1048576;if(!file)return;
   if(!resume){
     if(!/^video\//.test(file.type||'')&&!/\.(mp4|mov|m4v|webm)$/i.test(file.name||'')){modal({title:'That isn\'t a video',body:`<p>The file you picked (${h(file.name||'unnamed')}) doesn\'t look like a video. Pick the clip from your camera roll or record a new one.</p>`,actions:[{label:'OK',cls:'primary'}]});return}
     if(file.size>max){modal({title:'Too big to upload',body:`<p>That video is <b>${mb(file.size)} MB</b>. The limit is <b>${mb(max)} MB</b>, so nothing was uploaded.</p><p>Easiest fix on an iPhone: <b>Settings → Camera → Record Video → 1080p at 30 fps</b>, then record it again. Or open the clip in Photos, tap Edit, and trim it shorter.</p>`,actions:[{label:'Got it',cls:'primary'}]});return}
@@ -1581,26 +1607,47 @@ async function uploadVideo(l,w,file,resume){
   finally{try{await lock?.release()}catch(e){}}
 }
 function videoUrl(l,w,mid){const s=season(l);const k=l.sync.role==='admin'&&l.shareKey?l.shareKey:l.sync.key;return`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/video?season=${encodeURIComponent(s.id)}&week=${encodeURIComponent(w.id)}&member=${encodeURIComponent(mid)}&k=${encodeURIComponent(k)}`}
-function rvKey(w,l=league()){return'bp-rv:'+(l.sync?.id||l.id)+':'+w.id}
-function rvGet(w,l){try{return JSON.parse(localStorage.getItem(rvKey(w,l)))||{i:-1,f:false}}catch(e){return{i:-1,f:false}}}
-function rvSet(w,v){try{localStorage.setItem(rvKey(w),JSON.stringify(v))}catch(e){}}
+function rvKey(w,l=league(),R){return'bp-rv:'+(l.sync?.id||l.id)+':'+w.id+(R===2?':2':'')}
+function rvGet(w,l,R){try{return JSON.parse(localStorage.getItem(rvKey(w,l||league(),R)))||{i:-1,f:false}}catch(e){return{i:-1,f:false}}}
+function rvSet(w,v,R){try{localStorage.setItem(rvKey(w,league(),R),JSON.stringify(v))}catch(e){}}
+const rvOf=(w,R)=>R===2?(w.revote&&w.revote.reveal):w.reveal;
 // has THIS device watched the reveal through to the vote board? nothing to watch counts as seen
-function revealSeen(w,l){if(!w||!w.reveal)return true;return rvGet(w,l).i>=w.reveal.order.length}
+function revealSeen(w,l){if(!w||!w.reveal)return true;if(rvGet(w,l).i<w.reveal.order.length)return false;const r2=w.revote&&w.revote.reveal;return!r2||rvGet(w,l,2).i>=r2.order.length}   // a revote has to be watched too
+function takeState(l,d){if(isAdmin(l)&&(l.sync.dirty||pushT)){setTimeout(()=>pull(l,false,true),900);return}applyState(l,d)}   // unsent commissioner edits go up first, then the league comes down
 async function adminCall(path,extra,okMsg){const l=league();const w=currentWeek();setSyncDot('busy');
-  try{const d=await api(l,path,{method:'POST',body:{seasonId:season(l).id,weekId:w.id,...extra}});applyState(l,d);save();render();setSyncDot('ok');if(okMsg)toast(okMsg,'good')}
+  try{const d=await api(l,path,{method:'POST',body:{seasonId:season(l).id,weekId:w.id,...extra}});takeState(l,d);save();render();setSyncDot('ok');if(okMsg)toast(okMsg,'good')}
   catch(e){setSyncDot('bad');toast('That didn\'t go through: '+e.message,'bad')}}
+const randomCard=w=>w.revote&&w.revote.pick?`<div class="rv-random"><div class="dice">🎲</div><b>Still tied. Randomly selecting ${h(member(w.revote.pick.id)?.name||'?')}</b><span>because ${h(w.revote.pick.reason)}.</span></div>`:'';
+function renderRevoteHead(w){const r=w.reveal;const t=tallyAt(r,r.order.length-1);
+  return`<div class="rv-tiebar"><span><b>Round 1 tied</b> · ${r.tie.map(id=>`${h(member(id)?.name||'?')} ${t[id]||0}`).join(' · ')}</span><button class="btn sm ghost" data-act="rv-restart" data-r="1" data-wid="${w.id}">↺ Watch</button></div>`}
+function renderRevoteBallot(w,c){   // just a vote among the tied: no video, sealed until everyone's in
+  const l=league();const me=l.me;const rv=w.revote;const exp=(rv.voters||c.legs.map(x=>x.mid)).filter(mid=>!(rv.skip&&rv.skip[mid]));const sub=rv.sub||{};const skipped=Object.keys(rv.skip||{});
+  const inn=mid=>!!(sub[mid]&&(sub[mid].voted||sub[mid].candidateId));const done=exp.filter(inn);const missing=exp.filter(mid=>!inn(mid));
+  const mine=me?sub[me]:null;const iVote=!!me&&exp.includes(me);const editing=subEdit.has(w.id+':2');const names=rv.cands.map(id=>h(member(id)?.name||'?')).join(' vs ');
+  const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b><span class="muted tiny">sealed until everyone's in</span></div><div class="subavs">${exp.map(mid=>{const m=member(mid);const ok=inn(mid);return`<span class="subav ${ok?'ok':''}" title="${h(m?.name||'')}: ${ok?'in':'not yet'}"><span class="avatar sm" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><i>${ok?'✓':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${missing.map(mid=>h(member(mid)?.name)+pingTag(mid)).join(', ')}${missing.some(mid=>noPings(mid))?' · 🔕 = notifications off':''}</small>`:''}</div>`;
+  let yours='';
+  if(!me)yours=`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
+  else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${rv.skip?.[me]?'The commissioner skipped you for the revote.':'No leg this week for you, so no vote. Sit tight for the reveal.'}</p>`;
+  else if(mine&&mine.candidateId&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> Your revote: ${spoiler(mine.candidateId,w.id+':2')}. <button class="btn sm ghost" data-act="change-revote">Change</button></div>`;
+  else yours=`<div class="pd-sub" style="margin:12px 0 6px">Your revote</div><div class="cands">${rv.cands.map(id=>{const m=member(id);const lg=c.legs.find(x=>x.mid===id);const on=mine&&mine.candidateId===id;return`<div class="cand ${on?'sel':''}" data-act="revote-cand" data-mid="${id}"><div class="avatar" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</div><div class="cand-body"><b>${h(m?.name||'?')}${id===me?' (you)':''}</b><small>${lg&&lg.text?betChip(lg.text,lg.teams):''}</small></div><span class="chk ${on?'on':''}">${on?'✓':''}</span></div>`}).join('')}</div>${editing?`<button class="btn ghost block sm" data-act="change-revote-done">Done changing</button>`:''}`;
+  const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now-2">🎬 Reveal the revote now with ${done.length} of ${exp.length}</button>${missing.length?`<div class="skiprow">${missing.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-r="2" data-mid="${mid}" data-skip="1">Skip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-r="2" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}</div>`:'';
+  return`<section class="card vote next"><h3>It's a tie. Revote!</h3><p class="muted tiny">${names}. Just a vote this time, no video. Sealed until everyone's in, then the same reveal. If it's still tied, the app picks at random.</p>${status}${yours}${admin}</section>`;
+}
 function renderSealedVote(w,c,el,reason){
-  if(w.reveal)return renderReveal(w,c);
+  if(w.reveal){
+    if(!w.revote||rvGet(w).i<w.reveal.order.length)return renderReveal(w,c,1);
+    return renderRevoteHead(w)+(w.revote.reveal?renderReveal(w,c,2):renderRevoteBallot(w,c));   // round 1 was a tie
+  }
   const l=league();const me=l.me;const st=subStatus(w);const exp=expectedVoters(w,c);const skipped=Object.keys(w.skip||{}).filter(mid=>c.legs.some(x=>x.mid===mid));
   const done=exp.filter(mid=>{const x=st(mid);return x.voted&&x.video});const missing=exp.filter(mid=>!done.includes(mid));
   const mine=me?st(me):null;const iVote=!!me&&exp.includes(me);const editing=subEdit.has(w.id);
-  const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b><span class="muted tiny">sealed until everyone's in</span></div><div class="subavs">${exp.map(mid=>{const m=member(mid);const x=st(mid);const ok=x.voted&&x.video;return`<span class="subav ${ok?'ok':x.voted||x.video?'half':''}" title="${h(m.name)}: ${ok?'in':x.video?'video in, no vote yet':x.voted?'voted, no video yet':'nothing yet'}"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><i>${ok?'✓':x.voted||x.video?'½':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${missing.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${skipped.length?`<small class="muted">Skipped: ${skipped.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}</div>`;
+  const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b><span class="muted tiny">sealed until everyone's in</span></div><div class="subavs">${exp.map(mid=>{const m=member(mid);const x=st(mid);const ok=x.voted&&x.video;return`<span class="subav ${ok?'ok':x.voted||x.video?'half':''}" title="${h(m.name)}: ${ok?'in':x.video?'video in, no vote yet':x.voted?'voted, no video yet':'nothing yet'}"><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><i>${ok?'✓':x.voted||x.video?'½':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${missing.map(mid=>h(member(mid)?.name)+pingTag(mid)).join(', ')}${missing.some(mid=>noPings(mid))?' · 🔕 = notifications off':''}</small>`:''}${skipped.length?`<small class="muted">Skipped: ${skipped.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}</div>`;
   let yours='';
   if(!me)yours=`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
   else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${w.skip?.[me]?'The commissioner skipped you this week.':'No leg this week for you, so no vote this week. Sit tight for the reveal.'}</p>`;
   else if(mine.voted&&mine.video&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> ${mine.cand?`Your vote: ${spoiler(mine.cand,w.id)}. Video uploaded.`:'Your vote and video are sealed.'} <button class="btn sm ghost" data-act="change-sub">Change</button></div>`;
   else{
-    const max=(l.limits&&l.limits.videoMax)||150*1048576;
+    const max=(l.limits&&l.limits.videoMax)||400*1048576;
     const showBallot=!mine.voted||editing;
     yours=`<div class="pd-sub" style="margin:12px 0 6px">1 · Your vote ${mine.voted?'<span class="good">✓ sealed</span>':''}</div>
     ${showBallot?'':`<div class="np-saved"><span>Your vote: ${spoiler(mine.cand,w.id)}</span><button class="btn sm ghost" data-act="change-sub">Change</button></div>`}
@@ -1610,7 +1657,7 @@ function renderSealedVote(w,c,el,reason){
     <div class="vidbox ${mine.voted&&!mine.video?'hot':''}">${(()=>{const pendNewer=!!(pendingUp&&(!mine.video||!(w.sub?.[me]?.video?.at)||Date.parse(w.sub[me].video.at)<(pendingUp.at||0)));return upl?`<div class="upbox"><b>Uploading your video… <span id="uppct">${upl.pct}%</span></b><div class="progress"><div id="upbar" style="width:${upl.pct}%"></div></div><small id="uplabel">${h(upl.label)}</small><small class="warnline">Keep the app open until it says uploaded.</small><button class="btn sm ghost" data-act="cancel-upload">Pause</button></div>`
       :mine.video&&!pendNewer?`<div class="row between"><span>✓ Video uploaded${mine.cand?'':' — now pick a name above'}</span><label class="btn sm ghost">Replace<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
       :pendingUp?`<div class="upbox warn"><b>Your video didn't finish uploading</b><small>${pendingUp.size?mb(pendingUp.size)+' MB · ':''}picked ${h(new Date(pendingUp.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}</small><button class="btn primary block" data-act="resume-upload">↑ Resume the upload</button><label class="btn ghost block sm">Choose a different video<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
-      :`<label class="btn primary block">🎥 Record or choose your vote video<input type="file" id="vidIn" accept="video/*" hidden></label><small class="muted tiny">Say who you're voting for and why. Up to ${mb(max)} MB: a couple of minutes at 1080p, under a minute at 4K. Nobody sees it until everyone's in.</small>`})()}</div>
+      :`<label class="btn primary block">🎥 Record or choose your vote video<input type="file" id="vidIn" accept="video/*" hidden></label><small class="muted tiny">Say who you're voting for and why. Up to ${mb(max)} MB: several minutes at 1080p, about 2 minutes at 4K. Nobody sees it until everyone's in.</small>`})()}</div>
     ${editing?`<button class="btn ghost block sm" data-act="change-sub-done">Done changing</button>`:''}`;
   }
   const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now" ${done.length?'':'disabled'}>🎬 Reveal now with ${done.length} of ${exp.length}</button>${missing.length?`<div class="skiprow">${missing.map(mid=>{const x=st(mid);return`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="1">${x.voted&&!x.video?`Count ${h(member(mid)?.name)} without a video`:`Skip ${h(member(mid)?.name)}`}</button>`}).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose the Bozo manually instead</button></div>`:'';
@@ -1618,7 +1665,7 @@ function renderSealedVote(w,c,el,reason){
 }
 const nextEdit=new Set();
 async function sendNext(l,w,text,odds,raw,keep){setSyncDot('busy');
-  try{const teams=pickTeamsFor(text,nflOk(nextSlate(w)));const d=await api(l,'/nextpick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,text,odds,teams,memberId:l.me,raw:raw||'',keep:!!keep}});nextEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(text?`${nextName(w)} pick saved. It's on the slip the moment the Bozo is crowned.`:'Next week\'s pick cleared','good')}
+  try{const teams=pickTeamsFor(text,nflOk(nextSlate(w)));const d=await api(l,'/nextpick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,text,odds,teams,memberId:l.me,raw:raw||'',keep:!!keep}});nextEdit.delete(w.id);takeState(l,d);save();render();setSyncDot('ok');toast(text?`${nextName(w)} pick saved. It's on the slip the moment the Bozo is crowned.`:'Next week\'s pick cleared','good')}
   catch(e){setSyncDot('bad');toast('Pick didn\'t save: '+e.message,'bad')}}
 /* ---- NFL slate: this week's games and who plays for whom, for same-game grouping and clash checks ---- */
 const NFL={};
@@ -1791,7 +1838,22 @@ function cleanPick(text,nfl){
   }
   return null;
 }
-function pickTeamsFor(text,nfl){const t=detectTeams(text);if(t.length||!nfl||!nfl.full||betType(text)!=='Player prop')return t;const pl=matchPlayer(text,nfl);return pl?[pl.team]:t}
+function pickTeamsFor(text,nfl){const t=detectTeams(text);if(t.length||betType(text)!=='Player prop')return t;const pl=nfl&&nfl.full?matchPlayer(text,nfl):null;return pl?[pl.team]:teamOfPlayer(text)}
+// every NFL skill player → team (refreshed daily), for a player this week's slate can't place: a bye, or the slate hasn't loaded yet
+let PIDX=null;
+function playersIndex(){
+  if(PIDX&&(PIDX.data||Date.now()<PIDX.retry))return PIDX.data;PIDX={data:PIDX&&PIDX.data||null,retry:Date.now()+60e3};   // a failed load tries again a minute later
+  try{const c=JSON.parse(localStorage.getItem('bp-players')||'null');if(c&&c.players&&Date.now()-c.at<24*3600e3){PIDX.data=prepNfl({games:[],players:c.players});return PIDX.data}}catch(e){}
+  fetch(`${SYNC_URL}/nfl/players`).then(r=>r.json()).then(d=>{if(!d||!d.ok||!Array.isArray(d.players)||!d.players.length)return;
+    if(!d.partial&&d.teams>=32){try{localStorage.setItem('bp-players',JSON.stringify({at:Date.now(),players:d.players}))}catch(e){}}   // only a full list is kept for the day
+    PIDX.data=prepNfl({games:[],players:d.players});backfillTeams();softRender()}).catch(()=>{});
+  return null}
+function backfillTeams(){   // commissioner's device: a pending pick saved without a team gets one, so every screen and the shared slip show the logo
+  const l=league();if(!l||(l.sync&&!isAdmin(l)))return;let n=0;
+  for(const w of S.weeks)for(const p of Object.values(w.picks||{})){if(p.status!=='pending'||p.tm||(p.teams&&p.teams.length)||!String(p.text||'').trim())continue;const t=teamOfPlayer(p.text);if(t.length){p.teams=t;n++}}
+  if(n){save();if(l.sync)schedulePush()}}
+const TOP=new Map();   // text → team, remembered once the full list is in (chips all over Stats and History ask)
+function teamOfPlayer(text){if(betType(text)!=='Player prop')return[];if(TOP.has(text))return TOP.get(text);const idx=playersIndex();if(!idx)return[];const pl=matchPlayer(text,idx);const t=pl?[pl.team]:[];TOP.set(text,t);return t}
 function nextSlate(w){const p=nextPlan(w);return p.sunday?nflData(slipDate(w),0):p.special?nflData(p.special.day,0):nflData(w.date,1)}   // the NFL week the next parlay is on
 function nextRule(w){const p=nextPlan(w);return p.special?{day:p.special.day,name:p.special.name}:{sunday:true,monday:monOk()}}
 function nextPickList(w,c,me){
@@ -1816,7 +1878,7 @@ function nextPickBox(w,c){
   return`<div class="nextpick"><div class="pd-sub">Your ${nn} pick</div>${editing?`<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="${rule.sunday?'Pick, e.g. Chiefs -3.5':`Pick a ${h(rule.name)} game`}" autocomplete="off" enterkeyhint="next">${h(np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">${h(ruleText(rule))}. Must be -200 or longer. It lands on the ${nn} slip when the Bozo is crowned.${np?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small>`
     :`<div class="np-saved"><div class="np-bet">${betChip(np.text,np.teams)}<span class="mono">${np.odds?h(np.odds):''}</span>${heavy?'<span class="tag warn">Too heavy</span>':''}</div><button class="btn sm ghost" data-act="next-edit">Edit</button></div>${np.raw?`<div class="leg-tidy">Tidied from “${h(np.raw)}” · <a href="#" data-act="next-untidy">Undo</a></div>`:''}`}</div>`;
 }
-function tallyAll(w,r,i){const t=tallyAt(r,i);for(const id of eligible(w).list)if(!(id in t))t[id]=0;return t}   // everyone on the ballot, zeros too
+function tallyAll(w,r,i,cands){const t=tallyAt(r,i);for(const id of cands||eligible(w).list)if(!(id in t))t[id]=0;return t}   // everyone on the ballot, zeros too
 function tallyAt(r,i){const t={};for(let k=0;k<=i&&k<r.order.length;k++){const c=r.order[k].candidate;t[c]=(t[c]||0)+1}return t}
 function tallyBars(t,n,bump){return`<div class="rv-tally">${Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([cid,k])=>{const m=member(cid);return`<div class="rv-trow ${cid===bump?'bump':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="bar"><i style="width:${Math.round(k/n*100)}%"></i></span><b class="mono">${k}</b></div>`}).join('')}</div>`}
 function crownBlock(w,c,r){
@@ -1826,27 +1888,28 @@ function crownBlock(w,c,r){
   if(lastWeek()!==w)return'';
   return`<div class="vote-actions" style="margin-top:12px">${r.winner?`<button class="btn primary block" data-act="crown" data-mid="${r.winner}">🤡 Crown ${h(member(r.winner)?.name)} · start ${h(nextName(w))}</button>`:`<button class="btn primary block" data-act="flip" data-ids="${r.tie.join(',')}">🪙 ${r.tie.length}-way tie — flip for it</button>`}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button><button class="btn ghost block sm" data-act="unreveal">Reopen the vote</button></div>`;
 }
-function voteBoard(w,r){const n=r.order.length;const fin=tallyAt(r,n-1);
-  return`<div class="board">${r.order.map((o,i)=>{const v=member(o.voter),cd=member(o.candidate);return`<div class="brow ${i===r.clinch?'clinch':''}"><span class="mono muted">${i+1}</span><span class="avatar xs" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><span class="nm">${h(v?.name||'?')}</span><span class="muted">votes</span><b style="color:${cd?.color||'inherit'}">${h(cd?.name||'?')}${o.voter===o.candidate?'<span class="selfvote">self</span>':''}</b>${i===r.clinch?'<em>the tribe has spoken</em>':''}</div>`}).join('')}</div>${tallyBars(fin,n)}<p class="rv-final">${r.winner?`🤡 ${h(member(r.winner)?.name)} is the ${h(nextName(w))} Bozo`:`Tied between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')} — coin flip`}</p>`}
+function voteBoard(w,r,R=1){const n=r.order.length;const fin=tallyAt(r,n-1);
+  return`<div class="board">${r.order.map((o,i)=>{const v=member(o.voter),cd=member(o.candidate);return`<div class="brow ${i===r.clinch?'clinch':''}"><span class="mono muted">${i+1}</span><span class="avatar xs" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><span class="nm">${h(v?.name||'?')}</span><span class="muted">votes</span><b style="color:${cd?.color||'inherit'}">${h(cd?.name||'?')}${o.voter===o.candidate?'<span class="selfvote">self</span>':''}</b>${i===r.clinch?'<em>the tribe has spoken</em>':''}</div>`}).join('')}</div>${tallyBars(fin,n)}<p class="rv-final">${r.winner?`🤡 ${h(member(r.winner)?.name)} is the ${h(nextName(w))} Bozo`:R===2?`Tied again between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')}`:`Tied between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')}. ${w.revote?'Revote!':'Coin flip.'}`}</p>`}
 let PLAYER=null;
 function openPlayer(url,onDone){closePlayer(false);const d=document.createElement('div');d.className='rv-player';d.innerHTML=`<button class="rv-x" data-act="rv-close" aria-label="Close">×</button><video class="rv-video" controls playsinline autoplay preload="auto" src="${h(url)}"></video>`;
   document.body.appendChild(d);lockScroll();PLAYER={el:d,onDone};const v=d.querySelector('video');try{const p=v.play();if(p&&p.catch)p.catch(()=>{})}catch(e){}}   // play() straight from the tap: phones allow sound
 function closePlayer(done){const p=PLAYER;if(!p)return;PLAYER=null;try{p.el.querySelector('video').pause()}catch(e){}p.el.remove();unlockScroll();if(done&&p.onDone)p.onDone()}
-function renderReveal(w,c){
-  const l=league();const r=w.reveal;const n=r.order.length;const st=rvGet(w);
-  const head=`<h3>${h(wkName(w))} — the votes are in</h3>`;
-  if(st.i<0)return`<section class="card vote next reveal">${head}<p class="muted tiny">${n} video${n===1?'':'s'}, revealed one at a time, tally kept as close as it can be. ${r.by==='admin'?'The commissioner opened the reveal early. ':''}Sound on.</p><button class="btn primary block" data-act="rv-start">▶ Start the reveal</button>${isAdmin()?`<button class="btn ghost block sm" data-act="rv-end">Skip the show — straight to the vote board</button>`:''}${nextPickBox(w,c)}</section>`;
-  if(st.i>=n)return`<section class="card vote next reveal">${head}${voteBoard(w,r)}<button class="btn ghost block sm" data-act="rv-restart">↺ Watch it again</button>${nextPickBox(w,c)}${crownBlock(w,c,r)}</section>`;
-  const o=r.order[st.i];const v=member(o.voter);const cand=member(o.candidate);const t=tallyAll(w,r,st.i);const prev=tallyAt(r,st.i-1);
-  const isClinch=r.clinch===st.i;const after=n-st.i-1;const vid=w.sub?.[o.voter]?.video;const expired=!!(vid&&vid.deleted);const noVideo=!vid;const has=!noVideo&&!expired;const vn=h(v?.name||'?');
+function renderReveal(w,c,R=1){
+  const l=league();const r=rvOf(w,R);const n=r.order.length;const st=rvGet(w,undefined,R);const RA=`data-r="${R}"`;const two=R===2;
+  const head=`<h3>${h(wkName(w))} ${two?'revote':''} — the votes are in</h3>`;
+  const cands=two?w.revote.cands:null;
+  if(st.i<0)return`<section class="card vote next reveal">${head}<p class="muted tiny">${n} ${two?'vote':'video'}${n===1?'':'s'}, revealed one at a time, tally kept as close as it can be. ${r.by==='admin'?'The commissioner opened the reveal early. ':''}${two?'No videos this time.':'Sound on.'}</p><button class="btn primary block" data-act="rv-start" ${RA}>▶ Start the ${two?'revote ':''}reveal</button>${isAdmin()?`<button class="btn ghost block sm" data-act="rv-end" ${RA}>Skip the show — straight to the vote board</button>`:''}${two?'':nextPickBox(w,c)}</section>`;
+  if(st.i>=n)return`<section class="card vote next reveal">${head}${voteBoard(w,r,R)}${two?randomCard(w):''}<button class="btn ghost block sm" data-act="rv-restart" ${RA}>↺ Watch it again</button>${two?'':nextPickBox(w,c)}${!two&&w.revote?'':crownBlock(w,c,r)}</section>`;
+  const o=r.order[st.i];const v=member(o.voter);const cand=member(o.candidate);const t=tallyAll(w,r,st.i,cands);const prev=tallyAt(r,st.i-1);
+  const isClinch=r.clinch===st.i;const after=n-st.i-1;const vid=two?null:w.sub?.[o.voter]?.video;const expired=!!(vid&&vid.deleted);const noVideo=!vid;const has=!noVideo&&!expired;const vn=h(v?.name||'?');
   return`<section class="card vote next reveal">${head}
     <div class="rv-prog"><b>Vote ${st.i+1} of ${n}</b><span class="muted tiny">${st.i>0?Object.entries(prev).sort((a,b)=>b[1]-a[1]).map(([cid,k])=>`${h(member(cid)?.name)} ${k}`).join(' · '):'first vote'}</span></div>
-    ${!st.f?`<div class="rv-who"><span class="avatar" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><div><b>${vn}'s vote</b><small class="muted">${has?'Sound on':noVideo?'skipped the video, the vote still counts':'this video has expired'}</small></div></div>
-      ${has?`<button class="rv-play" data-act="rv-play"><span class="tri">▶</span><span>Watch ${vn}'s video</span></button>`:`<div class="rv-novid">🎥 ${noVideo?'No video from '+vn:'Video expired'}</div><button class="btn primary block" data-act="rv-flip">Read the vote</button>`}`
+    ${!st.f?`<div class="rv-who"><span class="avatar" style="--c:${v?.color||'#888'}">${h(initials(v?.name))}</span><div><b>${vn}'s ${two?'revote':'vote'}</b><small class="muted">${two?'no video this round':has?'Sound on':noVideo?'skipped the video, the vote still counts':'this video has expired'}</small></div></div>
+      ${has?`<button class="rv-play" data-act="rv-play"><span class="tri">▶</span><span>Watch ${vn}'s video</span></button>`:`${two?'':`<div class="rv-novid">🎥 ${noVideo?'No video from '+vn:'Video expired'}</div>`}<button class="btn primary block" data-act="rv-flip" ${RA}>Read the vote</button>`}`
     :`<div class="rv-card ${isClinch?'clinch':''}"><div class="rv-read"><span>${vn} votes…</span><b style="color:${cand?.color||'inherit'}">${h(cand?.name||'?')}${o.voter===o.candidate?'<span class="selfvote">🙋 self-vote</span>':''}</b></div>
         <div class="rv-stand"><span>Standings</span><span>${after?`${after} vote${after===1?'':'s'} left`:'all votes in'}</span></div>${tallyBars(t,n,o.candidate)}
-        ${isClinch?`<div class="tribe"><div class="tribe-ic">🤡</div><b>${t[o.candidate]} votes. That's enough. The tribe has spoken.</b><span>${h(cand?.name||'?')} is the ${h(nextName(w))} Bozo.</span></div>`:''}
-        ${after?`<button class="btn ${isClinch?'':'primary'} block" data-act="rv-next">${isClinch?`Watch the remaining ${after} vote${after===1?'':'s'} anyway`:'Proceed to next vote →'}</button>`:''}${isClinch&&after?`<button class="btn primary block" data-act="rv-end">See the vote board</button>`:''}${!after?`<button class="btn primary block" data-act="rv-end">See the vote board</button>`:''}
+        ${isClinch?`<div class="tribe"><div class="tribe-ic">🤡</div><b>${t[o.candidate]} votes. That's enough. The tribe has spoken.</b><span>${h(cand?.name||'?')} is the ${h(nextName(w))} Bozo.</span></div>`:''}${two&&!after?randomCard(w):''}
+        ${after?`<button class="btn ${isClinch?'':'primary'} block" data-act="rv-next" ${RA}>${isClinch?`Watch the remaining ${after} vote${after===1?'':'s'} anyway`:'Proceed to next vote →'}</button>`:''}${isClinch&&after?`<button class="btn primary block" data-act="rv-end" ${RA}>See the vote board</button>`:''}${!after?`<button class="btn primary block" data-act="rv-end" ${RA}>See the vote board</button>`:''}
         ${has?`<button class="btn ghost block sm" data-act="rv-play">↺ Watch ${vn}'s video again</button>`:''}</div>`}
   </section>`;
 }
@@ -1854,8 +1917,10 @@ function renderVote(w,c,isLast){
   if(isSide(w))return'';
   const next=nextMain(w);
   if(next&&!revealSeen(w)){const el0=eligible(w);return renderSealedVote(w,c,el0,{miss:'Only the people who missed were on the ballot.',push:'Nobody missed — the pushes were on the ballot.',all:'Everyone hit. Everyone was on the ballot.'}[el0.reason]||'')}
-  if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div>${w.reveal?`<div class="pd-sub" style="margin:12px 0 6px">How the vote went</div>${voteBoard(w,w.reveal)}<button class="btn ghost block sm" data-act="rv-restart" data-wid="${w.id}">↺ Watch the reveal again</button>`:''}</section>`}
+  const reopen=isAdmin()&&next&&next===lastWeek()&&w.crowned&&w.crowned.weekId===next.id&&calc(next).legs.every(x=>x.status==='pending')?`<button class="btn ghost block sm" data-act="unreveal">Reopen the vote (removes ${h(wkName(next))} while it's untouched)</button>`:'';
+  if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div>${randomCard(w)}${w.reveal?`<div class="pd-sub" style="margin:12px 0 6px">How the vote went${w.revote?' · round 1':''}</div>${voteBoard(w,w.reveal)}${w.revote&&w.revote.reveal?`<div class="pd-sub" style="margin:12px 0 6px">The revote</div>${voteBoard(w,w.revote.reveal,2)}`:''}<button class="btn ghost block sm" data-act="rv-restart" data-wid="${w.id}">↺ Watch the reveal again</button>`:''}${reopen}</section>`}
   if(!c.n)return'';
+  if(w.final&&c.graded&&!w.reveal)return`<section class="card vote"><h3>🏁 That's a wrap on ${h(season().name)}</h3><p class="muted tiny" style="margin:0">The season's final week, so there's no next Bozo to vote on.</p></section>`;
   if(seasonOver()&&c.graded)return`<section class="card vote"><h3>That's a wrap on ${h(season().name)}</h3><p class="muted tiny" style="margin:0">Final week of the season, so there's no next Bozo to vote on. The ${h(newestSeason().name)} slate started fresh.</p></section>`;
   if(!c.graded){const done=c.n-c.pending;return`<section class="card vote"><h3>Bozo vote</h3><div class="progress"><div style="width:${done/c.n*100}%"></div></div><p class="muted tiny">${isAdmin()?`Grade all ${c.n} legs to open the vote`:'Voting opens once the results are graded'} · ${done}/${c.n} done</p></section>`}
   const el=eligible(w);const votes=w.votes||{};const ballots=w.ballots||{};const me=league().me;const synced=!!league().sync||SHARE_MODE;
@@ -1915,7 +1980,7 @@ function renderHistoryInner(){
   const{g}=stats();const net=g.paid-g.staked;
   return`<div class="tiles">
     <div class="tile"><small>Record</small><b>${g.won}–${g.lost}</b><em>${g.weeks-g.graded?`${g.weeks-g.graded} live`:'all graded'}</em></div>
-    <div class="tile"><small>Staked</small><b>${fmt$0(g.staked)}</b><em>${g.weeks} wk</em></div>
+    <div class="tile"><small>Staked</small><b>${fmt$0(g.staked)}</b><em>${g.graded} wk${g.liveStake?` · ${fmt$0(g.liveStake)} live`:''}</em></div>
     <div class="tile"><small>Paid</small><b class="${g.paid>0?'good':''}">${fmt$0(g.paid)}</b><em>${g.bestOdds?amer(g.bestOdds)+' best':'—'}</em></div>
     <div class="tile"><small>Net</small><b class="${net>=0?'good':'bad'}">${fmt$0(net)}</b><em>group</em></div>
   </div>
@@ -1931,10 +1996,10 @@ let sortKey='rate',statScope='season',ALLTIME=null,detailOpen=null;
 const ALIASES={jase:'jason',jay:'jason',murphy:'murph',jimmy:'jim',pags:'joey'};
 const canonName=n=>{const k=String(n||'').trim().toLowerCase().replace(/\s*\(.*?\)\s*$/,'');return ALIASES[k]||k};
 function allTimeSeason(){
-  const l=league();const v=fresh();v.season='All-time';v.view='stats';const byName={};let n=0;
+  const l=league();const hid0=spoilerHidden(l);const v=fresh();v.season='All-time';v.view='stats';const byName={};let n=0;
   for(const sn of seasonSorted(l).reverse()){const d=sn.data;const map={};
     for(const m of d.members){const k=canonName(m.name);if(!byName[k]){byName[k]={id:'a'+(++n),name:m.name,color:m.color,active:m.active};v.members.push(byName[k])}else if(m.active)byName[k].active=true;map[m.id]=byName[k].id}
-    for(const w of [...d.weeks].sort((a,b)=>a.num-b.num)){const nw={id:sn.id+'|'+w.id,num:v.weeks.length+1,date:w.date,stake:w.stake,bozoId:map[w.bozoId]||null,votes:{},picks:{},...(w.kind?{kind:w.kind}:{}),label:`${sn.name} · ${wkName(w)}`,short:`'${String(sn.name).slice(-2)} ${wkShort(w)}`,col:wkShort(w),seasonName:String(sn.name)};
+    for(const w of [...d.weeks].sort((a,b)=>a.num-b.num)){if(hid0&&hid0.has(w.id))continue;const nw={id:sn.id+'|'+w.id,num:v.weeks.length+1,date:w.date,stake:w.stake,bozoId:map[w.bozoId]||null,votes:{},picks:{},...(w.kind?{kind:w.kind}:{}),label:`${sn.name} · ${wkName(w)}`,short:`'${String(sn.name).slice(-2)} ${wkShort(w)}`,col:wkShort(w),seasonName:String(sn.name)};
       for(const[mid,p]of Object.entries(w.picks))if(map[mid])nw.picks[map[mid]]=p;v.weeks.push(nw)}}
   return v;
 }
@@ -2050,7 +2115,7 @@ const siteFor=(l=league())=>l.sync?(Object.values(SHARE_SITES).find(x=>x.sync&&x
 function siteCard(){const l=league();const site=siteFor(l);if(!site||l.sync||site.sync)return'';return`<section class="card"><h3>League site</h3><p class="muted tiny" style="margin-bottom:10px">${h(site.url)}</p><p class="muted tiny">Publish this league to the cloud below and the site turns into the group's live app: everyone taps their name once, enters their own pick, votes with a video.</p></section>`}
 function activityHtml(l){
   const nm=id=>member(id)?.name||'Someone';const ev=(l.events||[]).slice().reverse().slice(0,20);const ups=Object.entries(l.uploads||{});
-  const text=e=>({claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`,'notify-on':`${nm(e.mid)} turned on notifications${e.detail?' ('+e.detail+')':''}`,nextpick:`${nm(e.mid)} entered next week's pick`,'nextpick-clear':`${nm(e.mid)} cleared next week's pick`,unreveal:'Vote reopened'})[e.type]||e.type;
+  const text=e=>({claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`,'notify-on':`${nm(e.mid)} turned on notifications${e.detail?' ('+e.detail+')':''}`,revote:`${nm(e.mid)} voted in the revote`,nextpick:`${nm(e.mid)} entered next week's pick`,'nextpick-clear':`${nm(e.mid)} cleared next week's pick`,unreveal:'Vote reopened'})[e.type]||e.type;
   const when=t=>new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   if(!ev.length&&!ups.length)return'';
   return`<div class="pd-sub" style="margin:14px 0 6px">Recent activity</div>${ups.length?`<div class="evlist">${ups.map(([k,u])=>`<div class="evrow warn"><span class="mono tiny">${h(when(u.at))}</span><span>${h(nm(u.mid))} has an upload that never finished${u.size?' ('+mb(u.size)+' MB)':''} — they can resume it from their phone</span></div>`).join('')}</div>`:''}<div class="evlist">${ev.map(e=>`<div class="evrow ${/error|rejected/.test(e.type)?'bad':''}"><span class="mono tiny">${h(when(e.at))}</span><span>${h(text(e))}</span></div>`).join('')}</div>`;
@@ -2067,7 +2132,7 @@ function renderShare(){
   return`<section class="card"><h3>Group</h3>${who}${pushBlock(l)}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only this device can grade and crown.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}${tog('notify','Phone notifications','A ping to everyone when the votes are in, plus a noon reminder to anyone who owes a pick or vote')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>${activityHtml(l)}`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
 }
 function renderCrew(){
-  if(SHARE_MODE){const l=league();return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>{const cl=l.claims?.[m.id];return`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?(cl?'On the app':'Hasn\'t tapped their name yet'):'Benched'}</small></div>${cl?'<span class="tag ok">joined</span>':''}</div>`}).join('')}</div></section><section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`}
+  if(SHARE_MODE){const l=league();return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>{const cl=l.claims?.[m.id];return`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?(cl?'On the app':'Hasn\'t tapped their name yet'):'Benched'}${m.active&&cl&&pushWanted(l)&&l.pushWho?(l.pushWho[m.id]?' · 🔔 notifications on':' · 🔕 notifications off'):''}</small></div>${cl?'<span class="tag ok">joined</span>':''}</div>`}).join('')}</div></section><section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`}
   if(!isAdmin())return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?'Active':'Benched'}</small></div></div>`).join('')}</div></section>`+renderLeagues()+`<section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`;
   return renderLeagues()+renderShare()+siteCard()+`<section class="card"><h3>Crew</h3>
     <div class="mlist">${S.members.map(m=>`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?'Active':'Benched — skipped on new weeks'}</small></div><button class="mini" data-act="edit-member" data-mid="${m.id}" title="Edit">✎</button><button class="mini" data-act="toggle-member" data-mid="${m.id}" title="${m.active?'Bench':'Activate'}">${m.active?'⏸':'▶'}</button></div>`).join('')||'<p class="muted tiny">Nobody yet.</p>'}</div>
@@ -2247,8 +2312,14 @@ function confetti(){
     if(dt<2.8)requestAnimationFrame(f);else{c.style.display='none';x.clearRect(0,0,c.width,c.height)}})(t0);
 }
 function memberSelect(id,sel){return`<select id="${id}">${S.members.filter(m=>m.active||m.id===sel).map(m=>`<option value="${m.id}" ${m.id===sel?'selected':''}>${h(m.name)}</option>`).join('')}</select>`}
-function crown(id){
-  const w=currentWeek();if(lastWeek()!==w){toast('Only the latest week can crown the next Bozo','bad');return}
+async function crown(id){
+  const l=league();const wid=currentWeek().id;
+  if(l.sync){   // the server may have crowned already: send anything unsent, then read the league as it stands
+    try{if(pushT){clearTimeout(pushT);pushT=null}if(l.sync.dirty)await push(l);const d=await api(l,'');if(!l.sync.dirty){applyState(l,d);save()}}
+    catch(e){toast('Couldn\'t check with the league first: '+e.message+'. Nothing changed. Try again in a moment.','bad');return}}
+  const w=week(wid);if(!w)return;
+  if(w.revote&&!w.revote.reveal&&!crown.sure){modal({title:'A revote is open',body:`<p>The tie revote hasn't finished. Crown ${h(member(id)?.name||'')} anyway? The revote will be dropped.</p>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Crown anyway',cls:'danger',onClick:()=>{crown.sure=true;crown(id).finally(()=>{crown.sure=false})}}]});return}const nx=nextMain(w);if(nx){S.currentWeekId=nx.id;save();render();toast(`${member(nx.bozoId)?.name||'Someone'} is already the ${wkName(nx)} Bozo`);return}
+  if(lastWeek()!==w){toast('Only the latest week can crown the next Bozo','bad');return}
   const nw=newWeek(id);commit();toast(`🤡 ${member(id).name} is the ${wkName(nw)} Bozo`);window.scrollTo({top:0,behavior:'smooth'});
 }
 function download(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
@@ -2279,7 +2350,7 @@ const ACT={
   'remove-leg'(el){const w=currentWeek();const m=member(el.dataset.mid);confirm2('Remove leg?',`Drop ${h(m?.name)} from the ${h(wkName(w))} slip. They sat this one out.`,'Remove',()=>{delete w.picks[el.dataset.mid];w.votes={};commit()})},
   'copy-recap'(el){copyText(recap(week(el.dataset.wid)))},
   'share-slip'(el){shareSlip(week(el.dataset.wid))},
-  'delete-week'(el){const w=week(el.dataset.wid);const sd=sideOf(w);const side=isSide(w);confirm2(`Delete ${wkName(w)}?`,`This removes the slip, grades and votes for this ${side?'side parlay':'week'}${sd?', and its Anytime TD side parlay':''}. There is no undo, so export a backup first if unsure.`,side?'Delete side parlay':'Delete week',()=>{S.weeks=S.weeks.filter(x=>x!==w&&x!==sd);S.currentWeekId=(side&&week(w.of)?.id)||lastWeek()?.id||null;commit();toast(`${wkName(w)} deleted`)})},
+  'delete-week'(el){const w=week(el.dataset.wid);const sd=sideOf(w);const side=isSide(w);confirm2(`Delete ${wkName(w)}?`,`This removes the slip, grades and votes for this ${side?'side parlay':'week'}${sd?', and its Anytime TD side parlay':''}. There is no undo, so export a backup first if unsure.`,side?'Delete side parlay':'Delete week',()=>{const l=league();if(l.sync)l.dropWeeks=[...new Set([...(l.dropWeeks||[]),w.id,...(sd?[sd.id]:[])])];S.weeks=S.weeks.filter(x=>x!==w&&x!==sd);S.currentWeekId=(side&&week(w.of)?.id)||lastWeek()?.id||null;commit();toast(`${wkName(w)} deleted`)})},
   'add-side'(){const w=lastWeek();if(!w||w.kind==='special'||sideOf(w))return;const prior=[...S.weeks].reverse().find(isSide);
     modal({title:'Anytime TD side parlay',body:`<p>Runs alongside <b>${h(wkName(w))}</b>. <b>Anytime TD bets only</b>, ${gameDays()} games only.</p><p>No Bozo and no vote, so win or lose it never touches the Bozo.</p><p class="muted tiny">Everyone starts with an empty leg. Tap × on anyone sitting it out.</p><label class="fld"><span>Stake</span><input id="sideStake" class="mono" type="number" min="0" step="1" value="${prior?.stake??5}" inputmode="numeric"></label>`,
       actions:[{label:'Cancel',cls:'ghost'},{label:'Add side parlay',cls:'primary',onClick:()=>addSide(w,Math.max(0,Number(document.getElementById('sideStake')?.value)||0))}]})},
@@ -2290,6 +2361,7 @@ const ACT={
     if(n==='Other'){nm.hidden=false;nm.value='';nm.focus();return}nm.hidden=true;nm.value=n;
     const g=holidayGuess();if(g.name===n)dy.value=g.day;else if(n==='Christmas')dy.value=`${(g.day||today()).slice(0,4)}-12-25`;else{const n1=dowOf(`${y}-11-01`);dy.value=`${y}-11-${String(1+((4-n1+7)%7)+21).padStart(2,'0')}`}},
   'undo-special'(){const w=lastWeek();if(!w||w.kind!=='special')return;confirm2('Make it a regular parlay?',`${h(wkName(w))} goes back to a normal Week ${w.num} Sunday parlay, and its picks stay.`,'Make it regular',()=>{S.specials=(S.specials||[]).filter(sp=>sp.day!==w.day);for(const k of['kind','day','dayName','label','short'])delete w[k];commit()},'primary')},
+  'toggle-final'(){const w=lastWeek();if(!w)return;w.final=!w.final;if(!w.final)delete w.final;commit();toast(w.final?'Final week: no next Bozo after this one':'Back to a regular week','good')},
   'drop-special'(el){const sp=(S.specials||[]).find(x=>x.day===el.dataset.day);if(!sp)return;confirm2(`Remove the ${h(sp.name)} parlay?`,`No special parlay on ${h(fmtDay(sp.day))}. That week stays one Sunday parlay.`,'Remove',()=>{S.specials=S.specials.filter(x=>x!==sp);commit()})},
   'first-bozo'(el){S.pendingBozo=el.dataset.mid;commit()},
   'first-start'(){if(!S.pendingBozo)return;const id=S.pendingBozo;S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
@@ -2352,17 +2424,23 @@ const ACT={
   'cancel-upload'(){upCancel=true;toast('Pausing after this piece…')},
   'change-sub-done'(){subEdit.delete(currentWeek().id);render()},
   'reveal-now'(){const w=currentWeek();const c=calc(w);const st=subStatus(w);const exp=expectedVoters(w,c);const done=exp.filter(mid=>{const x=st(mid);return x.voted&&x.video}).length;confirm2('Reveal now?',`Only the ${done} ${done===1?'person':'people'} who finished count. The other ${exp.length-done} are out of this week's vote.`,'Reveal',()=>adminCall('/reveal',{},'The votes are in'),'primary')},
-  'skip-sub'(el){adminCall('/skip',{memberId:el.dataset.mid,skip:el.dataset.skip==='1'},el.dataset.skip==='1'?`${member(el.dataset.mid)?.name} skipped this week`:`${member(el.dataset.mid)?.name} is back in`)},
+  'skip-sub'(el){adminCall('/skip',{memberId:el.dataset.mid,skip:el.dataset.skip==='1',...(el.dataset.r==='2'?{round:2}:{})},el.dataset.skip==='1'?`${member(el.dataset.mid)?.name} skipped this week`:`${member(el.dataset.mid)?.name} is back in`)},
   'reset-claim'(el){const m=member(el.dataset.mid);const mid=el.dataset.mid;modal({title:`Reset ${m?.name}'s phone?`,body:`<p>Only frees the name: whichever phone is acting as ${h(m?.name||'them')} stops being them, and they tap their name again on the phone they want.</p><p><b>Nothing else changes.</b> Their picks, votes, video and history all stay exactly as they are.</p>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Reset',cls:'primary',onClick:()=>adminCall('/claim/reset',{memberId:mid},`${m?.name}'s name is free. Nothing else changed.`)}]})},
   'unreveal'(){confirm2('Reopen the vote?','The reveal disappears for everyone and voting reopens. Videos already uploaded stay.','Reopen',()=>adminCall('/unreveal',{},'Voting is open again'))},
-  'rv-start'(){rvSet(currentWeek(),{i:0,f:false});render();window.scrollTo({top:0,behavior:'smooth'})},
-  'rv-flip'(){const w=currentWeek();const st=rvGet(w);rvSet(w,{i:st.i,f:true});render()},
-  'rv-play'(){const l=league();const w=currentWeek();const st=rvGet(w);const o=w.reveal&&w.reveal.order[st.i];if(!o)return;
+  'rv-start'(el){const R=+(el&&el.dataset.r)||1;rvSet(currentWeek(),{i:0,f:false},R);render();window.scrollTo({top:0,behavior:'smooth'})},
+  'rv-flip'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const st=rvGet(w,undefined,R);rvSet(w,{i:st.i,f:true},R);render()},
+  'rv-play'(){const l=league();const w=currentWeek();const st=rvGet(w);const o=w.reveal&&w.reveal.order[st.i];if(!o)return;   // videos are round 1 only
     openPlayer(videoUrl(l,w,o.voter),()=>{const s2=rvGet(w);if(s2.i===st.i&&!s2.f)rvSet(w,{i:s2.i,f:true});render();document.querySelector('.rv-card')?.scrollIntoView({block:'center',behavior:'smooth'})})},
   'rv-close'(){closePlayer(true)},
-  'rv-next'(){const w=currentWeek();const st=rvGet(w);rvSet(w,{i:st.i+1,f:false});render();document.querySelector('.reveal')?.scrollIntoView({block:'start',behavior:'smooth'})},
-  'rv-end'(){const w=currentWeek();rvSet(w,{i:w.reveal?w.reveal.order.length:0,f:false});render()},
-  'rv-restart'(el){const w=(el&&el.dataset.wid&&week(el.dataset.wid))||currentWeek();S.currentWeekId=w.id;rvSet(w,{i:-1,f:false});save();render();window.scrollTo({top:0,behavior:'smooth'})},
+  'rv-next'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const st=rvGet(w,undefined,R);rvSet(w,{i:st.i+1,f:false},R);render();document.querySelector('.reveal')?.scrollIntoView({block:'start',behavior:'smooth'})},
+  'rv-end'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const r=rvOf(w,R);rvSet(w,{i:r?r.order.length:0,f:false},R);render()},
+  'rv-restart'(el){const R=+(el&&el.dataset.r)||1;const w=(el&&el.dataset.wid&&week(el.dataset.wid))||currentWeek();S.currentWeekId=w.id;rvSet(w,{i:-1,f:false},R);if(R===1&&w.revote&&w.revote.reveal)rvSet(w,{i:-1,f:false},2);save();render();window.scrollTo({top:0,behavior:'smooth'})},
+  async 'revote-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}setSyncDot('busy');
+    try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:el.dataset.mid,memberId:l.me,round:2}});subEdit.delete(w.id+':2');takeState(l,d);save();render();setSyncDot('ok');toast(week(w.id)?.revote?.reveal?'That was the last one — the revote is in':'Revote sealed','good')}
+    catch(e){setSyncDot('bad');toast('Revote didn\'t go through: '+e.message,'bad')}},
+  'change-revote'(){subEdit.add(currentWeek().id+':2');render()},
+  'change-revote-done'(){subEdit.delete(currentWeek().id+':2');render()},
+  'reveal-now-2'(){const w=currentWeek();confirm2('Reveal the revote now?','Only the people who voted count. If nobody has, or it\'s still tied, the app picks at random.','Reveal now',()=>adminCall('/reveal',{round:2},'The revote is in'),'primary')},
 
   'share-refresh'(){pull(league(),true)},
   async 'push-on'(){const l=league();if(!l.me){pickMe(l);return}const help=pushHelp();if(help&&Notification.permission!=='denied'){toast(help,'bad');return}
@@ -2415,7 +2493,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin')schedulePush()}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
   else if(k==='league'){const l=league();if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}if(a==='mondayOk'){l.mondayOk=e.target.value==='1';save();render();if(l.sync&&l.sync.role==='admin')schedulePush();toast(`Picks must be on a ${gameDays()} game`,'good')}}
-  else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=seasonLabelText()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save()}
+  else if(k==='set'){if(a==='season'){S.season=e.target.value;document.getElementById('seasonLabel').textContent=seasonLabelText()}if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save();if(league().sync&&league().sync.role==='admin')schedulePush()}
 });
 document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a]=b.split('|');
   if(k==='add-leg'&&e.target.value){const w=week(a);const mid=e.target.value;w.picks[mid]={text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]};w.votes={};slipOpen.add(w.id+'|'+mid);commit();setTimeout(()=>document.querySelector(`[data-bind="pick|${w.id}|${mid}|text"]`)?.focus(),40)}
