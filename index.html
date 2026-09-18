@@ -188,6 +188,12 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .tag{font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:980px;text-transform:uppercase}
 .tag.bozo{background:var(--purple);color:#fff}
 .tag.bad{background:var(--red-bg);color:var(--red)}
+.leg-tidy{grid-column:2/4;font-size:12px;color:var(--muted)}
+.leg-tidy a{color:var(--blue);font-weight:600;text-decoration:none}
+.nextpick .leg-tidy{margin:-2px 0 6px}
+.tidylist{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+.tidyrow{display:flex;flex-direction:column;gap:1px;background:var(--surface2);border-radius:10px;padding:8px 10px;color:var(--text);font-size:13px}
+.tidyrow .muted{text-decoration:line-through;font-size:12px}
 .leg-clash{grid-column:2/4;font-size:12px;font-weight:600;color:var(--red);background:var(--red-bg);border-radius:10px;padding:6px 10px;line-height:1.35}
 .sgp{position:relative;box-shadow:inset 4px 0 0 var(--purple);background:linear-gradient(90deg,rgba(175,82,222,.08),transparent 55%)}
 .sgp-head{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--purple);padding:10px 18px 0}
@@ -606,7 +612,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-17.18';
+const APP_VERSION='2026-09-17.20';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -889,7 +895,7 @@ async function push(l){
 }
 async function sendPick(l,w,mid){
   const p=w.picks[mid];if(!p)return;pendingPick=null;setSyncDot('busy');
-  try{await api(l,'/pick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,memberId:mid,pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,unit:p.unit,um:p.um}}});setSyncDot('ok');toast('Pick saved for the group','good')}
+  try{await api(l,'/pick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,memberId:mid,pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,unit:p.unit,um:p.um,raw:p.raw||'',keep:!!p.keep}}});setSyncDot('ok');toast('Pick saved for the group','good')}
   catch(e){setSyncDot('bad');toast(e.status===423?'Too late — '+e.message+'.':'Could not save your pick: '+e.message,'bad');pull(l)}
 }
 async function sendVote(l,w,voterId,candidateId){
@@ -969,7 +975,7 @@ function newWeek(bozoId){
   const num=(S.weeks.length?Math.max(...S.weeks.map(w=>w.num)):0)+1;
   const prev=S.weeks[S.weeks.length-1];const early=(prev&&prev.next)||{};
   const w={id:uid(),num,date:today(),bozoId,stake:S.stake,picks:{},votes:{}};
-  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:'pts',teams:np.teams||[],tm:!!(np.teams&&np.teams.length)}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
+  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:!!(np.teams&&np.teams.length),...(np.raw?{raw:np.raw}:{}),...(np.keep?{keep:true}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
   S.weeks.push(w);S.currentWeekId=w.id;return w;
 }
 
@@ -1089,12 +1095,14 @@ function renderWeekInner(){
 function clashLines(cl){if(!cl||!cl.pairs.length)return'';return`<div class="clashlines">${cl.pairs.map(p=>`<div class="clashline">⚠ <b>${h(member(p.a)?.name||'')}</b> and <b>${h(member(p.b)?.name||'')}</b> ${CLASH_SUM[p.kind]}${p.game?' · '+h(p.game.name):''}</div>`).join('')}</div>`}
 function pickStatus(w,c,cl){
   if(!c.n)return'';
+  const untidy=isAdmin()&&cl&&cl.state==='ok'?untidyList(w):[];
+  const tidyBtn=untidy.length?`<button class="btn sm ghost" style="align-self:flex-start" data-act="tidy-all" data-wid="${w.id}">✨ Tidy up ${untidy.length} pick${untidy.length===1?'':'s'}</button>`:'';
   const note=cl&&cl.state==='failed'?`<small class="muted tiny">Couldn't load this week's NFL schedule, so same-game grouping and clash checks are off for now.</small>`:'';
   if(c.graded)return cl&&cl.pairs.length?`<div class="pickstat">${clashLines(cl)}</div>`:'';
   const missing=c.legs.filter(l=>!String(l.text||'').trim());const inCount=c.n-missing.length;
-  if(!missing.length)return`<div class="pickstat all"><b>All ${c.n} picks are in</b><span class="muted tiny">${w.locked?'Locked.':cl&&cl.pairs.length?'Sort out the clash first.':'Ready for the Bozo to place it.'}</span></div>${cl&&cl.pairs.length?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
+  if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}<div class="pickstat all"><b>All ${c.n} picks are in</b><span class="muted tiny">${w.locked?'Locked.':cl&&cl.pairs.length?'Sort out the clash first.':'Ready for the Bozo to place it.'}</span></div>${cl&&cl.pairs.length?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
   const names=missing.map(l=>member(l.mid)?.name).filter(Boolean);
-  return`<div class="pickstat"><div class="row between"><b>${inCount} of ${c.n} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div><div class="pickstat-who">Waiting on ${names.map(n=>`<span class="waitchip">${h(n)}</span>`).join('')}</div>${clashLines(cl)}${note}</div>`;
+  return`<div class="pickstat"><div class="row between"><b>${inCount} of ${c.n} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div><div class="pickstat-who">Waiting on ${names.map(n=>`<span class="waitchip">${h(n)}</span>`).join('')}</div>${clashLines(cl)}${tidyBtn}${note}</div>`;
 }
 function renderTicket(w,c){
   const b=member(w.bozoId);const cl=slipClaims(w,c);
@@ -1126,6 +1134,7 @@ function renderLeg(w,l,cl){
   const editable=canEdit(l.mid)&&(isAdmin()||(memberCan('picks')&&!w.locked&&l.status==='pending'));const mine=league().me===l.mid;
   const empty=!String(l.text||'').trim()&&l.status==='pending';
   const cm=cl&&cl.claims[l.mid];const shown=(l.teams&&l.teams.length)||!cm||!cm.teams.length?l:{...l,teams:cm.teams};
+  const tidyRow=l.raw&&l.raw!==l.text&&canEdit(l.mid)?`<div class="leg-tidy">Tidied from “${h(l.raw)}” · <a href="#" data-act="untidy" data-wid="${w.id}" data-mid="${l.mid}">Undo</a></div>`:'';
   const clashRow=(cl&&cl.clashes[l.mid]||[]).length?`<div class="leg-clash">${cl.clashes[l.mid].map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`).join('<br>')}</div>`:'';
   return`<div class="leg ${l.status} ${mine?'mine':''} ${empty?'nopick':''}" data-leg="${l.mid}">
     <div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div>
@@ -1135,7 +1144,7 @@ function renderLeg(w,l,cl){
       <div class="pickbox">${pickIcon(shown)}<textarea class="pick-in" rows="1" placeholder="${editable?'Pick — e.g. Chiefs -3.5':'No pick yet'}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next" ${editable?'':'disabled'}>${h(l.text)}</textarea></div>
       <input class="mono ${bad?'bad':''}" placeholder="-110" value="${h(l.odds)}" data-bind="pick|${w.id}|${l.mid}|odds" data-odds="${l.mid}" autocomplete="off" inputmode="text" ${editable?'':'disabled'}>
     </div>
-    ${clashRow}
+    ${tidyRow}${clashRow}
     ${l.status==='hit'||l.status==='miss'?`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${marginLabel}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal" ${isAdmin()?'':'disabled'}>`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit" ${isAdmin()?'':'disabled'}>${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`:''}
   </div>`;
 }
@@ -1348,8 +1357,8 @@ function renderSealedVote(w,c,el,reason){
   return`<section class="card vote next"><h3>${h(wkName(w))} is in the books — who's the Week ${w.num+1} Bozo?</h3><p class="muted tiny">${reason} Everyone with a leg votes with a name and a video. The reveal starts when the last one lands. A vote without a video still counts if the commissioner reveals without it.</p>${status}${yours}${nextPickBox(w,c)}${admin}</section>`;
 }
 const nextEdit=new Set();
-async function sendNext(l,w,text,odds){setSyncDot('busy');
-  try{const teams=pickTeamsFor(text,nflData(w.date,1));const d=await api(l,'/nextpick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,text,odds,teams,memberId:l.me}});nextEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(text?`Week ${w.num+1} pick saved — it's on the slip the moment the Bozo is crowned`:'Next week\'s pick cleared','good')}
+async function sendNext(l,w,text,odds,raw,keep){setSyncDot('busy');
+  try{const teams=pickTeamsFor(text,nflData(w.date,1));const d=await api(l,'/nextpick',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,text,odds,teams,memberId:l.me,raw:raw||'',keep:!!keep}});nextEdit.delete(w.id);applyState(l,d);save();render();setSyncDot('ok');toast(text?`Week ${w.num+1} pick saved — it's on the slip the moment the Bozo is crowned`:'Next week\'s pick cleared','good')}
   catch(e){setSyncDot('bad');toast('Pick didn\'t save: '+e.message,'bad')}}
 /* ---- NFL slate: this week's games and who plays for whom, for same-game grouping and clash checks ---- */
 const NFL={};
@@ -1369,17 +1378,21 @@ async function loadNfl(date,off,k){
 const nameKey=n=>String(n||'').toLowerCase().replace(/[.'’]/g,'').replace(/\b(jr|sr|ii|iii|iv|v)\b/g,' ').replace(/[^a-z ]/g,' ').replace(/\s+/g,' ').trim();
 function prepNfl(d){
   const teamGame={};for(const g of d.games||[]){teamGame[g.home]=g;teamGame[g.away]=g}
-  const full={},last={};for(const[name,team,pos]of d.players||[]){const n=nameKey(name);if(!n)continue;const pl={name,team,pos};(full[n]??=[]).push(pl);const ln=n.split(' ').pop();if(ln.length>=3)(last[ln]??=[]).push(pl)}
-  return{...d,teamGame,full,last};
+  const full={},last={},first={};for(const[name,team,pos]of d.players||[]){const n=nameKey(name);if(!n)continue;const pl={name,team,pos};(full[n]??=[]).push(pl);const parts=n.split(' ');const ln=parts[parts.length-1];if(ln.length>=3)(last[ln]??=[]).push(pl);if(parts.length>1&&parts[0].length>=3)(first[parts[0]]??=[]).push(pl)}
+  return{...d,teamGame,full,last,first};
 }
-const NOT_NAMES=new Set('over under anytime attd first last rush rushing rec receiving recs reception receptions catches yards yds pass passing passes attempts completions tds touchdown touchdowns alternate longest field goal goals made kicking points plus more player prop moneyline spread total team half game'.split(' '));
+const NOT_NAMES=new Set('over under any anytime time attd atd tuddy tuddies score scorer first last rush rushing rec receiving recs reception receptions catches yards yds yard pass passing passes attempts completions comps tds touchdown touchdowns alternate alt longest field goal goals made kicking points plus more player prop moneyline spread total team half game the and for with will win to a an or of in on at'.split(' '));
+const NICKS={cmc:'christian mccaffrey',arsb:'amon ra st brown',jsn:'jaxon smith njigba',ajb:'aj brown',mhj:'marvin harrison',btj:'brian thomas',tet:'tetairoa mcmillan',jt:'jonathan taylor',hollywood:'marquise brown',dk:'dk metcalf'};
 function matchPlayer(text,nfl){   // full name, then a unique last name, then a unique last-name prefix ("Skatt" → Skattebo)
   if(!nfl||!nfl.full)return null;const t=' '+nameKey(text)+' ';let best=null;
   for(const n in nfl.full)if(t.includes(' '+n+' ')&&(!best||n.length>best.length))best=n;
   if(best){const hs=nfl.full[best];return hs.find(p=>/QB|RB|WR|TE/.test(p.pos))||hs[0]}
+  for(const w of t.trim().split(' ')){const fn=NICKS[w];if(fn&&nfl.full[fn])return nfl.full[fn][0]}
   const toks=t.trim().split(' ').filter(w=>w.length>=4&&!NOT_NAMES.has(w));
-  const one=hs=>hs&&hs.length&&new Set(hs.map(p=>p.team)).size===1?hs[0]:null;
+  const one=hs=>hs&&hs.length===1?hs[0]:hs&&hs.length&&new Set(hs.map(p=>p.team)).size===1&&new Set(hs.map(p=>p.name)).size===1?hs[0]:null;
   for(const w of toks){const hit=one(nfl.last[w]);if(hit)return hit}
+  for(const w of t.trim().split(' ').filter(w=>w.length>=3&&!NOT_NAMES.has(w))){const hit=one(nfl.first[w]);if(hit)return hit}   // "Bijan", "Puka", "Dak"
+
   for(const w of toks){if(w.length<5)continue;const hit=one(Object.keys(nfl.last).filter(ln=>ln.startsWith(w)).flatMap(ln=>nfl.last[ln]));if(hit)return hit}
   return null;
 }
@@ -1414,8 +1427,55 @@ function bunch(list,gameOf){   // keep the order, but pull same-game picks up ne
 }
 const gameWhen=g=>{try{return new Date(g.at).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})}catch(e){return''}};
 const gameLabel=g=>`${g.name}${gameWhen(g)?' · '+gameWhen(g):''}`;
+function nflOk(x){return x&&x.games?x:null}
+const priceIn=t=>{const m=String(t||'').match(/(?:^|\s)([+-]\d{3,4})(?=\s|$)/);return m?m[1]:null};   // "-110" typed into the pick
+function tidyLeg(wid,mid,el){
+  const w=week(wid);const p=w?.picks[mid];if(!p||p.keep||!String(p.text||'').trim())return;if(p.status!=='pending'&&!isAdmin())return;
+  const nfl=nflOk(slipNfl(w));const clean=cleanPick(p.text,nfl);if(!clean||clean===p.text)return;
+  if(!String(p.odds||'').trim()&&priceIn(p.text)){p.odds=priceIn(p.text);const oi=document.querySelector(`[data-odds="${mid}"]`);if(oi)oi.value=p.odds}
+  p.raw=p.raw||p.text;p.text=clean;if(!p.tm)p.teams=pickTeamsFor(clean,nfl);if(!p.um)p.unit=unitFor(clean);
+  if(el){el.value=clean;try{autosize(el)}catch(e){}}
+  const L=league();save();if(L.sync&&L.sync.role!=='admin'){clearTimeout(pendingPick);pendingPick=null;sendPick(L,w,mid)}else if(L.sync)schedulePush();
+  needRender=true;
+}
+function untidyList(w){const nfl=nflOk(slipNfl(w));return Object.entries(w.picks).filter(([mid,p])=>member(mid)&&!p.keep&&String(p.text||'').trim()&&p.status==='pending').map(([mid,p])=>({mid,from:p.text,to:cleanPick(p.text,nfl)})).filter(x=>x.to&&x.to!==x.from)}
 function slipNfl(w){const l=league();if(!w||!w.date||w!==lastWeek()||season().id!==newestOf(l).id)return null;return nflData(w.date,0)}
 function slipClaims(w,c){const l=league();if(!w||!w.date||w!==lastWeek()||season().id!==newestOf(l).id)return null;const nfl=nflData(w.date,0);const ok=nfl&&nfl.games?nfl:null;const cl=weekClaims(c.legs.filter(l=>String(l.text||'').trim()).map(l=>({mid:l.mid,text:l.text,teams:l.teams,tm:l.tm})),ok);cl.state=ok?'ok':nfl&&nfl.failed?'failed':'loading';return cl}
+const TD_FIRST=/\b(first|1st) (td|touchdown|tuddy|scorer)\b|\bftd\b/,TD_TWO=/\b2 ?\+ ?(tds?|touchdowns?|tuddies)\b|\btwo (tds|touchdowns)\b/,TD_ANY=/\bany ?time\b|\batt?d\b|\btuddy\b|\bto score\b|\btd scorer\b|\bscores? an? (td|touchdown)\b/;
+const STATS=[[/rush(ing)? ?(\+|and|&|n) ?rec(eiving)?|scrimmage|total y(ar)?ds/,'Rush + Rec Yds'],[/longest rec(eption)?/,'Longest Reception'],[/longest rush/,'Longest Rush'],[/pass(ing)? ?(tds?|touchdowns?)/,'Passing TDs'],[/rec(eiving)? ?y(ar)?ds?|receiving\b/,'Receiving Yds'],[/rush(ing)? ?y(ar)?ds?|rushing\b/,'Rushing Yds'],[/pass(ing)? ?y(ar)?ds?|passing\b/,'Passing Yds'],[/pass(ing)? att(empt)?s?|\battempts\b/,'Pass Attempts'],[/completions?|\bcomps?\b/,'Completions'],[/rush(ing)? att(empt)?s?|carries/,'Rush Attempts'],[/receptions?|catches|\brecs?\b/,'Receptions'],[/interceptions?|\bints?\b|\bpicks thrown\b/,'Interceptions'],[/field goals?|\bfgs?\b/,'Field Goals Made'],[/kick(ing)? p(oin)?ts/,'Kicking Points']];
+// sportsbook wording for a pick, or null when the app isn't sure (then the text is left exactly as typed)
+function cleanPick(text,nfl){
+  const raw=String(text||'').trim();if(!raw)return null;
+  const lo=' '+raw.toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ';
+  const half=/\b(1st|first) ?half\b|\b1h\b/.test(lo)?' 1st Half':'';const alt=/\(alt\)|\balt\b/.test(lo)?' (Alt)':'';
+  let side=null,line=null,plus=null,m;
+  if((m=lo.match(/\b(?:over|o) ?(\d+(?:\.\d+)?)/))){side='Over';line=m[1]}
+  if((m=lo.match(/\b(?:under|u) ?(\d+(?:\.\d+)?)/))){side='Under';line=m[1]}
+  if(!side&&(m=lo.match(/(\d+) ?\+(?! ?\d)/)))plus=m[1];
+  const teams=detectTeams(raw);const pl=nfl&&nfl.full?matchPlayer(raw,nfl):null;
+  const game=nfl&&nfl.teamGame?teams.map(a=>nfl.teamGame[a]).find(Boolean)||(pl&&nfl.teamGame[pl.team])||null:null;
+  const N=a=>NICK[a]||a;
+  if(/\bml\b|money ?line|\bto win\b/.test(lo)){if(teams.length!==1||pl)return null;return`${N(teams[0])}${half} Moneyline`}
+  if(/team total|\btt\b/.test(lo)){if(teams.length!==1||!side)return null;return`${N(teams[0])}${half} Team Total ${side} ${line}`}
+  // a player prop: needs a player the app is sure about and a market it recognises
+  if(pl&&!teams.length){
+    const td=TD_FIRST.test(lo)?'First TD':TD_TWO.test(lo)?'2+ TDs':TD_ANY.test(lo)?'Anytime TD':null;
+    if(td)return`${pl.name} ${td}`;
+    const st=(STATS.find(([re])=>re.test(lo))||[])[1];if(!st)return null;
+    if(plus)return`${pl.name} ${plus}+ ${st}`;if(side)return`${pl.name} ${side} ${line} ${st}`;return null;
+  }
+  if(pl)return null;   // a player and a team in one pick: leave it alone
+  if(side&&!STATS.some(([re])=>re.test(lo))&&teams.length){   // game total
+    if(game)return`${N(game.away)} @ ${N(game.home)}${half} ${side} ${line}${alt}`;
+    if(teams.length===2)return`${N(teams[0])} / ${N(teams[1])}${half} ${side} ${line}${alt}`;return null;
+  }
+  if(teams.length===1){   // spread
+    if(/\bpk\b|pick ?em/.test(lo))return`${N(teams[0])}${half} PK`;
+    const sp=[...lo.matchAll(/([+-]) ?(\d+(?:\.\d+)?)(?![\d.])/g)].find(x=>+x[2]<50);if(!sp)return null;
+    return`${N(teams[0])}${half} ${sp[1]}${sp[2]}${alt}`;
+  }
+  return null;
+}
 function pickTeamsFor(text,nfl){const t=detectTeams(text);if(t.length||!nfl||!nfl.full||betType(text)!=='Player prop')return t;const pl=matchPlayer(text,nfl);return pl?[pl.team]:t}
 function nextPickList(w,c,me){
   const exp=c.legs.map(x=>x.mid);const next=w.next||{};
@@ -1436,7 +1496,7 @@ function nextPickBox(w,c){
   if(!mineIn)return`<div class="nextpick locked"><div class="pd-sub">Your Week ${w.num+1} pick</div><p class="muted tiny" style="margin:0">Unlocks once your vote and video are in.</p>${nextPickList(w,c,me)}</div>`;
   const oddsN=np?parseOdds(np.odds):null;const heavy=np&&np.odds&&!legal(oddsN);
   return`<div class="nextpick"><div class="pd-sub">Your Week ${w.num+1} pick</div>${editing?`<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="Pick — e.g. Chiefs -3.5" autocomplete="off" enterkeyhint="next">${h(np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">Must be -200 or longer. It lands on the Week ${w.num+1} slip when the Bozo is crowned.${np?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small>`
-    :`<div class="np-saved"><div class="np-bet">${betChip(np.text,np.teams)}<span class="mono">${np.odds?h(np.odds):''}</span>${heavy?'<span class="tag warn">Too heavy</span>':''}</div><button class="btn sm ghost" data-act="next-edit">Edit</button></div>`}${nextPickList(w,c,me)}</div>`;
+    :`<div class="np-saved"><div class="np-bet">${betChip(np.text,np.teams)}<span class="mono">${np.odds?h(np.odds):''}</span>${heavy?'<span class="tag warn">Too heavy</span>':''}</div><button class="btn sm ghost" data-act="next-edit">Edit</button></div>${np.raw?`<div class="leg-tidy">Tidied from “${h(np.raw)}” · <a href="#" data-act="next-untidy">Undo</a></div>`:''}`}${nextPickList(w,c,me)}</div>`;
 }
 function tallyAt(r,i){const t={};for(let k=0;k<=i&&k<r.order.length;k++){const c=r.order[k].candidate;t[c]=(t[c]||0)+1}return t}
 function tallyBars(t,n,bump){return`<div class="rv-tally">${Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([cid,k])=>{const m=member(cid);return`<div class="rv-trow ${cid===bump?'bump':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="bar"><i style="width:${Math.round(k/n*100)}%"></i></span><b class="mono">${k}</b></div>`}).join('')}</div>`}
@@ -1935,9 +1995,12 @@ const ACT={
     copyText(`🤡 ${wkName(w)} — still need picks from ${missing.join(', ')}. ${b?b+' is fronting it':''}${site?'\n'+site.url:''}`.trim())},
   'pick-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}sendSub(l,w,el.dataset.mid)},
   'change-sub'(){subEdit.add(currentWeek().id);render()},
+  'untidy'(el,e){e.preventDefault();const w=week(el.dataset.wid);const mid=el.dataset.mid;const p=w?.picks[mid];if(!p||!p.raw)return;p.text=p.raw;delete p.raw;p.keep=true;if(!p.tm)p.teams=pickTeamsFor(p.text,nflOk(slipNfl(w)));if(!p.um)p.unit=unitFor(p.text);const L=league();save();if(L.sync&&L.sync.role!=='admin')sendPick(L,w,mid);else if(L.sync)schedulePush();render();toast('Back to how it was typed — the app will leave it alone')},
+  'tidy-all'(el){const w=week(el.dataset.wid);const list=untidyList(w);if(!list.length)return;modal({title:`Tidy up ${list.length} pick${list.length===1?'':'s'}?`,body:`<p>Rewrites them in sportsbook wording. Anyone can undo their own afterwards.</p><div class="tidylist">${list.map(x=>`<div class="tidyrow"><b>${h(member(x.mid)?.name||'')}</b><span class="muted">${h(x.from)}</span><span>→ ${h(x.to)}</span></div>`).join('')}</div>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Tidy up',cls:'primary',onClick:()=>{const nfl=nflOk(slipNfl(w));for(const x of list){const p=w.picks[x.mid];if(!String(p.odds||'').trim()&&priceIn(p.text))p.odds=priceIn(p.text);p.raw=p.raw||p.text;p.text=x.to;if(!p.tm)p.teams=pickTeamsFor(x.to,nfl);if(!p.um)p.unit=unitFor(x.to)}commit();toast(`Tidied ${list.length} pick${list.length===1?'':'s'}`,'good')}}]})},
   'peek'(el){const wid=el.dataset.wid;peek.add(wid);render();clearTimeout(peekT);peekT=setTimeout(()=>{peek.delete(wid);if(!quiet())render()},4000)},
-  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');sendNext(l,w,text,odds)},
+  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');{const nfl=nflOk(nflData(w.date,1));const prev=w.next?.[l.me];const keep=!!(prev&&prev.keep&&prev.text===text);const clean=keep?null:cleanPick(text,nfl);sendNext(l,w,clean||text,odds,clean&&clean!==text?text:'',keep)}},
   'next-edit'(){nextEdit.add(currentWeek().id);render()},
+  'next-untidy'(el,e){e.preventDefault();const l=league();const w=currentWeek();const np=w.next?.[l.me];if(!np||!np.raw)return;sendNext(l,w,np.raw,np.odds,'',true)},
   'next-cancel'(el,e){e.preventDefault();nextEdit.delete(currentWeek().id);render()},
   'resume-upload'(){const l=league();if(!pendingUp||!pendingUp.file)return;if(!l.me){pickMe(l);return}const w=week(pendingUp.weekId)||currentWeek();if(pendingUp.mid!==l.me){toast('That upload belongs to a different name on this phone','bad');return}uploadVideo(l,w,pendingUp.file,pendingUp)},
   'cancel-upload'(){upCancel=true;toast('Pausing after this piece…')},
@@ -1994,7 +2057,8 @@ document.addEventListener('change',e=>{if(e.target.id==='vidIn'){pickerOpen=0;co
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&pickerOpen)setTimeout(()=>{if(pickerOpen&&!upl){pickerOpen=0;if(needRender){needRender=false;render()}}},4000)});
 document.addEventListener('ended',e=>{if(e.target.classList&&e.target.classList.contains('rv-video')){const w=currentWeek();const st=rvGet(w);if(!st.f){rvSet(w,{i:st.i,f:true});render();document.querySelector('.rv-card')?.scrollIntoView({block:'nearest',behavior:'smooth'})}}},true);
 document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input:not([type=file]),textarea,select'))document.body.classList.add('typing')});
-document.addEventListener('focusout',()=>{setTimeout(()=>{const a=document.activeElement;if(!a||!a.matches('input:not([type=file]),textarea,select'))document.body.classList.remove('typing')},120)});
+document.addEventListener('focusout',e=>{const t=e.target;if(t&&t.matches&&t.matches('textarea.pick-in')&&t.dataset.bind){const[k,wid,mid,c]=t.dataset.bind.split('|');if(k==='pick'&&c==='text')tidyLeg(wid,mid,t)}
+  setTimeout(()=>{const a=document.activeElement;if(!a||!a.matches('input:not([type=file]),textarea,select')){document.body.classList.remove('typing');if(needRender&&!quiet()){needRender=false;render()}}},120)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();if(e.key==='Enter'&&e.target.classList?.contains('pick-in')){e.preventDefault();const n=e.target.closest('.leg-inputs')?.querySelector('[data-odds]');n?n.focus():e.target.blur()}});
 document.getElementById('importFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.members)||!Array.isArray(o.weeks))throw new Error('not a Bozo Parlay backup');
