@@ -709,7 +709,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{if(navigator.maxTouchPoints>0||'ontouchstart' in window)document.documentElement.classList.add('touch')}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.10';
+const APP_VERSION='2026-09-19.11';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -2802,7 +2802,7 @@ function grudgeData(){   // in the Stats scope (this season, or all-time matched
         for(const{R,r,cands}of rounds){const cs=cands.map(mid).filter(Boolean);
           for(const o of r.order||[]){const v=mid(o.voter),c=mid(o.candidate);if(!v||!c)continue;nVotes++;ev(v,wk).voted.push({R,c});if(v!==c)ev(c,wk).got.push({R,v});fin[v]={c,cands:[...new Set([...cs,c])]}}}
         if(Object.keys(fin).length){nReveals++;cur={};
-          const win=seen2?(r2.winner?mid(r2.winner):null):r2?null:(r1.winner?mid(r1.winner):null);weeksV.push({sid:sn.id,label:wk.label,fin:Object.fromEntries(Object.entries(fin).map(([v,x])=>[v,x.c])),win});
+          const win=seen2?(r2.winner?mid(r2.winner):null):r2?null:(r1.winner?mid(r1.winner):null);weeksV.push({sid:sn.id,label:wk.label,fin:Object.fromEntries(Object.entries(fin).map(([v,x])=>[v,x.c])),win,bz});   // bz: who actually became the Bozo (next week's), once it's known
           for(const[v,{c,cands}]of Object.entries(fin)){const p=pp(v);p.cast++;cur[v]=c;
             if(v===c)p.self++;else{p.to[c]=(p.to[c]||0)+1;const q=pp(c);q.got++;q.from[v]=(q.from[v]||0)+1;
               if(prev&&prev[c]===v){p.revenge++;p.lastRevenge={label:wk.label,on:c}}}   // they voted for you last week; you vote for them now
@@ -2822,6 +2822,8 @@ function voteAwards(G){   // fun ones from the votes themselves (one vote per pe
   const P=G.P;const ids=Object.keys(P).filter(id=>member(id));const nm=id=>member(id)?.name||'?';const out=[];
   const top=(val,min=1)=>{const xs=ids.map(id=>({id,v:val(P[id])})).filter(x=>x.v!=null&&x.v>=min);if(!xs.length)return null;const b=Math.max(...xs.map(x=>x.v));return{who:xs.filter(x=>x.v===b).map(x=>x.id),v:b}};
   let t=top(p=>p.got);if(t)out.push({icon:'🎯',name:'Most wanted',blurb:'most votes against',who:t.who,stat:`${t.v} vote${t.v===1?'':'s'}`});
+  const dodge={};for(const wv of G.weeksV){if(!wv.bz)continue;for(const[v,c]of Object.entries(wv.fin))if(v!==c&&c!==wv.bz)dodge[c]=(dodge[c]||0)+1}   // votes in weeks someone else ended up the Bozo
+  const dk=Object.entries(dodge).filter(([id])=>member(id));if(dk.length){const b=Math.max(...dk.map(x=>x[1]));out.push({icon:'🫣',name:'Dodged it',blurb:'most votes without becoming the Bozo',who:dk.filter(x=>x[1]===b).map(x=>x[0]),stat:`${b} vote${b===1?'':'s'}`})}
   const rs=ids.map(id=>({id,p:P[id]})).filter(x=>x.p.roomN>=2).map(x=>({...x,r:x.p.room/x.p.roomN}));
   if(rs.length>1){const hi=Math.max(...rs.map(x=>x.r)),lo=Math.min(...rs.map(x=>x.r));if(hi>lo){const k=rs.filter(x=>x.r===hi),c=rs.filter(x=>x.r===lo);
     out.push({icon:'👑',name:'Kingmaker',blurb:'votes for whoever ends up Bozo',who:k.map(x=>x.id),stat:k.length===1?`${k[0].p.room} of ${k[0].p.roomN}`:`${Math.round(hi*100)}% each`});
