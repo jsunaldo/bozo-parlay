@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<script>try{if(navigator.maxTouchPoints>0||'ontouchstart' in window)document.documentElement.classList.add('touch')}catch(e){}</script>
 <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="robots" content="noindex, nofollow">
@@ -158,7 +159,8 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 /* tabs */
 .tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:min(560px,calc(100% - 32px));background:var(--glass);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border:1px solid var(--line);border-radius:28px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px;z-index:10;box-shadow:var(--shadow-lg)}
 .tabs{transition:transform .25s ease,opacity .25s ease}
-body.typing .tabs{transform:translate(-50%,160%);opacity:0;pointer-events:none}
+body.typing .tabs{transform:translate(-50%,160%) scale(var(--vvs,1));opacity:0;pointer-events:none}
+.tabs.vv{transform:translateX(-50%) scale(var(--vvs,1));transform-origin:50% 100%}
 .tabs button{background:none;border:0;color:var(--muted);font:inherit;font-size:11px;font-weight:600;padding:8px 4px 7px;border-radius:22px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:color .2s,background .2s;-webkit-tap-highlight-color:transparent}
 .tabs .ic{font-size:20px;line-height:1;transition:transform .3s cubic-bezier(.34,1.56,.64,1);filter:grayscale(1);opacity:.7}
 .tabs button.on{color:var(--text);background:var(--surface)}
@@ -515,7 +517,7 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .typerow.subrow .tbar{height:4px}
 .tbar{height:6px;background:var(--surface2);border-radius:4px;overflow:hidden}
 .tbar i{display:block;height:100%;background:var(--blue);border-radius:4px}
-.trec{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.trec{font-weight:600;text-align:right;font-variant-numeric:tabular-nums}.trec .tu{display:block;font-size:10px;font-weight:700;line-height:1.2;color:var(--muted)}.tu.good,.x-u.good{color:var(--green)}.tu.bad,.x-u.bad{color:var(--red)}.x-u{font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
 .tpct{font-weight:700;text-align:right;font-size:12px}
 .pk-rows{display:flex;flex-direction:column;gap:8px}
 .pk-row{display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 0}
@@ -665,8 +667,10 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .toast.good{background:var(--green);color:#fff}
 .toast.bad{background:var(--red);color:#fff}
 #confetti{position:fixed;inset:0;pointer-events:none;z-index:70;display:none}
-/* touch screens: never smaller than 16px in a form control, or iOS zooms the page and the fixed tab bar drifts */
-@media (pointer:coarse){input,select,textarea,.date-in,.leg-margin select,.leg-margin input,.linkbox input,.inline-num,.pickbox textarea,.modal input{font-size:16px!important}}
+/* touch screens (iPads with a keyboard or trackpad too): never smaller than 16px in a form control, or iOS zooms the page and the fixed tab bar drifts */
+@media (pointer:coarse),(any-pointer:coarse){input,select,textarea,.date-in,.leg-margin select,.leg-margin input,.linkbox input,.inline-num,.pickbox textarea,.modal input{font-size:16px!important}}
+html.touch input,html.touch select,html.touch textarea,html.touch .date-in,html.touch .leg-margin select,html.touch .leg-margin input,html.touch .linkbox input,html.touch .inline-num,html.touch .pickbox textarea,html.touch .modal input{font-size:16px!important}
+html.touch{touch-action:manipulation}   /* no double-tap zoom; pinch still works */
 </style>
 </head>
 <body>
@@ -691,7 +695,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.2';
+const APP_VERSION='2026-09-19.3';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1482,7 +1486,7 @@ function eligible(w){
 function stats(){
   const hid=spoilerHidden();const weeks=[...S.weeks].filter(w=>!(hid&&hid.has(w.id))).sort((a,b)=>a.num-b.num);
   const per={};
-  S.members.forEach(m=>per[m.id]={id:m.id,picks:0,hits:0,misses:0,pushes:0,pending:0,decSum:0,decN:0,bozo:0,spent:0,earned:0,cur:0,bestHit:0,worstMiss:0,killer:0,killed:0,curLegs:[],bestHitLegs:[],worstMissLegs:[],missMargins:[],closest:null,choke:null,sweat:null,history:[],plus:{w:0,l:0,p:0},minus:{w:0,l:0,p:0},winDec:[],loseDec:[],longestHit:null,easiestHit:null,worstMissOdds:null,bozoWeeks:[],byType:{},byTeam:{},bozoLegs:0,bozoLegsHit:0,bozoCashed:0,hitMargins:[],bySub:{},killers:[],streakStart:null,bestHitSpan:null,worstMissSpan:null});
+  S.members.forEach(m=>per[m.id]={id:m.id,picks:0,hits:0,misses:0,pushes:0,pending:0,decSum:0,decN:0,bozo:0,spent:0,earned:0,cur:0,bestHit:0,worstMiss:0,killer:0,killed:0,curLegs:[],bestHitLegs:[],worstMissLegs:[],missMargins:[],closest:null,choke:null,sweat:null,history:[],plus:newRec(),minus:newRec(),all:newRec(),winDec:[],loseDec:[],longestHit:null,easiestHit:null,worstMissOdds:null,bozoWeeks:[],byType:{},byTeam:{},bozoLegs:0,bozoLegsHit:0,bozoCashed:0,hitMargins:[],bySub:{},killers:[],streakStart:null,bestHitSpan:null,worstMissSpan:null});
   const g={weeks:weeks.length,graded:0,won:0,lost:0,staked:0,paid:0,bestLegs:0,legsTotal:0,legsHit:0,bestOdds:null,byType:{},byTeam:{},bySub:{},closestWeek:null,legs:[]};
   for(const w of weeks){
     const c=calc(w);
@@ -1497,8 +1501,8 @@ function stats(){
       const p=per[l.mid];if(!p)continue;
       p.history.push({num:w.num,wk:wkShort(w),status:l.status,margin:l.margin,unit:l.unit,text:l.text,odds:l.oddsN,teams:l.teams||[]});
       if(l.status==='pending'){p.pending++;continue}
-      p.picks++;{const k=l.status==='hit'?'w':l.status==='miss'?'l':'p';const bt=betType(l.text);const leg={mid:l.mid,wk:wkShort(w),num:w.num,text:l.text,odds:l.oddsN,status:l.status,margin:l.margin,unit:l.unit,teams:l.teams||[],type:bt,f:facetsOf(bt,l.text,l.oddsN)};g.legs.push(leg);l._leg=leg;(p.byType[bt]??={w:0,l:0,p:0})[k]++;(g.byType[bt]??={w:0,l:0,p:0})[k]++;for(const sk of subKinds(bt,l.text,l.oddsN)){((p.bySub[bt]??={})[sk]??={w:0,l:0,p:0})[k]++;((g.bySub[bt]??={})[sk]??={w:0,l:0,p:0})[k]++}for(const a of (l.teams||[])){(p.byTeam[a]??={w:0,l:0,p:0})[k]++;(g.byTeam[a]??={w:0,l:0,p:0})[k]++}}
-      if(l.oddsN!=null){p.decSum+=dec(l.oddsN);p.decN++;const side=l.oddsN>0?p.plus:p.minus;side[l.status==='hit'?'w':l.status==='miss'?'l':'p']++;
+      p.picks++;{const bt=betType(l.text);const leg={mid:l.mid,wk:wkShort(w),num:w.num,text:l.text,odds:l.oddsN,status:l.status,margin:l.margin,unit:l.unit,teams:l.teams||[],type:bt,f:facetsOf(bt,l.text,l.oddsN)};g.legs.push(leg);l._leg=leg;const T=o=>tallyRec(o,l.status,l.oddsN);T(p.byType[bt]??=newRec());T(g.byType[bt]??=newRec());for(const sk of subKinds(bt,l.text,l.oddsN)){T((p.bySub[bt]??={})[sk]??=newRec());T((g.bySub[bt]??={})[sk]??=newRec())}for(const a of (l.teams||[])){T(p.byTeam[a]??=newRec());T(g.byTeam[a]??=newRec())}T(p.all)}
+      if(l.oddsN!=null){p.decSum+=dec(l.oddsN);p.decN++;const side=l.oddsN>0?p.plus:p.minus;tallyRec(side,l.status,l.oddsN);
         if(l.status==='hit'){p.winDec.push(dec(l.oddsN));if(!p.longestHit||l.oddsN>p.longestHit.odds)p.longestHit={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams};if(!p.easiestHit||l.oddsN<p.easiestHit.odds)p.easiestHit={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams}}
         if(l.status==='miss'){p.loseDec.push(dec(l.oddsN));if(!p.worstMissOdds||l.oddsN<p.worstMissOdds.odds)p.worstMissOdds={odds:l.oddsN,text:l.text,wk:wkShort(w),teams:l.teams}}}
       if(l.status==='hit'){
@@ -1519,7 +1523,7 @@ function stats(){
     p.rate=g2>0?p.hits/g2:null;p.graded=g2;
     p.avgDec=p.decN?p.decSum/p.decN:null;
     p.avgWinDec=p.winDec.length?p.winDec.reduce((a,b)=>a+b,0)/p.winDec.length:null;p.avgLoseDec=p.loseDec.length?p.loseDec.reduce((a,b)=>a+b,0)/p.loseDec.length:null;
-    p.net=p.earned-p.spent;
+    p.net=p.earned-p.spent;p.units=uOf(p.all);
     p.avgMiss=p.missMargins.length?p.missMargins.reduce((a,b)=>a+b,0)/p.missMargins.length:null;p.avgHitMargin=p.hitMargins.length?p.hitMargins.reduce((a,b)=>a+b,0)/p.hitMargins.length:null;
     p.topTeam=Object.entries(p.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p))[0]||null;
     p.bestType=Object.entries({...p.byType,...Object.assign({},...Object.values(p.bySub))}).filter(([k,o])=>k!=='Player prop'&&k!=='Other'&&o.w+o.l>=2).sort((a,b)=>b[1].w/(b[1].w+b[1].l)-a[1].w/(a[1].w+a[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;
@@ -1851,7 +1855,7 @@ function facetsOf(type,text,oddsN){
 let xNode={},xSort='wins';
 const encNode=n=>encodeURIComponent(JSON.stringify(n));const decNode=s=>{try{return JSON.parse(decodeURIComponent(s||''))||{}}catch(e){return{}}};
 function nodeLegs(legs,n){return legs.filter(l=>(!n.type||l.type===n.type)&&(!n.team||l.teams.includes(n.team))&&(!n.mid||l.mid===n.mid)&&Object.entries(n.f||{}).every(([d,v])=>l.f[d]===v))}
-function recOf(legs){const o={w:0,l:0,p:0};for(const l of legs)o[l.status==='hit'?'w':l.status==='miss'?'l':'p']++;return o}
+function recOf(legs){const o=newRec();for(const l of legs)tallyRec(o,l.status,l.odds);return o}
 function nodeTitle(n){const parts=[];if(n.team)parts.push(NICK[n.team]||n.team);if(n.type)parts.push(n.type);for(const d of DIM_ORDER)if(n.f?.[d])parts.push(n.f[d]);return parts.length?parts.join(' · '):'All bets'}
 function nodeCrumbs(n){const out=[{label:'All bets',node:{}}];let cur={};if(n.team){cur={...cur,team:n.team};out.push({label:NICK[n.team]||n.team,node:cur})}if(n.type){cur={...cur,type:n.type};out.push({label:n.type,node:cur})}for(const d of DIM_ORDER)if(n.f?.[d]){cur={...cur,f:{...(cur.f||{}),[d]:n.f[d]}};out.push({label:n.f[d],node:cur})}return out}
 function nodeGroups(legs,n,minTeam=3){
@@ -1862,8 +1866,17 @@ function nodeGroups(legs,n,minTeam=3){
   return groups;
 }
 const recStr=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`;const rateOf=o=>(o.w+o.l)?o.w/(o.w+o.l):null;
+// units: 1 unit on every pick by itself. A hit pays its odds (+100 → +1u, -110 → +0.91u), a miss is -1u, a push 0. A hit with no odds can't be counted.
+const unitOf=(st,odds)=>st==='miss'?-1:st==='push'?0:st==='hit'&&odds!=null&&legal(odds)?dec(odds)-1:null;
+function tallyRec(o,st,odds){o[st==='hit'?'w':st==='miss'?'l':'p']++;const u=unitOf(st,odds);if(u!=null)o.u=(o.u||0)+u;else if(st==='hit')o.uq=(o.uq||0)+1;return o}
+const newRec=()=>({w:0,l:0,p:0,u:0});
+const uNum=u=>{const r=Math.round(u*100)/100;const x=Math.abs(r);return{r,s:x>=100?x.toFixed(0):x>=10?x.toFixed(1):String(+x.toFixed(2))}};
+const fmtU=u=>{if(u==null)return'';const{r,s}=uNum(u);return(r>0?'+':r<0?'-':'')+s+'u'};   // +1u, -2.5u, +0.91u
+const fmtUnits=u=>{if(u==null)return'—';const{r,s}=uNum(u);return(r>0?'+':r<0?'-':'')+s+' unit'+(Math.abs(r)===1?'':'s')};
+const uCls=u=>u>0.004?'good':u<-0.004?'bad':'';
+const uOf=rec=>rec&&(rec.w+rec.l+rec.p)>(rec.uq||0)?(rec.u||0):null;   // null when nothing could be counted
 function places(list,same){const r=[];list.forEach((x,i)=>r.push(i>0&&same(list[i-1],x)?r[i-1]:i+1));return r}   // a tie shares the place: 1, 1, 3
-function statRow({label,logo,avatar,rec,act,data,nav,rank}){const r=rateOf(rec);const n=rec.w+rec.l;return`<div class="typerow tap ${nav?'nav':''}" data-act="${act}" ${data}><span class="tname">${rank!=null?`<span class="rank">${rank}</span>`:''}${logo?`<img class="tlogo" src="${LOGO(logo)}" alt="">`:''}${avatar||''}<span class="nm">${h(label)}</span></span><span class="tbar"><i style="width:${Math.round((r||0)*100)}%"></i></span><span class="mono trec">${recStr(rec)}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span>${nav?'<span class="chev">›</span>':''}</div>`}
+function statRow({label,logo,avatar,rec,act,data,nav,rank}){const r=rateOf(rec);const n=rec.w+rec.l;return`<div class="typerow tap ${nav?'nav':''}" data-act="${act}" ${data}><span class="tname">${rank!=null?`<span class="rank">${rank}</span>`:''}${logo?`<img class="tlogo" src="${LOGO(logo)}" alt="">`:''}${avatar||''}<span class="nm">${h(label)}</span></span><span class="tbar"><i style="width:${Math.round((r||0)*100)}%"></i></span><span class="mono trec">${recStr(rec)}${uOf(rec)!=null?`<small class="tu ${uCls(uOf(rec))}">${fmtU(uOf(rec))}</small>`:''}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span>${nav?'<span class="chev">›</span>':''}</div>`}
 function explorerCard(g){
   if(!g.legs.length)return'';
   const rows=TYPE_ORDER.filter(t=>g.legs.some(l=>l.type===t)).map(t=>statRow({label:t,rec:recOf(nodeLegs(g.legs,{type:t})),act:'x-go',data:`data-node="${encNode({type:t})}"`,nav:true})).join('');
@@ -1880,7 +1893,7 @@ function sheetBody(){
   const{g}=stats();const n=pxNode;const solo=!!n.mid;const legs=nodeLegs(g.legs,n);const rec=recOf(legs);const r=rateOf(rec);
   const base={...n};delete base.mid;const crumbs=nodeCrumbs(base).map(c=>({label:c.label,node:{...c.node,mid:n.mid}}));
   const crumbHtml=`<div class="crumbs">${crumbs.map((c,i)=>(i?'<span class="sep">›</span>':'')+`<span class="crumb ${i===crumbs.length-1?'cur':''}" data-act="px-go" data-node="${encNode(c.node)}">${h(c.label)}</span>`).join('')}</div>`;
-  const head=`<div class="x-head"><b>${h(nodeTitle(base))}</b><span class="mono">${recStr(rec)}</span><span class="tpct ${r>=.5?'good':'bad'}">${r!=null?Math.round(r*100)+'%':'—'}</span></div><div class="tbar wide"><i style="width:${Math.round((r||0)*100)}%"></i></div>`;
+  const head=`<div class="x-head"><b>${h(nodeTitle(base))}</b><span class="mono">${recStr(rec)}</span><span class="tpct ${r>=.5?'good':'bad'}">${r!=null?Math.round(r*100)+'%':'—'}</span>${uOf(rec)!=null?`<span class="x-u ${uCls(uOf(rec))}">${fmtUnits(uOf(rec))}</span>`:''}</div>${rec.uq?`<p class="muted tiny" style="margin:-2px 0 6px">Units leave out ${rec.uq} hit${rec.uq===1?'':'s'} with no odds entered.</p>`:''}<div class="tbar wide"><i style="width:${Math.round((r||0)*100)}%"></i></div>`;
   if(!legs.length)return crumbHtml+head+`<p class="muted">No bets here.</p>`;
   if(solo&&pxMode==='people')pxMode='stats';
   const seg=`<div class="scope px-seg"><button class="${pxMode==='stats'?'on':''}" data-act="px-mode" data-mode="stats">Breakdown</button>${solo?'':`<button class="${pxMode==='people'?'on':''}" data-act="px-mode" data-mode="people">Players</button>`}<button class="${pxMode==='bets'?'on':''}" data-act="px-mode" data-mode="bets">${legs.length} bet${legs.length===1?'':'s'}</button></div>`;
@@ -2639,7 +2652,7 @@ function allTimeSeason(){
   return v;
 }
 function withAll(fn){if(statScope!=='all'||league().seasons.length<2)return fn();ALLTIME??=allTimeSeason();const real=S;S=ALLTIME;try{return fn()}finally{S=real}}
-const COLS=[['rate','Hit %'],['hits','Record'],['avgDec','Avg odds'],['bozo','Bozo'],['net','Net'],['cur','Streak']];
+const COLS=[['rate','Hit %'],['hits','Record'],['units','Units'],['avgDec','Avg odds'],['bozo','Bozo'],['net','Net'],['cur','Streak']];
 function renderStats(){ALLTIME=null;return withAll(renderStatsInner)}
 const seasonYear=x=>parseInt(String(x.name).match(/\d{4}/)?.[0]||0);
 function newestSeason(){return[...league().seasons].sort((a,b)=>seasonYear(b)-seasonYear(a))[0]}
@@ -2657,7 +2670,7 @@ function renderStatsInner(){
   const A=awards(per);
   return scopeBar()+`<div class="tiles">
     <div class="tile"><small>Cashed</small><b>${g.won}<span class="muted" style="font-size:12px">/${g.graded}</span></b><em>parlays</em></div>
-    <div class="tile"><small>Legs hit</small><b>${pct(legRate)}</b><em>${g.legsHit}/${g.legsTotal}</em></div>
+    <div class="tile"><small>Legs hit</small><b>${pct(legRate)}</b><em>${g.legsHit}/${g.legsTotal}${(u=>u!=null?` · <span class="${uCls(u)}">${fmtU(u)}</span>`:'')(uOf(recOf(g.legs)))}</em></div>
     <div class="tile"><small>Closest</small><b>${g.closestWeek?g.closestWeek.hits+'<span class="muted" style="font-size:12px">/'+g.closestWeek.n+'</span>':'—'}</b><em>${g.closestWeek?h(g.closestWeek.wk):'legs'}</em></div>
     <div class="tile"><small>Net</small><b class="${net>=0?'good':'bad'}">${fmt$0(net)}</b><em>${fmt$0(g.paid)} in</em></div>
   </div>
@@ -2665,6 +2678,7 @@ function renderStatsInner(){
     ${(pl=>rows.map((r,i)=>`<tr class="lb-row" data-act="player-detail" data-mid="${r.m.id}"><td><div class="who"><span class="rank">${pl[i]}</span><span class="avatar sm" style="--c:${r.m.color}">${h(initials(r.m.name))}</span>${h(r.m.name)}<span class="chev">›</span></div></td>
       <td><span class="bar" style="width:${Math.round((r.rate||0)*36)}px"></span>${pct(r.rate)}</td>
       <td>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</td>
+      <td class="mono ${uCls(r.units||0)}">${r.units!=null?fmtU(r.units):'—'}</td>
       <td class="mono">${r.avgDec?amer(r.avgDec):'—'}</td>
       <td>${r.bozo}×</td>
       <td class="${r.net>0?'good':r.net<0?'bad':''}">${fmt$0(r.net)}</td>
@@ -2676,13 +2690,13 @@ function renderStatsInner(){
   ${closeCalls(per)}`;
 }
 function playerDetail(r){
-  const rec=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`,pc=o=>(o.w+o.l)?Math.round(o.w/(o.w+o.l)*100)+'%':'—';
+  const rec=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`,pc=o=>((o.w+o.l)?Math.round(o.w/(o.w+o.l)*100)+'%':'—')+(uOf(o)!=null?` · ${fmtU(uOf(o))}`:'');
   const bet=x=>x?`<b class="mono">${fmtOdds(x.odds)}</b>${betChip(x.text,x.teams)}<small>${h(x.wk)}</small>`:'<span class="muted">—</span>';
   const cell=(k,v,q)=>`<div class="pd-cell ${q?'tap':''}" ${q?`data-act="${q.streak?'show-streak':'show-bets'}" data-node="${encNode(q)}"`:''}><small>${k}</small>${v}</div>`;
   return`<div class="pd">
     <div class="pd-grid">
       ${cell('Plus-money bets',`<b>${rec(r.plus)}</b><em>${pc(r.plus)}</em>`,{f:{Odds:ODDS_VALS[0]},mid:r.m.id})}${cell('Minus-money bets',`<b>${rec(r.minus)}</b><em>${pc(r.minus)}</em>`,{f:{Odds:ODDS_VALS[1]},mid:r.m.id})}
-      ${cell('Avg odds',`<b class="mono">${r.avgDec?amer(r.avgDec):'—'}</b>`)}${cell('Avg odds · wins',`<b class="mono good">${r.avgWinDec?amer(r.avgWinDec):'—'}</b>`)}${cell('Avg odds · losses',`<b class="mono bad">${r.avgLoseDec?amer(r.avgLoseDec):'—'}</b>`)}
+      ${cell('Units',`<b class="mono ${uCls(r.units||0)}">${r.units!=null?fmtU(r.units):'—'}</b><em>1u on every pick</em>`)}${cell('Avg odds',`<b class="mono">${r.avgDec?amer(r.avgDec):'—'}</b>`)}${cell('Avg odds · wins',`<b class="mono good">${r.avgWinDec?amer(r.avgWinDec):'—'}</b>`)}${cell('Avg odds · losses',`<b class="mono bad">${r.avgLoseDec?amer(r.avgLoseDec):'—'}</b>`)}
       ${cell('Best streak',`<b class="good">${r.bestHit?r.bestHit+' hits':'—'}</b><em>${r.bestHitSpan?h(r.bestHitSpan[0]===r.bestHitSpan[1]?r.bestHitSpan[0]:r.bestHitSpan.join('–')):''}</em>`,r.bestHit?{streak:'hit',mid:r.m.id}:null)}${cell('Worst streak',`<b class="bad">${r.worstMiss?r.worstMiss+' misses':'—'}</b><em>${r.worstMissSpan?h(r.worstMissSpan[0]===r.worstMissSpan[1]?r.worstMissSpan[0]:r.worstMissSpan.join('–')):''}</em>`,r.worstMiss?{streak:'miss',mid:r.m.id}:null)}${cell('Bozo',`<b>${r.bozo}×</b><em>${r.bozoWeeks.length?h(r.bozoWeeks.join(', ')):'never'}</em>`)}
       ${cell('As Bozo',`<b>${r.bozoLegs?Math.round(r.bozoLegsHit/r.bozoLegs*100)+'%':'—'}</b><em>${r.bozoLegs?`${r.bozoLegsHit}/${r.bozoLegs} legs hit · ${r.bozoCashed} cashed`:'never fronted it'}</em>`)}
       ${cell('Avg cover',`<b class="good">${r.avgHitMargin!=null?'+'+r.avgHitMargin.toFixed(1):'—'}</b><em>pts when hitting</em>`)}${cell('Avg miss',`<b class="bad">${r.avgMiss!=null?'-'+r.avgMiss.toFixed(1):'—'}</b><em>pts when missing</em>`)}
@@ -3309,6 +3323,11 @@ document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('lab
 document.addEventListener('change',e=>{if(e.target.id==='vidIn'){pickerOpen=0;const f=e.target.files&&e.target.files[0];if(f)uploadVideo(league(),currentWeek(),f)}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&pickerOpen)setTimeout(()=>{if(pickerOpen&&!upl){pickerOpen=0;if(needRender){needRender=false;render()}}},4000)});
 document.addEventListener('ended',e=>{if(e.target.classList&&e.target.classList.contains('rv-video')&&PLAYER)setTimeout(()=>closePlayer(true),350)},true);   // the video ends: the pop-up closes and the vote is read
+(()=>{const vv=window.visualViewport;if(!vv)return;let raf=0;   // zoomed in (a pinch, or iOS zooming on a text box): keep the tab bar on the visible screen instead of sliding with the page
+  const pin=()=>{raf=0;const t=document.querySelector('.tabs');if(!t)return;const z=vv.scale||1;
+    if(z>1.01){const H=document.documentElement.clientHeight;t.classList.add('vv');t.style.setProperty('--vvs',String(1/z));t.style.left=(vv.offsetLeft+vv.width/2)+'px';t.style.bottom=Math.max(0,H-(vv.offsetTop+vv.height))+14/z+'px'}
+    else if(t.classList.contains('vv')){t.classList.remove('vv');t.style.removeProperty('--vvs');t.style.left='';t.style.bottom=''}};
+  const q=()=>{if(!raf)raf=requestAnimationFrame(pin)};vv.addEventListener('resize',q);vv.addEventListener('scroll',q);window.addEventListener('scroll',q,{passive:true})})();
 document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input:not([type=file]),textarea,select'))document.body.classList.add('typing')});
 document.addEventListener('focusout',e=>{const t=e.target;if(t&&t.matches&&t.matches('textarea.pick-in')&&t.dataset.bind){const[k,wid,mid,c]=t.dataset.bind.split('|');if(k==='pick'&&c==='text')tidyLeg(wid,mid,t)}
   setTimeout(()=>{const a=document.activeElement;if(!a||!a.matches('input:not([type=file]),textarea,select')){document.body.classList.remove('typing');if(needRender&&!quiet()){needRender=false;render()}}},120)});
