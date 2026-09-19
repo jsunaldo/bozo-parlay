@@ -33,7 +33,7 @@
 html{-webkit-text-size-adjust:100%;color-scheme:light dark}
 body.locked{position:fixed;left:0;right:0;width:100%;overflow:hidden}
 body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15px;line-height:1.45;min-height:100dvh;overflow-x:hidden;-webkit-font-smoothing:antialiased;overscroll-behavior-y:none;letter-spacing:-.01em}
-#app{position:relative;z-index:1;max-width:600px;margin:0 auto;padding:0 16px calc(104px + env(safe-area-inset-bottom))}
+#app{position:relative;z-index:1;max-width:600px;margin:0 auto;overflow-x:clip;padding:0 16px calc(104px + env(safe-area-inset-bottom))}
 .top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 0 14px;position:sticky;top:0;z-index:5;background:linear-gradient(var(--bg) 70%,rgba(245,245,247,0))}
 @media(prefers-color-scheme:dark){.top{background:linear-gradient(#000 70%,rgba(0,0,0,0))}}
 .brand{display:flex;align-items:center;gap:11px;background:none;border:0;color:inherit;font:inherit;text-align:left;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
@@ -159,7 +159,7 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:15
 .tabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom));width:min(560px,calc(100% - 32px));background:var(--glass);backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);border:1px solid var(--line);border-radius:28px;display:grid;grid-template-columns:repeat(4,1fr);padding:6px;z-index:10;box-shadow:var(--shadow-lg)}
 .tabs{transition:transform .25s ease,opacity .25s ease}
 body.typing .tabs{transform:translate(-50%,160%) scale(var(--vvs,1));opacity:0;pointer-events:none}
-.tabs.vv{transform:translateX(-50%) scale(var(--vvs,1));transform-origin:50% 100%}
+.tabs.vv{transition:none;bottom:auto;transform:translateX(-50%) scale(var(--vvs,1));transform-origin:50% 100%}
 .tabs button{background:none;border:0;color:var(--muted);font:inherit;font-size:11px;font-weight:600;padding:8px 4px 7px;border-radius:22px;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:color .2s,background .2s;-webkit-tap-highlight-color:transparent}
 .tabs .ic{font-size:20px;line-height:1;transition:transform .3s cubic-bezier(.34,1.56,.64,1);filter:grayscale(1);opacity:.7}
 .tabs button.on{color:var(--text);background:var(--surface)}
@@ -292,8 +292,8 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 
 /* week nav */
 .week-nav{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
-.week-title{display:flex;align-items:center;gap:8px;flex:1;justify-content:center}
-.week-title strong{font-size:26px;font-weight:700;letter-spacing:-.03em}
+.week-title{display:flex;align-items:center;gap:8px;flex:1;justify-content:center;min-width:0}.week-nav .icon-btn{flex:none}
+.week-title strong{font-size:26px;font-weight:700;letter-spacing:-.03em;min-width:0;overflow-wrap:break-word}
 .date-in{width:auto;padding:6px 8px;font-size:13px;color:var(--muted);background:transparent;font-weight:500}
 .date-in:hover,.date-in:focus{background:var(--surface);color:var(--text)}
 
@@ -601,7 +601,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .rules li{padding-left:22px;position:relative}
 .rules li::before{content:'→';position:absolute;left:2px;color:var(--blue);font-weight:700}
 .rules b{color:var(--text);font-weight:600}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}.grid2 .btn{white-space:normal;min-width:0}
 .swatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
 .sw{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer;background:var(--c);transition:transform .15s}
 .sw.on{border-color:var(--text);transform:scale(1.15)}
@@ -669,7 +669,8 @@ table.heat{border-collapse:separate;border-spacing:4px}
 /* touch screens (iPads with a keyboard or trackpad too): never smaller than 16px in a form control, or iOS zooms the page and the fixed tab bar drifts */
 @media (pointer:coarse),(any-pointer:coarse){input,select,textarea,.date-in,.leg-margin select,.leg-margin input,.linkbox input,.inline-num,.pickbox textarea,.modal input{font-size:16px!important}}
 html.touch input,html.touch select,html.touch textarea,html.touch .date-in,html.touch .leg-margin select,html.touch .leg-margin input,html.touch .linkbox input,html.touch .inline-num,html.touch .pickbox textarea,html.touch .modal input{font-size:16px!important}
-html.touch{touch-action:manipulation}   /* no double-tap zoom; pinch still works */
+html.touch,html.touch body{touch-action:manipulation}
+@media (hover:none),(any-pointer:coarse){input,select,textarea{font-size:max(16px,1em)!important}}   /* no double-tap zoom; pinch still works */
 </style>
 </head>
 <body>
@@ -696,7 +697,7 @@ html.touch{touch-action:manipulation}   /* no double-tap zoom; pinch still works
 try{if(navigator.maxTouchPoints>0||'ontouchstart' in window)document.documentElement.classList.add('touch')}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.4';
+const APP_VERSION='2026-09-19.5';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1159,6 +1160,7 @@ async function sendPick(l,w,mid,quietly){   // a member's own pick: it waits in 
   const p=w.picks[mid];if(!p)return;pendingPick=null;const k=obKey(l,w,mid);const stamp=Date.now();l.outbox=l.outbox||{};const prev=l.outbox[k];const base=prev&&'base' in prev?prev.base:(p.at||'');l.outbox[k]={at:stamp,base};save();setSyncDot('busy');const sid=seasonOfWeek(l,w).id;
   try{const d=await api(l,'/pick',{method:'POST',body:{seasonId:sid,weekId:w.id,memberId:mid,baseAt:base,pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,tmh:!!p.tmh,unit:p.unit,um:p.um,raw:p.raw||'',keep:!!p.keep,oddsBy:p.oddsBy||'',oddsTyped:p.oddsTyped??'',oddsDk:p.oddsDk||'',oddsSrc:p.oddsSrc||''}}});
     const np=(d.seasons||[]).find(x=>x.id===sid)?.data?.weeks?.find(x=>x.id===w.id)?.picks?.[mid];if(np&&np.at)p.at=np.at;   // the league's stamp: the next edit starts from it
+    if(np&&l.outbox[k]&&l.outbox[k].at===stamp&&np.text!==p.text){p.text=np.text;if(np.raw)p.raw=np.raw;else delete p.raw;if(Array.isArray(np.teams))p.teams=np.teams;if(np.unit)p.unit=np.unit}   // the league reworded it: show the league's wording
     if(l.outbox[k]&&l.outbox[k].at===stamp)delete l.outbox[k];else if(l.outbox[k]&&np&&np.at)l.outbox[k].base=np.at;save();setSyncDot('ok');if(!quietly)toast('Pick saved for the group','good');softRender()}
   catch(e){if(e.status===409&&e.data&&e.data.current){delete l.outbox[k];save();setSyncDot('ok');toast(`Your pick was changed on your other device to “${e.data.current.text||'nothing'}”, so this one wasn't saved. Change it again if you want.`,'bad');pull(l,false,true)}
     else if(e.status===423&&e.data&&e.data.placed){delete l.outbox[k];save();setSyncDot('ok');const rj=String(e.data.rejected||'').trim();
@@ -1426,7 +1428,7 @@ const ruleText=r=>r.sunday?`${r.monday?'Sunday or Monday':'Sunday'} games only`:
 function newWeek(bozoId){
   const prev=lastWeek();const plan=nextPlan(prev);const early=(prev&&prev.next)||{};
   const w={id:uid(),num:plan.num,date:today(),bozoId,stake:S.stake,picks:{},votes:{},...plan.extra};
-  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:!!(np.teams&&np.teams.length),...(np.raw?{raw:np.raw}:{}),...(np.keep?{keep:true}:{}),by:np.by||m.id,...(np.at?{at:np.at}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
+  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:!!(np.teams&&np.teams.length),...(np.raw?{raw:np.raw}:{}),by:np.by||m.id,...(np.at?{at:np.at}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
   S.weeks.push(w);S.currentWeekId=w.id;
   const sd=prev&&prev.kind==='special'?sideOf(prev):null;if(sd){sd.of=w.id;S.weeks.splice(S.weeks.indexOf(sd),1);S.weeks.push(sd)}   // a side parlay belongs with the Sunday parlay
   return w;
@@ -1604,7 +1606,7 @@ function renderUpcoming(w,c){   // next week's slip during the vote: the same ro
       <span class="rt">${heavy?'<span class="tag warn">Too heavy</span>':''}${has?'<span class="stag in">✓ pick in</span>':'<span class="stag none">not in yet</span>'}</span>
       ${editing?`<div class="edit"><div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="${rule.sunday?'Pick, e.g. Chiefs -3.5':`Pick a ${h(rule.name)} game`}" autocomplete="off" enterkeyhint="next">${h(np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">${h(ruleText(rule))}. Must be -200 or longer.${has?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small></div>`
         :`<div class="sp">${has?betChip((ok&&cleanPick(np.text,ok))||np.text,cm?.teams?.length?cm.teams:np.teams?.length?np.teams:teamOfPlayer(np.text)):`<span class="muted">${isMe?(mineIn?'Tap to enter your pick':'Unlocks once your vote and video are in'):'Waiting on their pick'}</span>`}<span class="odds mono">${h(has?np.odds||'':'')}</span></div>`}
-      ${isMe&&has&&np.raw&&!editing?`<div class="sx"><span class="leg-tidy">Tidied from “${h(np.raw)}” · <a href="#" data-act="next-untidy">Undo</a></span></div>`:''}
+      ${isMe&&has&&np.raw&&!editing?`<div class="sx"><span class="leg-tidy">Typed as “${h(np.raw)}”</span></div>`:''}
       ${fl.length?`<div class="sx flag">${fl.join('<br>')}</div>`:''}
     </div>`};
   const groups=bunch(exp.map(mid=>({mid})),x=>cl.claims[x.mid]?.game?.id);
@@ -1794,7 +1796,7 @@ function renderLeg(w,l,cl){
   const marginTxt=(l.status==='hit'||l.status==='miss')&&l.margin!=null&&unit!=='none'?`${l.status==='hit'?'Covered by':'Missed by'} ${h(fmtMargin(l.margin,unit))}`:'';
   const needMargin=isAdmin()&&!open&&(l.status==='hit'||l.status==='miss')&&l.margin==null&&unit!=='none';
   const marginRow=`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${l.status==='hit'?'Covered by':'Missed by'}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal" ${isAdmin()?'':'disabled'}>`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit" ${isAdmin()?'':'disabled'}>${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`;
-  const tidyRow=l.raw&&l.raw!==l.text&&canEdit(l.mid)?`<div class="leg-tidy">Tidied from “${h(l.raw)}” · <a href="#" data-act="untidy" data-wid="${w.id}" data-mid="${l.mid}">Undo</a></div>`:'';
+  const tidyRow='';   // the typed wording is in the pick's details
   const unsure=l.unsure?(SHARE_MODE||!isAdmin()?`<span class="tag unsure" title="Who made this pick was pieced together from the group chat">unverified</span>`:`<button type="button" class="tag unsure" data-act="verify-pick" data-mid="${l.mid}" title="Tap to mark verified">unverified</button>`):'';
   const edit=open?`<div class="edit">
       <div class="leg-inputs"><div class="pickbox">${pickIcon(shown)}<textarea class="pick-in" rows="1" placeholder="${isSide(w)?'Pick, e.g. Bijan Robinson Anytime TD':'Pick, e.g. Chiefs -3.5'}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next">${h(l.text)}</textarea></div>
@@ -1822,7 +1824,7 @@ function renderLeg(w,l,cl){
 function pickIcon(l){const t=l.teams||[];
   if(!t.length)return`<button type="button" class="pickicon empty" data-act="pick-team" data-mid="${l.mid}" title="Set team">🏈</button>`;
   return`<button type="button" class="pickicon" data-act="pick-team" data-mid="${l.mid}" title="${t.map(a=>NICK[a]||a).join(' vs ')} — tap to change">${t.map(a=>`<img src="${LOGO(a)}" alt="${NICK[a]||a}" decoding="async">`).join('')}</button>`}
-function betType(text){const t=String(text||'').toLowerCase();if(!t||t.startsWith('('))return'Other';if(/moneyline|\bml\b/.test(t))return'Moneyline';if(/team total/.test(t))return'Team total';if(/\/ .*(over|under) \d|\b(over|under) \d+(\.5)?$/.test(t)&&!/\d\+ |yds|receptions|catches|attempts|goals|sacks/.test(t))return'Total';if(/[+-]\d+(\.5)?( \(alt\))?$/.test(t))return'Spread';return'Player prop'}
+function betType(text){const t=String(text||'').toLowerCase();if(!t||t.startsWith('('))return'Other';if(/moneyline|\bml\b/.test(t))return'Moneyline';if(/team total/.test(t))return'Team total';if(/(\/|\s@\s).*(over|under) \d|\b(over|under) \d+(\.5)?( \(alt\))?$/.test(t)&&!/\d\+ |yds|receptions|catches|attempts|goals|sacks/.test(t))return'Total';if(/[+-]\d+(\.5)?( \(alt\))?$/.test(t))return'Spread';return'Player prop'}
 function propKind(text){const t=String(text||'').toLowerCase();if(/anytime td|\battd\b/.test(t))return'Anytime TD';if(/rush \+ rec|total yds/.test(t))return'Rush + rec yds';if(/rush(ing)? ?yds|rushing yards/.test(t))return'Rushing yds';if(/rec(eiving)? ?yds|receiving yards/.test(t))return'Receiving yds';if(/pass(ing)? ?yds|passing yards/.test(t))return'Passing yds';if(/receptions|catches/.test(t))return'Receptions';if(/passing touchdowns|pass(ing)? tds?/.test(t))return'Passing TDs';if(/attempts/.test(t))return'Pass attempts';if(/field goals?/.test(t))return'Field goals';if(/longest rush|sacks|points\b/.test(t))return'Other props';return'Other props'}
 const PROP_ORDER=['Anytime TD','Rushing yds','Receiving yds','Passing yds','Rush + rec yds','Receptions','Passing TDs','Pass attempts','Field goals','Other props'];
 const SUB_ORDER={Spread:['Favorite','Underdog','Small (≤3)','Mid (3.5–6.5)','Big (7+)','Alt line','1st half'],Moneyline:['Favorite (−)','Underdog (+)','1st half'],Total:['Over','Under','Low (<44)','Mid (44–49.5)','High (50+)','Alt line'],'Team total':['Over','Under'],'Player prop':PROP_ORDER,Other:[]};
@@ -2204,14 +2206,16 @@ const NOT_NAMES=new Set('carries carry int ints interception interceptions att a
 const NICKS={cmc:'christian mccaffrey',arsb:'amon ra st brown',jsn:'jaxon smith njigba',ajb:'aj brown',mhj:'marvin harrison',btj:'brian thomas',tet:'tetairoa mcmillan',jt:'jonathan taylor',hollywood:'marquise brown',dk:'dk metcalf'};
 // every name-looking word typed has to belong to the player: "Cam"/"Cameron" fit Cam Skattebo, "James Conner" does not fit Jordan James
 const BET_WORDS=new Set('td ml pk fg fgs qb rb wr te ou ot alt plus minus props prop line lines odds pts pt ats dk fd draftkings fanduel sgp'.split(' '));
-function nameFits(text,pl){const mine=nameKey(pl.name).split(' ');
-  return nameKey(text).split(' ').filter(w=>w.length>=2&&!NOT_NAMES.has(w)&&!BET_WORDS.has(w)&&!/\d/.test(w)&&!detectTeams(w).length).every(w=>mine.some(t=>t.length>=2&&(t.startsWith(w)||w.startsWith(t))))}
+function nameFits(text,pl){const mine=nameKey(pl.name).split(' ');const full=mine.join(' ');
+  return nameKey(text).split(' ').filter(w=>w.length>=2&&!NOT_NAMES.has(w)&&!BET_WORDS.has(w)&&!/\d/.test(w)&&!detectTeams(w).length).every(w=>(NICKS[w]&&(full===NICKS[w]||full.startsWith(NICKS[w]+' ')))||mine.some(t=>t.length>=2&&(t.startsWith(w)||w.startsWith(t))))}   // "CMC" fits Christian McCaffrey
 function matchPlayer(text,nfl){return matchPlayer0(text,nfl,pl=>nameFits(text,pl))}
 function matchPlayer0(text,nfl,fits){   // full name, then a unique last name, then a unique last-name prefix ("Skatt" → Skattebo)
-  if(!nfl||!nfl.full)return null;const t=' '+nameKey(text)+' ';let best=null;
-  for(const n in nfl.full)if(t.includes(' '+n+' ')&&(!best||n.length>best.length))best=n;
+  if(!nfl||!nfl.full)return null;const t=' '+nameKey(text)+' ';let best=null,bi=0;
+  for(const n in nfl.full){const i=t.indexOf(' '+n+' ');if(i<0)continue;const nw=n.split(' ');
+    if(NOT_NAMES.has(nw[nw.length-1])){const before=t.slice(0,i).trim().split(' ').pop();if(before&&!NOT_NAMES.has(before)&&!BET_WORDS.has(before)&&!/\d/.test(before))continue}   // "Amari Cooper 20+ rush" isn't Cooper Rush
+    if(!best||i<bi||(i===bi&&n.length>best.length)){best=n;bi=i}}   // the name typed first
   if(best){const hs=nfl.full[best];return hs.find(p=>/QB|RB|WR|TE/.test(p.pos))||hs[0]}
-  for(const w of t.trim().split(' ')){const fn=NICKS[w];if(fn&&nfl.full[fn]&&fits(nfl.full[fn][0]))return nfl.full[fn][0]}
+  for(const w of t.trim().split(' ')){const fn=NICKS[w];const k=fn&&(nfl.full[fn]?fn:Object.keys(nfl.full).find(x=>x.startsWith(fn+' ')));if(k&&fits(nfl.full[k][0]))return nfl.full[k][0]}   // "MHJ" → Marvin Harrison Jr.
   const toks=t.trim().split(' ').filter(w=>w.length>=4&&!NOT_NAMES.has(w));
   const one=hs=>hs&&hs.length===1?hs[0]:hs&&hs.length&&new Set(hs.map(p=>p.team)).size===1&&new Set(hs.map(p=>p.name)).size===1?hs[0]:null;
   for(const w of toks){const hit=one(nfl.last[w]);if(hit&&fits(hit))return hit}
@@ -2286,7 +2290,7 @@ function oddsFix(p,nfl){   // DraftKings' price for this exact bet always wins (
   const typed=p.oddsBy==='espn'?(p.oddsTyped??''):String(p.odds||'').trim();p.oddsBy='espn';p.oddsSrc=d.src==='an'?'an':'espn';p.oddsDk=eo;p.oddsTyped=typed;p.odds=eo;return true}
 function tidyLeg(wid,mid,el){
   const w=week(wid);const p=w?.picks[mid];if(!p||!String(p.text||'').trim())return;if(p.status!=='pending'&&!isAdmin())return;
-  const nfl=nflOk(slipNfl(w));const clean=p.keep?null:cleanPick(p.text,nfl);const newText=!!clean&&clean!==p.text;
+  const nfl=nflOk(slipNfl(w));delete p.keep;const clean=cleanPick(p.text,nfl);const newText=!!clean&&clean!==p.text;
   if(newText){if(!String(p.odds||'').trim()&&priceIn(p.text))p.odds=priceIn(p.text);p.raw=p.raw||p.text;p.text=clean;if(!p.tm)p.teams=pickTeamsFor(clean,nfl);if(!p.um)p.unit=unitFor(clean);if(el){el.value=clean;try{autosize(el)}catch(e){}}}
   const priced=!w.locked&&oddsFix(p,nfl);if(!newText&&!priced)return;if(priced&&p.oddsTyped&&p.oddsTyped!==p.odds)toast(`Using DraftKings’ price, ${p.odds} (you typed ${p.oddsTyped})`);
   {const oi=document.querySelector(`[data-odds="${mid}"]`);if(oi&&oi.value!==p.odds)oi.value=p.odds||''}
@@ -2294,11 +2298,11 @@ function tidyLeg(wid,mid,el){
   needRender=true;
 }
 /* ---- sportsbook wording everywhere: the live slip as soon as its slate loads, and every past season once ---- */
-const TIDY_V=1;
-const needsTidy=p=>!!p&&!p.keep&&!p.raw&&!!String(p.text||'').trim()&&!String(p.text).trim().startsWith('(');
-function tidyPick(p,nfl,graded){const clean=cleanPick(p.text,nfl);if(!clean||clean===p.text)return false;
+const TIDY_V=2;
+const needsTidy=p=>!!p&&!!String(p.text||'').trim()&&!String(p.text).trim().startsWith('(');
+function tidyPick(p,nfl,graded){const had=!!p.keep;delete p.keep;const clean=cleanPick(p.text,nfl);if(!clean||clean===p.text)return had;
   if(!String(p.odds||'').trim()&&priceIn(p.text))p.odds=priceIn(p.text);
-  p.raw=p.text;p.text=clean;if(!graded){if(!p.tm)p.teams=pickTeamsFor(clean,nfl);if(!p.um)p.unit=unitFor(clean)}   // a graded pick keeps its teams and margin unit: stats stay as they were
+  p.raw=p.raw||p.text;p.text=clean;if(!graded){if(!p.tm)p.teams=pickTeamsFor(clean,nfl);if(!p.um)p.unit=unitFor(clean)}   // a graded pick keeps its teams and margin unit: stats stay as they were
   return true}
 function autoTidyLive(){   // the commissioner's device tidies the whole live slip; a member's device only their own pick
   const l=league();if(!l||quiet())return;const w=lastWeek();if(!w)return;let n=0;const mine=[];
@@ -2306,28 +2310,32 @@ function autoTidyLive(){   // the commissioner's device tidies the whole live sl
   for(const x of [w,...S.weeks.filter(y=>isSide(y)&&y.of===w.id)]){if(!liveSlip(x))continue;const nfl=nflOk(slipNfl(x));if(!nfl)continue;loadProps(nfl);
     if(!x.locked){const legGame=t=>{const pl=matchPlayer(t,nfl);const tm=pl?pl.team:detectTeams(t)[0];return tm&&nfl.teamGame[tm]};const ws=Object.entries(x.picks).filter(([mid,p])=>member(mid)&&p.status==='pending'&&String(p.text||'').trim()&&(g=>!g||Date.parse(g.at)>Date.now())(legGame(p.text))&&(isAdmin(l)||l.me===mid)&&!espnOdds(p.text,nfl)&&(!(propLookup(p.text,nfl)||{}).price||/(\d+) ?\+(?! ?\d)/.test(p.text))).map(([,p])=>anWant(p.raw&&propCombo(' '+p.raw.toLowerCase()+' ')?'':p.text,nfl)).filter(Boolean).flatMap(x=>[x.slug,x.alt&&x.alt.slug]).filter(Boolean);if(ws.length)loadAN(nfl,ws)}
     for(const[mid,p]of Object.entries(x.picks)){if(!member(mid)||p.status!=='pending'||typing.includes(`|${x.id}|${mid}|`))continue;
-      const fix=()=>{const a=needsTidy(p)&&tidyPick(p,nfl,false);const b=!x.locked&&oddsFix(p,nfl);return a||b};   // wording, then the book's price (never once the week is locked)
+      const fix=()=>{const a=!x.locked&&needsTidy(p)&&tidyPick(p,nfl,false);const b=!x.locked&&oddsFix(p,nfl);return a||b};   // wording, then the book's price (never once the week is locked)
       if(!l.sync||isAdmin(l)){if(fix())n++}
       else if(l.me===mid&&memberCan('picks',l)&&!x.locked&&fix())mine.push([x,mid])}}
   if(n){save();if(l.sync)schedulePush();softRender()}
   if(mine.length){save();for(const[x,mid]of mine)sendPick(l,x,mid,true);softRender()}
 }
 let tidyBusy=false;
-function tidySeasons(){   // once per season, on the commissioner's device: every graded pick into sportsbook wording, name kept as typed (the original is kept; Undo on any leg)
-  if(SHARE_MODE||tidyBusy)return;tidyBusy=true;
+function tidySeasons(tries=0){   // once per season, on the commissioner's device: every pick into the house style (the typed wording is kept in the details)
+  if(SHARE_MODE||tidyBusy)return;const idx=playersIndex();if(!idx){if(tries<20)setTimeout(()=>tidySeasons(tries+1),15000);return}   // player names come from the rosters: wait for them
+  tidyBusy=true;let again=false;
   try{for(const l of [...DB.leagues]){
     if(l.sync&&(l.sync.role!=='admin'||!l.sync.rev||l.sync.dirty))continue;   // commissioner copies only, synced and settled
+    const newest=newestOf(l);
     for(const sn of [...(l.seasons||[])]){if(((sn.data&&sn.data.tidyV)||0)>=TIDY_V)continue;
-      const ids=new Set(sn.data.members.map(m=>m.id));let n=0;
-      for(const w of sn.data.weeks)for(const[mid,p]of Object.entries(w.picks||{}))if(ids.has(mid)&&p.status!=='pending'&&needsTidy(p)&&tidyPick(p,null,true))n++;
-      sn.data.tidyV=TIDY_V;save();
-      if(l.sync){if(l===league())schedulePush();else{l.sync.dirty=true;l.sync.seq=(l.sync.seq||0)+1;push(l)}}
-      if(l===league()){ALLTIME=null;softRender()}
-      if(n)toast(`${l.name} ${sn.name}: ${n} pick${n===1?'':'s'} tidied into sportsbook wording`,'good');
+      const ids=new Set(sn.data.members.map(m=>m.id));let n=0,ready=true;
+      const dOf=w=>w.kind==='special'&&w.day?w.day:isSide(w)?((sn.data.weeks.find(x=>x.id===w.of)||w).date):w.date;
+      const slate=w=>{if(sn!==newest||!dOf(w))return idx;const nd=nflData(dOf(w),0);if(nd===null){ready=false;return idx}return nflOk(nd)||idx};   // this season's weeks: their own schedule, for Away @ Home totals
+      for(const w of sn.data.weeks){const nfl=slate(w);for(const[mid,p]of Object.entries(w.picks||{}))if(ids.has(mid)&&needsTidy(p)&&tidyPick(p,nfl,p.status!=='pending'))n++}
+      if(ready)sn.data.tidyV=TIDY_V;else again=true;
+      if(n||ready){save();if(l.sync){if(l===league())schedulePush();else{l.sync.dirty=true;l.sync.seq=(l.sync.seq||0)+1;push(l)}}}
+      if(n&&l===league()){ALLTIME=null;softRender()}
     }}}
   finally{tidyBusy=false}
+  if(again&&tries<20)setTimeout(()=>tidySeasons(tries+1),15000);   // a schedule was still loading: finish those weeks shortly
 }
-function untidyList(w){const nfl=nflOk(slipNfl(w));return Object.entries(w.picks).filter(([mid,p])=>member(mid)&&!p.keep&&String(p.text||'').trim()&&p.status==='pending').map(([mid,p])=>({mid,from:p.text,to:cleanPick(p.text,nfl)})).filter(x=>x.to&&x.to!==x.from)}
+function untidyList(w){const nfl=nflOk(slipNfl(w));return Object.entries(w.picks).filter(([mid,p])=>member(mid)&&String(p.text||'').trim()&&p.status==='pending').map(([mid,p])=>({mid,from:p.text,to:cleanPick(p.text,nfl)})).filter(x=>x.to&&x.to!==x.from)}
 function slipDate(w){const p=parentOf(w);return w.kind==='special'&&w.day?w.day:p?slipDate(p):w.date}
 function liveSlip(w){const l=league();if(!w||season().id!==newestOf(l).id)return false;const lw=lastWeek();return w===lw||(isSide(w)&&(w.of===lw?.id||!calc(w).graded))}
 function slipNfl(w){if(!liveSlip(w)||!slipDate(w))return null;return nflData(slipDate(w),0)}
@@ -2341,7 +2349,19 @@ const hasFlags=cl=>!!cl&&!!(cl.pairs.length||cl.flags);
 function slipClaims(w,c){if(!liveSlip(w)||!slipDate(w))return null;const nfl=nflData(slipDate(w),0);const ok=nfl&&nfl.games?nfl:null;const items=c.legs.filter(l=>String(l.text||'').trim()).map(l=>({mid:l.mid,text:l.text,teams:l.teams,tm:l.tm}));const cl=weekClaims(items,ok);cl.state=ok?'ok':nfl&&nfl.failed?'failed':'loading';return dayCheck(cl,items,dayRule(parentOf(w)?{}:w),isSide(w))}
 const TD_FIRST=/\b(first|1st) (td|touchdown|tuddy|scorer)\b|\bftd\b|\bto score first\b|\bfirst to score\b|\bscores? first\b/,PASSY=/\bpass(es|ed|ing)?\b|\bthrow(s|n)?\b|\bthrew\b/,TD_NEG=/\b(no|not|never|wont|won t|doesnt|fails? to)\b/,TD_QUAL=/\blast\b|\beach half\b|\bboth halves\b|\bevery half\b|\bteams? first\b|\bfirst (td|touchdown) for (his|the|their) team\b/,TD_TWO=/\b2 ?\+ ?(tds?|touchdowns?|tuddies)\b|\btwo (tds|touchdowns)\b/,TD_ANY=/\bany ?time\b|\batt?d\b|\btuddy\b|\bto score\b|\btd scorer\b|\bscores? an? (td|touchdown)\b/;
 const STATS=[[/pass(ing)? ?(\+|\/|and|&) ?rush(ing)?/,'Pass + Rush Yds'],[/(rush(ing)?|rec(eiving)?) ?(\+|\/|and|&|n) ?(rush(ing)?|rec(eiving)?)\b|scrimmage|total y(ar)?ds/,'Rush + Rec Yds'],[/longest rec(eption)?/,'Longest Reception'],[/longest rush/,'Longest Rush'],[/pass(ing)? ?(tds?|touchdowns?)|\btds? pass(es)?\b|\btd throws?\b|\b(tds?|touchdowns?) passing\b/,'Passing TDs'],[/rush(ing)? att(empt)?s?|carries/,'Rush Attempts'],[/rec(eiving)? ?y(ar)?ds?|receiving\b/,'Receiving Yds'],[/rush(ing)? ?y(ar)?ds?|rushing\b/,'Rushing Yds'],[/pass(ing)? ?y(ar)?ds?|passing\b/,'Passing Yds'],[/pass(ing)? att(empt)?s?|\battempts\b/,'Pass Attempts'],[/completions?|\bcomps?\b/,'Completions'],[/receptions?|catches|\brecs?\b/,'Receptions'],[/interceptions?|\bints?\b|\bpicks thrown\b/,'Interceptions'],[/field goals?|\bfgs?\b/,'Field Goals Made'],[/kick(ing)? p(oin)?ts/,'Kicking Points']];
-// sportsbook wording for a pick, or null when the app isn't sure (then the text is left exactly as typed)
+// sportsbook wording for a pick, or null when the app isn't sure (then the text is left exactly as typed). House style: player props '{First Last} Anytime TD | First TD | 2+ TDs | N+ {Stat} | Over/Under X {Stat}' (no Jr./Sr./III); team bets '{Nickname} ±X', '{Nickname} Moneyline', '{Nickname} Team Total Over/Under X', totals '{Away} @ {Home} Over/Under X'
+const PART_OTHER=/\b(2nd|second|3rd|third|4th|fourth) ?(half|quarter|qtr)\b|\b(1st|first) ?(quarter|qtr)\b|\b2h\b|\bq[1-4]\b|\b[1-4]q\b|teaser/;   // part of a game other than the 1st half, or a teaser: the app doesn't reword those
+const teamsInOrder=(raw,ts)=>{const lo=raw.toLowerCase();const pos=a=>{let b=Infinity;const m=raw.match(new RegExp('(^|[^A-Za-z])'+a+'([^A-Za-z]|$)'));if(m)b=m.index;for(const n of TEAMS[a]||[]){const i=lo.search(new RegExp('(^|[^a-z])'+esc(n.toLowerCase())+'([^a-z]|$)'));if(i>=0&&i<b)b=i}return b};return[...ts].sort((x,y)=>pos(x)-pos(y))};
+const bookName=n=>String(n||'').replace(/,?\s+(jr|sr|ii|iii|iv|v)\.?$/i,'').trim();
+function propAsTyped(raw,lo,side,line,plus,withTeam){   // a player the rosters don't know: the name as typed (no Jr./Sr.), only the market tidied
+  const nmw=[];for(const w of raw.split(/\s+/)){const k=w.toLowerCase().replace(/[^a-z]/g,'');if(!/^[A-Z]/.test(w)||/\d/.test(w)||NOT_NAMES.has(k)||BET_WORDS.has(k))break;nmw.push(w)}
+  if(nmw.length<2||nmw.length>4)return null;
+  if(withTeam){if(detectTeams(raw.split(/\s+/).slice(nmw.length).join(' ')).length||!nmw.slice(1).every(w=>!detectTeams(w).length))return null}   // "Dallas Goedert": a city in a person's name, no team anywhere else
+  else if(detectTeams(nmw.join(' ')).length)return null;
+  const who=bookName(nmw.join(' '));
+  const td=PASSY.test(lo)||TD_NEG.test(lo)||TD_QUAL.test(lo)?null:TD_FIRST.test(lo)?'First TD':TD_TWO.test(lo)?'2+ TDs':TD_ANY.test(lo)||(/\b(td|touchdown)\b/.test(lo)&&!/pass|over|under|\d/.test(lo))?'Anytime TD':null;if(td)return`${who} ${td}`;
+  const st=(STATS.find(([re])=>re.test(lo))||[])[1];if(st){if(plus)return`${who} ${plus}+ ${st}`;if(side)return`${who} ${side} ${line} ${st}`}
+  return null}
 const PROP_PART=/\b(1st|first|2nd|second|3rd|third|4th|fourth) ?(half|quarter|qtr)\b|\b[12]h\b|\bq[1-4]\b|\b[1-4]q\b|\(alt\)|\balt\b/;
 function propCombo(lo){const t=lo.replace(/(pass(ing)?|rush(ing)?|rec(eiving)?)\w* ?(\+|\/|and|&|n) ?(rush(ing)?|rec(eiving)?)/g,' ');return/&|\band\b|,|\bor\b|\bw\/|\bsgp\b|\/|(^|[^\d.])\+ ?[a-z]/.test(t)}   // "Kelce 4+ rec + ATTD", "Chiefs -3.5 & Kelce", "SGP w/…" (but "rush + rec yds" is one bet)
 function cleanPick(text,nfl){
@@ -2352,9 +2372,14 @@ function cleanPick(text,nfl){
   if((m=lo.match(/\b(?:over|o) ?(\d+(?:\.\d+)?)/))){side='Over';line=m[1]}
   if((m=lo.match(/\b(?:under|u) ?(\d+(?:\.\d+)?)/))){side='Under';line=m[1]}
   if(!side&&(m=lo.match(/(\d+) ?\+(?! ?\d)/)))plus=m[1];
-  const teams=detectTeams(raw);const pl=nfl&&nfl.full?matchPlayer(raw,nfl):null;
+  const propish=/\b(tds?|touchdowns?|tuddy|att?d|any ?time|scorer)\b/.test(lo)||STATS.some(([re])=>re.test(lo));
+  let teams=detectTeams(raw);const pl0=nfl&&nfl.full?matchPlayer(raw,nfl):null;let pl=pl0&&(propish||!teams.length)?pl0:null;   // "Dallas Cowboys -3" is a team bet, not Dallas Goedert
+  if(pl&&teams.length){const nw=bookName(pl.name).toLowerCase().split(/\s+/);const typed=raw.split(/\s+/).filter(x=>nw.includes(x.toLowerCase().replace(/[^a-z'.-]/g,'')));
+    if(!typed.some(x=>!detectTeams(x).length))pl=null;   // only a city was typed ("Dallas ATTD"): not a player the app can be sure of
+    else teams=detectTeams(raw.split(/\s+/).filter(x=>!nw.includes(x.toLowerCase().replace(/[^a-z'.-]/g,''))).join(' '))}   // a city inside the player's own name ("Dallas Goedert") isn't a team
   const game=nfl&&nfl.teamGame?teams.map(a=>nfl.teamGame[a]).find(Boolean)||(pl&&nfl.teamGame[pl.team])||null:null;
   const N=a=>NICK[a]||a;
+  if(!pl&&(propCombo(side&&teams.length===2?lo.replace(/\//g,' '):lo)||PART_OTHER.test(lo)))return null;   // two bets in one, a teaser, or a quarter / 2nd half: left exactly as typed ("Bucs / Browns over 44.5" is one total)
   if(/\bml\b|money ?line|\bto win\b/.test(lo)){if(teams.length!==1||pl)return null;return`${N(teams[0])}${half} Moneyline`}
   if(teams.length===1&&!pl&&/\bd ?\/ ?st\b|\bdefen[cs]e\b|\bdst\b/.test(lo)&&(TD_ANY.test(lo)||/\btd\b|touchdown/.test(lo)))return`${N(teams[0])} D/ST Anytime TD`;
   if(/team total|\btt\b/.test(lo)){if(teams.length!==1||!side)return null;return`${N(teams[0])}${half} Team Total ${side} ${line}`}
@@ -2362,21 +2387,17 @@ function cleanPick(text,nfl){
   if(pl&&!teams.length){
     if(PROP_PART.test(lo)||/\b2nd half\b|\bsecond half\b/.test(lo)||propCombo(lo))return null;   // part-game or more than one bet: leave it as typed
     const td=PASSY.test(lo)||TD_NEG.test(lo)||TD_QUAL.test(lo)?null:TD_FIRST.test(lo)?'First TD':TD_TWO.test(lo)?'2+ TDs':TD_ANY.test(lo)||(/\b(td|touchdown)\b/.test(lo)&&!/pass|over|under|\d/.test(lo))?'Anytime TD':null;
-    if(td)return`${pl.name} ${td}`;if((TD_NEG.test(lo)||TD_QUAL.test(lo))&&/\b(tds?|touchdowns?|score[sd]?|scorer)\b/.test(lo))return null;
+    if(td)return`${bookName(pl.name)} ${td}`;if((TD_NEG.test(lo)||TD_QUAL.test(lo))&&/\b(tds?|touchdowns?|score[sd]?|scorer)\b/.test(lo))return null;
     const st=(STATS.find(([re])=>re.test(lo))||[])[1];if(!st||(/\b(tds?|touchdowns?)\b/.test(lo)&&st!=='Passing TDs'))return null;
-    if(plus)return`${pl.name} ${plus}+ ${st}`;if(side)return`${pl.name} ${side} ${line} ${st}`;return null;
+    if(plus)return`${bookName(pl.name)} ${plus}+ ${st}`;if(side)return`${bookName(pl.name)} ${side} ${line} ${st}`;return null;
   }
-  if(!pl&&!teams.length){   // a player the rosters don't know (a past season, someone retired): the name exactly as typed, only the market tidied
-    const nmw=[];for(const w of raw.split(/\s+/)){const k=w.toLowerCase().replace(/[^a-z]/g,'');if(!/^[A-Z]/.test(w)||/\d/.test(w)||NOT_NAMES.has(k)||BET_WORDS.has(k))break;nmw.push(w)}
-    if(nmw.length>=2&&nmw.length<=4&&!detectTeams(nmw.join(' ')).length){const who=nmw.join(' ');
-      const td=PASSY.test(lo)||TD_NEG.test(lo)||TD_QUAL.test(lo)?null:TD_FIRST.test(lo)?'First TD':TD_TWO.test(lo)?'2+ TDs':TD_ANY.test(lo)||(/\b(td|touchdown)\b/.test(lo)&&!/pass|over|under|\d/.test(lo))?'Anytime TD':null;if(td)return`${who} ${td}`;
-      const st=(STATS.find(([re])=>re.test(lo))||[])[1];if(st){if(plus)return`${who} ${plus}+ ${st}`;if(side)return`${who} ${side} ${line} ${st}`}}
-    return null;
-  }
+  if(!pl&&!teams.length)return propAsTyped(raw,lo,side,line,plus,false);   // a player the rosters don't know (a past season, someone retired)
+  if(!pl){const t=propAsTyped(raw,lo,side,line,plus,true);if(t)return t}
   if(pl)return null;   // a player and a team in one pick: leave it alone
   if(side&&!STATS.some(([re])=>re.test(lo))&&teams.length){   // game total
+    if(teams.length===1&&+line<(half?17:34))return`${N(teams[0])}${half} Team Total ${side} ${line}`;   // one team and a team-sized line: that team's points (how it's graded)
     if(game&&teams.every(a=>a===game.home||a===game.away))return`${N(game.away)} @ ${N(game.home)}${half} ${side} ${line}${alt}`;
-    if(teams.length===2){const[a,b]=raw.split('/');const ta=detectTeams(a||'')[0],tb=detectTeams(b||'')[0];const tt=ta&&tb&&ta!==tb?[ta,tb]:teams;return`${N(tt[0])} / ${N(tt[1])}${half} ${side} ${line}${alt}`}return null;   // the order they were typed
+    if(teams.length===2){const sep=/\s@\s|\sat\s/i.test(raw)?' @ ':' / ';const[a,b]=raw.split(/\s*(?:\/|\s@\s|\sat\s|\bvs\.?)\s*/i);const ta=detectTeams(a||'')[0],tb=detectTeams(b||'')[0];const tt=ta&&tb&&ta!==tb?[ta,tb]:teamsInOrder(raw,teams);return`${N(tt[0])}${sep}${N(tt[1])}${half} ${side} ${line}${alt}`}return null;   // no schedule: the order (and @) as typed
   }
   if(teams.length===1){   // spread
     if(/\bpk\b|pick ?em/.test(lo))return`${N(teams[0])}${half} PK`;
@@ -2484,7 +2505,7 @@ async function auditGrader(l=league(),log=console.log){   // developer check: gr
         if(!r.status){b.no++;out.no.push({week:sn.name+' '+wkName(w),text:p.text,why:r.wait||r.no});continue}
         if(r.status===p.status){out.same++;b.same++}else out.diff.push({week:sn.name+' '+wkName(w),date,text:p.text,was:p.status,got:r.status,detail:r.detail,margin:r.margin,wasMargin:p.margin})}}}
   S=prevS;log(out);return out}
-function pickTeamsFor(text,nfl){const t=detectTeams(text);if(t.length||betType(text)!=='Player prop')return t;const pl=nfl&&nfl.full?matchPlayer(text,nfl):null;return pl?[pl.team]:teamOfPlayer(text)}
+function pickTeamsFor(text,nfl){if(betType(text)==='Player prop'){const pl=nfl&&nfl.full?matchPlayer(text,nfl):null;if(pl)return[pl.team];const tp=teamOfPlayer(text);if(tp.length)return tp}return detectTeams(text)}   // a player's bet: their team (even with a city in their name)
 // every NFL skill player → team (refreshed daily), for a player this week's slate can't place: a bye, or the slate hasn't loaded yet
 let PIDX=null;
 function playersIndex(){
@@ -2522,7 +2543,7 @@ function nextPickBox(w,c){
   if(!mineIn)return`<div class="nextpick locked"><div class="pd-sub">Your ${nn} pick</div><p class="muted tiny" style="margin:0">Unlocks once your vote and video are in.</p></div>`;
   const oddsN=np?parseOdds(np.odds):null;const heavy=np&&np.odds&&!legal(oddsN);
   return`<div class="nextpick"><div class="pd-sub">Your ${nn} pick</div>${editing?`<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="${rule.sunday?'Pick, e.g. Chiefs -3.5':`Pick a ${h(rule.name)} game`}" autocomplete="off" enterkeyhint="next">${h(np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">${h(ruleText(rule))}. Must be -200 or longer. It lands on the ${nn} slip when the Bozo is crowned.${np?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small>`
-    :`<div class="np-saved"><div class="np-bet">${betChip(np.text,np.teams)}<span class="mono">${np.odds?h(np.odds):''}</span>${heavy?'<span class="tag warn">Too heavy</span>':''}</div><button class="btn sm ghost" data-act="next-edit">Edit</button></div>${np.raw?`<div class="leg-tidy">Tidied from “${h(np.raw)}” · <a href="#" data-act="next-untidy">Undo</a></div>`:''}`}</div>`;
+    :`<div class="np-saved"><div class="np-bet">${betChip(np.text,np.teams)}<span class="mono">${np.odds?h(np.odds):''}</span>${heavy?'<span class="tag warn">Too heavy</span>':''}</div><button class="btn sm ghost" data-act="next-edit">Edit</button></div>${np.raw?`<div class="leg-tidy">Typed as “${h(np.raw)}”</div>`:''}`}</div>`;
 }
 function tallyAll(w,r,i,cands){const t=tallyAt(r,i);for(const id of cands||eligible(w).list)if(!(id in t))t[id]=0;return t}   // everyone on the ballot, zeros too
 function tallyAt(r,i){const t={};for(let k=0;k<=i&&k<r.order.length;k++){const c=r.order[k].candidate;t[c]=(t[c]||0)+1}return t}
@@ -2888,8 +2909,8 @@ function renderShare(){
   return`<section class="card"><h3>Group</h3>${who}${pushBlock(l)}${isAdmin(l)&&l.sync?`<button class="btn block" style="margin:${pushWanted(l)?0:6}px 0 0" data-act="pings-open">🔔 Notification settings</button><p class="muted tiny" style="margin:6px 0 14px">Every ping for each of your leagues: turn any on or off, pick when reminders go out, or send reminders now.</p>`:''}${isAdmin()?`<p class="muted tiny">Send this link to the crew. ${site?'It\'s the league\'s own app: they tap their name once and it\'s theirs.':'Anyone with it can enter their own pick and vote; only you can grade and crown, from any of your commissioner devices.'}</p><div class="share-link">${h(primary)}</div><div class="grid2"><button class="btn" data-act="copy-share">Copy link</button><button class="btn" data-act="sync-now">↻ Sync now</button></div><div class="pd-sub" style="margin:14px 0 6px">What members can do</div><div class="featrows">${tog('picks','Enter their own pick','Until you lock the week')}${tog('votes','Vote with a video','Sealed until everyone with a leg is in, then the dramatic reveal')}${tog('notify','Phone notifications','Pings to the crew. Which ones, and when reminders go out, are in 🔔 Notification settings')}${tog('autograde','Grade automatically','When the games are final, the slip grades itself from the box scores and the vote opens. Anything it can\'t read waits for you')}</div><div class="pd-sub" style="margin:14px 0 6px">Who's claimed their name</div><div class="claims">${claimRows}</div>${activityHtml(l)}`:`<div class="grid2"><button class="btn" data-act="sync-now">↻ Sync now</button><button class="btn" data-act="export">⬇ Export copy</button></div><p class="muted tiny" style="margin-top:8px">${f.picks||f.votes?`Picks and results come from the commissioner's device. ${f.picks?'You can edit your own pick until the week is locked.':''} ${f.votes?'When a week is graded you vote here with a name and a video.':''}`:'Live view of the league. Picks, grading and Bozo votes are all handled by the commissioner for now.'}</p>`}</section>`;
 }
 function renderCrew(){
-  if(SHARE_MODE){const l=league();return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>{const cl=l.claims?.[m.id];return`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?(cl?'On the app':'Hasn\'t tapped their name yet'):'Benched'}${m.active&&cl&&pushWanted(l)&&l.pushWho?(l.pushWho[m.id]?' · 🔔 notifications on':' · 🔕 notifications off'):''}</small></div>${cl?'<span class="tag ok">joined</span>':''}</div>`}).join('')}</div></section><section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`}
-  if(!isAdmin())return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?'Active':'Benched'}</small></div></div>`).join('')}</div></section>`+renderLeagues()+`<section class="card"><h3>App</h3><div class="row between"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`;
+  if(SHARE_MODE){const l=league();return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>{const cl=l.claims?.[m.id];return`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}${m.active&&cl&&l.pushWho?.[m.id]?' <span title="Notifications on">🔔</span>':''}</b><small>${m.active?(cl?'On the app':'Hasn\'t tapped their name yet'):'Benched'}</small></div>${cl?'<span class="tag ok">joined</span>':''}</div>`}).join('')}</div></section><section class="card"><h3>App</h3><div class="row between"><span class="muted tiny" data-act="screen-check" style="cursor:pointer">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`}
+  if(!isAdmin())return renderShare()+`<section class="card"><h3>Crew</h3><div class="mlist">${S.members.map(m=>`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?'Active':'Benched'}</small></div></div>`).join('')}</div></section>`+renderLeagues()+`<section class="card"><h3>App</h3><div class="row between"><span class="muted tiny" data-act="screen-check" style="cursor:pointer">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div></section>`;
   return renderLeagues()+renderShare()+siteCard()+`<section class="card"><h3>Crew</h3>
     <div class="mlist">${S.members.map(m=>`<div class="mrow ${m.active?'':'benched'}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="mbody"><b>${h(m.name)}</b><small>${m.active?'Active':'Benched — skipped on new weeks'}</small></div><button class="mini" data-act="edit-member" data-mid="${m.id}" title="Edit">✎</button><button class="mini" data-act="toggle-member" data-mid="${m.id}" title="${m.active?'Bench':'Activate'}">${m.active?'⏸':'▶'}</button></div>`).join('')||'<p class="muted tiny">Nobody yet.</p>'}</div>
     <form class="addrow" data-form="add-member"><input placeholder="Add a friend" name="name" autocomplete="off"><button class="btn sm primary">Add</button></form>
@@ -2906,7 +2927,7 @@ function renderCrew(){
   <section class="card"><h3>Data</h3>
     <div class="grid2"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button><button class="btn" data-act="sample">✨ Load sample</button><button class="btn danger" data-act="reset">🗑 Reset season</button></div>
     <p class="muted tiny">Everything lives in this browser. Export a backup now and then, or to move it to another phone.</p>
-    <div class="row between" style="margin-top:10px"><span class="muted tiny">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div>
+    <div class="row between" style="margin-top:10px"><span class="muted tiny" data-act="screen-check" style="cursor:pointer">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div>
   </section>`;
 }
 
@@ -3174,6 +3195,7 @@ const ACT={
   'px-mode'(el){pxMode=el.dataset.mode;refreshSheet()},
   'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
   'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${r.place||i+1}</span><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
+  'screen-check'(){screenCheck()},
   'grudge-show'(el){withStats(()=>{const G=grudgeData();const id=el.dataset.mid;const m=member(id);if(!m||!G.P[id])return;modal({title:`📒 ${m.name}`,body:grudgeSheet(G,id),actions:[{label:'Done',cls:'ghost'}]})})},
   'pk-show'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;
     modal({title:`☠️ ${m.name}`,body:`<p class="muted" style="margin:0 0 12px">${pkLine(p)}. Each one: the only miss on a slip everyone else hit.</p><div class="pk-list">${p.killers.map(k=>`<div class="pk-item"><div class="pk-top"><span class="mono muted tiny">${h(k.wk)}</span><span class="mono muted tiny">${k.odds!=null?fmtOdds(k.odds):''}</span></div>${betChip(k.text,k.teams)}${k.margin!=null||k.lost?`<div class="pk-bot">${k.margin!=null?`<span class="tiny bad">Missed by ${fmtMargin(k.margin,k.unit)}</span>`:''}${k.lost?`<span class="tiny muted">${fmt$0(k.lost)} that got away</span>`:''}</div>`:''}</div>`).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
@@ -3186,12 +3208,10 @@ const ACT={
     copyText(`🤡 ${wkName(w)}: still need picks from ${missing.join(', ')}.${site?`\nOpen the ${site.home||site.app} app on your home screen to put yours in.\n(No app yet? ${site.url})`:''}`.trim())},
   'pick-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}sendSub(l,w,el.dataset.mid)},
   'change-sub'(){subEdit.add(currentWeek().id);render()},
-  'untidy'(el,e){e.preventDefault();const w=week(el.dataset.wid);const mid=el.dataset.mid;const p=w?.picks[mid];if(!p||!p.raw)return;p.text=p.raw;delete p.raw;p.keep=true;if(!p.tm)p.teams=pickTeamsFor(p.text,nflOk(slipNfl(w)));if(!p.um)p.unit=unitFor(p.text);const L=league();save();if(L.sync&&L.sync.role!=='admin')sendPick(L,w,mid);else if(L.sync)schedulePush();render();toast('Back to the wording as typed. The app won’t reword it again; the price still follows DraftKings')},
-  'tidy-all'(el){const w=week(el.dataset.wid);const list=untidyList(w);if(!list.length)return;modal({title:`Tidy up ${list.length} pick${list.length===1?'':'s'}?`,body:`<p>Rewrites them in sportsbook wording. Anyone can undo their own afterwards.</p><div class="tidylist">${list.map(x=>`<div class="tidyrow"><b>${h(member(x.mid)?.name||'')}</b><span class="muted">${h(x.from)}</span><span>→ ${h(x.to)}</span></div>`).join('')}</div>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Tidy up',cls:'primary',onClick:()=>{const nfl=nflOk(slipNfl(w));for(const x of list){const p=w.picks[x.mid];if(!String(p.odds||'').trim()&&priceIn(p.text))p.odds=priceIn(p.text);p.raw=p.raw||p.text;p.text=x.to;if(!p.tm)p.teams=pickTeamsFor(x.to,nfl);if(!p.um)p.unit=unitFor(x.to)}commit();toast(`Tidied ${list.length} pick${list.length===1?'':'s'}`,'good')}}]})},
+  'tidy-all'(el){const w=week(el.dataset.wid);const list=untidyList(w);if(!list.length)return;modal({title:`Tidy up ${list.length} pick${list.length===1?'':'s'}?`,body:`<p>Rewrites them in the house style. What each person typed stays in the pick’s details.</p><div class="tidylist">${list.map(x=>`<div class="tidyrow"><b>${h(member(x.mid)?.name||'')}</b><span class="muted">${h(x.from)}</span><span>→ ${h(x.to)}</span></div>`).join('')}</div>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Tidy up',cls:'primary',onClick:()=>{const nfl=nflOk(slipNfl(w));for(const x of list){const p=w.picks[x.mid];if(!String(p.odds||'').trim()&&priceIn(p.text))p.odds=priceIn(p.text);p.raw=p.raw||p.text;p.text=x.to;if(!p.tm)p.teams=pickTeamsFor(x.to,nfl);if(!p.um)p.unit=unitFor(x.to)}commit();toast(`Tidied ${list.length} pick${list.length===1?'':'s'}`,'good')}}]})},
   'peek'(el){const wid=el.dataset.wid;peek.add(wid);render();clearTimeout(peekT);peekT=setTimeout(()=>{peek.delete(wid);if(!quiet())render()},4000)},
-  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');else if(halfPtOn(l)&&wholeSpread(text)!=null)toast('⚠ '+halfWarn(text),'bad');{const nfl=nflOk(nextSlate(w));const prev=w.next?.[l.me];const keep=!!(prev&&prev.keep&&prev.text===text);const clean=keep?null:cleanPick(text,nfl);sendNext(l,w,clean||text,odds,clean&&clean!==text?text:'',keep)}},
+  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');else if(halfPtOn(l)&&wholeSpread(text)!=null)toast('⚠ '+halfWarn(text),'bad');{const nfl=nflOk(nextSlate(w))||playersIndex();const clean=cleanPick(text,nfl);sendNext(l,w,clean||text,odds,clean&&clean!==text?text:'',false)}},
   'next-edit'(){nextEdit.add(currentWeek().id);render()},
-  'next-untidy'(el,e){e.preventDefault();const l=league();const w=currentWeek();const np=w.next?.[l.me];if(!np||!np.raw)return;sendNext(l,w,np.raw,np.odds,'',true)},
   'next-cancel'(el,e){e.preventDefault();nextEdit.delete(currentWeek().id);render()},
   'resume-upload'(){const l=league();if(!pendingUp||!pendingUp.file)return;if(!l.me){pickMe(l);return}const w=week(pendingUp.weekId)||currentWeek();if(pendingUp.mid!==l.me){toast('That upload belongs to a different name on this device','bad');return}uploadVideo(l,w,pendingUp.file,pendingUp)},
   'cancel-upload'(){upCancel=true;toast('Pausing after this piece…')},
@@ -3232,7 +3252,7 @@ const ACT={
   async 'push-off'(){const l=league();try{await api(l,'/push/unsubscribe',{method:'POST',body:{endpoint:l.pushEp}});delete l.pushEp;delete l.pushMid;save();render();toast('Notifications are off on this device')}catch(e){toast('Couldn\'t turn them off: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}},
   async 'push-test'(){const l=league();try{const t=await api(l,'/push/test',{method:'POST',body:{memberId:l.me}});toast(t.sent?`Test sent to ${t.sent} device${t.sent===1?'':'s'}. Check your lock screen.`:'The test didn\'t go through'+(t.errors&&t.errors[0]?': '+t.errors[0]:'. Turn notifications off and on again.'),t.sent?'good':'bad')}catch(e){toast('The test didn\'t go through: '+e.message,'bad')}},
   async 'push-remind'(){const l=league();try{const r=await api(l,'/push/remind',{method:'POST',body:{}});const nm=ids=>ids.map(id=>member(id)?.name).filter(Boolean).join(', ');const off=(r.owed||[]).filter(id=>!l.pushWho?.[id]);
-      toast(!(r.owed||[]).length?'Nobody owes a pick or vote right now':`Reminded ${nm((r.owed||[]).filter(id=>l.pushWho?.[id]))||'nobody'}${off.length?`. No notifications on for ${nm(off)}`:''}`,'good')}catch(e){toast('Reminders didn\'t go out: '+e.message,'bad')}},
+      toast(!(r.owed||[]).length?'Nobody owes a pick or vote right now':`Reminded ${nm((r.owed||[]).filter(id=>l.pushWho?.[id]))||'nobody'}${off.length?`. Text ${nm(off)} yourself`:''}`,'good')}catch(e){toast('Reminders didn\'t go out: '+e.message,'bad')}},
   'push-later'(){const l=league();const t=Date.now();try{localStorage.setItem('bp-push-later:'+l.sync.id,String(t))}catch(e){}l.person={...(l.person||{}),pushLater:t};if(l.me)api(l,'/me',{method:'POST',body:{pushLater:t}}).then(d=>{if(mergePerson(l,d.person))save()}).catch(()=>{});render();toast('You can turn them on any time from the Crew tab')},   // 'not now' holds on every device
   async 'push-off-all'(){const l=league();try{const d=await api(l,'/push/unsubscribe',{method:'POST',body:{all:true,memberId:l.me,endpoint:l.pushEp||''}});delete l.pushEp;delete l.pushMid;takeState(l,d);save();render();toast('Notifications are off on all your devices')}catch(e){toast('Couldn\'t turn them off: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}},
   'check-results'(el){const w=week(el.dataset.wid)||currentWeek();checkSlip(w)},
@@ -3256,7 +3276,7 @@ const ACT={
   async 'pset-send'(el){const l=psetL();if(!l)return;const k=el.dataset.k;if(!(l.features&&l.features.notify)){toast(`Turn on phone notifications for ${l.name} first (the top switch here)`,'bad');return}
     try{const r=await api(l,'/push/remind',{method:'POST',body:{kinds:[k]}});const nm=ids=>ids.map(id=>mname(l,id)).filter(Boolean).join(', ');const ow=r.owed||[];const got=r.reached||ow.filter(id=>l.pushWho?.[id]);const off=ow.filter(id=>!got.includes(id));
       if(ow.length&&r.tried>0&&!r.sent){toast(`The reminders didn’t go through: ${(r.errors&&r.errors[0])||'the phones’ notification services turned them down'}. Nobody was pinged. Try again in a minute, or text ${nm(ow)}.`,'bad');return}
-      toast(!ow.length?`Nobody in ${l.name} owes a ${k==='pick'?'pick':'vote'} right now`:`Reminded ${nm(got)||'nobody'}${off.length?`. No notifications on for ${nm(off)}, so text them`:''}`,'good')}
+      toast(!ow.length?`Nobody in ${l.name} owes a ${k==='pick'?'pick':'vote'} right now`:`Reminded ${nm(got)||'nobody'}${off.length?`. Text ${nm(off)} yourself`:''}`,'good')}
     catch(e){toast(`The reminders didn’t go out: ${e.message}. Nobody was pinged. Try again when you have signal.`,'bad')}},
   async 'pushbozo-toggle'(){const l=league();const v=!pushBozoOn(l);if(!l.sync){l.pushBozo=v;save();render();return}
     try{const d=await api(l,'/pings',{method:'POST',body:{pushBozo:v}});l.pushBozo=!!d.pushBozo;takeState(l,d);save();render();toast(v?'A push is now an automatic Bozo':'Pushes are back to the usual vote','good')}
@@ -3310,7 +3330,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
     else if(c==='unit'){p.unit=e.target.value;p.um=true;if(p.unit==='none')p.margin=null;commit();return}
     else p[c]=e.target.value;
     if(c==='odds'){p.oddsBy='typed';delete p.oddsTyped;delete p.oddsSrc}   // a price they typed themselves stays theirs
-    if(c==='text'){{const hw=document.querySelector(`[data-halfwarn="${b2}"]`);if(hw){const on=halfPtOn()&&wholeSpread(p.text)!=null;hw.hidden=!on;if(on)hw.textContent='⚠ '+halfWarn(p.text)}}delete p.unsure;if(p.oddsBy==='espn'&&p.oddsTyped!=null){p.odds=p.oddsTyped;const oi=document.querySelector(`[data-odds="${b2}"]`);if(oi)oi.value=p.odds||''}delete p.oddsBy;delete p.oddsTyped;delete p.oddsDk;delete p.oddsSrc;if(e.target.tagName==='TEXTAREA')autosize(e.target);if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=pickTeamsFor(p.text,slipNfl(w));if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
+    if(c==='text'){delete p.raw;{const hw=document.querySelector(`[data-halfwarn="${b2}"]`);if(hw){const on=halfPtOn()&&wholeSpread(p.text)!=null;hw.hidden=!on;if(on)hw.textContent='⚠ '+halfWarn(p.text)}}delete p.unsure;if(p.oddsBy==='espn'&&p.oddsTyped!=null){p.odds=p.oddsTyped;const oi=document.querySelector(`[data-odds="${b2}"]`);if(oi)oi.value=p.odds||''}delete p.oddsBy;delete p.oddsTyped;delete p.oddsDk;delete p.oddsSrc;if(e.target.tagName==='TEXTAREA')autosize(e.target);if(!p.um)p.unit=unitFor(p.text);if(!p.tm){const t=pickTeamsFor(p.text,slipNfl(w));if(t.join()!==(p.teams||[]).join()){p.teams=t;const pic=document.querySelector(`.pickicon[data-mid="${b2}"]`);if(pic)pic.outerHTML=pickIcon({...p,mid:b2})}}}
     save();if(c==='odds')patchTicket(w);
     const L=league();if(L.sync&&L.sync.role!=='admin'&&L.me===b2&&(c==='text'||c==='odds')){L.outbox=L.outbox||{};const ok0=obKey(L,w,b2);const e0=L.outbox[ok0];L.outbox[ok0]={at:Date.now(),base:e0&&'base' in e0?e0.base:(p.at||'')};save();clearTimeout(pendingPick);pendingPick=setTimeout(()=>sendPick(L,w,b2),900)}else if(L.sync&&L.sync.role==='admin'){if(c==='text'||c==='odds'){const now=new Date().toISOString();if(b2===L.me){p.by=b2;p.at=now;delete p.eby;delete p.eat}else if(p.by&&p.by!=='admin'){p.eby='admin';p.eat=now}else{p.by='admin';p.at=now}}schedulePush()}}
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
@@ -3324,14 +3344,30 @@ document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('lab
 document.addEventListener('change',e=>{if(e.target.id==='vidIn'){pickerOpen=0;const f=e.target.files&&e.target.files[0];if(f)uploadVideo(league(),currentWeek(),f)}});
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&pickerOpen)setTimeout(()=>{if(pickerOpen&&!upl){pickerOpen=0;if(needRender){needRender=false;render()}}},4000)});
 document.addEventListener('ended',e=>{if(e.target.classList&&e.target.classList.contains('rv-video')&&PLAYER)setTimeout(()=>closePlayer(true),350)},true);   // the video ends: the pop-up closes and the vote is read
-(()=>{const vv=window.visualViewport;if(!vv)return;let raf=0;   // zoomed in (a pinch, or iOS zooming on a text box): keep the tab bar on the visible screen instead of sliding with the page
+(()=>{const vv=window.visualViewport;if(!vv)return;let raf=0,gap=14;   // zoomed in anyway (a pinch): keep the tab bar on the visible screen, at its normal size
   const pin=()=>{raf=0;const t=document.querySelector('.tabs');if(!t)return;const z=vv.scale||1;
-    if(z>1.01){const H=document.documentElement.clientHeight;t.classList.add('vv');t.style.setProperty('--vvs',String(1/z));t.style.left=(vv.offsetLeft+vv.width/2)+'px';t.style.bottom=Math.max(0,H-(vv.offsetTop+vv.height))+14/z+'px'}
-    else if(t.classList.contains('vv')){t.classList.remove('vv');t.style.removeProperty('--vvs');t.style.left='';t.style.bottom=''}};
-  const q=()=>{if(!raf)raf=requestAnimationFrame(pin)};vv.addEventListener('resize',q);vv.addEventListener('scroll',q);window.addEventListener('scroll',q,{passive:true})})();
+    if(z>1.01){t.classList.add('vv');t.style.setProperty('--vvs',String(1/z));t.style.left=(vv.offsetLeft+vv.width/2)+'px';t.style.top=(vv.offsetTop+vv.height-gap/z-t.offsetHeight)+'px'}
+    else{if(t.classList.contains('vv')){t.classList.remove('vv');t.style.removeProperty('--vvs');t.style.left='';t.style.top=''}gap=parseFloat(getComputedStyle(t).bottom)||14}};   // 14px + the safe area, measured while not zoomed
+  const q=()=>{if(!raf)raf=requestAnimationFrame(pin)};vv.addEventListener('resize',q);vv.addEventListener('scroll',q);window.addEventListener('scroll',q,{passive:true});q()})();
+// iOS/iPadOS 26 (WebKit bug 297779): after the keyboard or Safari's toolbar goes away, fixed things can be drawn too high until the page redraws them. Wait for the screen to settle, then nudge the scroll 1px so they land right.
+const vvSettled=()=>{const v=window.visualViewport;return!v||(Math.abs(innerHeight-v.height)<2&&v.offsetTop<1)};
+let lastScrollAt=0;addEventListener('scroll',()=>{lastScrollAt=Date.now()},{passive:true});
+const isTouch=()=>document.documentElement.classList.contains('touch');
+const resyncFixed=()=>{if(!isTouch()||Date.now()-lastScrollAt<250)return;const y=scrollY;scrollTo(0,y>0?y-1:y+1);scrollTo(0,y)};   // never mid-scroll: it would stop a fling
+function afterSettle(cb){const v=window.visualViewport,t0=Date.now();let done=0;const tick=()=>{if(done)return;if(vvSettled()||Date.now()-t0>700){done=1;v&&v.removeEventListener('resize',tick);cb()}};if(v)v.addEventListener('resize',tick);setTimeout(tick,120);setTimeout(tick,720)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)setTimeout(resyncFixed,300)});addEventListener('pageshow',()=>setTimeout(resyncFixed,300));
+function screenCheck(){   // the few numbers that tell a zoomed page, the iOS redraw bug and a too-wide page apart
+  const v=window.visualViewport;const ua=navigator.userAgent;const os=(ua.match(/Version\/(\d+(?:\.\d+)?)/)||[])[1]||'';   // Safari's version matches iOS/iPadOS from 26 on (iPads report a Mac user agent)
+  const t=document.querySelector('.tabs');const r=t?t.getBoundingClientRect():null;
+  const rows=[['App',APP_VERSION],['Device',/iPad|Macintosh/.test(ua)&&navigator.maxTouchPoints>1?'iPad':/iPhone/.test(ua)?'iPhone':'Other'],['Safari',os||'unknown'],['Opened as',matchMedia('(display-mode: standalone)').matches||navigator.standalone?'Home Screen app':'Browser tab'],['Touch',document.documentElement.classList.contains('touch')?'yes':'no'],['Zoom',v?v.scale.toFixed(2):'—'],['Screen',v?`${Math.round(v.width)}×${Math.round(v.height)} (window ${innerWidth}×${innerHeight}, top ${Math.round(v.offsetTop)})`:`${innerWidth}×${innerHeight}`],['Too wide by',Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth)+'px'],['Tab bar',r?`${Math.round(innerHeight-r.bottom)}px above the bottom`:'—']];
+  const txt=rows.map(([k,x])=>`${k}: ${x}`).join('\n');
+  modal({title:'Screen check',body:`<p class="muted tiny" style="margin:0 0 10px">If the tab bar is out of place, open this right then and send it over.</p><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><small>${h(k)}</small><b style="font-size:13px">${h(String(x))}</b></div>`).join('')}</div>`,actions:[{label:'Copy',cls:'ghost',onClick:()=>{copyText(txt);return false}},{label:'Done',cls:'primary'}]})}
 document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input:not([type=file]),textarea,select'))document.body.classList.add('typing')});
 document.addEventListener('focusout',e=>{const t=e.target;if(t&&t.matches&&t.matches('textarea.pick-in')&&t.dataset.bind){const[k,wid,mid,c]=t.dataset.bind.split('|');if(k==='pick'&&c==='text')tidyLeg(wid,mid,t)}
-  setTimeout(()=>{const a=document.activeElement;if(!a||!a.matches('input:not([type=file]),textarea,select')){document.body.classList.remove('typing');if(needRender&&!quiet()){needRender=false;render()}}},120)});
+  setTimeout(()=>{const a=document.activeElement;if(a&&a.matches('input:not([type=file]),textarea,select'))return;
+    const back=()=>{document.body.classList.remove('typing');if(needRender&&!quiet()){needRender=false;render()}};
+    if(isTouch()&&t&&t.matches&&t.matches('input:not([type=file]):not([type=checkbox]):not([type=radio]),textarea,select'))afterSettle(()=>{const b=document.activeElement;if(b&&b.matches('input:not([type=file]),textarea,select'))return;resyncFixed();back()});   // after typing on a touch screen: the bar comes back once the keyboard is gone
+    else back()},120)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(PLAYER){closePlayer(true);return}if(!document.getElementById('modal-root')._required)closeModal()}if(e.key==='Enter'&&e.target.classList?.contains('pick-in')){e.preventDefault();const n=e.target.closest('.leg-inputs')?.querySelector('[data-odds]');n?n.focus():e.target.blur()}});
 document.getElementById('importFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
   r.onload=()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.members)||!Array.isArray(o.weeks))throw new Error('not a Bozo Parlay backup');
