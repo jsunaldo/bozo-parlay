@@ -231,7 +231,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .srow .edit .seg{background:var(--surface3)}.srow .edit .seg button{color:var(--text)}
 .stag{font-size:11px;font-weight:700;padding:4px 9px;border-radius:980px;white-space:nowrap;letter-spacing:.02em}
 .checkrow{padding:0 16px 10px}
-.chips{display:flex;flex-wrap:wrap;gap:6px}.leg-warn{font-size:12px;line-height:1.4;color:var(--amber);background:var(--amber-bg);border-radius:10px;padding:8px 10px;margin:6px 0 2px}.pset-busy{opacity:.55;pointer-events:none}.pset-tabs{margin-bottom:12px}.pset-sch{background:var(--surface2);border-radius:12px;padding:4px 12px 12px;margin-top:-6px}.pset-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}.pset-add{display:flex;gap:8px;align-items:center;margin-top:8px}.pset-add input{flex:1;min-width:0}.chips.days{flex-wrap:nowrap;gap:4px}.chip.day{flex:1;min-width:0;padding:6px 0;text-align:center}
+.chips{display:flex;flex-wrap:wrap;gap:6px}.shots{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.shot{position:relative;width:64px;height:88px;border-radius:10px;overflow:hidden;background:var(--surface3);border:0;padding:0;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}.shot img{width:100%;height:100%;object-fit:cover}.shot.add{font-size:11px;font-weight:600;color:var(--blue);text-align:center;padding:4px}.shot-x{position:absolute;top:2px;right:2px;width:20px;height:20px;border-radius:50%;border:0;background:rgba(0,0,0,.6);color:#fff;font-size:13px;line-height:20px;padding:0;cursor:pointer}.shot-full{width:100%;border-radius:12px;display:block}
+.placed-tools{display:flex;gap:14px;margin-top:6px;font-size:12px}.pl-odds.bad,#plTotal.bad,#plPot.bad{outline:2px solid var(--red,#ff3b30)}
+.placed-bar{margin:10px 0 2px;padding:10px 12px;border-radius:12px;background:var(--surface2);font-size:13px;line-height:1.4}.placed-bar.on{background:var(--green-bg,rgba(52,199,89,.12))}.placed-bar.ready p{margin:0 0 8px}.pl-rows{display:flex;flex-direction:column;gap:6px}.pl-row{display:grid;grid-template-columns:64px 1fr 76px;gap:8px;align-items:center;background:var(--surface2);border-radius:10px;padding:6px 8px}.pl-who{font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis}.pl-pick{font-size:13px;min-width:0;overflow-wrap:anywhere}.pl-odds{width:100%;text-align:right}.leg-warn{font-size:12px;line-height:1.4;color:var(--amber);background:var(--amber-bg);border-radius:10px;padding:8px 10px;margin:6px 0 2px}.pset-busy{opacity:.55;pointer-events:none}.pset-tabs{margin-bottom:12px}.pset-sch{background:var(--surface2);border-radius:12px;padding:4px 12px 12px;margin-top:-6px}.pset-lbl{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px}.pset-add{display:flex;gap:8px;align-items:center;margin-top:8px}.pset-add input{flex:1;min-width:0}.chips.days{flex-wrap:nowrap;gap:4px}.chip.day{flex:1;min-width:0;padding:6px 0;text-align:center}
 .li{display:flex;flex-direction:column}.li-row{display:grid;grid-template-columns:74px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.li-row:last-child{border-bottom:0}.li-k{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding-top:2px}.li-v{font-size:14px;line-height:1.4;overflow-wrap:anywhere}.li-v .stag{display:inline-block;margin-right:4px}
 .devrows{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.devrow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border-radius:10px;padding:7px 10px}.devrow .dv{display:flex;flex-direction:column;font-size:13px;min-width:0}.devrow small{font-size:11px}
 .odds .dk{font-style:normal;font-size:9px;font-weight:700;color:var(--muted);margin-left:3px;vertical-align:super}
@@ -677,7 +679,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.33';
+const APP_VERSION='2026-09-18.34';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -980,7 +982,7 @@ async function setGameday(l,v){if(!l.me||!l.sync||GD_PEND.has(l.id))return;const
   try{const d=await api(l,'/me',{method:'POST',body:{gameday:v}});GD_PEND.delete(l.id);if(mergePerson(l,d.person))save();softRender();toast(v?'Game-day pings are on for all your devices':'Game-day pings are off. Turn them on any time on the Crew tab.','good')}
   catch(e){GD_PEND.delete(l.id);l.person={...(l.person||{}),gameday:was};softRender();toast('Couldn\'t change that: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}}
 const PING_TIMES=['06:00','09:00','12:00','15:00','18:00','21:00'],DAY1=['S','M','T','W','T','F','S'],DAYN=['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
-const pingsOf=l=>{const p=(l&&l.pings)||{};const sch=x=>({on:!(x&&x.on===false),times:x&&Array.isArray(x.times)?[...x.times]:['12:00'],days:x&&Array.isArray(x.days)?[...x.days]:[0,1,2,3,4,5,6]});return{reveal:p.reveal!==false,graded:p.graded!==false,hand:p.hand!==false,gameday:p.gameday!==false,pick:sch(p.pick),vote:sch(p.vote)}};
+const pingsOf=l=>{const p=(l&&l.pings)||{};const sch=x=>({on:!(x&&x.on===false),times:x&&Array.isArray(x.times)?[...x.times]:['12:00'],days:x&&Array.isArray(x.days)?[...x.days]:[0,1,2,3,4,5,6]});return{reveal:p.reveal!==false,graded:p.graded!==false,hand:p.hand!==false,gameday:p.gameday!==false,lastPick:p.lastPick!==false,placeIt:p.placeIt!==false,placed:p.placed!==false,kickoff:p.kickoff!==false,pick:sch(p.pick),vote:sch(p.vote)}};
 const hm12=t=>{const[hh,mm]=t.split(':').map(Number);return hh===12&&!mm?'Noon':hh===0&&!mm?'Midnight':`${hh%12||12}${mm?':'+String(mm).padStart(2,'0'):''} ${hh<12?'AM':'PM'}`};
 function nextSlotLocal(s,now=Date.now()){   // the same schedule math as the league's server: the next reminder time, in Eastern
   if(!s.on||!s.times.length||!s.days.length)return null;const f=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});const P=t=>{const o={};for(const x of f.formatToParts(new Date(t)))o[x.type]=x.value;return o};const p0=P(now);
@@ -1006,7 +1008,7 @@ function psetHtml(){const ls=adminLeagues();const l=psetL();if(!l)return'';const
   return`${ls.length>1?`<div class="chips pset-tabs">${ls.map(x=>`<button class="chip ${x.id===l.id?'on':''}" data-act="pset-league" data-lid="${x.id}">${h(x.name)}</button>`).join('')}</div>`:''}
     ${busy?`<p class="muted tiny" style="margin:0 0 8px">Getting ${h(l.name)}’s latest settings…</p>`:''}<div class="featrows ${busy?'pset-busy':''}">${tog('notify','🔔 Phone notifications',`The master switch for ${h(l.name)}. Each person still turns them on in their own app.`,on)}</div>
     ${on?'':`<p class="hint" style="margin:10px 0 0">Everything below is paused until phone notifications are on for ${h(l.name)}.</p>`}
-    <div class="pd-sub" style="margin:16px 0 6px">Sent automatically</div><div class="featrows">${tog('reveal','🎬 Votes are in','Everyone: the reveal is ready to watch.',p.reveal)}${tog('graded','✅ Week graded','Everyone with a leg: the result, and that it’s time to vote.',p.graded)}${tog('gameday','🏈 Game-day pings','Lets people turn on pings as games finish (their leg, slip dead, one leg left, cashed). Each person chooses.',p.gameday)}${tog('hand','✋ Legs to grade by hand','Just you: when automatic grading can’t read a leg.',p.hand)}</div>
+    <div class="pd-sub" style="margin:16px 0 6px">Sent automatically</div><div class="featrows">${tog('reveal','🎬 Votes are in','Everyone: the reveal is ready to watch.',p.reveal)}${tog('graded','✅ Week graded','Everyone with a leg: the result, and that it’s time to vote.',p.graded)}${tog('gameday','🏈 Game-day pings','Lets people turn on pings as games finish (their leg, slip dead, one leg left, cashed). Each person chooses.',p.gameday)}${tog('lastPick','⏳ Everyone’s waiting on you','The last one or two people without a pick: the Bozo is waiting on them.',p.lastPick)}${tog('placeIt','✅ Time to place it','The Bozo: every pick is in, so place the parlay on DraftKings.',p.placeIt)}${tog('placed','🔒 The parlay is in','Everyone: the Bozo placed it, picks are locked, with the odds and to-win.',p.placed)}${tog('kickoff','⏰ Kickoff check','The Bozo and you: the first game kicked off and the parlay isn’t marked placed.',p.kickoff)}${tog('hand','✋ Legs to grade by hand','Just you: when automatic grading can’t read a leg.',p.hand)}</div>
     <div class="pd-sub" style="margin:16px 0 6px">Reminders</div><div class="featrows">${sched('pick')}${sched('vote')}</div>
     <div class="pd-sub" style="margin:16px 0 6px">Send now</div><div class="grid2"><button class="btn" data-act="pset-send" data-k="pick">📣 Pick reminders</button><button class="btn" data-act="pset-send" data-k="vote">📣 Vote reminders</button></div><p class="muted tiny" style="margin:0">Goes out right away to anyone who still owes one, whatever the schedule says.</p>`}
 function psetSave(l){PSET_N[l.id]=(PSET_N[l.id]||0)+1;PSET_PEND.add(l.id);psetRe();clearTimeout(psetT[l.id]);psetT[l.id]=setTimeout(async()=>{const n=PSET_N[l.id];
@@ -1085,7 +1087,7 @@ function adoptServerWeeks(l,st){   // weeks the server started (auto-crown) that
       else{for(let k=i-1;k>=0&&at<0;k--)at=lws.findIndex(y=>y.id===sws[k].id);if(at<0&&i>0)at=lws.length-1}
       const nw=JSON.parse(JSON.stringify(sw));nw.picks??={};nw.votes??={};for(const p of Object.values(nw.picks)){p.unit??=unitFor(p.text);p.teams??=detectTeams(p.text)}lws.splice(at+1,0,nw);n++})}
   return n}
-const MEMBER_PICK=['text','odds','teams','tm','tmh','unit','um','raw','keep','by','at','oddsBy','oddsTyped','oddsDk','oddsSrc'],SERVER_WEEK=['sub','reveal','skip','next','revote','crowned','auto'],DEVICE_SEASON=['weeks','currentWeekId','view'];
+const MEMBER_PICK=['text','odds','teams','tm','tmh','unit','um','raw','keep','by','at','oddsBy','oddsTyped','oddsDk','oddsSrc'],SERVER_WEEK=['sub','reveal','skip','next','revote','crowned','auto','placed','shots'],DEVICE_SEASON=['weeks','currentWeekId','view'];
 const stable=v=>v&&typeof v==='object'?(Array.isArray(v)?'['+v.map(stable).join(',')+']':'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined).map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}'):JSON.stringify(v===undefined?null:v);
 const hstr=t=>{let a=5381,b=52711;for(let i=0;i<t.length;i++){const c=t.charCodeAt(i);a=Math.imul(a,33)^c;b=Math.imul(b,31)^c}return(a>>>0).toString(36)+(b>>>0).toString(36)};
 function weekSig(w){   // the commissioner's part of a week (members' own pick fields and server-run fields left out)
@@ -1106,7 +1108,8 @@ function mergeLeague(l,st){   // the league moved on since this copy last matche
     for(let i=lws.length-1;i>=0;i--){const lw=lws[i];const b=base[sx.id+'|'+lw.id];const o=sw[lw.id];
       if(!o){if(b===undefined)continue;if(weekSig(lw)!==b)clash.push(wkName(lw));lws.splice(i,1);continue}   // new here: keep; removed on the other device: remove here too
       const hs=weekSig(o),hl=weekSig(lw);if(hs===hl||hs===b)continue;   // same, or only this device changed it: keep this device's
-      if(hl!==b)clash.push(wkName(lw));lws[i]=o}}   // the other device changed it: take theirs
+      const bs=l.sync.base||'';const lost=Object.entries(lw.picks||{}).some(([mid,p])=>{const q=(o.picks||{})[mid]||{};return p&&((p.at&&p.at>bs)||(p.eat&&p.eat>bs))&&(String(p.text||'')!==String(q.text||'')||String(p.odds||'')!==String(q.odds||''))});   // a pick this phone edited that the league doesn't have
+      if(hl!==b||lost)clash.push(wkName(lw));lws[i]=o}}   // the other device changed it: take theirs
   return clash}
 function mergeMemberEdits(l,st){
   adoptServerWeeks(l,st);
@@ -1141,6 +1144,8 @@ async function sendPick(l,w,mid,quietly){   // a member's own pick: it waits in 
     const np=(d.seasons||[]).find(x=>x.id===sid)?.data?.weeks?.find(x=>x.id===w.id)?.picks?.[mid];if(np&&np.at)p.at=np.at;   // the league's stamp: the next edit starts from it
     if(l.outbox[k]&&l.outbox[k].at===stamp)delete l.outbox[k];else if(l.outbox[k]&&np&&np.at)l.outbox[k].base=np.at;save();setSyncDot('ok');if(!quietly)toast('Pick saved for the group','good');softRender()}
   catch(e){if(e.status===409&&e.data&&e.data.current){delete l.outbox[k];save();setSyncDot('ok');toast(`Your pick was changed on your other device to “${e.data.current.text||'nothing'}”, so this one wasn't saved. Change it again if you want.`,'bad');pull(l,false,true)}
+    else if(e.status===423&&e.data&&e.data.placed){delete l.outbox[k];save();setSyncDot('ok');const rj=String(e.data.rejected||'').trim();
+      modal({title:'Picks are locked',body:`<p style="margin:0 0 10px">${h(e.message)}.</p>${rj?`<p class="tiny muted" style="margin:0 0 4px">What you typed, so you can send it:</p><div class="mono" style="padding:10px;border-radius:10px;background:var(--surface2);user-select:all">${h(rj)}</div>`:''}`,actions:[...(rj?[{label:'Copy it',cls:'ghost',onClick:()=>{copyText(rj);return false}}]:[]),{label:'OK',cls:'primary'}]});pull(l,false,true)}
     else if(e.status>=400&&e.status<500&&e.status!==408&&e.status!==429){delete l.outbox[k];save();setSyncDot('bad');toast((e.status===423?'Too late: ':'')+e.message+'. Your pick was NOT saved.','bad');pull(l,false,true)}   // the league said no: show the league's copy
     else{setSyncDot('bad');if(!quietly)toast('No signal, so your pick is only on this device for now. It goes up on its own as soon as you have signal.','bad');softRender()}}
 }
@@ -1438,7 +1443,7 @@ function holidayGuess(){   // the next Thanksgiving or Christmas
 
 /* ============================== ENGINE ============================== */
 function calc(w){
-  const legs=Object.entries(w.picks).map(([mid,p])=>({mid,...p,oddsN:parseOdds(p.odds)})).filter(l=>member(l.mid)).sort((a,b)=>midx(a.mid)-midx(b.mid));
+  const legs=Object.entries(w.picks).map(([mid,p])=>({mid,...p,oddsN:parseOdds(p.odds)})).filter(l=>member(l.mid)&&!(w.placed&&(l.status||'pending')==='pending'&&!String(l.text||'').trim())).sort((a,b)=>midx(a.mid)-midx(b.mid));
   let d=1,hits=0,misses=0,pushes=0,pending=0,missingOdds=0;
   for(const l of legs){
     if(l.status==='hit')hits++;else if(l.status==='miss')misses++;else if(l.status==='push')pushes++;else pending++;
@@ -1448,10 +1453,11 @@ function calc(w){
   let result='pending';
   if(misses>0)result='lost';else if(n>0&&pending===0&&hits>0)result='won';else if(n>0&&pending===0)result='void';
   const stake=Number(w.stake??S.stake)||0;
-  const potential=stake*d;
+  let potential=stake*d,slip=false;if(w.placed&&!pushes){const P=w.placed;const t=P.total?parseOdds(P.total):null;if(t!=null){d=dec(t);slip=true}   // the Bozo's DraftKings slip (a push reprices it, so then it's the legs again)
+    if(+P.pot>0){potential=+P.pot;slip=true}else if(+P.toWin>0){potential=stake+(+P.toWin);slip=true}else if(t!=null)potential=stake*d}
   const payout=result==='won'?potential:result==='void'?stake:0;
   const paid=pushBozoOn()&&result==='won'?n-pushes:n;const share=paid?payout/paid:0;   // a push is left out of the winnings in a push-is-Bozo league
-  return{legs,n,hits,misses,pushes,pending,dec:d,potential,payout,share,result,stake,missingOdds,graded:pending===0&&n>0};
+  return{legs,n,hits,misses,pushes,pending,dec:d,potential,payout,share,result,stake,missingOdds,slip,priced:n>0&&(!missingOdds||slip),graded:pending===0&&n>0};
 }
 function eligible(w){
   const c=calc(w);if(!c.graded)return{list:[],reason:'grade'};
@@ -1623,6 +1629,62 @@ function renderExtras(w){   // commissioner: add a side or special parlay to the
   return`<section class="card extras"><h3>Extra parlays</h3>${side}${special}${fin}${up.length?`<div class="pd-sub" style="margin:14px 0 6px">Coming up</div>${up.map(sp=>`<div class="row between ex-plan"><span>${spIcon(sp.name)} ${h(sp.name)} parlay · ${h(fmtDay(sp.day))}</span><button class="mini danger" data-act="drop-special" data-day="${sp.day}" title="Remove">×</button></div>`).join('')}`:''}</section>`;
 }
 function clashLines(cl){if(!hasFlags(cl))return'';const nm=mid=>h(member(mid)?.name||'');return`<div class="clashlines">${cl.pairs.map(p=>`<div class="clashline">⚠ <b>${nm(p.a)}</b> and <b>${nm(p.b)}</b> ${CLASH_SUM[p.kind]}${p.game?' · '+h(p.game.name):''}</div>`).join('')}${Object.entries(cl.off||{}).map(([mid,o])=>`<div class="clashline">⚠ <b>${nm(mid)}</b> picked a ${h(offText(o,cl.rule))} · ${h(o.game.name)}</div>`).join('')}${Object.keys(cl.notd||{}).map(mid=>`<div class="clashline">⚠ <b>${nm(mid)}</b>'s pick isn't an Anytime TD bet. This side parlay is ATTD only.</div>`).join('')}</div>`}
+const bozoOfW=w=>{if(!w)return null;const p=parentOf(w);return p?p.bozoId:w.bozoId};
+const shotUrl=(l,w,x)=>{const k=l.sync.role==='admin'&&l.shareKey?l.shareKey:l.sync.key;return`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/shot/${encodeURIComponent(w.id)}/${x.n}?k=${encodeURIComponent(k)}&v=${encodeURIComponent(x.at)}`};
+async function shrinkShot(file){   // a phone screenshot, made small enough to send (longest side 1600px, JPEG)
+  let bmp;try{bmp=await createImageBitmap(file)}catch(e){bmp=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(new Error('That picture couldn’t be opened'));i.src=URL.createObjectURL(file)})}
+  const k=Math.min(1,1600/Math.max(bmp.width,bmp.height));const cv=document.createElement('canvas');cv.width=Math.round(bmp.width*k);cv.height=Math.round(bmp.height*k);cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+  for(const q of [0.82,0.7,0.55]){const b=await new Promise(r=>cv.toBlob(r,'image/jpeg',q));if(b&&b.size<=1300*1024)return b}throw new Error('That picture is too big to send')}
+async function sendShot(l,w,n,file){const blob=await shrinkShot(file);const r=await fetch(`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/shot?season=${encodeURIComponent(seasonOfWeek(l,w).id)}&week=${encodeURIComponent(w.id)}&n=${n}`,{method:'POST',headers:{...hdrs(l),'Content-Type':'image/jpeg'},body:blob});
+  const d=await r.json().catch(()=>({}));if(!r.ok||d.ok===false)throw new Error(d.error||('HTTP '+r.status));return d}
+const amOf=d=>d==null||!(d>1)?'':d>=2?'+'+Math.round((d-1)*100):'-'+Math.round(100/(d-1));
+function placedBar(w,c){   // where the bet stands: waiting on picks, waiting on the Bozo, or placed (picks locked)
+  const l=league();if(!l.sync||!c.n)return'';const bz=bozoOfW(w);const nb=member(bz);const canPlace=isAdmin()||(l.me&&l.me===bz);
+  if(w.placed){const P=w.placed;const by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo';const sh=w.shots||[];
+    const tools=canPlace&&!c.graded?`<div class="placed-tools"><a href="#" data-act="placed-edit" data-wid="${w.id}">Fix odds or pot</a>${isAdmin()?'':`<a href="#" data-act="placed-undo" data-wid="${w.id}">Undo placed</a>`}</div>`:'';
+    return`<div class="placed-bar on">🔒 <b>Placed</b> by ${h(by)}, ${h(fmtET(P.at))}${P.total?` · ${h(P.total)}`:''}${+P.pot>0?` · prize pot ${fmt$(+P.pot)}`:+P.toWin>0?` · $${c.stake} to win ${fmt$(+P.toWin)}`:''}. Picks are locked.${tools}${sh.length||canPlace?`<div class="shots">${sh.map(x=>`<button class="shot" data-act="shot-view" data-wid="${w.id}" data-n="${x.n}" aria-label="Bet slip screenshot"><img src="${shotUrl(l,w,x)}" alt="Bet slip screenshot" loading="lazy"></button>`).join('')}${canPlace&&sh.length<2?`<label class="shot add">+ Screenshot<input type="file" accept="image/*" hidden data-shotadd="${w.id}"></label>`:''}</div>`:''}</div>`}
+  if(c.graded)return'';if(w.locked)return`<div class="placed-bar on">🔒 Picks are locked.</div>`;
+  const missing=c.legs.filter(x=>x.status==='pending'&&!String(x.text||'').trim()).length;
+  if(!missing)return canPlace?`<div class="placed-bar ready"><p>✅ All ${c.n} picks are in. Place the parlay on DraftKings, then tap below.</p><button class="btn primary block" data-act="placed-open" data-wid="${w.id}">✅ I placed it</button></div>`:`<div class="placed-bar">⏳ All picks are in. Waiting on ${h(nb?.name||'the Bozo')} to place it on DraftKings.</div>`;
+  return canPlace?`<div class="placed-bar"><span class="muted">Waiting on ${missing} pick${missing===1?'':'s'} before you place it.</span> <a href="#" data-act="placed-open" data-wid="${w.id}">Placed it already?</a></div>`:''}
+const slipOdds=v=>{let t=String(v??'').trim().toUpperCase().replace(/[\s,]+/g,'').replace(/[−‒-―]/g,'-');if(t==='EV'||t==='EVEN')return'+100';   // the league's rule for a price: American, or decimal turned into American
+  if(/^\d{1,3}\.\d{1,3}$/.test(t)){const d=Number(t);if(!(d>1.001&&d<1001))return null;return d>=2?'+'+Math.round((d-1)*100):'-'+Math.round(100/(d-1))}
+  if(!/^[+-]?\d{3,6}$/.test(t)||Math.abs(Number(t))<100)return null;if(!/^[+-]/.test(t))t='+'+t;return t.replace(/^([+-])0+/,'$1')};
+const slipMoney=v=>{const x=Number(String(v??'').replace(/[$,\s]/g,''));return Number.isFinite(x)&&x>0&&x<1e8?Math.round(x*100)/100:null};
+function placedSheet(w,o={}){const c=calc(w);const edit=!!(o.edit&&w.placed);const P=w.placed||{};const missing=edit?0:c.legs.filter(x=>x.status==='pending'&&!String(x.text||'').trim()).length;
+  const shown=c.legs.filter(x=>String(x.text||'').trim()&&x.status==='pending');
+  const rows=shown.map(x=>`<div class="pl-row"><span class="pl-who">${h(member(x.mid)?.name||'')}</span><span class="pl-pick">${h(x.text)}${x.oddsBy==='espn'||x.oddsBy==='slip'?' <i class="dk">DK</i>':''}</span><input class="mono pl-odds" data-mid="${x.mid}" value="${h(x.odds||'')}" placeholder="-110" autocomplete="off" inputmode="text" aria-label="${h(member(x.mid)?.name||'')} odds"></div>`).join('');
+  const est=c.missingOdds?'':amOf(c.dec);
+  if(!o.keep)SHOTS_PICK.length=0;
+  modal({title:edit?'Fix the slip’s numbers':'Bet placed?',body:`${missing?`<p class="hint" style="margin:0 0 10px">${missing} pick${missing===1?' is':'s are'} still missing, so ${missing===1?'that leg isn’t':'those legs aren’t'} on the bet.</p>`:''}<p class="tiny" style="margin:0 0 10px">Check each price against your DraftKings bet slip and fix any that differ. Legs marked DK already have DraftKings’ price.</p><div class="pl-rows">${rows}</div>
+    <div class="grid2" style="margin-top:12px"><label class="field"><span>Final odds</span><input id="plTotal" class="mono" value="${h(P.total||'')}" placeholder="${h(est||'+1228')}" inputmode="text" autocomplete="off"></label><label class="field"><span>Prize pot ($)</span><input id="plPot" class="mono" value="${+P.pot>0?h((+P.pot).toFixed(2)):''}" placeholder="${c.missingOdds?'132.83':h(c.potential.toFixed(2))}" inputmode="decimal" autocomplete="off"></label></div>
+    <p class="muted tiny" style="margin:4px 0 0">Both are on your bet slip. The prize pot is the total payout if it hits.</p>
+    ${edit?'':`<div class="pd-sub" style="margin:12px 0 6px">Bet slip screenshots (up to 2)</div><div class="shots" id="plShots"></div><label class="btn ghost sm" style="margin-top:6px">+ Add screenshot<input type="file" accept="image/*" multiple hidden id="plShotIn"></label>
+    <p class="muted tiny" style="margin:10px 0 0">Locking tells everyone the bet is in. Picks can’t be changed after this.</p>`}`,
+    actions:[{label:'Cancel',cls:'ghost'},{label:edit?'Save':'🔒 It’s placed, lock the picks',cls:'primary',onClick:()=>{
+      const bad=[];const odds={};document.querySelectorAll('.pl-odds').forEach(i=>{const v=i.value.trim();i.classList.remove('bad');if(!v)return;const n=slipOdds(v);if(n==null){bad.push(`${member(i.dataset.mid)?.name||'A leg'}’s price “${v}”`);i.classList.add('bad')}else odds[i.dataset.mid]=n});
+      const tEl=document.getElementById('plTotal'),pEl=document.getElementById('plPot');[tEl,pEl].forEach(x=>x&&x.classList.remove('bad'));
+      const tv=(tEl&&tEl.value||'').trim(),pv=(pEl&&pEl.value||'').trim();const total=tv?slipOdds(tv):null,pot=pv?slipMoney(pv):null;
+      const blank=[];if(!tv){blank.push('the final odds');tEl&&tEl.classList.add('bad')}else if(total==null){bad.push(`the final odds “${tv}”`);tEl&&tEl.classList.add('bad')}
+      if(!pv){blank.push('the prize pot');pEl&&pEl.classList.add('bad')}else if(pot==null){bad.push(`the prize pot “${pv}”`);pEl&&pEl.classList.add('bad')}
+      if(bad.length||blank.length){toast(`${blank.length?`Add ${blank.join(' and ')} from your bet slip. `:''}${bad.length?`Check ${bad.join(', ')}: type prices like -110 or +150 and the pot like 1238.30. `:''}Nothing’s locked yet.`,'bad');return false}
+      const legs={};if(!edit)for(const x of c.legs)legs[x.mid]=String(x.text||'').trim();
+      sendPlaced({seasonId:seasonOfWeek(league(),w).id,weekId:w.id,odds,total,pot,...(edit?{edit:true}:{legs})},w,edit?[]:SHOTS_PICK.slice(0,2),edit);return false}}]})}
+const SHOTS_PICK=[];   // screenshots chosen in the sheet, sent after it's placed
+function shotsPreview(){const el=document.getElementById('plShots');if(el)el.innerHTML=SHOTS_PICK.map((f,i)=>`<span class="shot"><img src="${URL.createObjectURL(f)}" alt="Screenshot ${i+1}"><button class="shot-x" data-act="shot-unpick" data-i="${i}" aria-label="Remove">×</button></span>`).join('')}
+let placing=false;
+async function sendPlaced(body,w,shots=[],edit=false){const l=league();if(placing)return;placing=true;
+  try{if(isAdmin(l)&&(l.sync.dirty||pushT)){clearTimeout(pushT);pushT=null;await push(l)}   // this phone's unsent edits go up first
+    toast(edit?'Saving…':'Locking the picks…');const d=await api(l,'/placed',{method:'POST',body});closeModal();takeState(l,d);save();render();toast(edit?'Saved. The slip’s numbers are fixed.':'🔒 Locked. Everyone’s been told the bet is in.','good')}
+  catch(e){const st=e.data&&e.data.state;
+    if(e.status===409&&st&&e.data.placed){closeModal();applyState(l,st);save();render();const P=e.data.placed;const by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo';toast(`It was already marked placed by ${by}, ${fmtET(P.at)}. Nothing changed. To fix its numbers, tap “Fix odds or pot” on the slip.`,'bad');placing=false;if(shots.length)await placedShots(l,w,shots);return}
+    if(e.status===409&&st){applyState(l,st);save();render();placing=false;const nw=week(w.id);if(nw)placedSheet(nw,{keep:true});toast('A pick changed while you were placing it. Check the prices against your slip again. Nothing was locked.','bad');return}
+    const msg=e.status===400||e.status===423?`${e.message}.`:e.status===401?'This phone isn’t signed in to your name. Tap your name at the top first, then try again. Nothing changed.':e.status===403?'Only this week’s Bozo or the commissioner can mark it placed. Check that you’re still this week’s Bozo, or ask the commissioner to do it. Nothing changed.':e.status===404?'This week was removed on another phone. Nothing changed. Close the app and open it again to see the current weeks.':`Couldn’t reach the league: ${e.message}. Nothing changed and your numbers are still in the sheet. Tap it again when you have signal.`;
+    toast(msg.charAt(0).toUpperCase()+msg.slice(1),'bad');placing=false;return}
+  placing=false;if(shots.length)await placedShots(l,w,shots)}
+async function placedShots(l,w,shots){const used=new Set(((week(w.id)||w).shots||[]).map(x=>x.n));let bad=0;const free=[0,1].filter(n=>!used.has(n));
+  for(let i=0;i<shots.length&&i<free.length;i++){try{const d=await sendShot(l,w,free[i],shots[i]);takeState(l,d)}catch(e){bad++}}   // the bet is in either way; screenshots can be added again from the slip
+  save();render();if(bad||shots.length>free.length)toast(`The bet is marked placed, but ${bad+Math.max(0,shots.length-free.length)===1?'a screenshot':'the screenshots'} didn’t upload. Nothing else was affected. Tap “+ Screenshot” on the slip to try again.`,'bad')}
 function pickStatus(w,c,cl){
   if(!c.n)return'';
   const untidy=isAdmin()&&cl&&cl.state==='ok'?untidyList(w):[];
@@ -1642,6 +1704,7 @@ function renderTicket(w,c){
       <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c)}</div></div>
       ${isSide(w)?`<div class="bozo-line"><span class="clown">🎯</span><span class="bozo-name">Side parlay</span><span class="is-bozo">no Bozo, no vote</span>${w.locked?'<span class="tag warn" title="Picks are locked">🔒 locked</span>':''}</div>`:`<div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':(isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown')}</span>${isAdmin()?`<button class="mini" data-act="change-bozo" title="Change bozo">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked for this week">🔒 locked</span>':''}</div>`}
     </div>
+    ${placedBar(w,c)}
     ${pickStatus(w,c,cl)}
     ${sweatable(w)?`<div id="lvb-${w.id}">${liveBanner(w)}</div>`:''}
     ${checkable(w,c)?`<div class="checkrow"><button class="btn block" data-act="check-results" data-wid="${w.id}">🔎 Check results · ${c.legs.filter(x=>x.status==='pending'&&String(x.text||'').trim()).length} to grade</button></div>`:''}
@@ -1668,7 +1731,8 @@ function legInfo(w,mid){   // everything about one leg: what was typed, what the
   row('Pick',text?`<b>${h(p.text)}</b>`:'<span class="muted">No pick entered</span>');
   if(tidied)row('Typed',`“${h(p.raw)}”<br><span class="muted">The app rewrote it in sportsbook wording, matching team and player names to ESPN’s schedule and rosters. The meaning didn’t change.</span>`);
   row('Entered',(p.by==='admin'?'By the commissioner':p.by?`By ${h(member(p.by)?.name||m.name)}`:'Not recorded (entered before the app kept track)')+(p.by&&p.at&&fmtET(p.at)?`, ${fmtET(p.at)}`:'')+(p.eby?`<br><span class="muted">Changed by the commissioner${p.eat&&fmtET(p.eat)?`, ${fmtET(p.eat)}`:''}</span>`:''));
-  if(text){let typed,dk=null,note='';   // typed: the price they entered ('' = none, null = not recorded on older picks); dk: DraftKings' price for this exact bet
+  if(text&&p.oddsBy==='slip')row('Odds',`<b>${h(p.odds)}</b> from the DraftKings bet slip, confirmed when the parlay was placed`);
+  else if(text){let typed,dk=null,note='';   // typed: the price they entered ('' = none, null = not recorded on older picks); dk: DraftKings' price for this exact bet
     let src=p.oddsSrc==='an'?'Action Network':'ESPN';
     if(p.oddsBy==='espn'){dk=p.oddsDk||p.odds;typed=p.oddsTyped!=null&&p.oddsTyped!==''?p.oddsTyped:p.oddsDk?'':null}
     else{typed=String(p.odds||'').trim();dk=p.oddsDk||null;if(!dk){const c=dkCompare(p.text,nfl);if(c.price){dk=c.price;src=c.src==='an'?'Action Network':'ESPN'}else note=c.other?`DraftKings has this line too, but the free feeds only carry its main line (${h(c.other)}), so the typed price is used for this one.`:c.none==='market'?'DraftKings has this bet, but neither free feed (ESPN, Action Network) shows its price right now (for example D/ST touchdowns, or Rush + Rec milestones).':c.none==='side'?'DraftKings has this line, but has taken this side off the board right now, so the typed price is used.':c.none==='combo'?'This leg is more than one bet, so there’s no single DraftKings price to compare.':c.none==='part'?'Part-game props (a half, a quarter, alt lines) aren’t in the free feed.':c.none==='player'?'The app couldn’t tell for sure which player this is, so it didn’t look up a price.':c.none==='started'?'The game has started. Prices are only looked up before kickoff.':c.none==='qbtd'?'For a quarterback, “2+ TDs” usually means passing touchdowns. Write “2+ passing TDs” (or “2+ rushing TDs”) so the app knows which DraftKings bet it is.':c.none==='dst'?'DraftKings has this bet, but no free feed shows D/ST touchdown prices, so the typed price is used.':c.none==='blocked'?'The extra prop-price feed (Action Network) isn’t answering right now, so the typed price is used.':c.none==='prop'?'DraftKings has this bet, but its price isn’t in the free feed.':c.none==='kind'?'DraftKings has this bet, but the app can’t read its price yet. The free feed it uses (from ESPN) only carries DraftKings prices for full-game moneylines, spreads, totals and the most popular props.':'Not checked. The app looks it up before kickoff, when the pick is exactly the book’s line.'}}
@@ -1725,7 +1789,7 @@ function renderLeg(w,l,cl){
     <span class="avatar xs" style="--c:${m.color}">${h(initials(m.name))}</span>
     <span class="nm">${h(m.name)}${isBozo?'<span title="This week\'s Bozo">🤡</span>':''}${mine?'<span class="muted tiny" style="font-weight:500">you</span>':''}</span>
     <span class="rt">${unsure}<span class="tag warn" data-warn="${l.mid}" ${bad?'':'hidden'}>Too heavy</span>${right}</span>
-    ${open?'':`<div class="sp">${empty?`<span class="muted">${mine?(editable?'Tap to enter your pick':w.locked?'No pick, picks are locked':'No pick yet'):editable?'Tap to enter their pick':'Waiting on their pick'}</span>`:betChip(l.text,shown.teams)}<span class="odds mono ${bad?'bad':''}" ${w.picks[l.mid]?.oddsBy==='espn'?`title="Price from DraftKings (via ${w.picks[l.mid].oddsSrc==='an'?'Action Network':'ESPN'})${w.picks[l.mid].oddsTyped?`. They typed ${h(w.picks[l.mid].oddsTyped)}`:''}"`:''}>${empty?'':h(l.odds||'')}${!empty&&w.picks[l.mid]?.oddsBy==='espn'?'<i class="dk">DK</i>':''}</span></div>`}
+    ${open?'':`<div class="sp">${empty?`<span class="muted">${mine?(editable?'Tap to enter your pick':w.locked?'No pick, picks are locked':'No pick yet'):editable?'Tap to enter their pick':'Waiting on their pick'}</span>`:betChip(l.text,shown.teams)}<span class="odds mono ${bad?'bad':''}" ${w.picks[l.mid]?.oddsBy==='espn'?`title="Price from DraftKings (via ${w.picks[l.mid].oddsSrc==='an'?'Action Network':'ESPN'})${w.picks[l.mid].oddsTyped?`. They typed ${h(w.picks[l.mid].oddsTyped)}`:''}"`:''}>${empty?'':h(l.odds||'')}${!empty&&(w.picks[l.mid]?.oddsBy==='espn'||w.picks[l.mid]?.oddsBy==='slip')?'<i class="dk">DK</i>':''}</span></div>`}
     ${!open&&marginTxt?`<div class="sx muted">${marginTxt}</div>`:''}
     ${!open&&mine&&tidyRow?`<div class="sx">${tidyRow}</div>`:''}
     ${needMargin?`<div class="sx">${marginRow}</div>`:''}
@@ -1834,7 +1898,7 @@ function resultBadge(c){
   const[cls,txt]=map[c.result];return`<span class="badge ${cls}">${txt}</span>`;
 }
 function ticketFoot(w,c){
-  const priced=!c.missingOdds&&c.n>0;const b=member(w.bozoId);
+  const priced=c.priced;const b=member(w.bozoId);
   return`<div class="foot-grid">
     <div><small>Parlay</small><b class="mono" id="f-odds">${c.n?amer(c.dec):'—'}</b></div>
     <div><small>Stake</small><b class="mono">$${isAdmin()?`<input type="number" class="inline-num" value="${c.stake}" min="0" step="1" data-bind="week|${w.id}|stake" inputmode="numeric">`:c.stake}</b></div>
@@ -1843,11 +1907,11 @@ function ticketFoot(w,c){
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
   <div id="f-won">${wonLine(w,c)}</div>
-  <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastWeek()===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`;
+  <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync&&!c.graded?(w.placed?`<button class="btn sm ghost" data-act="placed-undo" data-wid="${w.id}">🔓 Undo placed</button>`:w.locked?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">🔓 Unlock picks</button>`:`<button class="btn sm ghost" data-act="placed-open" data-wid="${w.id}">✅ I placed it</button>`):isAdmin()&&!league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastWeek()===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`;
 }
 function wonLine(w,c){if(c.result!=='won')return'';const b=member(w.bozoId);const out=pushBozoOn()?c.legs.filter(l=>l.status==='push').map(l=>member(l.mid)?.name).filter(Boolean):[];return`<div class="won-line">🎉 ${out.length?'Everyone who hit':'Everyone'} collects ${fmt$(c.share)}.${out.length?` ${h(out.join(', '))} pushed and ${out.length===1?'is':'are'} left out.`:''}${isSide(w)||!b?'':` ${h(b.name)} nets ${fmt$(c.share-c.stake)} after fronting the stake.`}</div>`}
 function patchTicket(w){
-  const c=calc(w);const priced=!c.missingOdds&&c.n>0;const $=id=>document.getElementById(id);
+  const c=calc(w);const priced=c.priced;const $=id=>document.getElementById(id);
   if(!$('tfoot'))return;
   $('f-odds').textContent=c.n?amer(c.dec):'—';
   $('f-win').textContent=priced?fmt$(c.potential):'—';
@@ -2661,7 +2725,7 @@ const siteFor=(l=league())=>l.sync?(Object.values(SHARE_SITES).find(x=>x.sync&&x
 function siteCard(){const l=league();const site=siteFor(l);if(!site||l.sync||site.sync)return'';return`<section class="card"><h3>League site</h3><p class="muted tiny" style="margin-bottom:10px">${h(site.url)}</p><p class="muted tiny">Publish this league to the cloud below and the site turns into the group's live app: everyone taps their name once, enters their own pick, votes with a video.</p></section>`}
 function activityHtml(l){
   const nm=id=>member(id)?.name||'Someone';const ev=(l.events||[]).slice().reverse().slice(0,20);const ups=Object.entries(l.uploads||{});
-  const text=e=>({pings:'Notification settings changed',claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`,'notify-on':`${nm(e.mid)} turned on notifications${e.detail?' ('+e.detail+')':''}`,device:`${nm(e.mid)} added a device${e.detail?': '+e.detail:''}`,'device-out':`${nm(e.mid)} signed out a device${e.detail?': '+e.detail:''}`,revote:`${nm(e.mid)} voted in the revote`,nextpick:`${nm(e.mid)} entered next week's pick`,'nextpick-clear':`${nm(e.mid)} cleared next week's pick`,unreveal:'Vote reopened'})[e.type]||e.type;
+  const text=e=>({shot:`${nm(e.mid)||'The commissioner'} added a bet-slip screenshot`,'placed-edit':`${nm(e.mid)||'The commissioner'} fixed the slip’s odds or pot`,pings:'Notification settings changed',placed:`${nm(e.mid)||'The commissioner'} marked the parlay placed`,unplaced:`${nm(e.mid)||'The commissioner'} undid “placed”`,claim:`${nm(e.mid)} tapped their name${e.detail?' on '+e.detail:''}`,'claim-reset':`${nm(e.mid)}'s name was reset`,vote:`${nm(e.mid)} voted`,'video-start':`${nm(e.mid)} started uploading a video${e.detail?' ('+e.detail+')':''}`,'video-done':`${nm(e.mid)}'s video is in${e.detail?' ('+e.detail+')':''}`,'video-error':`${nm(e.mid)}'s upload failed${e.detail?': '+e.detail:''}`,'video-rejected':`${nm(e.mid)}'s video was rejected${e.detail?': '+e.detail:''}`,reveal:`Reveal opened${e.detail?' ('+e.detail+')':''}`,skip:`${nm(e.mid)} skipped this week`,unskip:`${nm(e.mid)} back in`,'notify-on':`${nm(e.mid)} turned on notifications${e.detail?' ('+e.detail+')':''}`,device:`${nm(e.mid)} added a device${e.detail?': '+e.detail:''}`,'device-out':`${nm(e.mid)} signed out a device${e.detail?': '+e.detail:''}`,revote:`${nm(e.mid)} voted in the revote`,nextpick:`${nm(e.mid)} entered next week's pick`,'nextpick-clear':`${nm(e.mid)} cleared next week's pick`,unreveal:'Vote reopened'})[e.type]||e.type;
   const when=t=>new Date(t).toLocaleString([],{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
   if(!ev.length&&!ups.length)return'';
   return`<div class="pd-sub" style="margin:14px 0 6px">Recent activity</div>${ups.length?`<div class="evlist">${ups.map(([k,u])=>`<div class="evrow warn"><span class="mono tiny">${h(when(u.at))}</span><span>${h(nm(u.mid))} has an upload that never finished${u.size?' ('+mb(u.size)+' MB)':''}. They can resume it from their ${h(u.device||'phone')}</span></div>`).join('')}</div>`:''}<div class="evlist">${ev.map(e=>`<div class="evrow ${/error|rejected/.test(e.type)?'bad':''}"><span class="mono tiny">${h(when(e.at))}</span><span>${h(text(e))}</span></div>`).join('')}</div>`;
@@ -2777,7 +2841,7 @@ async function slipImage(w){
   y+=8;x.setLineDash([12,10]);x.strokeStyle='rgba(0,0,0,.18)';x.beginPath();x.moveTo(pad+30,y+22);x.lineTo(W-pad-30,y+22);x.stroke();x.setLineDash([]);
   x.fillStyle='#f5f5f7';x.beginPath();x.arc(pad,y+22,20,0,7);x.arc(W-pad,y+22,20,0,7);x.fill();
   // totals
-  const priced=!c.missingOdds&&c.n>0;y+=70;
+  const priced=c.priced;y+=70;
   const cols=[['PARLAY',c.n?amer(c.dec):'—'],['STAKE',fmt$0(c.stake)],[c.result==='won'?'PAID':'TO WIN',priced?fmt$(c.potential):'—'],['EACH',priced?fmt$(c.potential/c.n):'—']];
   const cw=(R-L)/4;cols.forEach(([k,v],i)=>{const cx=L+cw*i;x.textAlign='left';try{x.letterSpacing='3px'}catch(e){}x.fillStyle=MU;x.font=F(600,20);x.fillText(k,cx,y+24);try{x.letterSpacing='0px'}catch(e){}
     const big=cols.some(([,v])=>v.length>8);x.fillStyle=i===2&&c.result==='won'?GREEN:T;x.font=F(600,big?(i===0?32:28):(i===0?40:36),true);x.fillText(v,cx,y+76)});
@@ -2847,7 +2911,7 @@ function modal({title,body,actions=[],onOpen,stack,px,required,onClose}){
 }
 function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root._actions=prev.actions;root._required=!!prev.required;root._onClose=prev.onClose||null;if(prev.px){pxNode=prev.px.node;pxMode=prev.px.mode}const m=root.querySelector('.modal-body');if(m)m.scrollTop=prev.scroll;return}root._open=false;root._required=false;{const oc=root._onClose;root._onClose=null;if(oc)setTimeout(oc,0)}unlockScroll();s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250);setTimeout(()=>{if(needWho()&&!root._open)pickMe(league(),false,true)},400)}   // still nobody picked (e.g. a code that didn't work): ask again
 function confirm2(title,body,label,fn,cls='danger'){modal({title,body:`<p>${body}</p>`,actions:[{label:'Cancel',cls:'ghost'},{label,cls,onClick:fn}]})}
-function toast(msg,cls=''){const r=document.getElementById('toast-root');const t=document.createElement('div');t.className='toast '+cls;t.textContent=msg;r.appendChild(t);requestAnimationFrame(()=>t.classList.add('in'));setTimeout(()=>{t.classList.remove('in');setTimeout(()=>t.remove(),320)},2600)}
+function toast(msg,cls=''){const r=document.getElementById('toast-root');const t=document.createElement('div');t.className='toast '+cls;t.textContent=msg;r.appendChild(t);requestAnimationFrame(()=>t.classList.add('in'));setTimeout(()=>{t.classList.remove('in');setTimeout(()=>t.remove(),320)},cls==='bad'?Math.min(9000,Math.max(2600,String(msg).length*60)):2600)}   // a long error stays up long enough to read
 function spin(cands,onDone){
   if(cands.length===1)return onDone(cands[0]);
   modal({title:'Leaving it to fate…',body:`<div class="spin"><div class="spin-name" id="spinName">?</div><div class="spin-sub">🪙 flipping</div></div>`});
@@ -3055,6 +3119,12 @@ const ACT={
   async 'halfpt-toggle'(){const l=league();const v=!halfPtOn(l);if(!l.sync){l.halfPt=v;save();render();return}
     try{const d=await api(l,'/pings',{method:'POST',body:{halfPt:v}});l.halfPt=!!d.halfPt;takeState(l,d);save();render();toast(v?'Whole-number spreads now get a warning':'No more warning on whole-number spreads','good')}
     catch(e){toast('Couldn’t change that: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}},
+  'shot-view'(el){const w=week(el.dataset.wid);const l=league();const x=(w&&w.shots||[]).find(y=>String(y.n)===el.dataset.n);if(!x)return;const can=isAdmin()||l.me===bozoOfW(w);
+    modal({title:'Bet slip',body:`<img class="shot-full" src="${shotUrl(l,w,x)}" alt="Bet slip screenshot">`,actions:[...(can?[{label:'Remove',cls:'ghost danger',onClick:()=>{fetch(`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/shot?season=${encodeURIComponent(seasonOfWeek(l,w).id)}&week=${encodeURIComponent(w.id)}&n=${x.n}`,{method:'DELETE',headers:hdrs(l)}).then(r=>r.json()).then(d=>{takeState(l,d);save();render();toast('Screenshot removed','good')}).catch(e=>toast('Couldn’t remove it: '+e.message+'. Nothing changed. Try again when you have signal.','bad'))}}]:[]),{label:'Close',cls:'primary'}]})},
+  'shot-unpick'(el){SHOTS_PICK.splice(+el.dataset.i,1);shotsPreview()},
+  'placed-edit'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(w)placedSheet(w,{edit:true})},
+  'placed-open'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(w)placedSheet(w)},
+  'placed-undo'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(!w)return;confirm2('Undo “placed”?','Picks unlock again and anyone can change theirs. Use this only if the bet isn’t actually in.','Undo and unlock',async()=>{const l=league();try{const d=await api(l,'/placed',{method:'POST',body:{seasonId:seasonOfWeek(l,w).id,weekId:w.id,undo:true}});takeState(l,d);save();render();toast('Unlocked. Picks are open again','good')}catch(e){toast(e.status===423?e.message.charAt(0).toUpperCase()+e.message.slice(1)+'.':'Couldn’t undo it: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}})},
   'retry-pick'(){const l=league();toast('Sending…');flushOutbox(l)},
   'feature'(el){const l=league();l.features=l.features||{};const f=el.dataset.f;if(f==='autograde'&&l.features.autograde===undefined)l.features.autograde=true;l.features[f]=!l.features[f];l.featDirty=true;commit();toast(f==='notify'?(l.features[f]?'Notifications are on for this league. Each person turns them on in their app.':'Notifications are off for this league'):l.features[f]?(f==='picks'?'Members can now enter their own picks':'Members can now vote in the app'):(f==='picks'?'Picks are yours to enter again':'Voting in the app is off'),'good');if(f==='autograde')toast(l.features.autograde?'Slips grade themselves once the games are final':'Grading is back in your hands','good')},
   'sync-now'(){pull(league(),true)},
@@ -3079,6 +3149,9 @@ const ACT={
   'modal-close-btn'(){closeModal()},
   'modal-action'(el){const a=document.getElementById('modal-root')._actions?.[el.dataset.i];const r=a?.onClick?.();if(r!==false)closeModal()},
 };
+document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='plShotIn'){const fs=[...(t.files||[])];const room=2-SHOTS_PICK.length;SHOTS_PICK.push(...fs.slice(0,Math.max(0,room)));if(fs.length>room)toast(room<=0?'Two screenshots at most. Tap × on one to swap it.':'Two screenshots at most. The first '+(room===1?'one was':room+' were')+' added.','bad');t.value='';shotsPreview()}
+  else if(t&&t.dataset&&t.dataset.shotadd){const l=league();const w=week(t.dataset.shotadd);const f=t.files&&t.files[0];t.value='';if(!w||!f)return;const used=(w.shots||[]).map(x=>x.n);const n=used.includes(0)?1:0;toast('Adding the screenshot…');
+    sendShot(l,w,n,f).then(d=>{takeState(l,d);save();render();toast('Screenshot added','good')}).catch(err=>toast('The screenshot didn’t upload: '+err.message+'. Nothing else changed. Tap “+ Screenshot” to try again.','bad'))}});
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const fn=ACT[el.dataset.act];if(fn)fn(el,e)});
 document.addEventListener('submit',e=>{const f=e.target.closest('[data-form]');if(!f)return;e.preventDefault();
   if(f.dataset.form==='add-member'){const n=f.name.value.trim();if(!n)return;if(S.members.some(m=>canonName(m.name)===canonName(n))){toast('Already on the crew (same person under another name)','bad');return}
