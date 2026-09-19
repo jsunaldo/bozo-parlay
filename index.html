@@ -342,9 +342,9 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .ticket-foot{padding:18px 18px 16px;border-top:1px dashed var(--line2);position:relative;background:var(--surface2)}
 .ticket-foot::before,.ticket-foot::after{content:'';position:absolute;top:-11px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
 .ticket-foot::before{left:-11px}.ticket-foot::after{right:-11px}
-.ticket-foot.top{border-top:0;border-bottom:1px dashed var(--line2);margin-top:6px}.ticket-foot.top::before,.ticket-foot.top::after{top:auto;bottom:-11px}
+.ticket-foot.placed-top{border-top:0;border-bottom:1px dashed var(--line2);margin-top:6px}.ticket-foot.placed-top::before,.ticket-foot.placed-top::after{top:auto;bottom:-11px}   /* not .top: that's the app header's sticky row */
 .placed-top .foot-grid{cursor:pointer}
-.placed-sum{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;background:none;padding:12px 0 4px;color:var(--text);font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}.placed-sum .ps-more{color:var(--blue);font-size:12px;flex:none}
+.placed-sum{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:none;margin-top:12px;padding:10px 0 2px;color:var(--text);font:inherit;font-size:14px;text-align:left;cursor:pointer}.ps-main{display:flex;flex-direction:column;gap:2px;min-width:0}.ps-main b{font-weight:600}.ps-main small{font-size:12px;color:var(--muted)}.placed-sum .ps-more{color:var(--blue);font-size:12px;flex:none}
 .placed-top .placed-bar{margin:6px 0 4px}
 .foot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .foot-grid>div{display:flex;flex-direction:column;gap:3px}
@@ -709,7 +709,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{if(navigator.maxTouchPoints>0||'ontouchstart' in window)document.documentElement.classList.add('touch')}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.11';
+const APP_VERSION='2026-09-19.12';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1958,8 +1958,8 @@ function resultBadge(c){
 const placedOpen=new Set();   // slips whose placed details are open (this screen only)
 function placedTop(w,c){   // the parlay is in: the numbers up top; tap for who placed it and when, the boost, the prize pot and the slip screenshots
   const P=w.placed;const by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo';const open=placedOpen.has(w.id);const n=(w.shots||[]).length;
-  const sum=`<button class="placed-sum" data-act="placed-toggle" data-wid="${w.id}" aria-expanded="${open}"><span>🔒 Placed by ${h(by)}${+P.boost>0?` · 🚀 ${h(String(P.boost))}% boost`:''}${n?` · 📷 ${n}`:''}</span><span class="ps-more">${open?'Hide ▴':'Details ▾'}</span></button>${open?placedBar(w,c):''}`;
-  return`<div class="ticket-foot top placed-top" id="tfoot" data-act="placed-toggle" data-wid="${w.id}">${ticketFoot(w,c,sum)}</div>`}
+  const sum=`<button class="placed-sum" data-act="placed-toggle" data-wid="${w.id}" aria-expanded="${open}"><span class="ps-main"><b>🔒 Placed by ${h(by)}</b>${+P.boost>0||n?`<small>${[+P.boost>0?`🚀 ${h(String(P.boost))}% boost`:'',n?`📷 ${n} screenshot${n===1?'':'s'}`:''].filter(Boolean).join(' · ')}</small>`:''}</span><span class="ps-more">${open?'Hide ▴':'Details ▾'}</span></button>${open?placedBar(w,c):''}`;
+  return`<div class="ticket-foot placed-top" id="tfoot" data-act="placed-toggle" data-wid="${w.id}">${ticketFoot(w,c,sum)}</div>`}
 function ticketFoot(w,c,mid=''){
   const priced=c.priced;const b=member(w.bozoId);
   return`<div class="foot-grid">
