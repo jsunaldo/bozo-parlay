@@ -62,7 +62,7 @@ sub("const KEY2='bozo-parlay-v2';", f"const KEY2='{P}-v1';")
 sub("const KEY='bozo-parlay-v1';", f"const KEY='{P}-v0';")
 sub("const CACHE_PREFIX='bozo-parlay-';", f"const CACHE_PREFIX='{P}-';")
 # only this league's own app link ships in this build — never the other leagues'
-s, n = re.subn(r"^const SHARE_SITES=\{.*\};$", lambda m: "const SHARE_SITES={self:" + json.dumps({'url': A.site, 'sync': A.league, 'app': A.title}) + "};", s, flags=re.M)
+s, n = re.subn(r"^const SHARE_SITES=\{.*\};$", lambda m: "const SHARE_SITES={self:" + json.dumps({'url': A.site, 'sync': A.league, 'app': A.title, 'home': A.short}) + "};", s, flags=re.M)
 assert n == 1, 'SHARE_SITES line not found'
 s = re.sub(r"^const SEED_MARGINS=.*$", "const SEED_MARGINS={};", s, flags=re.M)
 s, n = re.subn(r"^const LEAGUE_LOGOS=\{.*\};$", "const LEAGUE_LOGOS={};", s, flags=re.M); assert n == 1, 'LEAGUE_LOGOS line not found'   # a club app only ever shows its own icon
