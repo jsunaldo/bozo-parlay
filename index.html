@@ -688,7 +688,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.35';
+const APP_VERSION='2026-09-19.1';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1661,7 +1661,7 @@ const slipOdds=v=>{let t=String(v??'').trim().toUpperCase().replace(/[\s,]+/g,''
   if(!/^[+-]?\d{3,6}$/.test(t)||Math.abs(Number(t))<100)return null;if(!/^[+-]/.test(t))t='+'+t;return t.replace(/^([+-])0+/,'$1')};
 const slipMoney=v=>{const x=Number(String(v??'').replace(/[$,\s]/g,''));return Number.isFinite(x)&&x>0&&x<1e8?Math.round(x*100)/100:null};
 function placedSheet(w,o={}){const c=calc(w);const edit=!!(o.edit&&w.placed);const P=w.placed||{};const missing=edit?0:c.legs.filter(x=>x.status==='pending'&&!String(x.text||'').trim()).length;
-  const shown=c.legs.filter(x=>String(x.text||'').trim()&&x.status==='pending');
+  const shown=slipOrder(w,c,null).filter(x=>String(x.text||'').trim()&&x.status==='pending');
   const rows=shown.map(x=>`<div class="pl-row"><span class="pl-who">${h(member(x.mid)?.name||'')}</span><span class="pl-pick">${h(x.text)}${x.oddsBy==='espn'||x.oddsBy==='slip'?' <i class="dk">DK</i>':''}</span><input class="mono pl-odds" data-mid="${x.mid}" value="${h(x.odds||'')}" placeholder="-110" autocomplete="off" inputmode="text" aria-label="${h(member(x.mid)?.name||'')} odds"></div>`).join('');
   const est=c.missingOdds?'':amOf(c.dec);
   if(!o.keep)SHOTS_PICK.length=0;
@@ -1763,8 +1763,9 @@ function legInfo(w,mid){   // everything about one leg: what was typed, what the
 const slipOpen=new Set();   // legs opened for editing on this device: "weekId|memberId"
 function renderLegs(w,c,cl){
   if(!c.legs.length)return`<p class="muted tiny" style="margin:4px 2px">No legs yet — add one below.</p>`;
-  if(!cl||cl.state!=='ok')return c.legs.map(l=>renderLeg(w,l,cl)).join('');
-  return bunch(c.legs,l=>cl.claims[l.mid]?.game?.id).map(g=>g.game&&g.items.length>1?`<div class="slip-group"><div class="slip-sg">Same game · ${h(gameLabel(cl.claims[g.items[0].mid].game))}</div>${g.items.map(l=>renderLeg(w,l,cl)).join('')}</div>`:g.items.map(l=>renderLeg(w,l,cl)).join('')).join('');
+  const legs=slipOrder(w,c,cl);
+  if(!cl||cl.state!=='ok')return legs.map(l=>renderLeg(w,l,cl)).join('');
+  return bunch(legs,l=>cl.claims[l.mid]?.game?.id).map(g=>g.game&&g.items.length>1?`<div class="slip-group"><div class="slip-sg">Same game · ${h(gameLabel(cl.claims[g.items[0].mid].game))}</div>${g.items.map(l=>renderLeg(w,l,cl)).join('')}</div>`:g.items.map(l=>renderLeg(w,l,cl)).join('')).join('');
 }
 // one row per leg, like the next-week list: who, their pick with logos and odds, and where it stands; tap to edit
 function renderLeg(w,l,cl){
@@ -2224,6 +2225,12 @@ function weekClaims(items,nfl){   // items: [{mid,text,teams,tm}]
   const claims={},clashes={},pairs=[];for(const x of items)claims[x.mid]=claimOf(x.text,x.teams,x.tm,nfl);
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i].mid,b=items[j].mid;const k=clashKind(claims[a],claims[b]);if(!k)continue;(clashes[a]??=[]).push({with:b,kind:k});(clashes[b]??=[]).push({with:a,kind:k});pairs.push({a,b,kind:k,game:claims[a].game||claims[b].game})}
   return{claims,clashes,pairs,nfl};
+}
+function slipOrder(w,c,cl){   // how a slip lists its legs: people with no pick yet first, then picks by kickoff (a game's picks together), then picks whose game isn't known; member order breaks ties
+  const d=slipDate(w);const nfl=(cl&&cl.nfl)||nflOk(d?nflData(d,0):null);
+  const gameOf=l=>{const cm=cl&&cl.claims&&cl.claims[l.mid];if(cm&&cm.game)return cm.game;return nfl?(claimOf(l.text,l.teams,l.tm,nfl)||{}).game||null:null};
+  const key=l=>{if(!String(l.text||'').trim()&&(l.status||'pending')==='pending')return[0,0,''];const g=gameOf(l);const t=g?Date.parse(g.at):NaN;return Number.isFinite(t)?[1,t,String(g.id||g.name||'')]:[2,0,'']};
+  return c.legs.map((l,i)=>({l,i,k:key(l)})).sort((x,y)=>x.k[0]-y.k[0]||x.k[1]-y.k[1]||(x.k[2]<y.k[2]?-1:x.k[2]>y.k[2]?1:0)||x.i-y.i).map(x=>x.l);
 }
 function bunch(list,gameOf){   // keep the order, but pull same-game picks up next to the first one
   const out=[],done=new Set();for(const x of list){if(done.has(x.mid))continue;done.add(x.mid);const g=gameOf(x);const grp=[x];if(g)for(const y of list)if(!done.has(y.mid)&&gameOf(y)===g){grp.push(y);done.add(y.mid)}out.push({game:g,items:grp})}return out;
@@ -2876,7 +2883,7 @@ function renderCrew(){
 function recap(w){
   const c=calc(w);const b=member(w.bozoId);
   const L=[`🤡 Bozo Parlay — ${wkName(w)}${S.season?' · '+S.season:''}`,isSide(w)?`Side parlay, no Bozo (${fmt$0(c.stake)})`:`Bozo: ${b?.name||'Unknown'} (${fmt$0(c.stake)})`,''];
-  for(const l of c.legs){const m=member(l.mid);const ic={hit:'✅',miss:'❌',push:'➖',pending:'⏳'}[l.status];
+  for(const l of slipOrder(w,c,null)){const m=member(l.mid);const ic={hit:'✅',miss:'❌',push:'➖',pending:'⏳'}[l.status];
     let s=`${ic} ${m?.name}: ${l.text||'(no pick)'}${l.oddsN!=null?' ('+fmtOdds(l.oddsN)+')':''}`;
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss'))s+=` — ${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`;L.push(s)}
   L.push('',`Parlay ${c.n?amer(c.dec):'—'} → ${c.missingOdds?'unpriced':fmt$(c.potential)}`);
@@ -2922,7 +2929,7 @@ async function slipImage(w){
   const bw=x.measureText(bn).width;x.font=F(500,36);x.fillStyle=MU;if(!isSide(w))x.fillText('is the Bozo',L+84+bw+18,216);
   // legs
   let y=262;x.strokeStyle='rgba(0,0,0,.08)';x.lineWidth=2;x.beginPath();x.moveTo(pad,y);x.lineTo(W-pad,y);x.stroke();
-  for(const l of c.legs){const m=member(l.mid);const col={hit:GREEN,miss:RED,push:AMBER,pending:DIM}[l.status];
+  for(const l of slipOrder(w,c,null)){const m=member(l.mid);const col={hit:GREEN,miss:RED,push:AMBER,pending:DIM}[l.status];
     if(l.status!=='pending'){x.fillStyle=col;x.fillRect(pad,y,6,legH)}
     // bettor avatar
     x.beginPath();x.arc(L+36,y+legH/2,36,0,7);x.fillStyle=m.color;x.fill();
