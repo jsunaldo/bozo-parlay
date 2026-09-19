@@ -677,7 +677,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-18.32';
+const APP_VERSION='2026-09-18.33';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1045,7 +1045,7 @@ function applyState(l,d){
     else x.data.currentWeekId=(x===nwS?homeWeekId(l,x):newest)||null}                  // otherwise: where This Week lands, the same on every device
   autoTidySoon();
   if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
-  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.halfPt!==undefined)l.halfPt=!!d.halfPt;if(d.pings!==undefined){l.pingsSrv=d.pings;if(!PSET_PEND.has(l.id))l.pings=d.pings}if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.vapid)l.vapid=d.vapid;if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.devs!==undefined)l.devs=d.devs||{};if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
+  if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.halfPt!==undefined)l.halfPt=!!d.halfPt;if(d.pushBozo!==undefined)l.pushBozo=!!d.pushBozo;if(d.pings!==undefined){l.pingsSrv=d.pings;if(!PSET_PEND.has(l.id))l.pings=d.pings}if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.vapid)l.vapid=d.vapid;if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.devs!==undefined)l.devs=d.devs||{};if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.uploads!==undefined)l.uploads=d.uploads;
   if(l.meKey&&d.you===null){const still=!!(l.claims&&l.claims[l.me]);delete l.me;delete l.meKey;delete l.keyBound;delete l.pushEp;delete l.pushMid;setTimeout(()=>toast(still?'This device was signed out of your name. To use it here again: on one of your other devices go to Crew → Use this on another device, and type that code here.':'This device was signed out of your name. Tap your name to use it here again.','bad'),80)}
   if(d.adminAs!==undefined&&(d.role||l.sync.role)==='admin'&&l.asPend){const a=d.adminAs||{};if((l.asPend.guest&&a.guest)||(l.asPend.mid&&a.mid===l.asPend.mid))delete l.asPend;else setTimeout(()=>sendAs(l),0)}   // this device's newer choice wins until it lands
   else if(d.adminAs!==undefined&&(d.role||l.sync.role)==='admin'){const was=l.me;if(d.adminAs&&d.adminAs.mid){l.me=d.adminAs.mid;delete l.guest}else if(d.adminAs&&d.adminAs.guest){delete l.me;l.guest=true}else if((l.me||l.guest)&&!asSent.has(l.sync.id)){asSent.add(l.sync.id);api(l,'/as',{method:'POST',body:l.me?{memberId:l.me}:{guest:true}}).catch(()=>asSent.delete(l.sync.id))}   // who the commissioner is lives with the league
@@ -1391,7 +1391,8 @@ function nextPlan(prev){   // what the next parlay in the Bozo chain is
 function nextName(w){const n=nextMain(w);return n?wkName(n).replace(' · ',' '):nextPlan(w).name}
 const spIcon=n=>/thanksgiving/i.test(n||'')?'🦃':/christmas|xmas/i.test(n||'')?'🎄':'📅';
 const monOk=(l=league())=>!!l.mondayOk;
-const halfPtOn=(l=league())=>!!(l&&l.halfPt);   // league setting: warn on whole-number spreads (a push is left out of the league winnings)
+const halfPtOn=(l=league())=>!!(l&&l.halfPt);
+const pushBozoOn=(l=league())=>!!(l&&l.pushBozo);   // league setting: a push is an automatic Bozo, and pushers are left out of the winnings   // league setting: warn on whole-number spreads (a push is left out of the league winnings)
 function wholeSpread(text){   // the spread's line when it's a whole number (a push is possible), else null; pick'em is 0
   const t=String(text||'');const lo=' '+t.toLowerCase()+' ';if(/\bpk\b|pick ?em/.test(lo)&&detectTeams(t).length===1&&!/\bml\b|money ?line/.test(lo))return 0;if(betType(t)!=='Spread')return null;
   const x=[...lo.matchAll(/([+-]) ?(\d+(?:\.\d+)?)(?![\d.])/g)].find(x=>+x[2]<50);return x&&Number.isInteger(+x[2])?(x[1]==='-'?-1:1)*+x[2]:null}
@@ -1449,12 +1450,13 @@ function calc(w){
   const stake=Number(w.stake??S.stake)||0;
   const potential=stake*d;
   const payout=result==='won'?potential:result==='void'?stake:0;
-  const share=n?payout/n:0;
+  const paid=pushBozoOn()&&result==='won'?n-pushes:n;const share=paid?payout/paid:0;   // a push is left out of the winnings in a push-is-Bozo league
   return{legs,n,hits,misses,pushes,pending,dec:d,potential,payout,share,result,stake,missingOdds,graded:pending===0&&n>0};
 }
 function eligible(w){
   const c=calc(w);if(!c.graded)return{list:[],reason:'grade'};
   const by=st=>c.legs.filter(l=>l.status===st).map(l=>l.mid);
+  if(pushBozoOn()&&by('push').length)return{list:by('push'),reason:by('push').length===1?'autopush':'pushbozo'};   // a push is an automatic Bozo
   const miss=by('miss');if(miss.length)return{list:miss,reason:'miss'};
   const push=by('push');if(push.length)return{list:push,reason:'push'};
   return{list:c.legs.map(l=>l.mid),reason:'all'};
@@ -1491,7 +1493,7 @@ function stats(){
           if(p.closest==null||m<p.closest.m)p.closest={m,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams};
           if(p.choke==null||m>p.choke.m)p.choke={m,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams}}
       }else p.pushes++;
-      if(c.result==='won')p.earned+=c.share;
+      if(c.result==='won'&&!(pushBozoOn()&&l.status==='push'))p.earned+=c.share;
     }
   }
   Object.values(per).forEach(p=>{
@@ -1843,7 +1845,7 @@ function ticketFoot(w,c){
   <div id="f-won">${wonLine(w,c)}</div>
   <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastWeek()===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`;
 }
-function wonLine(w,c){if(c.result!=='won')return'';const b=member(w.bozoId);return`<div class="won-line">🎉 Everyone collects ${fmt$(c.share)}.${isSide(w)||!b?'':` ${h(b.name)} nets ${fmt$(c.share-c.stake)} after fronting the stake.`}</div>`}
+function wonLine(w,c){if(c.result!=='won')return'';const b=member(w.bozoId);const out=pushBozoOn()?c.legs.filter(l=>l.status==='push').map(l=>member(l.mid)?.name).filter(Boolean):[];return`<div class="won-line">🎉 ${out.length?'Everyone who hit':'Everyone'} collects ${fmt$(c.share)}.${out.length?` ${h(out.join(', '))} pushed and ${out.length===1?'is':'are'} left out.`:''}${isSide(w)||!b?'':` ${h(b.name)} nets ${fmt$(c.share-c.stake)} after fronting the stake.`}</div>`}
 function patchTicket(w){
   const c=calc(w);const priced=!c.missingOdds&&c.n>0;const $=id=>document.getElementById(id);
   if(!$('tfoot'))return;
@@ -2450,7 +2452,8 @@ function renderReveal(w,c,R=1){
 function renderVote(w,c,isLast){
   if(isSide(w))return'';
   const next=nextMain(w);
-  if(next&&(!revealSeen(w)||replaying(w))){const el0=eligible(w);return renderSealedVote(w,c,el0,{miss:'Only the people who missed were on the ballot.',push:'Nobody missed — the pushes were on the ballot.',all:'Everyone hit. Everyone was on the ballot.'}[el0.reason]||'')}
+  if(next&&w.crowned&&w.crowned.how==='push'&&!w.reveal){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} pushed, so ${h(nb?.name||'they')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div><p class="muted tiny" style="margin:8px 0 0">A push is an automatic Bozo in this league, so there was no vote.</p></section>`}
+  if(next&&(!revealSeen(w)||replaying(w))){const el0=eligible(w);return renderSealedVote(w,c,el0,{miss:'Only the people who missed were on the ballot.',push:'Nobody missed — the pushes were on the ballot.',pushbozo:'A push is an automatic Bozo, so only the people who pushed were on the ballot.',all:'Everyone hit. Everyone was on the ballot.'}[el0.reason]||'')}
   const reopen=isAdmin()&&next&&next===lastWeek()&&w.crowned&&w.crowned.weekId===next.id&&calc(next).legs.every(x=>x.status==='pending')?`<button class="btn ghost block sm" data-act="unreveal">Reopen the vote (removes ${h(wkName(next))} while it's untouched)</button>`:'';
   if(next){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${h(initials(nb?.name))}</span><span>${h(nb?.name||'—')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div>${randomCard(w)}${w.reveal?`<div class="pd-sub" style="margin:12px 0 6px">How the vote went${w.revote?' · round 1':''}</div>${voteBoard(w,w.reveal)}${w.revote&&w.revote.reveal?`<div class="pd-sub" style="margin:12px 0 6px">The revote</div>${voteBoard(w,w.revote.reveal,2)}`:''}<button class="btn ghost block sm" data-act="rv-restart" data-wid="${w.id}">↺ Watch the reveal again</button>`:''}${reopen}</section>`}
   if(!c.n)return'';
@@ -2458,9 +2461,10 @@ function renderVote(w,c,isLast){
   if(seasonOver()&&c.graded)return`<section class="card vote"><h3>That's a wrap on ${h(season().name)}</h3><p class="muted tiny" style="margin:0">Final week of the season, so there's no next Bozo to vote on. The ${h(newestSeason().name)} slate started fresh.</p></section>`;
   if(!c.graded){const done=c.n-c.pending;return`<section class="card vote"><h3>Bozo vote</h3><div class="progress"><div style="width:${done/c.n*100}%"></div></div><p class="muted tiny">${isAdmin()?`Grade all ${c.n} legs to open the vote`:'Voting opens once the results are graded'} · ${done}/${c.n} done</p></section>`}
   const el=eligible(w);const votes=w.votes||{};const ballots=w.ballots||{};const me=league().me;const synced=!!league().sync||SHARE_MODE;
+  if(el.reason==='autopush'){const pm=member(el.list[0]);return`<section class="card vote next"><h3>${h(wkName(w))} is in the books</h3><p>🤡 <b>${h(pm?.name||'')}</b> pushed, so ${h(pm?.name||'they')} ${h(pm?.name?'is':'are')} the ${h(nextName(w))} Bozo. A push is an automatic Bozo in this league: no vote.</p>${isAdmin()?`<button class="btn primary block" data-act="crown" data-mid="${el.list[0]}">🤡 Start ${h(nextName(w))} with ${h(pm?.name||'them')} as the Bozo</button>`:`<p class="muted tiny">${synced?'The next week starts on its own in a moment.':''}</p>`}</section>`}
   const cnt=id=>ballotCount(w,id);const max=Math.max(0,...el.list.map(cnt));const leaders=max>0?el.list.filter(id=>cnt(id)===max):[];
   const myVote=me?ballots[me]:null;const voted=Object.keys(ballots).length;const voters=S.members.filter(m=>m.active).length;
-  const reason={miss:'Only the people who missed are on the ballot.',push:'Nobody missed — the pushes are on the ballot.',all:'Everyone hit. Everyone is on the ballot.'}[el.reason];
+  const reason={miss:'Only the people who missed are on the ballot.',push:'Nobody missed — the pushes are on the ballot.',pushbozo:'A push is an automatic Bozo, so only the people who pushed are on the ballot.',all:'Everyone hit. Everyone is on the ballot.'}[el.reason];
   if(synced&&!!league().features?.votes)return renderSealedVote(w,c,el,reason);
   const votingOpen=false;const manual=true;
   return`<section class="card vote next"><h3>${h(wkName(w))} is in the books. Who's the ${h(nextName(w))} Bozo?</h3><p class="muted tiny">${reason} ${votingOpen?`Everyone votes from their own phone${isAdmin()?', then you crown the winner':''}. Send your video in the chat as usual. ${voted}/${voters} votes in.`:synced&&!isAdmin()?`Send your video in the chat as usual — the commissioner tallies the votes here.`:`Tap + as each person votes, then crown the winner to open ${h(nextName(w))}.`}</p>
@@ -2687,8 +2691,9 @@ function renderCrew(){
     <label class="field"><span>Bozo stake for new weeks</span><input type="number" class="mono" value="${S.stake}" min="1" data-bind="set|stake" inputmode="numeric"></label>
     <label class="field"><span>Name for the lone-miss club</span><input value="${h(league().clubName||'')}" placeholder="Parlay Killer Club" maxlength="40" data-bind="league|clubName" autocomplete="off"></label>
     <div class="featrow" data-act="halfpt-toggle" style="margin-bottom:10px"><div><b>Warn on whole-number spreads</b><small>A push results in auto-bozo and is left out of winnings if all others hit, so anyone taking a spread like -3 is told to change it to -2.5 or -3.5.</small></div><span class="toggle ${halfPtOn()?'on':''}"><i></i></span></div>
+    <div class="featrow" data-act="pushbozo-toggle" style="margin-bottom:10px"><div><b>A push is an automatic Bozo</b><small>One push: that person is the next Bozo, no vote. Two or more: the vote is only among the people who pushed. Pushers are left out of the winnings if the rest hit.</small></div><span class="toggle ${pushBozoOn()?'on':''}"><i></i></span></div>
     <label class="field"><span>Games allowed on the weekly parlay</span><select data-bind="league|mondayOk"><option value="" ${monOk()?'':'selected'}>Sunday only</option><option value="1" ${monOk()?'selected':''}>Sunday or Monday</option></select></label>
-    <ul class="rules"><li>Every pick must be <b>-200 or longer</b>. Heavier favorites get flagged on the slip.</li>${halfPtOn()?'<li>Spreads should end in <b>.5</b>. A push results in auto-bozo and you are left out of winnings if all others hit.</li>':''}<li>Picks must be on a <b>${gameDays()}</b> game. A special-day parlay (Thanksgiving, Christmas) takes only that day's games.</li><li>The Bozo puts the stake on a parlay of every pick. If it cashes, the payout <b>splits evenly</b> across everyone with a leg.</li><li>Next week's Bozo is voted from whoever <b>did not hit</b>. If everyone hits, everyone's on the ballot. Ties get a coin flip.</li><li>Pushes drop out of the parlay at even money and don't count against you.</li></ul>
+    <ul class="rules"><li>Every pick must be <b>-200 or longer</b>. Heavier favorites get flagged on the slip.</li>${halfPtOn()?'<li>Spreads should end in <b>.5</b>. A push results in auto-bozo and you are left out of winnings if all others hit.</li>':''}${pushBozoOn()?'<li>A <b>push is an automatic Bozo</b>. If more than one person pushes, the vote is only among them. Pushers are left out of the winnings if the rest hit.</li>':''}<li>Picks must be on a <b>${gameDays()}</b> game. A special-day parlay (Thanksgiving, Christmas) takes only that day's games.</li><li>The Bozo puts the stake on a parlay of every pick. If it cashes, the payout <b>splits evenly</b> across everyone with a leg.</li><li>Next week's Bozo is voted from whoever <b>did not hit</b>. If everyone hits, everyone's on the ballot. Ties get a coin flip.</li><li>Pushes drop out of the parlay at even money and don't count against you.</li></ul>
   </section>
   <section class="card"><h3>Data</h3>
     <div class="grid2"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button><button class="btn" data-act="sample">✨ Load sample</button><button class="btn danger" data-act="reset">🗑 Reset season</button></div>
@@ -3044,6 +3049,9 @@ const ACT={
       if(ow.length&&r.tried>0&&!r.sent){toast(`The reminders didn’t go through: ${(r.errors&&r.errors[0])||'the phones’ notification services turned them down'}. Nobody was pinged. Try again in a minute, or text ${nm(ow)}.`,'bad');return}
       toast(!ow.length?`Nobody in ${l.name} owes a ${k==='pick'?'pick':'vote'} right now`:`Reminded ${nm(got)||'nobody'}${off.length?`. No notifications on for ${nm(off)}, so text them`:''}`,'good')}
     catch(e){toast(`The reminders didn’t go out: ${e.message}. Nobody was pinged. Try again when you have signal.`,'bad')}},
+  async 'pushbozo-toggle'(){const l=league();const v=!pushBozoOn(l);if(!l.sync){l.pushBozo=v;save();render();return}
+    try{const d=await api(l,'/pings',{method:'POST',body:{pushBozo:v}});l.pushBozo=!!d.pushBozo;takeState(l,d);save();render();toast(v?'A push is now an automatic Bozo':'Pushes are back to the usual vote','good')}
+    catch(e){toast('Couldn’t change that: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}},
   async 'halfpt-toggle'(){const l=league();const v=!halfPtOn(l);if(!l.sync){l.halfPt=v;save();render();return}
     try{const d=await api(l,'/pings',{method:'POST',body:{halfPt:v}});l.halfPt=!!d.halfPt;takeState(l,d);save();render();toast(v?'Whole-number spreads now get a warning':'No more warning on whole-number spreads','good')}
     catch(e){toast('Couldn’t change that: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}},
