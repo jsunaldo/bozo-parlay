@@ -534,6 +534,13 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .gb-tag{display:inline-block;font-size:10px;font-weight:700;border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.04em}.gb-tag.teflon{background:rgba(52,199,89,.15);color:var(--green)}.gb-tag.magnet{background:rgba(255,69,58,.14);color:var(--red)}
 .gb-pairs{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}.gb-pair{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14px;cursor:pointer}.gb-pair .pk-badge{margin-left:auto}
 .gb-pair .pk-badge,.modal .gb-list .pk-badge,.modal .gb-ev{background:var(--surface2)}
+.gb-awards{display:grid;grid-template-columns:1fr;gap:6px}@media(min-width:520px){.gb-awards{grid-template-columns:1fr 1fr}}
+.gb-aw{display:flex;gap:10px;align-items:flex-start;background:var(--surface2);border-radius:12px;padding:8px 10px}.gb-aw.tap{cursor:pointer}.gb-aw .ic{font-size:20px;line-height:1.2;flex:none}
+.gb-awb{display:flex;flex-direction:column;min-width:0}.gb-awb small{font-size:11px;color:var(--muted)}.gb-awb b{font-size:14px}.gb-awb em{font-style:normal;font-size:12px;color:var(--muted)}
+.gb-grid-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}.gb-grid{border-collapse:separate;border-spacing:2px;font-size:12px;font-variant-numeric:tabular-nums}
+.gb-grid th{font-weight:600;padding:2px}.gb-grid td{min-width:26px;height:26px;text-align:center;border-radius:6px;background:var(--surface2);color:var(--dim)}.gb-grid td.on{color:var(--text);font-weight:700;background:rgba(255,69,58,.14)}
+.gb-grid td.self{background:rgba(255,159,10,.14)}.gb-grid td.self.on{color:var(--amber)}.gb-grid td.tot{background:none;color:var(--muted);font-weight:700}
+.gb-grid .rowh{display:flex;align-items:center;gap:5px;text-align:left;white-space:nowrap;cursor:pointer;padding-right:6px}.gb-grid .rowh span{max-width:70px;overflow:hidden;text-overflow:ellipsis}.gb-grid tr.tots .rowh{cursor:default;color:var(--muted)}
 .gb-chips{display:flex;flex-wrap:wrap;gap:6px}.gb-who{display:inline-flex;align-items:center;gap:6px;border:0;background:var(--surface2);color:var(--text);font:inherit;font-size:13px;font-weight:600;border-radius:999px;padding:5px 10px 5px 6px;cursor:pointer}
 .gb-list{display:flex;flex-direction:column;gap:2px}.gb-li{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:14px}.gb-nm{flex:1;min-width:0}
 .gb-evs{display:flex;flex-direction:column;gap:8px}.gb-ev{display:flex;flex-direction:column;gap:4px;padding:8px 10px;background:var(--surface);border-radius:10px}.gb-bits{display:flex;flex-direction:column;gap:3px}
@@ -698,7 +705,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{if(navigator.maxTouchPoints>0||'ontouchstart' in window)document.documentElement.classList.add('touch')}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.8';
+const APP_VERSION='2026-09-19.9';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -2764,7 +2771,7 @@ function grudgeData(){   // in the Stats scope (this season, or all-time matched
   const inS=(sn,fn)=>{const real=S;S=sn.data;try{return fn()}finally{S=real}};
   const P={};const pp=id=>P[id]||(P[id]={on:0,picked:0,solo:0,cast:0,self:0,room:0,roomN:0,got:0,revenge:0,lastRevenge:null,to:{},from:{},chance:{},ev:{}});
   const ev=(id,wk)=>{const p=pp(id);return p.ev[wk.key]||(p.ev[wk.key]={label:wk.label,next:wk.next,i:wk.i,ballot:null,voted:[],got:[]})};
-  const unseen=[];let nBallots=0,nVotes=0,nReveals=0,i=0;
+  const unseen=[],weeksV=[];let nBallots=0,nVotes=0,nReveals=0,i=0;
   for(const sn of sns){
     const mid=all?(id=>{const m=sn.data.members.find(x=>x.id===id);return m?byName[canonName(m.name)]||null:null}):(id=>sn.data.members.some(x=>x.id===id)?id:null);
     const nm=w=>all?`${sn.name} · ${wkName(w)}`:wkName(w);
@@ -2786,7 +2793,7 @@ function grudgeData(){   // in the Stats scope (this season, or all-time matched
         for(const{R,r,cands}of rounds){const cs=cands.map(mid).filter(Boolean);
           for(const o of r.order||[]){const v=mid(o.voter),c=mid(o.candidate);if(!v||!c)continue;nVotes++;ev(v,wk).voted.push({R,c});if(v!==c)ev(c,wk).got.push({R,v});fin[v]={c,cands:[...new Set([...cs,c])]}}}
         if(Object.keys(fin).length){nReveals++;cur={};
-          const win=seen2?(r2.winner?mid(r2.winner):null):r2?null:(r1.winner?mid(r1.winner):null);
+          const win=seen2?(r2.winner?mid(r2.winner):null):r2?null:(r1.winner?mid(r1.winner):null);weeksV.push({sid:sn.id,label:wk.label,fin:Object.fromEntries(Object.entries(fin).map(([v,x])=>[v,x.c])),win});
           for(const[v,{c,cands}]of Object.entries(fin)){const p=pp(v);p.cast++;cur[v]=c;
             if(v===c)p.self++;else{p.to[c]=(p.to[c]||0)+1;const q=pp(c);q.got++;q.from[v]=(q.from[v]||0)+1;
               if(prev&&prev[c]===v){p.revenge++;p.lastRevenge={label:wk.label,on:c}}}   // they voted for you last week; you vote for them now
@@ -2796,12 +2803,42 @@ function grudgeData(){   // in the Stats scope (this season, or all-time matched
     })}
   const pairs=[];for(const[v,p]of Object.entries(P))for(const[c,n]of Object.entries(p.to))pairs.push({v,c,n});pairs.sort((x,y)=>y.n-x.n);
   const newest=newestOf(l);
-  return{P,pairs,unseen,nBallots,nVotes,nReveals,all,live:!!(l.sync&&l.features?.votes&&sns.includes(newest))};
+  return{P,pairs,weeksV,unseen,nBallots,nVotes,nReveals,all,live:!!(l.sync&&l.features?.votes&&sns.includes(newest))};
 }
 const GB_MIN=3;   // ranked once someone's been on this many ballots with a choice
 const gbEsc=p=>p.on?(p.on-p.picked)/p.on:null;
 function gbUnseenLine(G){const u=G.unseen;if(!u.length)return'';const n=u.reduce((s,x)=>s+x.n,0);
   return u.length===1?`${n} vote${n===1?'':'s'} from the ${u[0].label} reveal count once you’ve watched it`:`${n} votes from ${u.length} reveals you haven’t watched yet count once you watch them`}
+function voteAwards(G){   // fun ones from the votes themselves (one vote per person per week; ties share)
+  const P=G.P;const ids=Object.keys(P).filter(id=>member(id));const nm=id=>member(id)?.name||'?';const out=[];
+  const top=(val,min=1)=>{const xs=ids.map(id=>({id,v:val(P[id])})).filter(x=>x.v!=null&&x.v>=min);if(!xs.length)return null;const b=Math.max(...xs.map(x=>x.v));return{who:xs.filter(x=>x.v===b).map(x=>x.id),v:b}};
+  let t=top(p=>p.got);if(t)out.push({icon:'🎯',name:'Most wanted',blurb:'most votes against',who:t.who,stat:`${t.v} vote${t.v===1?'':'s'}`});
+  const rs=ids.map(id=>({id,p:P[id]})).filter(x=>x.p.roomN>=2).map(x=>({...x,r:x.p.room/x.p.roomN}));
+  if(rs.length>1){const hi=Math.max(...rs.map(x=>x.r)),lo=Math.min(...rs.map(x=>x.r));if(hi>lo){const k=rs.filter(x=>x.r===hi),c=rs.filter(x=>x.r===lo);
+    out.push({icon:'👑',name:'Kingmaker',blurb:'votes for whoever ends up Bozo',who:k.map(x=>x.id),stat:k.length===1?`${k[0].p.room} of ${k[0].p.roomN}`:`${Math.round(hi*100)}% each`});
+    out.push({icon:'🙃',name:'Contrarian',blurb:'votes against the room',who:c.map(x=>x.id),stat:c.length===1?`${c[0].p.room} of ${c[0].p.roomN} with the room`:`${Math.round(lo*100)}% each`})}}
+  t=top(p=>p.self);if(t)out.push({icon:'🪞',name:'Self-own',blurb:'votes for themself',who:t.who,stat:`${t.v}×`});
+  t=top(p=>p.revenge);if(t)out.push({icon:'🔁',name:'Revenge seeker',blurb:'votes back at whoever voted for them',who:t.who,stat:`${t.v}×`});
+  const one=ids.filter(id=>{const p=P[id];return p.cast>=3&&!p.self&&Object.keys(p.to).length===1});
+  if(one.length)out.push({icon:'🧲',name:'One-track mind',blurb:'every vote on the same person',who:one,stat:one.length===1?`all ${P[one[0]].cast} on ${nm(Object.keys(P[one[0]].to)[0])}`:`${one.length} of them`});
+  let best=null;const run={};G.weeksV.forEach((wv,k)=>{const pw=G.weeksV[k-1];for(const[v,c]of Object.entries(wv.fin)){if(v===c||!member(v)||!member(c))continue;const key=v+'|'+c;const r=run[key];const n=r&&pw&&pw.sid===wv.sid&&r.last===k-1?r.n+1:1;run[key]={n,last:k};if(n>=2&&(!best||n>best.n))best={v,c,n}}});   // reveals in a row
+  if(best)out.push({icon:'🔥',name:'Longest grudge',blurb:'same target, reveals in a row',who:[best.v],stat:`voted ${nm(best.c)} ${best.n} reveals in a row`});
+  let nv=null;for(const x of ids)for(const[v,n]of Object.entries(P[x].chance)){if(P[x].from[v]||!member(v)||v===x)continue;if(n>=2&&(!nv||n>nv.n))nv={v,x,n}}
+  if(nv)out.push({icon:'🛡️',name:'Never once',blurb:'most chances, never voted for them',who:[nv.v],stat:`0 votes for ${nm(nv.x)} in ${nv.n} chances`});
+  const T=G.weeksV.map(wv=>{const tl={};for(const c of Object.values(wv.fin))tl[c]=(tl[c]||0)+1;const s=Object.entries(tl).sort((a,b)=>b[1]-a[1]);return{wv,top:s[0],second:s[1]||[null,0],n:Object.keys(wv.fin).length}}).filter(x=>x.top&&x.n>=2&&member(x.top[0]));
+  if(T.length){const gap=x=>x.top[1]-x.second[1];const land=[...T].sort((a,b)=>gap(b)-gap(a))[0];out.push({icon:'🌊',name:'Landslide',blurb:'the most one-sided vote',who:[land.top[0]],stat:`${land.wv.label}: ${land.top[1]}–${land.second[1]}`});
+    if(T.length>1){const close=[...T].sort((a,b)=>gap(a)-gap(b))[0];if(close!==land)out.push({icon:'🤏',name:'Closest vote',blurb:'the tightest one',who:[close.top[0]],stat:`${close.wv.label}: ${close.top[1]}–${close.second[1]}`})}
+    const un=T.filter(x=>{const w0=x.top[0];const others=Object.entries(x.wv.fin).filter(([v])=>v!==w0);return others.length>=2&&others.every(([,c])=>c===w0)});   // everyone but the Bozo-to-be picked the same person
+    if(un.length)out.push({icon:'🤝',name:'Unanimous',blurb:'everyone agreed on the Bozo',who:un.length===1?[un[0].top[0]]:[],stat:un.length===1?un[0].wv.label:`${un.length} votes`})}
+  return out}
+function voteGridHtml(G){   // every voter (rows) against everyone they could vote for (columns), across the scope
+  const P=G.P;const ppl=S.members.filter(m=>{const p=P[m.id];return p&&(p.cast||p.got)});if(!ppl.length)return'<p class="muted">No votes on the record yet.</p>';
+  const av=m=>`<span class="avatar xs" style="--c:${m.color}">${h(initials(m.name))}</span>`;
+  const cell=(v,c)=>{const n=v.id===c.id?P[v.id].self:(P[v.id].to[c.id]||0);return`<td class="${v.id===c.id?'self':''}${n?' on':''}">${n||'·'}</td>`};
+  return`<p class="muted tiny" style="margin:0 0 10px">Each row is a voter, each column who they voted for. One vote per person per week (their revote if there was one). The diagonal is voting for yourself.</p>
+  <div class="gb-grid-wrap"><table class="gb-grid"><thead><tr><th></th>${ppl.map(m=>`<th title="${h(m.name)}">${av(m)}</th>`).join('')}<th>Cast</th></tr></thead><tbody>
+  ${ppl.map(v=>`<tr><th class="rowh" data-act="grudge-show" data-mid="${v.id}">${av(v)}<span>${h(v.name)}</span></th>${ppl.map(c=>cell(v,c)).join('')}<td class="tot">${P[v.id].cast}</td></tr>`).join('')}
+  <tr class="tots"><th class="rowh"><span>Against</span></th>${ppl.map(c=>`<td class="tot">${P[c.id].got||0}</td>`).join('')}<td></td></tr></tbody></table></div>`}
 function grudgeCard(){
   const G=grudgeData();const P=G.P;
   const people=S.members.filter(m=>{const p=P[m.id];return p&&(p.on||p.solo||p.cast||p.got)});
@@ -2822,8 +2859,11 @@ function grudgeCard(){
   const s1=[G.nBallots?`Ballots from ${G.nBallots} week${G.nBallots===1?'':'s'}`:'',G.nVotes?`${G.nVotes} vote${G.nVotes===1?'':'s'} from ${G.nReveals} reveal${G.nReveals===1?'':'s'}`:G.live&&!G.unseen.length?'Votes show up here after each reveal':''].filter(Boolean).join(' · ');
   const foot=[s1,people.length?gbUnseenLine(G):''].filter(Boolean).map(x=>x+'.').join(' ');   // with nobody listed yet, the intro already says to watch it
   const intro=people.length?'Who votes for who, and who keeps slipping off the Bozo ballot. Tap a name for the receipts.':G.unseen.length===1?`Watch the ${h(G.unseen[0].label)} reveal to see who voted for who.`:'Watch the reveals to see who voted for who.';
+  const AW=G.nVotes?voteAwards(G):[];const wn=ids=>ids.length?ids.slice(0,3).map(id=>h(member(id)?.name||'?')).join(' & ')+(ids.length>3?` +${ids.length-3}`:''):'';
+  const awards=AW.length?`<div class="pd-sub">Vote awards</div><div class="gb-awards">${AW.map(x=>`<div class="gb-aw${x.who.length===1?' tap':''}" ${x.who.length===1?`data-act="grudge-show" data-mid="${x.who[0]}"`:''}><span class="ic">${x.icon}</span><div class="gb-awb"><small>${x.name} · ${h(x.blurb)}</small>${x.who.length?`<b>${wn(x.who)}</b>`:''}<em>${h(x.stat)}</em></div></div>`).join('')}</div>`:'';
+  const gridBtn=G.nVotes?`<button class="btn ghost block sm" style="margin:10px 0 2px" data-act="vote-grid">🗳️ Who voted for who</button>`:'';
   return`<section class="card gb-card"><h3>📒 The Grudge Book</h3><p class="muted tiny" style="margin:-4px 0 10px">${intro}</p>
-    ${grudges}${ranked.length?`<div class="pd-sub">Ballot escapes</div><div class="pk-rows">${ranked.map((m,k)=>row(m,pl[k])).join('')}</div>`:''}
+    ${awards}${gridBtn}${grudges}${ranked.length?`<div class="pd-sub">Ballot escapes</div><div class="pk-rows">${ranked.map((m,k)=>row(m,pl[k])).join('')}</div>`:''}
     ${few.length?`<div class="pd-sub">${ranked.length?`Fewer than ${GB_MIN} ballots`:'Ballot escapes'}</div>${ranked.length?'':`<p class="muted tiny" style="margin:-2px 0 6px">Ranked once someone’s been on ${GB_MIN} ballots.</p>`}<div class="pk-rows">${few.map(m=>row(m,null)).join('')}</div>`:''}
     ${never.length?`<div class="pd-sub">Never on the ballot</div><div class="gb-chips">${never.map(m=>`<button class="gb-who" data-act="grudge-show" data-mid="${m.id}">${av(m)}${h(m.name)}</button>`).join('')}</div>`:''}
     ${foot?`<p class="muted tiny" style="margin:10px 0 0">${h(foot)}</p>`:''}</section>`;
@@ -3211,6 +3251,7 @@ const ACT={
   'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
   'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${r.place||i+1}</span><span class="avatar sm" style="--c:${m.color}">${h(initials(m.name))}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   'screen-check'(){screenCheck()},
+  'vote-grid'(){withStats(()=>{const G=grudgeData();modal({title:'🗳️ Who voted for who',body:voteGridHtml(G),actions:[{label:'Done',cls:'ghost'}]})})},
   'grudge-show'(el){withStats(()=>{const G=grudgeData();const id=el.dataset.mid;const m=member(id);if(!m||!G.P[id])return;modal({title:`📒 ${m.name}`,body:grudgeSheet(G,id),actions:[{label:'Done',cls:'ghost'}]})})},
   'pk-show'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;
     modal({title:`☠️ ${m.name}`,body:`<p class="muted" style="margin:0 0 12px">${pkLine(p)}. Each one: the only miss on a slip everyone else hit.</p><div class="pk-list">${p.killers.map(k=>`<div class="pk-item"><div class="pk-top"><span class="mono muted tiny">${h(k.wk)}</span><span class="mono muted tiny">${k.odds!=null?fmtOdds(k.odds):''}</span></div>${betChip(k.text,k.teams)}${k.margin!=null||k.lost?`<div class="pk-bot">${k.margin!=null?`<span class="tiny bad">Missed by ${fmtMargin(k.margin,k.unit)}</span>`:''}${k.lost?`<span class="tiny muted">${fmt$0(k.lost)} that got away</span>`:''}</div>`:''}</div>`).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
