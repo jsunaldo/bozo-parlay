@@ -538,6 +538,8 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .gb-tag{display:inline-block;font-size:10px;font-weight:700;border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.04em}.gb-tag.teflon{background:rgba(52,199,89,.15);color:var(--green)}.gb-tag.magnet{background:rgba(255,69,58,.14);color:var(--red)}
 .gb-pairs{display:flex;flex-direction:column;gap:6px;margin-bottom:6px}.gb-pair{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:14px;cursor:pointer}.gb-pair .pk-badge{margin-left:auto}
 .gb-pair .pk-badge,.modal .gb-list .pk-badge,.modal .gb-ev{background:var(--surface2)}
+.sv-rows{display:flex;flex-direction:column;gap:8px}.sv-row{display:grid;grid-template-columns:minmax(0,1fr) 64px 44px 38px;gap:8px;align-items:center;font-size:13px}.sv-name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.sv-rec{text-align:right;font-weight:600}.sv-row .tpct{text-align:right}
+.sv-worst{margin:12px 0 0;font-size:13px}
 .gb-awards{display:grid;grid-template-columns:1fr;gap:6px}@media(min-width:520px){.gb-awards{grid-template-columns:1fr 1fr}}
 .gb-aw{display:flex;gap:10px;align-items:flex-start;background:var(--surface2);border-radius:12px;padding:8px 10px}.gb-aw.tap{cursor:pointer}.gb-aw .ic{font-size:20px;line-height:1.2;flex:none}
 .gb-awb{display:flex;flex-direction:column;min-width:0}.gb-awb small{font-size:11px;color:var(--muted)}.gb-awb b{font-size:14px}.gb-awb em{font-style:normal;font-size:12px;color:var(--muted)}
@@ -709,7 +711,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{if(navigator.maxTouchPoints>0||'ontouchstart' in window)document.documentElement.classList.add('touch')}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.12';
+const APP_VERSION='2026-09-19.13';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1601,7 +1603,7 @@ function renderWeek(){return oldBanner()+renderWeekInner()}
 let UPCOMING=null;   // showing the next week's slip as it fills up (before its Bozo is crowned)
 function upcomingBtn(w,c){
   if(isSide(w)||!c.graded||(w.reveal&&!revealSeen(w)))return'';const nx=nextMain(w);   // never spoil a reveal this phone hasn't watched
-  if(nx){if(nx!==lastWeek()||calc(nx).graded||season().id!==newestOf(league()).id)return'';const cn=calc(nx);const inN=cn.legs.filter(x=>String(x.text||'').trim()).length;return`<button class="upnext" data-act="open-week" data-wid="${nx.id}"><span class="ic">📋</span><span class="t"><b>Upcoming · ${h(wkName(nx))} slip</b><small>${inN} of ${cn.n} picks in</small></span><span class="go">→</span></button>`}
+  if(nx){if(nx!==lastWeek()||calc(nx).graded||season().id!==newestOf(league()).id)return'';const cn=calc(nx);const inN=cn.legs.filter(x=>String(x.text||'').trim()).length;return`<button class="upnext" data-act="open-week" data-wid="${nx.id}"><span class="ic">📋</span><span class="t"><b>This week · ${h(wkName(nx))} slip</b><small>${nx.placed?'🔒 The parlay is in':`${inN} of ${cn.n} picks in`}</small></span><span class="go">→</span></button>`}
   if(w!==lastWeek()||w.final||seasonOver()||!league().sync||!memberCan('picks')||!(isAdmin()||league().features?.votes))return'';   // the season's last week: nothing comes next
   const exp=c.legs.map(x=>x.mid);const inN=exp.filter(mid=>String(w.next?.[mid]?.text||'').trim()).length;
   return`<button class="upnext" data-act="upcoming" data-wid="${w.id}"><span class="ic">📋</span><span class="t"><b>Upcoming · ${h(nextName(w))} slip</b><small>${inN} of ${exp.length} picks in so far</small></span><span class="go">→</span></button>`;
@@ -1749,13 +1751,13 @@ function renderTicket(w,c){
       <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c)}</div></div>
       ${isSide(w)?`<div class="bozo-line"><span class="clown">🎯</span><span class="bozo-name">Side parlay</span><span class="is-bozo">no Bozo, no vote</span>${w.locked?'<span class="tag warn" title="Picks are locked">🔒 locked</span>':''}</div>`:`<div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':(isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown')}</span>${isAdmin()?`<button class="mini" data-act="change-bozo" title="Change bozo">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked for this week">🔒 locked</span>':''}</div>`}
     </div>
-    ${w.placed&&league().sync?placedTop(w,c):placedBar(w,c)}
+    ${w.placed&&league().sync?placedTop(w,c):c.graded?`<div class="ticket-foot placed-top" id="tfoot">${ticketFoot(w,c)}</div>`:placedBar(w,c)}
     ${pickStatus(w,c,cl)}
     ${sweatable(w)?`<div id="lvb-${w.id}">${liveBanner(w)}</div>`:''}
     ${checkable(w,c)?`<div class="checkrow"><button class="btn block" data-act="check-results" data-wid="${w.id}">🔎 Check results · ${c.legs.filter(x=>x.status==='pending'&&String(x.text||'').trim()).length} to grade</button></div>`:''}
     <div class="legs slip">${renderLegs(w,c,cl)}</div>
     ${missing.length&&isAdmin()?`<div class="addleg"><select data-bind="add-leg|${w.id}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${m.id}">${h(m.name)}</option>`).join('')}</select></div>`:''}
-    ${w.placed&&league().sync?'':`<div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>`}
+    ${(w.placed&&league().sync)||c.graded?'':`<div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>`}
   </section>`;
 }
 const segOpen=new Set();
@@ -2282,8 +2284,12 @@ function weekClaims(items,nfl){   // items: [{mid,text,teams,tm}]
   return{claims,clashes,pairs,nfl};
 }
 const noPickYet=l=>!String(l.text||'').trim()&&(l.status||'pending')==='pending';
+const resNflOf=R=>{if(!R)return null;if(!R._nfl){const tg={};for(const g of R.games||[]){tg[g.home]=g;tg[g.away]=g}R._nfl={...R.idx,games:R.games||[],teamGame:tg}}return R._nfl};   // a finished week: its games and the players in its box scores
+const RES_WANT=new Set();let resBusy=0;
+function resNfl(date){const R=RESULTS[date];if(R)return resNflOf(R);if(!RES_WANT.has(date)&&resBusy<3){RES_WANT.add(date);resBusy++;loadResults(date,365*86400e3).then(()=>softRender()).catch(()=>{}).finally(()=>{resBusy--})}return null}
+function weekNfl(w){const d=slipDate(w);if(!d)return null;const l=league();const sn=seasonOfWeek(l,w);return sn&&sn.id===newestOf(l).id?nflOk(nflData(d,0)):resNfl(d)}   // never ask the schedule feed about an old season: it would answer with this season's games
 function slipPlan(w,c,cl){   // how a slip lists its legs: people with no pick yet first, then picks by kickoff (a game's picks together), then picks whose game isn't known; member order breaks ties. Also each leg's game.
-  const d=slipDate(w);const nfl=(cl&&cl.nfl)||nflOk(d?nflData(d,0):null);const games={};
+  const nfl=(cl&&cl.nfl)||weekNfl(w);const games={};
   for(const l of c.legs){const cm=cl&&cl.claims&&cl.claims[l.mid];games[l.mid]=noPickYet(l)?null:cm&&cm.game?cm.game:nfl?(claimOf(l.text,l.teams,l.tm,nfl)||{}).game||null:null}
   const key=l=>{if(noPickYet(l))return[0,0,''];const g=games[l.mid];const t=g?Date.parse(g.at):NaN;return Number.isFinite(t)?[1,t,String(g.id||g.name||'')]:[2,0,'']};
   return{games,legs:c.legs.map((l,i)=>({l,i,k:key(l)})).sort((x,y)=>x.k[0]-y.k[0]||x.k[1]-y.k[1]||(x.k[2]<y.k[2]?-1:x.k[2]>y.k[2]?1:0)||x.i-y.i).map(x=>x.l)};
@@ -2329,7 +2335,7 @@ function tidyLeg(wid,mid,el){
   needRender=true;
 }
 /* ---- sportsbook wording everywhere: the live slip as soon as its slate loads, and every past season once ---- */
-const TIDY_V=2;
+const TIDY_V=3;
 const needsTidy=p=>!!p&&!!String(p.text||'').trim()&&!String(p.text).trim().startsWith('(');
 function tidyPick(p,nfl,graded){const had=!!p.keep;delete p.keep;const clean=cleanPick(p.text,nfl);if(!clean||clean===p.text)return had;
   if(!String(p.odds||'').trim()&&priceIn(p.text))p.odds=priceIn(p.text);
@@ -2348,23 +2354,23 @@ function autoTidyLive(){   // the commissioner's device tidies the whole live sl
   if(mine.length){save();for(const[x,mid]of mine)sendPick(l,x,mid,true);softRender()}
 }
 let tidyBusy=false;
-function tidySeasons(tries=0){   // once per season, on the commissioner's device: every pick into the house style (the typed wording is kept in the details)
-  if(SHARE_MODE||tidyBusy)return;const idx=playersIndex();if(!idx){if(tries<20)setTimeout(()=>tidySeasons(tries+1),15000);return}   // player names come from the rosters: wait for them
-  tidyBusy=true;let again=false;
+async function tidySeasons(){   // once per season, on the commissioner's device: every graded pick into the house wording, using that week's own games and box scores; the league applies each fix only if the pick still reads the same
+  if(SHARE_MODE||tidyBusy)return;tidyBusy=true;
   try{for(const l of [...DB.leagues]){
-    if(l.sync&&(l.sync.role!=='admin'||!l.sync.rev||l.sync.dirty))continue;   // commissioner copies only, synced and settled
-    const newest=newestOf(l);
-    for(const sn of [...(l.seasons||[])]){if(((sn.data&&sn.data.tidyV)||0)>=TIDY_V)continue;
-      const ids=new Set(sn.data.members.map(m=>m.id));let n=0,ready=true;
+    const synced=!!l.sync;if(synced&&(l.sync.role!=='admin'||!l.sync.rev))continue;
+    const todo=(l.seasons||[]).filter(sn=>sn.data&&(sn.data.tidyV||0)<TIDY_V);if(!todo.length)continue;
+    const changes=[],done=[];
+    for(const sn of todo){const ids=new Set(sn.data.members.map(m=>m.id));let ok=true;
       const dOf=w=>w.kind==='special'&&w.day?w.day:isSide(w)?((sn.data.weeks.find(x=>x.id===w.of)||w).date):w.date;
-      const slate=w=>{if(sn!==newest||!dOf(w))return idx;const nd=nflData(dOf(w),0);if(nd===null){ready=false;return idx}return nflOk(nd)||idx};   // this season's weeks: their own schedule, for Away @ Home totals
-      for(const w of sn.data.weeks){const nfl=slate(w);for(const[mid,p]of Object.entries(w.picks||{}))if(ids.has(mid)&&needsTidy(p)&&tidyPick(p,nfl,p.status!=='pending'))n++}
-      if(ready)sn.data.tidyV=TIDY_V;else again=true;
-      if(n||ready){save();if(l.sync){if(l===league())schedulePush();else{l.sync.dirty=true;l.sync.seq=(l.sync.seq||0)+1;push(l)}}}
-      if(n&&l===league()){ALLTIME=null;softRender()}
-    }}}
-  finally{tidyBusy=false}
-  if(again&&tries<20)setTimeout(()=>tidySeasons(tries+1),15000);   // a schedule was still loading: finish those weeks shortly
+      for(const w of sn.data.weeks){const ps=Object.entries(w.picks||{}).filter(([mid,p])=>ids.has(mid)&&p&&p.status&&p.status!=='pending'&&needsTidy(p));if(!ps.length)continue;
+        let nfl=null;const d=dOf(w);if(d){try{nfl=resNflOf(await loadResults(d,365*86400e3))}catch(e){ok=false;continue}}   // no results right now: try that week again next time
+        for(const[mid,p]of ps){const cl=cleanPick(p.text,nfl);if(cl&&cl!==p.text)changes.push({sid:sn.id,wid:w.id,mid,from:p.text,to:cl})}}
+      if(ok)done.push(sn.id)}
+    if(!changes.length&&!done.length)continue;
+    if(synced){try{const d=await api(l,'/tidy',{method:'POST',body:{changes,done,v:TIDY_V}});takeState(l,d);save();if(d.tidied&&l===league()){ALLTIME=null;softRender()}}catch(e){}}
+    else{for(const x of changes){const sn=l.seasons.find(s=>s.id===x.sid);const w=sn&&sn.data.weeks.find(y=>y.id===x.wid);const p=w&&w.picks[x.mid];if(p&&p.text===x.from){p.raw=p.raw||p.text;p.text=x.to}}
+      for(const sid of done){const sn=l.seasons.find(s=>s.id===sid);if(sn)sn.data.tidyV=TIDY_V}save();if(l===league()){ALLTIME=null;softRender()}}
+  }}finally{tidyBusy=false}
 }
 function untidyList(w){const nfl=nflOk(slipNfl(w));return Object.entries(w.picks).filter(([mid,p])=>member(mid)&&String(p.text||'').trim()&&p.status==='pending').map(([mid,p])=>({mid,from:p.text,to:cleanPick(p.text,nfl)})).filter(x=>x.to&&x.to!==x.from)}
 function slipDate(w){const p=parentOf(w);return w.kind==='special'&&w.day?w.day:p?slipDate(p):w.date}
@@ -2738,7 +2744,7 @@ function renderStatsInner(){
       <td class="${r.cur>0?'good':r.cur<0?'bad':''}">${r.cur>0?'W'+r.cur:r.cur<0?'L'+(-r.cur):'—'}</td></tr>`).join(''))(places(rows,(a,b)=>a[sortKey]===b[sortKey]&&a.hits===b.hits))}
   </tbody></table></div><p class="muted tiny" style="margin:8px 0 0">Tap a name for the full breakdown.</p></section>
   ${A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map((a,i)=>{const m=member(a.who);return`<div class="award tap" data-act="award-rank" data-i="${i}"><div class="aw-head"><span class="ic">${a.icon}</span><div class="ab"><small>${a.name} <span class="aw-blurb">· ${h(a.blurb)}</span></small>${a.tied&&a.tied.length>1?`<b>${a.tied.map(id=>h(member(id)?.name||'?')).join(' & ')} <span class="tag">tie</span></b>`:`<b style="color:${m.color}">${h(m.name)}</b>`}</div></div><div class="aw-stat">${h(a.stat||'')}</div>${a.bet&&a.bet.text?`<div class="aw-bet">${betChip(a.bet.text,a.bet.teams)}${a.bet.odds!=null&&a.bet.odds!==''?`<span class="mono muted">${fmtOdds(a.bet.odds)}</span>`:''}</div>`:''}${a.detail?`<em>${h(a.detail)}</em>`:''}<span class="aw-more">Full ranking ›</span></div>`}).join('')}</div></section>`:''}
-  ${killerClubCard(per)}${grudgeCard()}${explorerCard(g)}${kingsCard(per)}${teamsCard(g)}
+  ${killerClubCard(per)}${grudgeCard()}${survivalCard()}${explorerCard(g)}${kingsCard(per)}${teamsCard(g)}
   <section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--pink);background:transparent"></i>bozo</span></div></section>
   ${closeCalls(per)}`;
 }
@@ -2904,6 +2910,25 @@ function grudgeSheet(G,id){
     ${never.length?`<div class="pd-sub">Never voted for them</div><div class="gb-list">${never.map(([v,n])=>`<div class="gb-li">${av(v)}<span class="gb-nm">${h(nm(v))}</span><span class="muted tiny">${n} chance${n===1?'':'s'}</span></div>`).join('')}</div>`:''}
     ${evs.length?`<div class="pd-sub">Week by week</div><div class="gb-evs">${evs.map(evRow).join('')}</div>`:''}`;
 }
+/* ---- survival by kickoff window: how often the parlay got out of each TV window alive ---- */
+const WIN_DAY={Thursday:0,Friday:1,Saturday:2,Sunday:3,Monday:4,Tuesday:5,Wednesday:-1};
+function winGroup(at){const k=kickWin(at);if(!k)return null;const day=k.label.split(' ')[0];const name=day==='Sunday'?k.label:k.slot==='night'?`${day} Night`:`${day} Day`;return{name,ord:(WIN_DAY[day]??6)*10+{morning:0,early:1,late:2,night:3}[k.slot]}}   // holiday and Saturday daytime slots group as "<Day> Day"
+function survivalStats(){   // finished Bozo parlays only; a window counts when the slip had a bet in it and was still alive going in
+  const rows={};let weeks=0,cashed=0,skipped=0,loading=0;
+  for(const w of S.weeks){if(isSide(w))continue;const c=calc(w);if(!c.graded||!c.n)continue;const d=w.kind==='special'&&w.day?w.day:w.date;const nfl=d?resNfl(d):null;if(!nfl){loading++;continue}   // that week's own games (its final scores)
+    const groups={};let unknown=false;for(const l of c.legs){const g=(claimOf(l.text,l.teams,l.tm,nfl)||{}).game;const wg=g&&winGroup(g.at);if(!wg){unknown=true;break}(groups[wg.name]??={wg,legs:[]}).legs.push(l)}
+    if(unknown){skipped++;continue}weeks++;let alive=true;
+    for(const{wg,legs}of Object.values(groups).sort((x,y)=>x.wg.ord-y.wg.ord)){const r=rows[wg.name]??={name:wg.name,ord:wg.ord,entered:0,survived:0,died:0};if(!alive)continue;r.entered++;if(legs.some(l=>l.status==='miss')){r.died++;alive=false}else r.survived++}
+    if(alive&&c.result==='won')cashed++}
+  return{rows:Object.values(rows).filter(r=>r.entered).sort((x,y)=>x.ord-y.ord),weeks,cashed,skipped,loading}}
+function survivalCard(){
+  const X=survivalStats();if(!X.rows.length&&!X.loading)return'';const s=n=>n===1?'':'s';
+  const worst=X.rows.filter(r=>r.died).sort((x,y)=>y.died-x.died);const wd=worst.length?worst.filter(r=>r.died===worst[0].died):[];
+  const rows=X.rows.map(r=>{const rate=r.survived/r.entered;return`<div class="sv-row"><span class="sv-name">${h(r.name)}</span><span class="tbar"><i style="width:${Math.round(rate*100)}%"></i></span><span class="mono sv-rec">${r.survived}/${r.entered}</span><span class="tpct ${rate>=.5?'good':'bad'}">${Math.round(rate*100)}%</span></div>`}).join('');
+  const foot=[X.weeks?`${X.weeks} parlay${s(X.weeks)} · ${X.cashed} made it all the way`:'',X.loading?`Loading ${X.loading} more week${s(X.loading)}…`:'',X.skipped?`${X.skipped} week${s(X.skipped)} left out (a game couldn’t be matched)`:''].filter(Boolean).join(' · ');
+  return`<section class="card"><h3>⏱️ Survival by kickoff window</h3><p class="muted tiny" style="margin:-4px 0 10px">How often the parlay got out of each window alive. Counts the weeks it had a bet there and was still alive going in.</p>
+    ${X.rows.length?`<div class="sv-rows">${rows}</div>`:''}${wd.length?`<p class="sv-worst">💀 Deadliest: <b>${wd.map(r=>h(r.name)).join(' & ')}</b>, killed the parlay ${wd[0].died} time${s(wd[0].died)}</p>`:''}
+    ${foot?`<p class="muted tiny" style="margin:8px 0 0">${h(foot)}</p>`:''}</section>`}
 function killerClubCard(per){
   const rows=S.members.filter(m=>per[m.id]&&per[m.id].killer>0).sort((a,b)=>per[b.id].killer-per[a.id].killer||per[b.id].killed-per[a.id].killed);
   const body=rows.length?rows.map(m=>{const p=per[m.id];
