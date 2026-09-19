@@ -247,7 +247,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .chk-top{display:flex;align-items:center;gap:8px}.chk-top b{flex:1;min-width:0}
 .chk-pick{font-size:14px;font-weight:600}
 .stag.unsent{background:rgba(255,159,10,.18);color:var(--amber);border:0;font-family:inherit;cursor:pointer}
-.stag.hit{background:var(--green);color:#fff}.stag.miss{background:var(--red);color:#fff}.stag.push{background:var(--amber);color:#1d1d1f}.stag.in{background:var(--green-bg);color:var(--green)}.stag.none{background:var(--surface3);color:var(--muted)}
+.stag.hit{background:var(--green);color:#fff}.stag.miss{background:var(--red);color:#fff}.stag.push{background:var(--amber);color:#1d1d1f}.stag.in{background:var(--green-bg);color:var(--green)}.stag.none{background:var(--surface3);color:var(--muted)}.stag.pre{background:var(--surface3);color:var(--text)}.stag.live{background:var(--blue-bg);color:var(--blue)}.stag.up{background:var(--green-bg);color:var(--green)}.stag.down{background:var(--red-bg);color:var(--red)}.stag.even{background:var(--amber-bg);color:var(--amber)}.stag.sweat{background:var(--amber-bg);color:var(--amber);animation:sweat 1.6s ease-in-out infinite}@keyframes sweat{50%{opacity:.55}}@media (prefers-reduced-motion:reduce){.stag.sweat{animation:none}}
 .seg.q{padding:2px;background:var(--surface3)}.seg.q button{width:30px;height:26px;font-size:13px;color:var(--text)}
 .slip-group{display:flex;flex-direction:column;gap:6px;padding-left:8px;border-left:3px solid var(--purple);border-radius:3px}
 .slip-win{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:8px 2px 0}.slip-win:first-child{margin-top:0}
@@ -718,7 +718,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{const de=document.documentElement;if(navigator.maxTouchPoints>0||'ontouchstart' in window){de.classList.add('touch');if(matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)de.classList.add('shell')}}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom. Opened from the Home Screen: the page itself never scrolls (the app scrolls inside it), so iOS can't slide the tab bar and header away
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.15';
+const APP_VERSION='2026-09-19.16';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1841,7 +1841,8 @@ function renderLeg(w,l,cl){
   const flags=cl?[...(cl.clashes[l.mid]||[]).map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`),...(cl.off&&cl.off[l.mid]?[`⚠ ${h(offText(cl.off[l.mid],cl.rule))}`]:[]),...(cl.notd&&cl.notd[l.mid]?['⚠ Not an Anytime TD bet. This side parlay is ATTD only.']:[])]:[];
   const tag={hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status];
   const quick=isAdmin()&&l.status==='pending'&&!empty&&!open?`<div class="seg q">${['hit','miss','push'].map(st=>`<button class="${st}" data-act="status" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('')}</div>`:'';
-  const right=tag?`<span class="stag ${l.status}">${tag}</span>`:empty?`<span class="stag none">no pick yet</span>`:mine&&unsent(w,l.mid)?`<button class="stag unsent" data-act="retry-pick">Not sent yet · Retry</button>`:quick||`<span class="stag in">✓ pick in</span>`;
+  const chip=w.placed&&!tag&&!empty&&l.status==='pending'?legChip(w,l,cl):null;
+  const right=tag?`<span class="stag ${l.status}">${tag}</span>`:empty?`<span class="stag none">no pick yet</span>`:mine&&unsent(w,l.mid)?`<button class="stag unsent" data-act="retry-pick">Not sent yet · Retry</button>`:chip&&!(quick&&chip[0]!=='pre')?`<span class="stag ${chip[0]}" id="lvt-${w.id}-${l.mid}">${h(chip[1])}</span>`:quick||`<span class="stag in">✓ pick in</span>`;
   const marginTxt=(l.status==='hit'||l.status==='miss')&&l.margin!=null&&unit!=='none'?`${l.status==='hit'?'Covered by':'Missed by'} ${h(fmtMargin(l.margin,unit))}`:'';
   const needMargin=isAdmin()&&!open&&(l.status==='hit'||l.status==='miss')&&l.margin==null&&unit!=='none';
   const marginRow=`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${l.status==='hit'?'Covered by':'Missed by'}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal" ${isAdmin()?'':'disabled'}>`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit" ${isAdmin()?'':'disabled'}>${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`;
@@ -2602,16 +2603,31 @@ function liveLine(w,mid){const p=w.picks[mid];if(!p||p.status!=='pending'||!Stri
   if(r.final)return`<span class="lv ${r.status}">Final · ${r.status==='hit'?'✓ hit':r.status==='miss'?'✗ miss':'push'}${r.margin!=null?` by ${h(fmtMargin(r.margin,p.um&&p.unit?p.unit:unitFor(p.text)))}`:''} · ${h(r.detail)}</span>`;
   if(r.locked)return`<span class="lv ${r.status}">${r.status==='hit'?'✅ Cashed':'❌ Dead'} · ${h(r.detail)}</span>`;
   return`<span class="lv ${r.status==='hit'?'up':r.status==='push'?'even':'down'}">${r.status==='hit'?'🟢 On track':r.status==='push'?'🟡 Even right now':'🔴 Behind'} · ${h(r.detail)}</span>`}
+const ETK=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'2-digit'});
+function legChip(w,l,cl){   // once the bet is in, a leg shows where it stands instead of "pick in": its kickoff time, how it's doing live, or how it ended
+  const nfl=(cl&&cl.nfl)||weekNfl(w);const g=legGame(l,nfl,cl&&cl.claims&&cl.claims[l.mid]);const R=sweatable(w)?RESULTS[checkDate(w)]:null;const r=R?gradeLeg(l,R,true):null;
+  const G=g&&R?R.games.find(x=>x.id===g.id):null;
+  if(r&&r.status){
+    if(r.final)return r.status==='hit'?['hit','✓ Hit']:r.status==='miss'?['miss','✗ Miss']:['push','P Push'];
+    if(r.locked)return r.status==='hit'?['hit','✓ Hit']:['miss','💀 Dead'];
+    const u=l.um&&l.unit?l.unit:unitFor(l.text);const late=G&&G.state==='in'&&(G.hq||[]).length>=4;
+    if(late&&r.margin!=null&&r.margin<=(u==='yds'?10:u==='pts'?3:1))return['sweat','😬 Sweating'];
+    return r.status==='hit'?['up','🟢 On track']:r.status==='miss'?['down','🔴 Behind']:['even','🟡 Even']}
+  if(G&&G.state==='in')return['live','● Live'];
+  if(G&&G.state==='post')return['live','Final · grading'];
+  if(g&&g.at&&Date.parse(g.at)>Date.now())return['pre',ETK.format(new Date(g.at))];
+  return['none','On the slip']}
 function liveBanner(w){if(!sweatable(w))return'';const R=RESULTS[checkDate(w)];if(!R)return'';const k={cash:0,dead:0,up:0,down:0,wait:0};
-  k.push=0;k.check=0;
-  for(const[mid,p]of Object.entries(w.picks)){if(!member(mid)||!String(p.text||'').trim())continue;if(p.status!=='pending'){k[p.status==='miss'?'dead':p.status==='push'?'push':'cash']++;continue}const r=gradeLeg(p,R,true);
-    if(!r.status){k[r.no?'check':'wait']++;continue}if(r.status==='push'){k.push++;continue}if(r.locked)k[r.status==='miss'?'dead':'cash']++;else k[r.status==='miss'?'down':'up']++}
+  k.push=0;k.check=0;const killed=[];
+  for(const[mid,p]of Object.entries(w.picks)){if(!member(mid)||!String(p.text||'').trim())continue;if(p.status!=='pending'){if(p.status==='miss')killed.push(mid);k[p.status==='miss'?'dead':p.status==='push'?'push':'cash']++;continue}const r=gradeLeg(p,R,true);
+    if(!r.status){k[r.no?'check':'wait']++;continue}if(r.status==='push'){k.push++;continue}if(r.locked&&r.status==='miss')killed.push(mid);if(r.locked)k[r.status==='miss'?'dead':'cash']++;else k[r.status==='miss'?'down':'up']++}
   if(!k.cash&&!k.dead&&!k.up&&!k.down&&!k.push)return'';const bits=[k.cash&&`${k.cash} cashed`,k.up&&`${k.up} on track`,k.push&&`${k.push} even`,k.down&&`${k.down} behind`,k.dead&&`${k.dead} dead`,k.wait&&`${k.wait} to play`,k.check&&`${k.check} to check by hand`].filter(Boolean).join(' · ');
-  return`<div class="lvbanner ${k.dead?'dead':''}"><b>${k.dead?'💀 Parlay\'s dead':k.down?'😬 Parlay alive':'🔥 Parlay alive'}</b><span>${bits}</span></div>`}
+  const who=killed.length?`Killed by ${killed.slice(0,2).map(mid=>`${h(member(mid)?.name||'?')}’s ${h(w.picks[mid].text)}`).join(' and ')}${killed.length>2?` and ${killed.length-2} more`:''}`:'';
+  return`<div class="lvbanner ${k.dead?'dead':''}"><b>${k.dead?'💀 Parlay\'s dead':k.down?'😬 Parlay alive':'🔥 Parlay alive'}</b>${who?`<span>${who}</span>`:''}<span>${bits}</span></div>`}
 let liveT=null,liveBusy=false;
 function liveWatch(delay){clearTimeout(liveT);liveT=setTimeout(liveTick,delay==null?1500:delay)}
 async function liveTick(){liveT=null;if(liveBusy||document.visibilityState!=='visible'||VIEW!=='week')return;const w=S.weeks.length?currentWeek():null;if(!sweatable(w))return;liveBusy=true;
-  try{const R=await loadResults(checkDate(w),45e3);const cw=currentWeek();if(cw&&cw.id===w.id){for(const mid of Object.keys(w.picks)){const el=document.getElementById(`lv-${w.id}-${mid}`);if(!el)continue;const html=liveLine(w,mid);if(el.innerHTML!==html)el.innerHTML=html}
+  try{const R=await loadResults(checkDate(w),45e3);const cw=currentWeek();if(cw&&cw.id===w.id){for(const mid of Object.keys(w.picks)){const el=document.getElementById(`lv-${w.id}-${mid}`);const ct=document.getElementById(`lvt-${w.id}-${mid}`);if(ct&&w.placed){const c=legChip(w,{mid,...w.picks[mid]},null);if(ct.textContent!==c[1]){ct.textContent=c[1];ct.className='stag '+c[0]}}if(!el)continue;const html=liveLine(w,mid);if(el.innerHTML!==html)el.innerHTML=html}
       const bn=document.getElementById(`lvb-${w.id}`);if(bn){const html=liveBanner(w);if(bn.innerHTML!==html)bn.innerHTML=html}}
     const soon=R.games.some(g=>g.state==='in'||(g.state==='pre'&&Date.parse(g.at)-Date.now()<30*60e3&&Date.parse(g.at)>Date.now()-6*3600e3));liveWatch(soon?60e3:10*60e3)}   // every minute while games are on
   catch(e){liveWatch(2*60e3)}finally{liveBusy=false}}
