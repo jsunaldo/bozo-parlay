@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; script-src-attr 'none'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://a.espncdn.com https://bozo-sync.jsunaldo.workers.dev http://localhost:8787; media-src 'self' blob: https://bozo-sync.jsunaldo.workers.dev http://localhost:8787; connect-src 'self' https://bozo-sync.jsunaldo.workers.dev https://a.espncdn.com http://localhost:8787 http://127.0.0.1:8787; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -718,11 +719,11 @@ html.touch,html.touch body{touch-action:manipulation}
 try{const de=document.documentElement;if(navigator.maxTouchPoints>0||'ontouchstart' in window){de.classList.add('touch');if(matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)de.classList.add('shell')}}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom. Opened from the Home Screen: the page itself never scrolls (the app scrolls inside it), so iOS can't slide the tab bar and header away
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.16';
+const APP_VERSION='2026-09-19.17';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
-const LOGO=a=>`https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/${a.toLowerCase()}.png`;
+const LOGO=a=>`https://a.espncdn.com/i/teamlogos/nfl/500/scoreboard/${encodeURIComponent(String(a||'').toLowerCase())}.png`;   // only ever a team code, and never raw text in the page
 const esc=t=>t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
 function detectTeams(text){const out=[];const t=String(text||'');
   for(const[abbr,names]of Object.entries(TEAMS)){const hit=new RegExp('(^|[^A-Za-z])'+abbr+'([^A-Za-z]|$)').test(t)||names.some(n=>new RegExp('(^|[^A-Za-z])'+esc(n)+'([^A-Za-z]|$)','i').test(t));if(hit)out.push(abbr)}
@@ -741,7 +742,7 @@ function markSides(s){for(const w of s.weeks||[]){if(w.kind||w.bozoId!=null||!/a
 const SAFE_ID=/^[\w-]{1,64}$/,SAFE_HEX=/^#[0-9a-f]{3,8}$/i;
 function migrate(s){s.members??=[];s.weeks??=[];
   s.members=s.members.filter(m=>m&&SAFE_ID.test(m.id));s.members.forEach((m,i)=>{if(!SAFE_HEX.test(m.color||''))m.color=PALETTE[i%PALETTE.length]});
-  s.weeks=s.weeks.filter(w=>w&&SAFE_ID.test(w.id));for(const w of s.weeks)for(const f of ['picks','votes','ballots'])if(w[f]&&typeof w[f]==='object')for(const k of Object.keys(w[f]))if(!SAFE_ID.test(k))delete w[f][k];s.stake??=10;s.view??='week';markSides(s);s.weeks.forEach(w=>{w.picks??={};w.votes??={};w.stake??=s.stake;Object.values(w.picks).forEach(p=>{p.unit??=unitFor(p.text);p.teams??=detectTeams(p.text)})});
+  s.weeks=s.weeks.filter(w=>w&&SAFE_ID.test(w.id));for(const w of s.weeks)for(const f of ['picks','votes','ballots'])if(w[f]&&typeof w[f]==='object')for(const k of Object.keys(w[f]))if(!SAFE_ID.test(k))delete w[f][k];s.stake??=10;s.view??='week';markSides(s);s.weeks.forEach(w=>{w.picks??={};w.votes??={};w.stake??=s.stake;Object.values(w.picks).forEach(p=>{p.unit??=unitFor(p.text);if(!UNIT_SHORT.hasOwnProperty(p.unit))p.unit=unitFor(p.text);p.teams??=detectTeams(p.text);p.teams=(Array.isArray(p.teams)?p.teams:[]).filter(a=>TEAMS.hasOwnProperty(a)).slice(0,2)});if(w.next&&typeof w.next==='object')for(const np of Object.values(w.next))if(np&&typeof np==='object')np.teams=(Array.isArray(np.teams)?np.teams:[]).filter(a=>TEAMS.hasOwnProperty(a)).slice(0,2)});
   if(!(s.seedV>=2)){const w=s.weeks.find(w=>w.id==='w1');if(w)for(const[k,v]of Object.entries(SEED_MARGINS)){const p=w.picks[k];if(p&&p.margin==null&&(p.status==='hit'||p.status==='miss'))p.margin=v}s.seedV=2}
   return s}
 const KEY2='bozo-parlay-v2';
@@ -1873,7 +1874,7 @@ function renderLeg(w,l,cl){
 }
 function pickIcon(l){const t=l.teams||[];
   if(!t.length)return`<button type="button" class="pickicon empty" data-act="pick-team" data-mid="${l.mid}" title="Set team">🏈</button>`;
-  return`<button type="button" class="pickicon" data-act="pick-team" data-mid="${l.mid}" title="${t.map(a=>NICK[a]||a).join(' vs ')} — tap to change">${t.map(a=>`<img src="${LOGO(a)}" alt="${NICK[a]||a}" decoding="async">`).join('')}</button>`}
+  return`<button type="button" class="pickicon" data-act="pick-team" data-mid="${l.mid}" title="${h(t.map(a=>NICK[a]||a).join(' vs '))} — tap to change">${t.map(a=>`<img src="${LOGO(a)}" alt="${h(NICK[a]||a)}" decoding="async">`).join('')}</button>`}
 function betType(text){const t=String(text||'').toLowerCase();if(!t||t.startsWith('('))return'Other';if(/moneyline|\bml\b/.test(t))return'Moneyline';if(/team total/.test(t))return'Team total';if(/(\/|\s@\s).*(over|under) \d|\b(over|under) \d+(\.5)?( \(alt\))?$/.test(t)&&!/\d\+ |yds|receptions|catches|attempts|goals|sacks/.test(t))return'Total';if(/[+-]\d+(\.5)?( \(alt\))?$/.test(t))return'Spread';return'Player prop'}
 function propKind(text){const t=String(text||'').toLowerCase();if(/anytime td|\battd\b/.test(t))return'Anytime TD';if(/rush \+ rec|total yds/.test(t))return'Rush + rec yds';if(/rush(ing)? ?yds|rushing yards/.test(t))return'Rushing yds';if(/rec(eiving)? ?yds|receiving yards/.test(t))return'Receiving yds';if(/pass(ing)? ?yds|passing yards/.test(t))return'Passing yds';if(/receptions|catches/.test(t))return'Receptions';if(/passing touchdowns|pass(ing)? tds?/.test(t))return'Passing TDs';if(/attempts/.test(t))return'Pass attempts';if(/field goals?/.test(t))return'Field goals';if(/longest rush|sacks|points\b/.test(t))return'Other props';return'Other props'}
 const PROP_ORDER=['Anytime TD','Rushing yds','Receiving yds','Passing yds','Rush + rec yds','Receptions','Passing TDs','Pass attempts','Field goals','Other props'];
