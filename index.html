@@ -342,6 +342,10 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .ticket-foot{padding:18px 18px 16px;border-top:1px dashed var(--line2);position:relative;background:var(--surface2)}
 .ticket-foot::before,.ticket-foot::after{content:'';position:absolute;top:-11px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
 .ticket-foot::before{left:-11px}.ticket-foot::after{right:-11px}
+.ticket-foot.top{border-top:0;border-bottom:1px dashed var(--line2);margin-top:6px}.ticket-foot.top::before,.ticket-foot.top::after{top:auto;bottom:-11px}
+.placed-top .foot-grid{cursor:pointer}
+.placed-sum{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;background:none;padding:12px 0 4px;color:var(--text);font:inherit;font-size:13px;font-weight:600;text-align:left;cursor:pointer}.placed-sum .ps-more{color:var(--blue);font-size:12px;flex:none}
+.placed-top .placed-bar{margin:6px 0 4px}
 .foot-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 .foot-grid>div{display:flex;flex-direction:column;gap:3px}
 .foot-grid small{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -705,7 +709,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{if(navigator.maxTouchPoints>0||'ontouchstart' in window)document.documentElement.classList.add('touch')}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.9';
+const APP_VERSION='2026-09-19.10';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1745,13 +1749,13 @@ function renderTicket(w,c){
       <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c)}</div></div>
       ${isSide(w)?`<div class="bozo-line"><span class="clown">🎯</span><span class="bozo-name">Side parlay</span><span class="is-bozo">no Bozo, no vote</span>${w.locked?'<span class="tag warn" title="Picks are locked">🔒 locked</span>':''}</div>`:`<div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':(isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown')}</span>${isAdmin()?`<button class="mini" data-act="change-bozo" title="Change bozo">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked for this week">🔒 locked</span>':''}</div>`}
     </div>
-    ${placedBar(w,c)}
+    ${w.placed&&league().sync?placedTop(w,c):placedBar(w,c)}
     ${pickStatus(w,c,cl)}
     ${sweatable(w)?`<div id="lvb-${w.id}">${liveBanner(w)}</div>`:''}
     ${checkable(w,c)?`<div class="checkrow"><button class="btn block" data-act="check-results" data-wid="${w.id}">🔎 Check results · ${c.legs.filter(x=>x.status==='pending'&&String(x.text||'').trim()).length} to grade</button></div>`:''}
     <div class="legs slip">${renderLegs(w,c,cl)}</div>
     ${missing.length&&isAdmin()?`<div class="addleg"><select data-bind="add-leg|${w.id}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${m.id}">${h(m.name)}</option>`).join('')}</select></div>`:''}
-    <div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>
+    ${w.placed&&league().sync?'':`<div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>`}
   </section>`;
 }
 const segOpen=new Set();
@@ -1951,7 +1955,12 @@ function resultBadge(c){
   const map={pending:['pending',c.n?`${c.n-c.pending}/${c.n} graded`:'empty'],won:['won','Cashed'],lost:['lost',`Lost · ${c.hits}/${c.n-c.pushes}`],void:['void','Void']};
   const[cls,txt]=map[c.result];return`<span class="badge ${cls}">${txt}</span>`;
 }
-function ticketFoot(w,c){
+const placedOpen=new Set();   // slips whose placed details are open (this screen only)
+function placedTop(w,c){   // the parlay is in: the numbers up top; tap for who placed it and when, the boost, the prize pot and the slip screenshots
+  const P=w.placed;const by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo';const open=placedOpen.has(w.id);const n=(w.shots||[]).length;
+  const sum=`<button class="placed-sum" data-act="placed-toggle" data-wid="${w.id}" aria-expanded="${open}"><span>🔒 Placed by ${h(by)}${+P.boost>0?` · 🚀 ${h(String(P.boost))}% boost`:''}${n?` · 📷 ${n}`:''}</span><span class="ps-more">${open?'Hide ▴':'Details ▾'}</span></button>${open?placedBar(w,c):''}`;
+  return`<div class="ticket-foot top placed-top" id="tfoot" data-act="placed-toggle" data-wid="${w.id}">${ticketFoot(w,c,sum)}</div>`}
+function ticketFoot(w,c,mid=''){
   const priced=c.priced;const b=member(w.bozoId);
   return`<div class="foot-grid">
     <div><small>Parlay</small><b class="mono" id="f-odds">${c.n?amer(c.dec):'—'}</b></div>
@@ -1960,7 +1969,7 @@ function ticketFoot(w,c){
     <div><small>Each</small><b class="mono" id="f-each">${priced?fmt$(c.potential/c.n):'—'}</b></div>
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
-  <div id="f-won">${wonLine(w,c)}</div>
+  <div id="f-won">${wonLine(w,c)}</div>${mid}
   <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync&&!c.graded?(w.placed?`<button class="btn sm ghost" data-act="placed-undo" data-wid="${w.id}">🔓 Undo placed</button>`:w.locked?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">🔓 Unlock picks</button>`:`<button class="btn sm ghost" data-act="placed-open" data-wid="${w.id}">✅ I placed it</button>`):isAdmin()&&!league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastWeek()===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`;
 }
 function wonLine(w,c){if(c.result!=='won')return'';const b=member(w.bozoId);const out=pushBozoOn()?c.legs.filter(l=>l.status==='push').map(l=>member(l.mid)?.name).filter(Boolean):[];return`<div class="won-line">🎉 ${out.length?'Everyone who hit':'Everyone'} collects ${fmt$(c.share)}.${out.length?` ${h(out.join(', '))} pushed and ${out.length===1?'is':'are'} left out.`:''}${isSide(w)||!b?'':` ${h(b.name)} nets ${fmt$(c.share-c.stake)} after fronting the stake.`}</div>`}
@@ -3343,6 +3352,8 @@ const ACT={
   'shot-view'(el){const w=week(el.dataset.wid);const l=league();const x=(w&&w.shots||[]).find(y=>String(y.n)===el.dataset.n);if(!x)return;const can=isAdmin()||l.me===bozoOfW(w);
     modal({title:'Bet slip',body:`<img class="shot-full" src="${shotUrl(l,w,x)}" alt="Bet slip screenshot">`,actions:[...(can?[{label:'Remove',cls:'ghost danger',onClick:()=>{fetch(`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/shot?season=${encodeURIComponent(seasonOfWeek(l,w).id)}&week=${encodeURIComponent(w.id)}&n=${x.n}`,{method:'DELETE',headers:hdrs(l)}).then(r=>r.json()).then(d=>{takeState(l,d);save();render();toast('Screenshot removed','good')}).catch(e=>toast('Couldn’t remove it: '+e.message+'. Nothing changed. Try again when you have signal.','bad'))}}]:[]),{label:'Close',cls:'primary'}]})},
   'shot-unpick'(el){SHOTS_PICK.splice(+el.dataset.i,1);shotsPreview()},
+  'placed-toggle'(el,e){const t=e&&e.target;if(t&&t.closest&&t.closest('input,select,textarea,label,a,.shots,.placed-bar')&&!t.closest('.placed-sum'))return;   // a box, a link or a screenshot inside: that, not the toggle
+    const id=el.dataset.wid;if(placedOpen.has(id))placedOpen.delete(id);else placedOpen.add(id);render()},
   'placed-edit'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(w)placedSheet(w,{edit:true})},
   'placed-open'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(w)placedSheet(w)},
   'placed-undo'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(!w)return;confirm2('Undo “placed”?','Picks unlock again and anyone can change theirs. Use this only if the bet isn’t actually in.','Undo and unlock',async()=>{const l=league();try{const d=await api(l,'/placed',{method:'POST',body:{seasonId:seasonOfWeek(l,w).id,weekId:w.id,undo:true}});takeState(l,d);save();render();toast('Unlocked. Picks are open again','good')}catch(e){toast(e.status===423?e.message.charAt(0).toUpperCase()+e.message.slice(1)+'.':'Couldn’t undo it: '+e.message+'. Nothing changed. Try again when you have signal.','bad')}})},
