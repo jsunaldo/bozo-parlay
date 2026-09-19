@@ -247,6 +247,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .stag.hit{background:var(--green);color:#fff}.stag.miss{background:var(--red);color:#fff}.stag.push{background:var(--amber);color:#1d1d1f}.stag.in{background:var(--green-bg);color:var(--green)}.stag.none{background:var(--surface3);color:var(--muted)}
 .seg.q{padding:2px;background:var(--surface3)}.seg.q button{width:30px;height:26px;font-size:13px;color:var(--text)}
 .slip-group{display:flex;flex-direction:column;gap:6px;padding-left:8px;border-left:3px solid var(--purple);border-radius:3px}
+.slip-win{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:8px 2px 0}.slip-win:first-child{margin-top:0}
+.slip-win i{width:8px;height:8px;border-radius:50%;background:var(--wc);flex:none}.slip-win b{color:var(--wc)}.slip-win span{color:var(--muted);font-weight:600;letter-spacing:.02em}
+.w-morning{--wc:var(--amber)}.w-early{--wc:var(--blue)}.w-late{--wc:#30b0c7}.w-night{--wc:#5e5ce6}.w-none{--wc:var(--muted)}.w-unk{--wc:var(--dim)}
 .slip-sg{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);margin:2px 0}
 .upnext{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--surface);border-radius:var(--r);padding:14px 16px;margin:0 0 14px;cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--blue),var(--shadow)}
 .upnext .ic{font-size:24px}.upnext .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.upnext .t b{font-size:15px}.upnext .t small{color:var(--muted);font-size:12px}.upnext .go{font-weight:800;color:var(--blue);font-size:18px}
@@ -688,7 +691,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 
 <script>
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.1';
+const APP_VERSION='2026-09-19.2';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -1763,9 +1766,12 @@ function legInfo(w,mid){   // everything about one leg: what was typed, what the
 const slipOpen=new Set();   // legs opened for editing on this device: "weekId|memberId"
 function renderLegs(w,c,cl){
   if(!c.legs.length)return`<p class="muted tiny" style="margin:4px 2px">No legs yet — add one below.</p>`;
-  const legs=slipOrder(w,c,cl);
-  if(!cl||cl.state!=='ok')return legs.map(l=>renderLeg(w,l,cl)).join('');
-  return bunch(legs,l=>cl.claims[l.mid]?.game?.id).map(g=>g.game&&g.items.length>1?`<div class="slip-group"><div class="slip-sg">Same game · ${h(gameLabel(cl.claims[g.items[0].mid].game))}</div>${g.items.map(l=>renderLeg(w,l,cl)).join('')}</div>`:g.items.map(l=>renderLeg(w,l,cl)).join('')).join('');
+  const{legs,games}=slipPlan(w,c,cl);const gid=l=>{const g=games[l.mid];return g?g.id||g.name:null};
+  const rows=list=>bunch(list,gid).map(g=>g.game&&g.items.length>1?`<div class="slip-group"><div class="slip-sg">Same game · ${h(gameLabel(games[g.items[0].mid]))}</div>${g.items.map(l=>renderLeg(w,l,cl)).join('')}</div>`:g.items.map(l=>renderLeg(w,l,cl)).join('')).join('');
+  if(!legs.some(l=>games[l.mid]))return rows(legs);   // no schedule to go on yet: just the list
+  const secs=[];for(const l of legs){const g=games[l.mid];const k=noPickYet(l)?{key:'none',label:'No pick yet',slot:'none'}:(g&&kickWin(g.at))||{key:'unk',label:'Game not found',slot:'unk'};   // one section per TV window
+    const last=secs[secs.length-1];const s=last&&last.key===k.key?last:(secs.push({...k,items:[],times:[]}),secs[secs.length-1]);s.items.push(l);if(k.time&&!s.times.includes(k.time))s.times.push(k.time)}
+  return secs.map(s=>{const t=s.plain||!s.times.length||(s.slot==='early'&&s.times.join()==='1:00')?'':s.times.join(' & ');return`<div class="slip-win w-${s.slot}"><i></i><b>${h(s.label)}</b>${t?`<span>${h(t)}</span>`:''}</div>${rows(s.items)}`}).join('');
 }
 // one row per leg, like the next-week list: who, their pick with logos and odds, and where it stands; tap to edit
 function renderLeg(w,l,cl){
@@ -2226,11 +2232,21 @@ function weekClaims(items,nfl){   // items: [{mid,text,teams,tm}]
   for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i].mid,b=items[j].mid;const k=clashKind(claims[a],claims[b]);if(!k)continue;(clashes[a]??=[]).push({with:b,kind:k});(clashes[b]??=[]).push({with:a,kind:k});pairs.push({a,b,kind:k,game:claims[a].game||claims[b].game})}
   return{claims,clashes,pairs,nfl};
 }
-function slipOrder(w,c,cl){   // how a slip lists its legs: people with no pick yet first, then picks by kickoff (a game's picks together), then picks whose game isn't known; member order breaks ties
-  const d=slipDate(w);const nfl=(cl&&cl.nfl)||nflOk(d?nflData(d,0):null);
-  const gameOf=l=>{const cm=cl&&cl.claims&&cl.claims[l.mid];if(cm&&cm.game)return cm.game;return nfl?(claimOf(l.text,l.teams,l.tm,nfl)||{}).game||null:null};
-  const key=l=>{if(!String(l.text||'').trim()&&(l.status||'pending')==='pending')return[0,0,''];const g=gameOf(l);const t=g?Date.parse(g.at):NaN;return Number.isFinite(t)?[1,t,String(g.id||g.name||'')]:[2,0,'']};
-  return c.legs.map((l,i)=>({l,i,k:key(l)})).sort((x,y)=>x.k[0]-y.k[0]||x.k[1]-y.k[1]||(x.k[2]<y.k[2]?-1:x.k[2]>y.k[2]?1:0)||x.i-y.i).map(x=>x.l);
+const noPickYet=l=>!String(l.text||'').trim()&&(l.status||'pending')==='pending';
+function slipPlan(w,c,cl){   // how a slip lists its legs: people with no pick yet first, then picks by kickoff (a game's picks together), then picks whose game isn't known; member order breaks ties. Also each leg's game.
+  const d=slipDate(w);const nfl=(cl&&cl.nfl)||nflOk(d?nflData(d,0):null);const games={};
+  for(const l of c.legs){const cm=cl&&cl.claims&&cl.claims[l.mid];games[l.mid]=noPickYet(l)?null:cm&&cm.game?cm.game:nfl?(claimOf(l.text,l.teams,l.tm,nfl)||{}).game||null:null}
+  const key=l=>{if(noPickYet(l))return[0,0,''];const g=games[l.mid];const t=g?Date.parse(g.at):NaN;return Number.isFinite(t)?[1,t,String(g.id||g.name||'')]:[2,0,'']};
+  return{games,legs:c.legs.map((l,i)=>({l,i,k:key(l)})).sort((x,y)=>x.k[0]-y.k[0]||x.k[1]-y.k[1]||(x.k[2]<y.k[2]?-1:x.k[2]>y.k[2]?1:0)||x.i-y.i).map(x=>x.l)};
+}
+const slipOrder=(w,c,cl)=>slipPlan(w,c,cl).legs;
+let ETW;
+function kickWin(at){   // the TV window a kickoff is in (Eastern): Sunday Morning / 1 PM / 4 PM / Night, Thursday Night, Monday Night; any other daytime slot shows its time
+  const d=new Date(at);if(isNaN(d))return null;ETW??=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'long',hour:'numeric',minute:'2-digit',hourCycle:'h23'});
+  const p={};for(const x of ETW.formatToParts(d))p[x.type]=x.value;const hr=(+p.hour)%24,time=`${hr%12||12}:${p.minute}`;
+  const slot=hr<12?'morning':hr<16?'early':hr<19?'late':'night';const sun=p.weekday==='Sunday';
+  const label=slot==='night'?`${p.weekday} Night`:sun?`Sunday ${{morning:'Morning',early:'1 PM',late:'4 PM'}[slot]}`:`${p.weekday} ${time} ${hr<12?'AM':'PM'}`;
+  return{key:etDay(at)+'|'+(sun||slot==='night'?slot:time),label,slot,time,plain:!sun&&slot!=='night'};
 }
 function bunch(list,gameOf){   // keep the order, but pull same-game picks up next to the first one
   const out=[],done=new Set();for(const x of list){if(done.has(x.mid))continue;done.add(x.mid);const g=gameOf(x);const grp=[x];if(g)for(const y of list)if(!done.has(y.mid)&&gameOf(y)===g){grp.push(y);done.add(y.mid)}out.push({game:g,items:grp})}return out;
