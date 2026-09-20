@@ -92,8 +92,10 @@ js = re.search(r'<script>(.*)</script>', s, re.S).group(1); open('/tmp/club.js',
 r = subprocess.run(['node', '--check', '/tmp/club.js'], capture_output=True, text=True)
 if r.returncode: print(r.stderr[:600]); sys.exit(1)
 
-sw = open(os.path.join(SRC, 'sw.js')).read().replace("bozo-parlay-v4", f"{P}-v1").replace("k.startsWith('bozo-parlay-')", f"k.startsWith('{P}-')")
-assert f'{P}-v1' in sw and f"startsWith('{P}-')" in sw
+_sw = open(os.path.join(SRC, 'sw.js')).read()
+_cv = re.search(r"CACHE='bozo-parlay-(v\d+)'", _sw).group(1)   # a club's offline copy rotates whenever the main app's does
+sw = _sw.replace('bozo-parlay-' + _cv, f'{P}-{_cv}').replace("k.startsWith('bozo-parlay-')", f"k.startsWith('{P}-')")
+assert f'{P}-{_cv}' in sw and f"startsWith('{P}-')" in sw
 open(os.path.join(OUT, 'sw.js'), 'w').write(sw)
 
 m = json.load(open(os.path.join(SRC, 'manifest.json')))
