@@ -37,6 +37,13 @@ ICONS = os.path.join(SRC, A.icons) if A.icons else SRC
 P = A.prefix
 assert re.fullmatch(r'[a-z][a-z0-9-]*', P) and not P.startswith('bozo-parlay'), 'prefix must be unique and not start with bozo-parlay (the main app)'
 os.makedirs(OUT, exist_ok=True)
+# Never build one league into another league's app: members' phones would load the wrong league and lose their saved name.
+_old = os.path.join(OUT, 'index.html')
+if os.path.exists(_old):
+    _m = re.search(r"SHARE_LEAGUE=\{id:'([A-Za-z0-9]+)'", open(_old, encoding='utf-8').read())
+    _pm = re.search(r"const KEY2='([a-z0-9-]+)-v2'", open(_old, encoding='utf-8').read())
+    if _m and _m.group(1) != A.league: sys.exit(f"STOPPED, nothing was written: {OUT} is the app for league {_m.group(1)}, but you asked for league {A.league}. Check --league and --out (the Bozo University build needs its full flag list).")
+    if _pm and _pm.group(1) != P: sys.exit(f"STOPPED, nothing was written: {OUT} was built with --prefix {_pm.group(1)}, not {P}. A different prefix would sign every member out. Check the flags.")
 
 s = open(os.path.join(SRC, 'index.html')).read()
 a = s.index('/*@@SEEDS-START@@*/'); b = s.index('/*@@SEEDS-END@@*/')

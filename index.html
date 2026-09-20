@@ -719,7 +719,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{const de=document.documentElement;if(navigator.maxTouchPoints>0||'ontouchstart' in window){de.classList.add('touch');if(matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)de.classList.add('shell')}}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom. Opened from the Home Screen: the page itself never scrolls (the app scrolls inside it), so iOS can't slide the tab bar and header away
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-19.17';
+const APP_VERSION='2026-09-19.18';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -843,7 +843,7 @@ const BUILTIN=l=>l.id==='lg2'||l.id==='lg3'||(l.seasons||[]).some(x=>/^season-/.
 function guestDB(){const id=uid(),sid=uid();const d=fresh();d.season=String(new Date().getFullYear());return{leagues:[{id,name:'My league',seasons:[{id:sid,name:d.season,data:d}],activeSeason:sid}],active:id,seedV:99}}
 function loadDB(){
   if(new URLSearchParams(location.search).get('owner')==='1')setOwner();
-  try{const r=localStorage.getItem(KEY2);if(r){const d=JSON.parse(r);if(Array.isArray(d.leagues)&&d.leagues.length){if(d.leagues.some(BUILTIN))setOwner();d.leagues.forEach(l=>{if(l.seasons){l.seasons.forEach(x=>x.data=migrate(x.data||fresh()));if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=l.seasons[0]?.id}else l.data=migrate(l.data||fresh());l.name||='League'});if(!d.leagues.find(l=>l.id===d.active))d.active=d.leagues[0].id;return migrateDB(d)}}}catch(e){console.warn('load failed',e)}
+  try{const r=localStorage.getItem(KEY2);if(r){const d=JSON.parse(r);if(Array.isArray(d.leagues)&&d.leagues.length){if(d.leagues.some(BUILTIN))setOwner();d.leagues.forEach(l=>{if(Array.isArray(l.seasons)&&!l.seasons.length)l.seasons=[{id:uid(),name:'Season',data:fresh()}];if(l.seasons){l.seasons.forEach(x=>x.data=migrate(x.data||fresh()));if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=l.seasons[0]?.id}else l.data=migrate(l.data||fresh());l.name||='League'});if(!d.leagues.find(l=>l.id===d.active))d.active=d.leagues[0].id;return migrateDB(d)}}}catch(e){console.warn('load failed',e)}
   if(!isOwner())return guestDB();   // a friend's phone: nothing built in, they join a league from their link
   let data=null;try{const r=localStorage.getItem(KEY);if(r)data=migrate(JSON.parse(r))}catch(e){console.warn('v1 load failed',e)}
   if(!data)data=seedSeason();
@@ -1076,7 +1076,8 @@ function sendAs(l){const p=l.asPend;if(!p||!l.sync)return;api(l,'/as',{method:'P
 function applyState(l,d){
   const ui={};for(const x of (l.seasons||[]))ui[x.id]={cur:x.data?.currentWeekId,last:lastMain(x.data?.weeks)?.id};   // per-device UI state must not ride along with synced data
   const held={};for(const k of Object.keys(l.outbox||{})){const[sid,wid,mid]=k.split('|');const w=(l.seasons||[]).find(x=>x.id===sid)?.data.weeks.find(x=>x.id===wid);if(w&&w.picks[mid])held[k]=JSON.parse(JSON.stringify(w.picks[mid]))}
-  l.seasons=d.seasons.filter(x=>x&&SAFE_ID.test(x.id)).map(x=>({...x,data:migrate(x.data||fresh())}));
+  const inc=(Array.isArray(d.seasons)?d.seasons:[]).filter(x=>x&&SAFE_ID.test(x.id)).map(x=>({...x,data:migrate(x.data||fresh())}));
+  if(inc.length)l.seasons=inc;else if(!(l.seasons||[]).length)l.seasons=[{id:uid(),name:'Season',data:fresh()}];   // a league never arrives empty; if it somehow does, keep what's here so the app still opens
   if(d.person!==undefined)mergePerson(l,d.person);
   for(const[k,p]of Object.entries(held)){const[sid,wid,mid]=k.split('|');const w=l.seasons.find(x=>x.id===sid)?.data.weeks.find(x=>x.id===wid);const q=w&&w.picks[mid];
     const ent=l.outbox[k];if(!q||q.status!=='pending'||w.locked||(q.at&&ent&&'base' in ent&&q.at!==ent.base)){delete l.outbox[k];continue}for(const f of MEMBER_PICK){if(f in p)q[f]=p[f];else delete q[f]}}   // still waiting to go up: keep showing it
@@ -1164,8 +1165,8 @@ async function push(l,retried,clash){
   const fd=!!l.featDirty;   // the switches only go up when this device flipped one: a stale copy never switches the league back
   const have=new Set();for(const x of l.seasons||[])for(const w of (x.data&&x.data.weeks)||[])have.add(w.id);
   const dw=[...new Set([...(l.dropWeeks||[]),...(l.sync.known||[]).filter(id=>!have.has(id))])];   // weeks removed here on purpose (delete, reset, import): the server keeps weeks it started unless told
-  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,...(sd.name?{name:l.name}:{}),...(fd?{features:l.features||{}}:{}),...(dw.length?{dropWeeks:dw}:{}),...(sd.clubName?{clubName:l.clubName||''}:{}),...(sd.mondayOk&&l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
-    if(fd)delete l.featDirty;if(l.setDirty)for(const k of Object.keys(l.setDirty))if(l.setDirty[k]<=t0)delete l.setDirty[k];if(dw.length)l.dropWeeks=(l.dropWeeks||[]).filter(id=>!dw.includes(id));
+  try{const d=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,...(sd.name?{name:l.name}:{}),...(fd?{features:l.features||{}}:{}),...(dw.length?{dropWeeks:dw}:{}),...((l.dropSeasons||[]).length?{dropSeasons:l.dropSeasons}:{}),...(sd.clubName?{clubName:l.clubName||''}:{}),...(sd.mondayOk&&l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:l.sync.rev}});
+    if(fd)delete l.featDirty;if(l.setDirty)for(const k of Object.keys(l.setDirty))if(l.setDirty[k]<=t0)delete l.setDirty[k];if(dw.length)l.dropWeeks=(l.dropWeeks||[]).filter(id=>!dw.includes(id));delete l.dropSeasons;
     if((l.sync.seq||0)===seq&&!pushT){delete l.sync.dirty;applyState(l,d);save();if(!quiet())render();else needRender=true}   // nothing new typed meanwhile: take the league as it now stands (votes, claims…)
     else{l.sync.rev=d.rev;if(d.updatedAt)l.sync.base=d.updatedAt;l.sync.wh=sent;save()}                         // more edits are queued: they push next
     setSyncDot('ok');if(clash&&clash.length)toast(`${clash.slice(0,3).join(', ')} ${clash.length>1?'were':'was'} also changed on another device just now. Kept that version, so check ${clash.length>1?'them':'it'} and redo your change if it's missing.`,'bad')}
@@ -1175,6 +1176,12 @@ async function push(l,retried,clash){
       applyState(l,e.data.state);delete l.sync.dirty;save();render();toast('Someone else changed the league at the same moment — reloaded it. Redo your last edit.','bad')}
     else{setSyncDot('bad');toast('Cloud save failed: '+e.message+'. Kept on this device — it goes up as soon as the connection is back.','bad')}}
 }
+function sharedStop(what){const l=league();if(!l||!l.sync)return false;toast(`${l.name} is shared with the group, so you can’t ${what} from here: it would change the league for everyone. Nothing changed. To go back to an earlier state, use Crew → Data → Restore an earlier copy.`,'bad');return true}
+async function restoreSheet(){const l=league();if(!l||!l.sync||!isAdmin(l))return;let list=[];
+  try{list=(await api(l,'/backups')).backups||[]}catch(e){toast(`Couldn’t get the list of saved copies${e.status?'':' (no connection?)'}. Nothing changed. Try again when you have signal.`,'bad');return}
+  if(!list.length){modal({title:'Restore an earlier copy',body:'<p>There are no saved copies yet. The league saves one every time the commissioner changes something.</p>',actions:[{label:'OK',cls:'primary'}]});return}
+  const fmt=at=>new Date(at).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+  modal({title:'Restore an earlier copy',body:`<p class="muted tiny" style="margin:0 0 10px">Each line is the whole league as it stood at that time. Restoring puts the slips, grades and votes back for everyone; who’s signed in on which phone stays as it is. The league as it is right now is saved first, so you can undo a restore from this same list.</p><div class="rank-list">${list.map(b=>`<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><span><b>${h(fmt(b.at))}</b><br><span class="muted tiny">${+b.seasons||0} season${b.seasons===1?'':'s'} · ${+b.weeks||0} weeks · ${+b.picks||0} picks</span></span><button class="btn sm" data-act="restore-go" data-at="${h(b.at)}">Restore</button></div>`).join('')}</div>`,actions:[{label:'Close',cls:'ghost'}]})}
 const obKey=(l,w,mid)=>seasonOfWeek(l,w).id+'|'+w.id+'|'+mid;
 const outboxHas=l=>!!(l.outbox&&Object.keys(l.outbox).length);
 const unsent=(w,mid,l=league())=>!!(l.outbox&&l.outbox[obKey(l,w,mid)]);
@@ -1452,8 +1459,9 @@ function dayRule(w){if(w&&w.kind==='special'&&w.day)return{day:w.day,name:w.dayN
 const ruleText=r=>r.sunday?`${r.monday?'Sunday or Monday':'Sunday'} games only`:`${r.name} games only (${fmtDay(r.day)})`;
 function newWeek(bozoId){
   const prev=lastWeek();const plan=nextPlan(prev);const early=(prev&&prev.next)||{};
-  const w={id:uid(),num:plan.num,date:today(),bozoId,stake:S.stake,picks:{},votes:{},...plan.extra};
-  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:!!(np.teams&&np.teams.length),...(np.raw?{raw:np.raw}:{}),by:np.by||m.id,...(np.at?{at:np.at}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
+  const ps=prev&&prev.kind!=='special'?checkDate(prev):null;   // started on (or before) the finished week's own Sunday: date it the day after, so it covers NEXT Sunday and never gets graded from games already played
+  const w={id:uid(),num:plan.num,date:ps&&today()<=ps?addDays(ps,1):today(),bozoId,stake:S.stake,picks:{},votes:{},...plan.extra};
+  S.members.filter(m=>m.active).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:false,...(np.raw?{raw:np.raw}:{}),by:np.by||m.id,...(np.at?{at:np.at}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
   S.weeks.push(w);S.currentWeekId=w.id;
   const sd=prev&&prev.kind==='special'?sideOf(prev):null;if(sd){sd.of=w.id;S.weeks.splice(S.weeks.indexOf(sd),1);S.weeks.push(sd)}   // a side parlay belongs with the Sunday parlay
   return w;
@@ -1499,7 +1507,12 @@ function calc(w){
   const stake=Number(w.stake??S.stake)||0;
   let potential=stake*d,slip=false;if(w.placed&&!pushes){const P=w.placed;const t=P.total?parseOdds(P.total):null;if(t!=null){d=dec(t);slip=true}   // the Bozo's DraftKings slip (a push reprices it, so then it's the legs again)
     if(+P.pot>0){potential=+P.pot;slip=true}else if(+P.toWin>0){potential=stake+(+P.toWin);slip=true}else if(t!=null)potential=stake*d}
-  else if(w.placed&&pushes&&+w.placed.boost>0){d=1+(d-1)*(1+(+w.placed.boost)/100);potential=stake*d}   // a push reprices it; the boost still applies to the profit
+  else if(w.placed&&pushes){const P=w.placed;const b=+P.boost>0?+P.boost:0;   // a push reprices the slip. Best: the new payout typed from DraftKings. Else: DraftKings' own number with the pushed legs' prices taken out (the boost still applies to the profit). Else: the legs' product.
+    const sd=+P.pot>0&&stake>0?+P.pot/stake:P.total&&parseOdds(P.total)!=null?dec(parseOdds(P.total)):+P.toWin>0&&stake>0?(stake+(+P.toWin))/stake:null;
+    const pd=legs.filter(l=>l.status==='push').map(l=>parseOdds((P.odds||{})[l.mid]||l.odds));
+    if(+P.pushPot>0&&stake>0){potential=+P.pushPot;d=potential/stake;slip=true}
+    else if(sd&&pd.length&&pd.every(x=>x!=null)){let un=1+(sd-1)/(1+b/100);for(const x of pd)un/=dec(x);if(un>1){d=1+(un-1)*(1+b/100);potential=stake*d;slip=true}else if(b){d=1+(d-1)*(1+b/100);potential=stake*d}}
+    else if(b){d=1+(d-1)*(1+b/100);potential=stake*d}}
   const payout=result==='won'?potential:result==='void'?stake:0;
   const paid=pushBozoOn()&&result==='won'?n-pushes:n;const share=paid?payout/paid:0;   // a push is left out of the winnings in a push-is-Bozo league
   return{legs,n,hits,misses,pushes,pending,dec:d,potential,payout,share,result,stake,missingOdds,slip,priced:n>0&&(!missingOdds||slip),graded:pending===0&&n>0};
@@ -1686,7 +1699,7 @@ const amOf=d=>d==null||!(d>1)?'':d>=2?'+'+Math.round((d-1)*100):'-'+Math.round(1
 function placedBar(w,c){   // where the bet stands: waiting on picks, waiting on the Bozo, or placed (picks locked)
   const l=league();if(!l.sync||!c.n)return'';const bz=bozoOfW(w);const nb=member(bz);const canPlace=isAdmin()||(l.me&&l.me===bz);
   if(w.placed){const P=w.placed;const by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo';const sh=w.shots||[];
-    const tools=canPlace&&!c.graded?`<div class="placed-tools"><a href="#" data-act="placed-edit" data-wid="${w.id}">Fix odds or pot</a>${isAdmin()?'':`<a href="#" data-act="placed-undo" data-wid="${w.id}">Undo placed</a>`}</div>`:'';
+    const tools=canPlace&&(!c.graded||c.pushes)?`<div class="placed-tools"><a href="#" data-act="placed-edit" data-wid="${w.id}">${c.pushes?'Enter the payout after the push':'Fix odds or pot'}</a>${isAdmin()||c.graded?'':`<a href="#" data-act="placed-undo" data-wid="${w.id}">Undo placed</a>`}</div>`:'';
     return`<div class="placed-bar on">🔒 <b>Placed</b> by ${h(by)}, ${h(fmtET(P.at))}${P.total?` · ${h(P.total)}`:''}${+P.boost>0?` <span class="tag boost">🚀 ${h(String(P.boost))}% boost</span>`:''}${+P.pot>0?` · prize pot ${fmt$(+P.pot)}`:+P.toWin>0?` · $${c.stake} to win ${fmt$(+P.toWin)}`:''}. Picks are locked.${tools}${sh.length||canPlace?`<div class="shots">${sh.map(x=>`<button class="shot" data-act="shot-view" data-wid="${w.id}" data-n="${x.n}" aria-label="Bet slip screenshot"><img src="${shotUrl(l,w,x)}" alt="Bet slip screenshot" loading="lazy"></button>`).join('')}${canPlace&&sh.length<2?`<label class="shot add">+ Screenshot<input type="file" accept="image/*" hidden data-shotadd="${w.id}"></label>`:''}</div>`:''}</div>`}
   if(c.graded)return'';if(w.locked)return`<div class="placed-bar on">🔒 Picks are locked.</div>`;
   const missing=c.legs.filter(x=>x.status==='pending'&&!String(x.text||'').trim()).length;
@@ -1706,6 +1719,8 @@ function placedSheet(w,o={}){const c=calc(w);const edit=!!(o.edit&&w.placed);con
     <p class="muted tiny" style="margin:4px 0 0">Both are on your bet slip. The prize pot is the total payout if it hits.</p>
     <label class="field" style="margin-top:10px"><span>🚀 Odds boost (%)</span><input id="plBoost" class="mono" value="${+P.boost>0?h(String(P.boost)):''}" placeholder="none" inputmode="decimal" autocomplete="off" data-stake="${c.stake}" data-dec="${c.missingOdds?'':c.dec}"></label>
     <p class="muted tiny" style="margin:4px 0 0">Took a DraftKings boost? Put the % here. Final odds and prize pot are the boosted numbers from your slip (the ones that aren’t crossed out). If they’re empty, the app fills in an estimate to check against the slip.</p>
+    ${edit&&c.pushes?`<label class="field" style="margin-top:10px"><span>Prize pot after the push ($)</span><input id="plPushPot" class="mono" value="${+P.pushPot>0?h((+P.pushPot).toFixed(2)):''}" placeholder="${h(c.potential.toFixed(2))} (the app’s estimate)" inputmode="decimal" autocomplete="off"></label>
+    <p class="muted tiny" style="margin:4px 0 0">${c.pushes} leg${c.pushes===1?'':'s'} pushed, so DraftKings re-priced the bet. Type the new total payout from your DraftKings slip here. Until you do, the app shows its own estimate.</p>`:''}
     <label class="field" style="margin-top:10px"><span>🔗 Share link (optional)</span><input id="plLink" value="${h(P.link||'')}" placeholder="Paste the DraftKings share link" inputmode="url" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
     <p class="muted tiny" style="margin:4px 0 0">In DraftKings, open the bet, tap Share, then Copy Link. Everyone can then open the slip from the app.</p>
     ${edit?'':`<div class="pd-sub" style="margin:12px 0 6px">Bet slip screenshots (up to 2)</div><div class="shots" id="plShots"></div><label class="btn ghost sm" style="margin-top:6px">+ Add screenshot<input type="file" accept="image/*" multiple hidden id="plShotIn"></label>
@@ -1721,8 +1736,10 @@ function placedSheet(w,o={}){const c=calc(w);const edit=!!(o.edit&&w.placed);con
       if(bv&&!(boost>0&&boost<=1000)){bEl&&bEl.classList.add('bad');toast(`Check the boost “${bv}”: type the percent, like 25 or 50. Nothing’s locked yet.`,'bad');return false}
       const lEl=document.getElementById('plLink');const lv=(lEl&&lEl.value||'').trim();const link=lv?shareUrl(lv):'';lEl&&lEl.classList.remove('bad');
       if(lv&&!link){lEl&&lEl.classList.add('bad');toast(`That share link isn’t a web link the app can use. Nothing’s ${edit?'saved':'locked'} yet. In DraftKings, open the bet, tap Share, then Copy Link, and paste it here, or leave the box empty.`,'bad');return false}
+      const ppEl=document.getElementById('plPushPot');const ppv=(ppEl&&ppEl.value||'').trim();const pushPot=ppv?slipMoney(ppv):null;ppEl&&ppEl.classList.remove('bad');
+      if(ppv&&pushPot==null){ppEl.classList.add('bad');toast(`Check the prize pot after the push “${ppv}”: type it like 1238.30. Nothing’s saved yet.`,'bad');return false}
       const legs={};if(!edit)for(const x of c.legs)legs[x.mid]=String(x.text||'').trim();
-      sendPlaced({seasonId:seasonOfWeek(league(),w).id,weekId:w.id,odds,total,pot,boost,...(edit||link?{link}:{}),...(edit?{edit:true}:{legs})},w,edit?[]:SHOTS_PICK.slice(0,2),edit);return false}}]})}
+      sendPlaced({seasonId:seasonOfWeek(league(),w).id,weekId:w.id,odds,total,pot,boost,...(ppEl?{pushPot:pushPot||0}:{}),...(edit||link?{link}:{}),...(edit?{edit:true}:{legs})},w,edit?[]:SHOTS_PICK.slice(0,2),edit);return false}}]})}
 function boostFill(){   // the boost box changed: the final odds and prize pot, boosted, from the legs' prices
   const bEl=document.getElementById('plBoost');if(!bEl)return;const b=Number(String(bEl.value||'').replace(/[%\s+]/g,''))||0;if(b<0||b>1000)return;
   let d=1,ok=true;document.querySelectorAll('.pl-odds').forEach(i=>{const n=parseOdds(slipOdds(i.value)||'');if(n==null)ok=false;else d*=dec(n)});if(!ok||d<=1)d=+bEl.dataset.dec||0;if(!(d>1))return;
@@ -1777,7 +1794,7 @@ function renderTicket(w,c){
     ${sweatable(w)?`<div id="lvb-${w.id}">${liveBanner(w)}</div>`:''}
     ${checkable(w,c)?`<div class="checkrow"><button class="btn block" data-act="check-results" data-wid="${w.id}">🔎 Check results · ${c.legs.filter(x=>x.status==='pending'&&String(x.text||'').trim()).length} to grade</button></div>`:''}
     <div class="legs slip">${renderLegs(w,c,cl)}</div>
-    ${missing.length&&isAdmin()?`<div class="addleg"><select data-bind="add-leg|${w.id}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${m.id}">${h(m.name)}</option>`).join('')}</select></div>`:''}
+    ${missing.length&&isAdmin()&&!w.placed?`<div class="addleg"><select data-bind="add-leg|${w.id}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${m.id}">${h(m.name)}</option>`).join('')}</select></div>`:''}
     ${(w.placed&&league().sync)||c.graded?'':`<div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>`}
   </section>`;
 }
@@ -1875,7 +1892,7 @@ function renderLeg(w,l,cl){
 function pickIcon(l){const t=l.teams||[];
   if(!t.length)return`<button type="button" class="pickicon empty" data-act="pick-team" data-mid="${l.mid}" title="Set team">🏈</button>`;
   return`<button type="button" class="pickicon" data-act="pick-team" data-mid="${l.mid}" title="${h(t.map(a=>NICK[a]||a).join(' vs '))} — tap to change">${t.map(a=>`<img src="${LOGO(a)}" alt="${h(NICK[a]||a)}" decoding="async">`).join('')}</button>`}
-function betType(text){const t=String(text||'').toLowerCase();if(!t||t.startsWith('('))return'Other';if(/moneyline|\bml\b/.test(t))return'Moneyline';if(/team total/.test(t))return'Team total';if(/(\/|\s@\s).*(over|under) \d|\b(over|under) \d+(\.5)?( \(alt\))?$/.test(t)&&!/\d\+ |yds|receptions|catches|attempts|goals|sacks/.test(t))return'Total';if(/[+-]\d+(\.5)?( \(alt\))?$/.test(t))return'Spread';return'Player prop'}
+function betType(text){const t=String(text||'').toLowerCase();if(!t||t.startsWith('('))return'Other';if(/moneyline|\bml\b/.test(t))return'Moneyline';if(/team total/.test(t))return'Team total';if(/(\/|\s@\s).*(over|under) \d|\b(over|under) \d+(\.5)?( \(alt\))?$/.test(t)&&!/\d\+ |yds|receptions|catches|attempts|goals|sacks/.test(t))return'Total';if(/(^|[^\d])[+-]\d+(\.5)?( \(alt\))?$/.test(t))return'Spread';return'Player prop'}
 function propKind(text){const t=String(text||'').toLowerCase();if(/anytime td|\battd\b/.test(t))return'Anytime TD';if(/rush \+ rec|total yds/.test(t))return'Rush + rec yds';if(/rush(ing)? ?yds|rushing yards/.test(t))return'Rushing yds';if(/rec(eiving)? ?yds|receiving yards/.test(t))return'Receiving yds';if(/pass(ing)? ?yds|passing yards/.test(t))return'Passing yds';if(/receptions|catches/.test(t))return'Receptions';if(/passing touchdowns|pass(ing)? tds?/.test(t))return'Passing TDs';if(/attempts/.test(t))return'Pass attempts';if(/field goals?/.test(t))return'Field goals';if(/longest rush|sacks|points\b/.test(t))return'Other props';return'Other props'}
 const PROP_ORDER=['Anytime TD','Rushing yds','Receiving yds','Passing yds','Rush + rec yds','Receptions','Passing TDs','Pass attempts','Field goals','Other props'];
 const SUB_ORDER={Spread:['Favorite','Underdog','Small (≤3)','Mid (3.5–6.5)','Big (7+)','Alt line','1st half'],Moneyline:['Favorite (−)','Underdog (+)','1st half'],Total:['Over','Under','Low (<44)','Mid (44–49.5)','High (50+)','Alt line'],'Team total':['Over','Under'],'Player prop':PROP_ORDER,Other:[]};
@@ -2150,7 +2167,7 @@ function renderSealedVote(w,c,el,reason){
   else{
     const max=(l.limits&&l.limits.videoMax)||400*1048576;
     const showBallot=!mine.voted||editing;
-    yours=`<div class="pd-sub" style="margin:12px 0 6px">1 · Your vote ${mine.voted?'<span class="good">✓ sealed</span>':''}</div>
+    yours=`${w.sub&&w.sub[me]&&w.sub[me].stale?`<p class="hint" style="margin:0 0 8px">A grade was corrected after you voted, so the ballot changed and your earlier vote no longer counts. Vote again below. Your video is kept.</p>`:''}<div class="pd-sub" style="margin:12px 0 6px">1 · Your vote ${mine.voted?'<span class="good">✓ sealed</span>':''}</div>
     ${showBallot?'':`<div class="np-saved"><span>Your vote: ${spoiler(mine.cand,w.id)}</span><button class="btn sm ghost" data-act="change-sub">Change</button></div>`}
     <div class="cands" ${showBallot?'':'hidden'}>${el.list.map(id=>{const m=member(id);const lg=c.legs.find(x=>x.mid===id);const sub=lg.status==='miss'?(lg.margin!=null?`missed by ${fmtMargin(lg.margin,lg.unit)}`:'missed'):lg.status==='push'?'pushed':'hit';const self=id===me;const on=mine.cand===id;
       return`<div class="cand ${on?'sel':''}" data-act="pick-cand" data-mid="${id}"><div class="avatar" style="--c:${m.color}">${h(initials(m.name))}</div><div class="cand-body"><b>${h(m.name)}${self?' (you)':''} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${lg.text?betChip(lg.text,lg.teams):''}</small></div><span class="chk ${on?'on':''}">${on?'✓':''}</span></div>`}).join('')}</div>
@@ -2415,7 +2432,7 @@ function espnOdds(text,nfl){   // the book's current price for a game line, only
   return null}
 function oddsFar(a,b){const n=x=>{const v=parseFloat(String(x||'').replace(/[^\d.+-]/g,''));return Number.isFinite(v)&&Math.abs(v)>=100?v:null};const x=n(a),y=n(b);return x!=null&&y!=null&&Math.sign(x)!==Math.sign(y)&&Math.abs(x-y)>400}   // opposite signs and more than 400 apart
 function oddsFix(p,nfl){   // DraftKings' price for this exact bet always wins (the owner's rule); what they typed stays alongside, and it follows the book until kickoff
-  if(!p||p.status!=='pending')return false;const lo0=' '+String(p.raw||p.text||'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ';if(propCombo(lo0.replace(/\bd ?\/ ?st\b/g,'dst'))||((PROP_PART.test(lo0)||/\b2nd half\b|\bsecond half\b/.test(lo0))&&!oaWant(p.text,nfl)))return false;   // more than one bet, or a part-game bet no feed prices: no single book price
+  if(!p||p.status!=='pending')return false;const lo0=' '+String(p.raw||p.text||'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ';const two0=detectTeams(String(p.raw||p.text||'')).length===2&&/\b(over|under|o|u) ?\d/.test(lo0);if(propCombo((two0?lo0.replace(/\//g,' '):lo0).replace(/\bd ?\/ ?st\b/g,'dst'))||((PROP_PART.test(lo0)||/\b2nd half\b|\bsecond half\b/.test(lo0))&&!oaWant(p.text,nfl)))return false;   // more than one bet, or a part-game bet no feed prices: no single book price
   const d=dkPrice(p.text,nfl);const eo=d&&d.price||null;if(!eo)return false;if(oddsFar(p.oddsBy==='espn'?p.oddsTyped:p.odds,eo))return false;   // e.g. typed -250 vs +190: not the same bet — keep what they typed
   if(p.oddsBy==='espn'&&p.odds===eo&&p.oddsDk===eo)return false;   // already the book's price
   const typed=p.oddsBy==='espn'?(p.oddsTyped??''):String(p.odds||'').trim();p.oddsBy='espn';p.oddsSrc=d.src==='an'||d.src==='oa'?d.src:'espn';p.oddsDk=eo;p.oddsTyped=typed;p.odds=eo;return true}
@@ -2455,7 +2472,7 @@ async function tidySeasons(){   // once per season, on the commissioner's device
     const todo=(l.seasons||[]).filter(sn=>sn.data&&(sn.data.tidyV||0)<TIDY_V);if(!todo.length)continue;
     const changes=[],done=[];
     for(const sn of todo){const ids=new Set(sn.data.members.map(m=>m.id));let ok=true;
-      const dOf=w=>w.kind==='special'&&w.day?w.day:isSide(w)?((sn.data.weeks.find(x=>x.id===w.of)||w).date):w.date;
+      const dOf=w=>{if(w.kind==='special'&&w.day)return w.day;const par=isSide(w)?sn.data.weeks.find(x=>x.id===w.of):null;if(par&&par!==w)return dOf(par);if(!w.date)return null;const k=dowOf(w.date);return k===0?w.date:addDays(w.date,7-k)};
       for(const w of sn.data.weeks){const ps=Object.entries(w.picks||{}).filter(([mid,p])=>ids.has(mid)&&p&&p.status&&p.status!=='pending'&&needsTidy(p));if(!ps.length)continue;
         let nfl=null;const d=dOf(w);if(d){try{nfl=resNflOf(await loadResults(d,365*86400e3))}catch(e){ok=false;continue}}   // no results right now: try that week again next time
         for(const[mid,p]of ps){const cl=cleanPick(p.text,nfl);if(cl&&cl!==p.text)changes.push({sid:sn.id,wid:w.id,mid,from:p.text,to:cl})}}
@@ -2467,7 +2484,7 @@ async function tidySeasons(){   // once per season, on the commissioner's device
   }}finally{tidyBusy=false}
 }
 function untidyList(w){const nfl=nflOk(slipNfl(w));return Object.entries(w.picks).filter(([mid,p])=>member(mid)&&String(p.text||'').trim()&&p.status==='pending').map(([mid,p])=>({mid,from:p.text,to:cleanPick(p.text,nfl)})).filter(x=>x.to&&x.to!==x.from)}
-function slipDate(w){const p=parentOf(w);return w.kind==='special'&&w.day?w.day:p?slipDate(p):w.date}
+function slipDate(w){const p=parentOf(w);return w.kind==='special'&&w.day?w.day:p?slipDate(p):(checkDate(w)||w.date)}   // the game Sunday the slip covers, not the day it was started
 function liveSlip(w){const l=league();if(!w||season().id!==newestOf(l).id)return false;const lw=lastWeek();return w===lw||(isSide(w)&&(w.of===lw?.id||!calc(w).graded))}
 function slipNfl(w){if(!liveSlip(w)||!slipDate(w))return null;return nflData(slipDate(w),0)}
 const isAttd=t=>{const lo=' '+String(t||'').toLowerCase().replace(/[’']/g,'')+' ';return!PASSY.test(lo)&&!TD_FIRST.test(lo)&&!TD_TWO.test(lo)&&(TD_ANY.test(lo)||/\btds?\b|touchdown|tuddy/.test(lo))};
@@ -2481,7 +2498,9 @@ function slipClaims(w,c){if(!liveSlip(w)||!slipDate(w))return null;const nfl=nfl
 const TD_FIRST=/\b(first|1st) (td|touchdown|tuddy|scorer)\b|\bftd\b|\bto score first\b|\bfirst to score\b|\bscores? first\b/,PASSY=/\bpass(es|ed|ing)?\b|\bthrow(s|n)?\b|\bthrew\b/,TD_NEG=/\b(no|not|never|wont|won t|doesnt|fails? to)\b/,TD_QUAL=/\blast\b|\beach half\b|\bboth halves\b|\bevery half\b|\bteams? first\b|\bfirst (td|touchdown) for (his|the|their) team\b/,TD_TWO=/\b2 ?\+ ?(tds?|touchdowns?|tuddies)\b|\btwo (tds|touchdowns)\b/,TD_ANY=/\bany ?time\b|\batt?d\b|\btuddy\b|\bto score\b|\btd scorer\b|\bscores? an? (td|touchdown)\b/;
 const STATS=[[/pass(ing)? ?(\+|\/|and|&) ?rush(ing)?/,'Pass + Rush Yds'],[/(rush(ing)?|rec(eiving)?) ?(\+|\/|and|&|n) ?(rush(ing)?|rec(eiving)?)\b|scrimmage|total y(ar)?ds/,'Rush + Rec Yds'],[/longest rec(eption)?/,'Longest Reception'],[/longest rush/,'Longest Rush'],[/pass(ing)? ?(tds?|touchdowns?)|\btds? pass(es)?\b|\btd throws?\b|\b(tds?|touchdowns?) passing\b/,'Passing TDs'],[/rush(ing)? att(empt)?s?|carries/,'Rush Attempts'],[/rec(eiving)? ?y(ar)?ds?|receiving\b/,'Receiving Yds'],[/rush(ing)? ?y(ar)?ds?|rushing\b/,'Rushing Yds'],[/pass(ing)? ?y(ar)?ds?|passing\b/,'Passing Yds'],[/pass(ing)? att(empt)?s?|\battempts\b/,'Pass Attempts'],[/completions?|\bcomps?\b/,'Completions'],[/receptions?|catches|\brecs?\b/,'Receptions'],[/interceptions?|\bints?\b|\bpicks thrown\b/,'Interceptions'],[/field goals?|\bfgs?\b/,'Field Goals Made'],[/kick(ing)? p(oin)?ts/,'Kicking Points']];
 // sportsbook wording for a pick, or null when the app isn't sure (then the text is left exactly as typed). House style: player props '{First Last} Anytime TD | First TD | 2+ TDs | N+ {Stat} | Over/Under X {Stat}' (no Jr./Sr./III); team bets '{Nickname} ±X', '{Nickname} Moneyline', '{Nickname} Team Total Over/Under X', totals '{Away} @ {Home} Over/Under X'
-const PART_OTHER=/\b(2nd|second|3rd|third|4th|fourth) ?(half|quarter|qtr)\b|\b(1st|first) ?(quarter|qtr)\b|\b2h\b|\bq[1-4]\b|\b[1-4]q\b|teaser/;   // part of a game other than the 1st half, or a teaser: the app doesn't reword those
+const HALF1=/\b(1st|first)[ -]?half\b|\b1h\b|\bh1\b|\bhalf ?time\b/;   // a 1st-half bet, however it's typed
+const PERIOD_OTHER=/\b(2nd|second|3rd|third|4th|fourth)[ -]?(half|quarter|qtr|q|period)\b|\b(1st|first)[ -]?(quarter|qtr|q|period)\b|\b(quarter|qtr|period) ?[1-4]\b|\b2h\b|\bh2\b|\bq[1-4]\b|\b[1-4]q\b/;   // a quarter or the 2nd half: never reworded, never graded as a full game
+const PART_OTHER=new RegExp(PERIOD_OTHER.source+'|teaser');   // part of a game other than the 1st half, or a teaser: the app doesn't reword those
 const teamsInOrder=(raw,ts)=>{const lo=raw.toLowerCase();const pos=a=>{let b=Infinity;const m=raw.match(new RegExp('(^|[^A-Za-z])'+a+'([^A-Za-z]|$)'));if(m)b=m.index;for(const n of TEAMS[a]||[]){const i=lo.search(new RegExp('(^|[^a-z])'+esc(n.toLowerCase())+'([^a-z]|$)'));if(i>=0&&i<b)b=i}return b};return[...ts].sort((x,y)=>pos(x)-pos(y))};
 const bookName=n=>String(n||'').replace(/,?\s+(jr|sr|ii|iii|iv|v)\.?$/i,'').trim();
 function propAsTyped(raw,lo,side,line,plus,withTeam){   // a player the rosters don't know: the name as typed (no Jr./Sr.), only the market tidied
@@ -2494,11 +2513,14 @@ function propAsTyped(raw,lo,side,line,plus,withTeam){   // a player the rosters 
   const st=(STATS.find(([re])=>re.test(lo))||[])[1];if(st){if(plus)return`${who} ${plus}+ ${st}`;if(side)return`${who} ${side} ${line} ${st}`}
   return null}
 const PROP_PART=/\b(1st|first|2nd|second|3rd|third|4th|fourth) ?(half|quarter|qtr)\b|\b[12]h\b|\bq[1-4]\b|\b[1-4]q\b|\(alt\)|\balt\b/;
+function ptsOnly(lo){let r=' '+lo+' ';for(const[a,names]of Object.entries(TEAMS))for(const n of[a,...names])r=r.replace(new RegExp('([^a-z0-9])'+esc(n.toLowerCase())+'(?=[^a-z])','g'),'$1 ');r=r.replace(/\b(over|under|o|u) ?\d+(\.\d+)?/g,' ').replace(/\(alt\)|\balt(ernate)?\b|\b(1st|first)[ -]?half\b|\b1h\b|\bh1\b|\bhalf ?time\b/g,' ').replace(/\b(team total|total points|total|tt|points?|pts|game|combined|vs?|at|the|in|of|o\/u|line)\b/g,' ');return!/[a-z]/.test(r)}   // an over/under that is only about points (not sacks, touchdowns, punts…)
+function backedTeam(text,teams){if(teams.length<2)return teams[0]||null;const ord=teamsInOrder(text,teams);const T=a=>'(?:'+[a,...(TEAMS[a]||[])].map(esc).join('|')+')';const BET='(?:ml|money ?line|to win|team total|tt|[+-] ?\\d+(?:\\.\\d+)?|pk|pick ?em|(?:1st|first)[ -]?half|1h|over|under|o|u|\\d+(?:\\.\\d+)?|\\(alt\\)|alt)';
+  return new RegExp('^\\s*'+T(ord[0])+'(?:\\s+'+BET+')+\\s*\\(?(?:vs\\.?|versus|v\\.?|@|at|against)\\s+(?:the\\s+)?'+T(ord[1])+'\\)?(?:\\s+[+-]\\d{3,4})?\\s*$','i').test(text)?ord[0]:null}   // "Eagles ML vs Cowboys" is on the Eagles; any other two-team wording isn't guessed
 function propCombo(lo){const t=lo.replace(/(pass(ing)?|rush(ing)?|rec(eiving)?)\w* ?(\+|\/|and|&|n) ?(rush(ing)?|rec(eiving)?)/g,' ');return/&|\band\b|,|\bor\b|\bw\/|\bsgp\b|\/|(^|[^\d.])\+ ?[a-z]/.test(t)}   // "Kelce 4+ rec + ATTD", "Chiefs -3.5 & Kelce", "SGP w/…" (but "rush + rec yds" is one bet)
 function cleanPick(text,nfl){
   const raw=String(text||'').trim();if(!raw)return null;
   const lo=' '+raw.toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ';
-  const half=/\b(1st|first) ?half\b|\b1h\b/.test(lo)?' 1st Half':'';const alt=/\(alt\)|\balt\b/.test(lo)?' (Alt)':'';
+  const half=HALF1.test(lo)?' 1st Half':'';const alt=/\(alt\)|\balt\b/.test(lo)?' (Alt)':'';
   let side=null,line=null,plus=null,m;
   if((m=lo.match(/\b(?:over|o) ?(\d+(?:\.\d+)?)/))){side='Over';line=m[1]}
   if((m=lo.match(/\b(?:under|u) ?(\d+(?:\.\d+)?)/))){side='Under';line=m[1]}
@@ -2526,14 +2548,15 @@ function cleanPick(text,nfl){
   if(!pl){const t=propAsTyped(raw,lo,side,line,plus,true);if(t)return t}
   if(pl)return null;   // a player and a team in one pick: leave it alone
   if(side&&!STATS.some(([re])=>re.test(lo))&&teams.length){   // game total
+    if(!ptsOnly(lo))return null;
     if(teams.length===1&&+line<(half?17:34))return`${N(teams[0])}${half} Team Total ${side} ${line}`;   // one team and a team-sized line: that team's points (how it's graded)
     if(game&&teams.every(a=>a===game.home||a===game.away))return`${N(game.away)} @ ${N(game.home)}${half} ${side} ${line}${alt}`;
     if(teams.length===2){const sep=/\s@\s|\sat\s/i.test(raw)?' @ ':' / ';const[a,b]=raw.split(/\s*(?:\/|\s@\s|\sat\s|\bvs\.?)\s*/i);const ta=detectTeams(a||'')[0],tb=detectTeams(b||'')[0];const tt=ta&&tb&&ta!==tb?[ta,tb]:teamsInOrder(raw,teams);return`${N(tt[0])}${sep}${N(tt[1])}${half} ${side} ${line}${alt}`}return null;   // no schedule: the order (and @) as typed
   }
   if(teams.length===1){   // spread
     if(/\bpk\b|pick ?em/.test(lo))return`${N(teams[0])}${half} PK`;
-    const sp=[...lo.matchAll(/([+-]) ?(\d+(?:\.\d+)?)(?![\d.])/g)].find(x=>+x[2]<50);if(!sp)return null;
-    return`${N(teams[0])}${half} ${sp[1]}${sp[2]}${alt}`;
+    const sp=[...lo.matchAll(/(^|[^\d])([+-]) ?(\d+(?:\.\d+)?)(?![\d.])/g)].find(x=>+x[3]<50);if(!sp)return null;
+    return`${N(teams[0])}${half} ${sp[2]}${sp[3]}${alt}`;
   }
   return null;
 }
@@ -2550,7 +2573,8 @@ function gameFor(R,t){const t0=Date.parse(R.date+'T17:00:00Z');return[...(R.byTe
 const TEAM_NM=t=>NICK[t]||t;
 function gradeLeg(p,R,live){   // → {status,margin,detail,final,locked} | {wait,pre,at} | {no}; live: a game in progress counts, with its current numbers
   const text=String(p.text||'').trim();if(!text)return{no:'No pick entered'};
-  const lo=' '+text.toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ';const type=betType(text);const half=/\b(1st|first) ?half\b|\b1h\b/.test(lo);
+  const lo=' '+text.toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ';const type=betType(text);const half=HALF1.test(lo);
+  if(PERIOD_OTHER.test(lo+' '+String(p.raw||'').toLowerCase()))return{no:'Quarter and 2nd-half bets are graded by hand (the box scores the app reads only settle full-game and 1st-half bets)'};
   const unit=p.um&&p.unit?p.unit:unitFor(text);let m;let G=null;
   const done=g=>!!g&&(g.final||(half&&(g.hq||[]).length>=3));   // a 1st-half bet is settled once the 3rd quarter starts
   const open=g=>!done(g)&&!(live&&g.state==='in');
@@ -2559,11 +2583,13 @@ function gradeLeg(p,R,live){   // → {status,margin,detail,final,locked} | {wai
   const clock=g=>done(g)?'':` · ${g.detail||'live'}`;
   const pts=(g,t)=>{const home=t===g.home;const q=home?g.hq:g.aq,o=home?g.aq:g.hq;const sum=a=>(a||[]).slice(0,2).reduce((x,y)=>x+y,0);return half?[sum(q),sum(o)]:[home?g.hs:g.as,home?g.as:g.hs]};
   const lineAfter=re=>(m=lo.match(re))?+m[1]:null;
-  const teams=(p.tm&&p.teams&&p.teams.length?p.teams:detectTeams(text)).slice(0,2);
+  let teams=(p.tm&&p.teams&&p.teams.length?p.teams:detectTeams(text)).slice(0,2);
+  {const c0=lo.replace(/\bd ?\/ ?st\b/g,'dst');const two=detectTeams(text).length===2&&/\b(over|under|o|u) ?\d/.test(lo);if(propCombo(two?c0.replace(/\//g,' '):c0))return{no:'This looks like more than one bet, so it’s graded by hand'}}
+  if(teams.length===2&&(type==='Moneyline'||type==='Spread'||type==='Team total')){const bt=backedTeam(text,detectTeams(text).length===2?detectTeams(text):teams);if(!bt)return{no:'Two teams are named and the app can’t be sure which side the bet is on, so it’s graded by hand'};teams=[bt,...teams.filter(a=>a!==bt)]}
   if(type==='Player prop'){
     if(/\bd ?\/ ?st\b|\bdefen[cs]e\b|\bdst\b/.test(lo)&&teams.length===1){const g=G=gameFor(R,teams[0]);if(!g)return{no:`No ${TEAM_NM(teams[0])} game that week`};if(open(g))return wait(g);const b=R.box[g.id]||(live&&!done(g)?{players:[]}:null);if(!b)return{wait:'That box score isn\'t in yet',pre:false,at:g.at};
       const n=(b.players||[]).filter(x=>x.team===teams[0]).reduce((a,x)=>a+(x.st.defTD||0)+(x.st.intTD||0)+(x.st.krTD||0)+(x.st.prTD||0),0);return res(n>0?1:-1,null,(n?`${TEAM_NM(teams[0])} D/ST scored`:`No ${TEAM_NM(teams[0])} D/ST touchdown${done(g)?'':' yet'}`)+clock(g),n>0)}
-    if(teams.length===1&&(/first to score|to score first|scores? first/.test(lo)||(/\bto score\b/.test(lo)&&!/\btd|touchdown/.test(lo)))&&!matchPlayer(text,R.idx)){const t=teams[0];const g=G=gameFor(R,t);if(!g)return{no:`No ${TEAM_NM(t)} game that week`};if(open(g))return wait(g);
+    if(teams.length===1&&(/first to score|to score first|scores? first/.test(lo)||(/\bto score\b/.test(lo)&&!/\btd|touchdown/.test(lo)&&!/\d ?\+|\b(over|under|o|u) ?\d|\bpoints?\b|\bpts\b|\bevery\b|\beach\b|quarter|\bqtr|\blast\b/.test(lo)))&&!matchPlayer(text,R.idx)){const t=teams[0];const g=G=gameFor(R,t);if(!g)return{no:`No ${TEAM_NM(t)} game that week`};if(open(g))return wait(g);
       if(/first/.test(lo)){const b=R.box[g.id];const f=b&&b.firstScore;if(!f)return done(g)?{no:'Couldn\'t tell who scored first'}:res(-1,null,'No score yet'+clock(g),false);return res(f.team===t?1:-1,null,`First score: ${TEAM_NM(f.team)}`,true)}
       const[a]=pts(g,t);return res(a>0?1:-1,null,`${TEAM_NM(t)} scored ${a}${half?' in the 1st half':''}${clock(g)}`,a>0)}   // a team to score (in the 1st half)
     let pl=matchPlayer(text,R.idx);let g=null;
@@ -2587,11 +2613,12 @@ function gradeLeg(p,R,live){   // → {status,margin,detail,final,locked} | {wai
   let g=gameFor(R,teams[0]);if(teams.length===2&&g&&!(teams.includes(g.home)&&teams.includes(g.away))){const g2=(R.byTeam[teams[0]]||[]).find(x=>teams.includes(x.home)&&teams.includes(x.away));if(!g2)return{no:'Those two teams didn\'t play each other that week'};g=g2}
   G=g;if(!g)return{no:`No ${TEAM_NM(teams[0])} game that week`};if(open(g))return wait(g);
   const score=`${TEAM_NM(g.away)} ${half?pts(g,g.away)[0]:g.as}, ${TEAM_NM(g.home)} ${half?pts(g,g.home)[0]:g.hs}${half?' at the half':''}${clock(g)}`;
+  if((type==='Total'||type==='Team total')&&!ptsOnly(lo))return{no:'This isn’t a points total, so it’s graded by hand'};
   if(type==='Total'&&teams.length===1){const ln=lineAfter(/\b(?:over|under|o|u) ?(\d+(?:\.\d+)?)/);if(ln!=null&&ln<(half?17:34)){const[a]=pts(g,teams[0]);const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);return un!=null?res(un-a,un-a,score,a>un):res(a-ov,a-ov,score,a>ov)}}   // one team and a team-sized line: that team's points
   if(type==='Moneyline'){const[a,b]=pts(g,teams[0]);return res(a-b,a-b,score)}
   if(type==='Total'){const[a,b]=pts(g,g.home);const tot=a+b;const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);if(ov==null&&un==null)return{no:'Couldn\'t find the line'};return un!=null?res(un-tot,un-tot,`${score} (${tot} total)`,tot>un):res(tot-ov,tot-ov,`${score} (${tot} total)`,tot>ov)}
   if(type==='Team total'){const[a]=pts(g,teams[0]);const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);if(ov==null&&un==null)return{no:'Couldn\'t find the line'};return un!=null?res(un-a,un-a,score,a>un):res(a-ov,a-ov,score,a>ov)}
-  if(type==='Spread'){const L=/\bpk\b|pick ?em/.test(lo)?0:(()=>{const x=[...lo.matchAll(/([+-]) ?(\d+(?:\.\d+)?)(?![\d.])/g)].find(x=>+x[2]<50);return x?(x[1]==='-'?-1:1)*+x[2]:null})();if(L==null)return{no:'Couldn\'t find the line'};const[a,b]=pts(g,teams[0]);return res(a-b+L,a-b+L,score)}
+  if(type==='Spread'){const L=/\bpk\b|pick ?em/.test(lo)?0:(()=>{const x=[...lo.matchAll(/(^|[^\d])([+-]) ?(\d+(?:\.\d+)?)(?![\d.])/g)].find(x=>+x[3]<50);return x?(x[2]==='-'?-1:1)*+x[3]:null})();if(L==null)return{no:'Couldn\'t find the line'};const[a,b]=pts(g,teams[0]);return res(a-b+L,a-b+L,score)}
   return{no:'Not a bet the app can read'}}
 function checkDate(w){   // the game day a slip covers: a special's own day, a side parlay's parent, otherwise the Sunday on or after the day it was started
   if(!w)return null;if(w.kind==='special'&&w.day)return w.day;const par=parentOf(w);if(par)return checkDate(par);
@@ -3136,8 +3163,10 @@ function renderCrew(){
     <ul class="rules"><li>Every pick must be <b>-200 or longer</b>. Heavier favorites get flagged on the slip.</li>${halfPtOn()?'<li>Spreads should end in <b>.5</b>. If you push and the parlay hits, you are excluded from winnings.</li>':''}${pushBozoOn()?'<li>A <b>push is an automatic Bozo</b>. If more than one person pushes, the vote is only among them. Pushers are left out of the winnings if the rest hit.</li>':''}<li>Picks must be on a <b>${gameDays()}</b> game. A special-day parlay (Thanksgiving, Christmas) takes only that day's games.</li><li>The Bozo puts the stake on a parlay of every pick. If it cashes, the payout <b>splits evenly</b> across everyone with a leg.</li><li>Next week's Bozo is voted from whoever <b>did not hit</b>. If everyone hits, everyone's on the ballot. Ties get a coin flip.</li><li>Pushes drop out of the parlay at even money and don't count against you.</li></ul>
   </section>
   <section class="card"><h3>Data</h3>
-    <div class="grid2"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button><button class="btn" data-act="sample">✨ Load sample</button><button class="btn danger" data-act="reset">🗑 Reset season</button></div>
-    <p class="muted tiny">Everything lives in this browser. Export a backup now and then, or to move it to another phone.</p>
+    ${league().sync?(isAdmin()?`<div class="grid2"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="restore-open">🕘 Restore an earlier copy</button></div>
+    <p class="muted tiny">This league is shared with the group, so every change made here changes it for everyone. The league keeps safety copies on its own: the newest few, plus one from each of the last 14 days. Export a backup now and then as well.</p>`:'')
+    :`<div class="grid2"><button class="btn" data-act="export">⬇ Export backup</button><button class="btn" data-act="import">⬆ Import backup</button><button class="btn" data-act="sample">✨ Load sample</button><button class="btn danger" data-act="reset">🗑 Reset season</button></div>
+    <p class="muted tiny">Everything lives in this browser. Export a backup now and then, or to move it to another phone.</p>`}
     <div class="row between" style="margin-top:10px"><span class="muted tiny" data-act="screen-check" style="cursor:pointer">Version ${APP_VERSION}</span><button class="btn sm ghost" data-act="update-app">↻ Check for updates</button></div>
   </section>`;
 }
@@ -3373,10 +3402,14 @@ const ACT={
   },
   swatch(el){document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s===el))},
   sort(el){sortKey=el.dataset.key;render()},
-  export(){download(`bozo-parlay-${today()}.json`,JSON.stringify(S,null,2));toast('Backup downloaded')},
-  import(){document.getElementById('importFile').click()},
-  sample(){const go=()=>{setS(sampleSeason());commit();toast('Sample season loaded — reset from Crew when you\'re ready','good')};if(S.weeks.length||S.members.length)confirm2('Replace current data?','Loading the sample overwrites what\'s here. Export a backup first if you want it.','Load sample',go,'primary');else go()},
-  reset(){confirm2('Reset everything?','Wipes the crew, every week and all stats from this browser. Export a backup first if you want to keep it.','Reset',()=>{setS(fresh());commit();toast('Fresh slate')})},
+  export(){const l=league();download(`bozo-parlay-${today()}.json`,JSON.stringify({bozoLeague:1,name:l.name,clubName:l.clubName||'',activeSeason:l.activeSeason,exportedAt:new Date().toISOString(),seasons:l.seasons.map(x=>({id:x.id,name:x.name,data:x.data}))},null,2));toast(`Backup downloaded: every season of ${l.name}`)},
+  import(){if(sharedStop('load a backup over it'))return;document.getElementById('importFile').click()},
+  'restore-open'(){restoreSheet()},
+  'restore-go'(el){const l=league();const at=el.dataset.at;if(!l||!l.sync||!at)return;confirm2('Restore this copy?',`The whole league goes back to how it stood on ${h(new Date(at).toLocaleString('en-US',{weekday:'long',month:'long',day:'numeric',hour:'numeric',minute:'2-digit'}))}, for everyone. Anything entered after that (picks, grades, votes) is replaced. The league as it is now is saved first, so this can be undone.`,'Restore',async()=>{
+    try{clearTimeout(pushT);pushT=null;const d=await api(l,'/restore',{method:'POST',body:{at}});delete l.sync.dirty;delete l.dropWeeks;delete l.dropSeasons;applyState(l,d);S=season().data;ALLTIME=null;save();closeModal();render();toast('Restored. Everyone sees it within a minute. To undo, open Restore an earlier copy again: the copy from just before this restore is at the top.','good')}
+    catch(e){toast(e.status===404?`${e.message.charAt(0).toUpperCase()+e.message.slice(1)}.`:`Couldn’t restore that copy${e.status?'':' (no connection?)'}. Nothing changed. Try again when you have signal.`,'bad')}},'primary')},
+  sample(){if(sharedStop('load the sample season over it'))return;const go=()=>{setS(sampleSeason());commit();toast('Sample season loaded — reset from Crew when you\'re ready','good')};if(S.weeks.length||S.members.length)confirm2('Replace current data?','Loading the sample overwrites what\'s here. Export a backup first if you want it.','Load sample',go,'primary');else go()},
+  reset(){if(sharedStop('reset it'))return;confirm2('Reset everything?','Wipes the crew, every week and all stats from this browser. Export a backup first if you want to keep it.','Reset',()=>{setS(fresh());commit();toast('Fresh slate')})},
   leagues(){if(SHARE_MODE)return;modal({title:'Leagues & seasons',body:`<div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;return`<div class="mrow" style="flex-wrap:wrap;${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${l.seasons.length} season${l.seasons.length===1?'':'s'}</small></div>${on?'<span class="tag bozo">Active</span>':`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}<div class="seasonchips">${seasonSorted(l).map(x=>`<button class="chip ${on&&x.id===l.activeSeason?'on':''}" data-act="switch-season" data-lid="${l.id}" data-sid="${x.id}">${h(x.name)}</button>`).join('')}</div></div>`}).join('')}</div>`,actions:[{label:'Close',cls:'ghost'},{label:'＋ New league',cls:'primary',onClick:()=>{ACT['new-league']();return false}}]})},
   'switch-league'(el){DB.active=el.dataset.lid;DB.activeAt=Date.now();if(league().sync)acctNote({active:{id:league().sync.id}});S=season().data;goNow();ALLTIME=null;closeModal();save();render();toast(`Switched to ${league().name}`);pageTo(0);if(league().sync)pull(league(),false,true)},
   'switch-season'(el){if(el.dataset.lid&&el.dataset.lid!==DB.active){DB.active=el.dataset.lid;DB.activeAt=Date.now();if(league().sync)acctNote({active:{id:league().sync.id}})}const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid))l.activeSeason=el.dataset.sid;S=season().data;ALLTIME=null;closeModal();save();render();toast(`${l.name} · ${season().name}`);pageTo(0)},
@@ -3384,7 +3417,7 @@ const ACT={
   'new-season'(){const l=league();const yr=String(Math.max(...l.seasons.map(x=>parseInt(x.name)||0),new Date().getFullYear()-1)+1);
     modal({title:`New ${h(l.name)} season`,body:`<p>Starts with this season's active crew and no weeks. Past seasons stay as they are.</p><input id="ssName" value="${h(yr)}" placeholder="Season name — e.g. 2024" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n){toast('Give it a name','bad');return false}if(l.seasons.find(x=>x.name===n)){toast('That season already exists','bad');return false}const d=fresh();d.season=/^\d{4}$/.test(n)?n+' NFL':n;d.stake=S.stake;d.members=S.members.filter(m=>m.active).map(m=>({...m}));const sid=uid();l.seasons.push({id:sid,name:n,data:d});l.activeSeason=sid;S=d;commit();toast(`${l.name} ${n} started`);pageTo(0)}}],onOpen:()=>setTimeout(()=>document.getElementById('ssName')?.select(),80)})},
   'rename-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x)return;modal({title:'Rename season',body:`<input id="ssName" value="${h(x.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n)return false;x.name=n;if(/^\d{4}$/.test(n))x.data.season=n+' NFL';commit()}}]})},
-  'delete-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x||l.seasons.length<2)return;confirm2(`Delete the ${x.name} season?`,`Removes ${x.data.weeks.length} week${x.data.weeks.length===1?'':'s'} of ${l.name} from this browser. Export a backup first if you might want it back.`,'Delete season',()=>{l.seasons=l.seasons.filter(y=>y!==x);l.activeSeason=seasonSorted(l)[0].id;S=season().data;commit();toast(`${x.name} deleted`)})},
+  'delete-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x||l.seasons.length<2)return;confirm2(`Delete the ${h(x.name)} season?`,l.sync?`This deletes ${x.data.weeks.length} week${x.data.weeks.length===1?'':'s'} of ${h(l.name)} for EVERYONE in the league, not just on this phone. The league keeps a safety copy for 14 days (Crew → Data → Restore an earlier copy).`:`Removes ${x.data.weeks.length} week${x.data.weeks.length===1?'':'s'} of ${h(l.name)} from this browser. Export a backup first if you might want it back.`,'Delete season',()=>{l.seasons=l.seasons.filter(y=>y!==x);if(l.sync)l.dropSeasons=[...new Set([...(l.dropSeasons||[]),x.id])];l.activeSeason=seasonSorted(l)[0].id;S=season().data;commit();toast(`${x.name} deleted`)})},
   'rename-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);modal({title:'Rename league',body:`<input id="lgName" value="${h(l.name)}" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n)return false;l.name=n;l.setDirty={...(l.setDirty||{}),name:Date.now()};commit()}}]})},
   'delete-league'(el){const l=DB.leagues.find(x=>x.id===el.dataset.lid);if(!l||DB.leagues.length<2)return;const everywhere=DB.acct?'every device you\'ve linked':'this device';
     const drop=()=>{DB.leagues=DB.leagues.filter(x=>x!==l);if(l.sync)acctNote({leagues:{[l.sync.id]:{gone:true}}});DB.active=DB.leagues[0].id;S=season().data;save();render()};
@@ -3595,10 +3628,14 @@ document.addEventListener('focusout',e=>{const t=e.target;if(t&&t.matches&&t.mat
     else back()},120)});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(PLAYER){closePlayer(true);return}if(!document.getElementById('modal-root')._required)closeModal()}if(e.key==='Enter'&&e.target.classList?.contains('pick-in')){e.preventDefault();const n=e.target.closest('.leg-inputs')?.querySelector('[data-odds]');n?n.focus():e.target.blur()}});
 document.getElementById('importFile').addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();
-  r.onload=()=>{try{const o=JSON.parse(r.result);if(!Array.isArray(o.members)||!Array.isArray(o.weeks))throw new Error('not a Bozo Parlay backup');
+  r.onload=()=>{try{if(sharedStop('load a backup over it'))return;const o=JSON.parse(r.result);
+    if(o&&o.bozoLeague&&Array.isArray(o.seasons)){const ss=o.seasons.filter(x=>x&&SAFE_ID.test(x.id)&&x.data&&Array.isArray(x.data.members)&&Array.isArray(x.data.weeks));if(!ss.length)throw new Error('there are no seasons in that file');
+      const go=()=>{const l=league();l.seasons=ss.map(x=>({id:x.id,name:String(x.name||'Season').slice(0,40),data:migrate(x.data)}));l.activeSeason=ss.some(x=>x.id===o.activeSeason)?o.activeSeason:newestOf(l).id;S=season().data;ALLTIME=null;commit();toast(`Imported ${ss.length} season${ss.length===1?'':'s'}`,'good')};
+      confirm2('Replace this league?',`The backup has ${ss.length} season${ss.length===1?'':'s'} (${ss.reduce((a,x)=>a+x.data.weeks.length,0)} weeks). It replaces every season of ${h(league().name)} on this device.`,'Import',go,'primary');return}
+    if(!Array.isArray(o.members)||!Array.isArray(o.weeks))throw new Error('that file isn’t a Bozo Parlay backup');
     const go=()=>{setS(migrate(o));commit();toast(`Imported ${S.members.length} players, ${S.weeks.length} weeks`,'good')};
-    if(S.weeks.length)confirm2('Replace current data?',`The backup has ${o.members.length} players and ${o.weeks.length} weeks. It will replace what's here.`,'Import',go,'primary');else go()}
-    catch(err){toast('Import failed: '+err.message,'bad')}e.target.value=''};r.readAsText(f)});
+    if(S.weeks.length)confirm2('Replace current data?',`The backup has ${o.members.length} players and ${o.weeks.length} weeks. It will replace the ${h(S.season||'current')} season here.`,'Import',go,'primary');else go()}
+    catch(err){toast(`Couldn’t load that backup: ${err.message}. Nothing changed. Pick the .json file that Export backup saved.`,'bad')}finally{e.target.value=''}};r.readAsText(f)});
 
 /* ============================== SAMPLE ============================== */
 function sampleSeason(){
