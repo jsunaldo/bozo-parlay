@@ -41,7 +41,7 @@ os.makedirs(OUT, exist_ok=True)
 _old = os.path.join(OUT, 'index.html')
 if os.path.exists(_old):
     _m = re.search(r"SHARE_LEAGUE=\{id:'([A-Za-z0-9]+)'", open(_old, encoding='utf-8').read())
-    _pm = re.search(r"const KEY2='([a-z0-9-]+)-v2'", open(_old, encoding='utf-8').read())
+    _pm = re.search(r"const KEY2='([a-z0-9-]+)-v1'", open(_old, encoding='utf-8').read())
     if _m and _m.group(1) != A.league: sys.exit(f"STOPPED, nothing was written: {OUT} is the app for league {_m.group(1)}, but you asked for league {A.league}. Check --league and --out (the Bozo University build needs its full flag list).")
     if _pm and _pm.group(1) != P: sys.exit(f"STOPPED, nothing was written: {OUT} was built with --prefix {_pm.group(1)}, not {P}. A different prefix would sign every member out. Check the flags.")
 
@@ -53,7 +53,7 @@ function migrateDB(d){return d}
 function isOwner(){return false}function setOwner(){}   // a club device is never the commissioner's
 function loadDB(){let d=null;try{const r=localStorage.getItem(KEY2);if(r)d=JSON.parse(r)}catch(e){}
   if(!d||!Array.isArray(d.leagues))d={leagues:[],active:null,seedV:99};
-  d.leagues.forEach(l=>{l.seasons=(l.seasons||[]).map(x=>({...x,data:migrate(x.data||fresh())}))});
+  d.leagues.forEach(l=>{l.seasons=(l.seasons||[]).map(x=>({...x,data:migrate(x.data||fresh())}));if(!l.seasons.length)l.seasons=[{id:'s0',name:'',data:fresh()}];if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=l.seasons[0].id});
   let l=d.leagues.find(x=>x.sync&&x.sync.id===SHARE_LEAGUE.id);
   if(!l){const dd=fresh();l={id:'cloud-'+SHARE_LEAGUE.id,name:'__LEAGUE_NAME__',seasons:[{id:'s0',name:'',data:dd}],activeSeason:'s0',sync:{url:SHARE_LEAGUE.url,id:SHARE_LEAGUE.id,key:SHARE_LEAGUE.key,role:'member',rev:0}}}
   l.sync.url=SHARE_LEAGUE.url;l.sync.key=SHARE_LEAGUE.key;d.leagues=[l];d.active=l.id;return d}
