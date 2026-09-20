@@ -246,7 +246,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .li{display:flex;flex-direction:column}.li-row{display:grid;grid-template-columns:74px 1fr;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}.li-row:last-child{border-bottom:0}.li-k{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding-top:2px}.li-v{font-size:14px;line-height:1.4;overflow-wrap:anywhere}.li-v .stag{display:inline-block;margin-right:4px}
 .devrows{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}.devrow{display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--surface2);border-radius:10px;padding:7px 10px}.devrow .dv{display:flex;flex-direction:column;font-size:13px;min-width:0}.devrow small{font-size:11px}
 .odds .dk{font-style:normal;font-size:9px;font-weight:700;color:var(--muted);margin-left:3px;vertical-align:super}
-.lvline:empty,#lvb-empty{display:none}.lv{font-size:12px;font-weight:600}.lv.hit,.lv.up{color:var(--green)}.lv.miss,.lv.down{color:var(--red)}.lv.push,.lv.even{color:var(--amber-tx)}
+.lvline:empty,#lvb-empty{display:none}.lv{font-size:12px;font-weight:600}.lv.hit,.lv.up{color:var(--green)}.lv.miss,.lv.down{color:var(--red)}.lv.push,.lv.even{color:var(--amber-tx)}.lv-row{display:flex;align-items:baseline;justify-content:space-between;gap:4px 10px;flex-wrap:wrap}.lv-main{overflow-wrap:anywhere;min-width:0;flex:1 1 170px}.lv-clock{font-size:10px;color:var(--muted);font-weight:500;white-space:nowrap;margin-left:auto}.lv-tag{display:block;font-weight:800;margin:2px 0}.lv-tag.hit,.lv-tag.up{color:var(--green)}.lv-tag.miss,.lv-tag.down{color:var(--red)}.lv-tag.push,.lv-tag.even,.lv-tag.sweat{color:var(--amber-tx)}.lv-tag.none,.lv-tag.pre,.lv-tag.k-dash{color:var(--muted)}.lv-tag.live{color:var(--blue)}.lv-sub{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:2px;overflow-wrap:anywhere}.lv-bar{position:relative;display:block;height:6px;margin:7px 0 4px;border-radius:980px;background:var(--surface3);color:var(--muted)}.lv-bar.up,.lv-bar.hit{color:var(--green)}.lv-bar.down,.lv-bar.miss{color:var(--red)}.lv-bar.even,.lv-bar.push{color:var(--amber-tx)}.lv-bar i{position:absolute;left:0;top:0;height:100%;border-radius:980px;background:currentColor}.lv-bar .lv-projected{opacity:.25}.lv-bar .lv-tick{top:-3px;width:2px;height:12px;background:var(--text);border-radius:0;transform:translateX(-1px)}.stag.k-dash{background:transparent;color:var(--muted);border:1px dashed var(--line2);padding:3px 8px}.srow .stag.even,.srow .stag.sweat{color:var(--amber-tx)}.lvline .lv{margin-top:0}
 .lvbanner{margin:0 16px 10px;padding:9px 12px;border-radius:12px;background:rgba(48,209,88,.12);display:flex;flex-direction:column;gap:2px;font-size:13px}.lvbanner.dead{background:rgba(255,69,58,.12)}.lvbanner span{color:var(--muted);font-size:12px}
 .chk-list{display:flex;flex-direction:column;gap:8px}
 .chk-row{background:var(--surface2);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
@@ -728,7 +728,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{const de=document.documentElement;if(navigator.maxTouchPoints>0||'ontouchstart' in window){de.classList.add('touch');if(matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)de.classList.add('shell')}}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom. Opened from the Home Screen: the page itself never scrolls (the app scrolls inside it), so iOS can't slide the tab bar and header away
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-20.3';
+const APP_VERSION='2026-09-20.4';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -2035,8 +2035,9 @@ function renderLeg(w,l,cl){
   const flags=cl?[...(cl.clashes[l.mid]||[]).map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`),...(cl.off&&cl.off[l.mid]?[`⚠ ${h(offText(cl.off[l.mid],cl.rule))}`]:[]),...(cl.notd&&cl.notd[l.mid]?['⚠ Not an Anytime TD bet. This side parlay is ATTD only.']:[])]:[];
   const tag={hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status];
   const quick=isAdmin()&&l.status==='pending'&&!empty&&!open?`<div class="seg q">${['hit','miss','push'].map(st=>`<button class="${st}" data-act="status" data-wid="${w.id}" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('')}</div>`:'';
-  const chip=w.placed&&!tag&&!empty&&l.status==='pending'?legChip(w,l,cl):null;
-  const right=tag?`<span class="stag ${l.status}">${tag}</span>`:empty?`<span class="stag none">no pick yet</span>`:mine&&unsent(w,l.mid)?`<button class="stag unsent" data-act="retry-pick">Not sent yet · Retry</button>`:chip&&!(quick&&chip[0]!=='pre')?`<span class="stag ${chip[0]}" id="lvt-${w.id}-${l.mid}">${h(chip[1])}</span>`:quick||`<span class="stag in">✓ pick in</span>`;
+  const live=!tag&&!empty&&sweatable(w)?legLive(w,l,cl):null;const chip=w.placed&&!tag&&!empty&&l.status==='pending'?legChip(w,l,cl,live):null;
+  const showChip=!!(chip&&!(mine&&unsent(w,l.mid))&&!(quick&&chip[0]!=='pre'));
+  const right=tag?`<span class="stag ${l.status}">${tag}</span>`:empty?`<span class="stag none">no pick yet</span>`:mine&&unsent(w,l.mid)?`<button class="stag unsent" data-act="retry-pick">Not sent yet · Retry</button>`:showChip?`<span class="stag ${chip[0]}" id="lvt-${w.id}-${l.mid}">${h(chip[1])}</span>`:quick||`<span class="stag in">✓ pick in</span>`;
   const marginTxt=(l.status==='hit'||l.status==='miss')&&l.margin!=null&&unit!=='none'?`${l.status==='hit'?'Covered by':'Missed by'} ${h(fmtMargin(l.margin,unit))}`:'';
   const needMargin=isAdmin()&&!open&&(l.status==='hit'||l.status==='miss')&&l.margin==null&&unit!=='none';
   const marginRow=`<div class="leg-margin">${unit==='none'?`<span>No margin for this bet type</span>`:`<span>${l.status==='hit'?'Covered by':'Missed by'}</span><input class="mono" type="number" step="0.5" min="0" placeholder="how much?" value="${l.margin??''}" data-bind="pick|${w.id}|${l.mid}|margin" inputmode="decimal" ${isAdmin()?'':'disabled'}>`}<select data-bind="pick|${w.id}|${l.mid}|unit" title="Margin unit" ${isAdmin()?'':'disabled'}>${Object.entries(UNITS).map(([k,v])=>`<option value="${k}" ${unit===k?'selected':''}>${UNIT_SHORT[k]||'n/a'}</option>`).join('')}</select></div>`;
@@ -2061,7 +2062,7 @@ function renderLeg(w,l,cl){
     ${!open&&mine&&tidyRow?`<div class="sx">${tidyRow}</div>`:''}
     ${needMargin?`<div class="sx">${marginRow}</div>`:''}
     ${(()=>{const f=[...flags,...(pushWarnOn()&&l.status==='pending'&&wholeLine(l.text)!=null?['⚠ '+halfWarn(l.text,!mine)]:[])];return f.length?`<div class="sx flag">${f.join('<br>')}</div>`:''})()}
-    ${!open&&l.status==='pending'&&!empty&&sweatable(w)?`<div class="sx lvline" id="lv-${w.id}-${l.mid}">${liveLine(w,l.mid)}</div>`:''}
+    ${!open&&l.status==='pending'&&!empty&&sweatable(w)?`<div class="sx lvline" id="lv-${w.id}-${l.mid}">${liveLine(w,l.mid,live,showChip)}</div>`:''}
     ${edit}
   </div>`;
 }
@@ -2793,8 +2794,8 @@ function gradeLeg(p,R,live){   // → {status,margin,detail,final,locked} | {wai
   const unit=p.um&&p.unit?p.unit:unitFor(text);let m;let G=null;
   const done=g=>!!g&&(g.final||(half&&(g.hq||[]).length>=3));   // a 1st-half bet is settled once the 3rd quarter starts
   const open=g=>!done(g)&&!(live&&g.state==='in');
-  const res=(sc,mg,detail,lock)=>({status:sc>0?'hit':sc<0?'miss':'push',margin:unit==='none'||mg==null?null:Math.round(Math.abs(mg)*10)/10,detail,final:done(G),locked:done(G)||!!lock});
-  const wait=g=>({wait:`${g.name}: ${g.state==='pre'?'not started yet':g.detail||'still playing'}`,pre:g.state==='pre',at:g.at});
+  const res=(sc,mg,detail,lock,x)=>({status:sc>0?'hit':sc<0?'miss':'push',margin:unit==='none'||mg==null?null:Math.round(Math.abs(mg)*10)/10,detail,final:done(G),locked:done(G)||!!lock,...(x?{x:{gid:G?G.id:null,half,have:true,pace:false,rev:false,step:1,...x}}:{})});
+  const wait=g=>({wait:`${g.name}: ${g.state==='pre'?'not started yet':g.detail||'still playing'}`,pre:g.state==='pre',at:g.at,gid:g.id});
   const clock=g=>done(g)?'':` · ${g.detail||'live'}`;
   const pts=(g,t)=>{const home=t===g.home;const q=home?g.hq:g.aq,o=home?g.aq:g.hq;const sum=a=>(a||[]).slice(0,2).reduce((x,y)=>x+y,0);return half?[sum(q),sum(o)]:[home?g.hs:g.as,home?g.as:g.hs]};
   const lineAfter=re=>(m=lo.match(re))?+m[1]:null;
@@ -2804,44 +2805,45 @@ function gradeLeg(p,R,live){   // → {status,margin,detail,final,locked} | {wai
   if(teams.length===2&&detectTeams(text).length===1&&(type==='Moneyline'||type==='Spread'||type==='Team total'))teams=[detectTeams(text)[0]];
   if(teams.length===2&&(type==='Moneyline'||type==='Spread'||type==='Team total')){const bt=backedTeam(text,detectTeams(text).length===2?detectTeams(text):teams);if(!bt)return{no:'Two teams are named and the app can’t be sure which side the bet is on, so it’s graded by hand'};teams=[bt,...teams.filter(a=>a!==bt)]}
   if(type==='Player prop'){
-    if(/\bd ?\/ ?st\b|\bdefen[cs]e\b|\bdst\b/.test(lo)&&teams.length===1){if(!dstPlain(lo,teams[0])||p.raw&&!dstPlain(' '+String(p.raw).toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ',teams[0]))return{no:'A defense or special teams bet with a twist (no touchdown, first or last TD, a number of touchdowns, or only one half) is graded by hand. The box scores only show whether the defense scored at all. The pick stays exactly as typed'};const g=G=gameFor(R,teams[0]);if(!g)return{no:`No ${TEAM_NM(teams[0])} game that week`};if(open(g))return wait(g);const b=R.box[g.id]||(live&&!done(g)?{players:[]}:null);if(!b)return{wait:'That box score isn\'t in yet',pre:false,at:g.at};
-      const n=(b.players||[]).filter(x=>x.team===teams[0]).reduce((a,x)=>a+(x.st.defTD||0)+(x.st.intTD||0)+(x.st.krTD||0)+(x.st.prTD||0),0);return res(n>0?1:-1,null,(n?`${TEAM_NM(teams[0])} D/ST scored`:`No ${TEAM_NM(teams[0])} D/ST touchdown${done(g)?'':' yet'}`)+clock(g),n>0)}
+    if(/\bd ?\/ ?st\b|\bdefen[cs]e\b|\bdst\b/.test(lo)&&teams.length===1){if(!dstPlain(lo,teams[0])||p.raw&&!dstPlain(' '+String(p.raw).toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ',teams[0]))return{no:'A defense or special teams bet with a twist (no touchdown, first or last TD, a number of touchdowns, or only one half) is graded by hand. The box scores only show whether the defense scored at all. The pick stays exactly as typed'};const g=G=gameFor(R,teams[0]);if(!g)return{no:`No ${TEAM_NM(teams[0])} game that week`};if(open(g))return wait(g);const b=R.box[g.id]||(live&&!done(g)?{players:[]}:null);if(!b)return{wait:'That box score isn\'t in yet',pre:false,at:g.at,gid:g.id};
+      const n=(b.players||[]).filter(x=>x.team===teams[0]).reduce((a,x)=>a+(x.st.defTD||0)+(x.st.intTD||0)+(x.st.krTD||0)+(x.st.prTD||0),0);return res(n>0?1:-1,null,(n?`${TEAM_NM(teams[0])} D/ST scored`:`No ${TEAM_NM(teams[0])} D/ST touchdown${done(g)?'':' yet'}`)+clock(g),n>0,{m:'dst',op:'>',v:n,line:0,team:teams[0],have:!!R.box[g.id]})}
     if(teams.length===1&&/\bto score\b|\bscores? first\b/.test(lo)&&!/\btd|touchdown/.test(lo)&&!matchPlayer(text,R.idx)){const t=teams[0];
       const firstBet=/\bfirst to score\b|\b(?:to score|scores?) (?:first|1st)\b(?![ -]?half)/.test(lo);
       {let r=lo;for(const n of[t,...(TEAMS[t]||[])])r=r.replace(new RegExp('([^a-z0-9])'+esc(n.toLowerCase())+'(?=[^a-z0-9])','g'),'$1 ');
         r=r.replace(/\(?[+-] ?\d{3,4}\)? $/,' ').replace(new RegExp('\\b(?:(?:in|during|before|by) )?(?:the )?(?:'+HALF1.source+')','g'),' ').replace(/\bfirst to score\b|\bto score\b|\bscores?\b|\b(first|1st|the|will|new york|ny|los angeles|la)\b/g,' ');
         if(/[a-z0-9]/.test(r))return{no:'A team-scoring bet with a number or a condition (points, both halves, a quarter\u2026) is graded by hand'}}   /* anything left over means it isn't a plain "they score" bet */
       const g=G=gameFor(R,t);if(!g)return{no:`No ${TEAM_NM(t)} game that week`};if(open(g))return wait(g);
-      if(firstBet){const b=R.box[g.id];const f=b&&b.firstScore;if(!f)return done(g)?{no:'Couldn\'t tell who scored first'}:res(-1,null,'No score yet'+clock(g),false);return res(f.team===t?1:-1,null,`First score: ${TEAM_NM(f.team)}`,true)}
-      const[a]=pts(g,t);return res(a>0?1:-1,null,`${TEAM_NM(t)} scored ${a}${half?' in the 1st half':''}${clock(g)}`,a>0)}   // a team to score (in the 1st half)
+      if(firstBet){const b=R.box[g.id];const f=b&&b.firstScore;if(!f)return done(g)?{no:'Couldn\'t tell who scored first'}:res(-1,null,'No score yet'+clock(g),false,{m:'tFirst',op:'first',v:0,line:1,team:t,have:!!b,s:{}});return res(f.team===t?1:-1,null,`First score: ${TEAM_NM(f.team)}`,true,{m:'tFirst',op:'first',v:f.team===t?1:0,line:1,team:t,s:{tm:f.team}})}
+      const[a]=pts(g,t);return res(a>0?1:-1,null,`${TEAM_NM(t)} scored ${a}${half?' in the 1st half':''}${clock(g)}`,a>0,{m:'tScore',op:'>',v:a,line:0,team:t})}   // a team to score (in the 1st half)
     let pl=matchPlayer(text,R.idx);let g=null;
     {const tm=p.teams||[];if(pl&&tm.length&&!tm.includes(pl.team)){const alt=(R.idx.full[nameKey(pl.name)]||[]).find(x=>tm.includes(x.team));if(alt)pl=alt}}   // two players with the same name: take the one on the team this pick is tagged with
-    if(!pl){const t=(p.teams||[])[0];g=t&&gameFor(R,t);if(!g)return{no:'Couldn\'t find that player in that week\'s box scores'};if(open(g))return wait(g);if(!R.box[g.id]&&done(g))return{wait:'That box score isn\'t in yet',pre:false,at:g.at};if(done(g))return{no:'Couldn\'t find that player in that week\'s box scores'};pl={name:'No stats yet',team:t}}   // live, and they haven't touched the ball yet
+    if(!pl){const t=(p.teams||[])[0];g=t&&gameFor(R,t);if(!g)return{no:'Couldn\'t find that player in that week\'s box scores'};if(open(g))return wait(g);if(!R.box[g.id]&&done(g))return{wait:'That box score isn\'t in yet',pre:false,at:g.at,gid:g.id};if(done(g))return{no:'Couldn\'t find that player in that week\'s box scores'};pl={name:'No stats yet',team:t}}   // live, and they haven't touched the ball yet
     const st0=R.stat[nameKey(pl.name)+'|'+pl.team];g=G=(st0&&R.games.find(x=>x.id===st0.gid))||g||gameFor(R,pl.team);
-    if(g&&open(g))return wait(g);if(!st0&&g&&done(g)&&!R.box[g.id])return{wait:'That box score isn\'t in yet',pre:false,at:g.at};if(!st0&&(!g||done(g)))return{no:`${pl.name} has no stats that week (didn't play?)`};
-    if(half)return{no:'1st-half player props are graded by hand (box scores only have full-game stats)'};const s=st0||{};const b=g&&R.box[g.id];
+    if(g&&open(g))return wait(g);if(!st0&&g&&done(g)&&!R.box[g.id])return{wait:'That box score isn\'t in yet',pre:false,at:g.at,gid:g.id};if(!st0&&(!g||done(g)))return{no:`${pl.name} has no stats that week (didn't play?)`};
+    if(half)return{no:'1st-half player props are graded by hand (box scores only have full-game stats)'};const s=st0||{};const b=g&&R.box[g.id];const have=!!st0;
     const tdN=Math.max((b&&b.tds&&b.tds[pl.name+'|'+pl.team])||0,(s.rushTD||0)+(s.recTD||0)+(s.krTD||0)+(s.prTD||0)+(s.intTD||0));const tdl=`${pl.name}: ${tdN} TD${tdN===1?'':'s'}${clock(g)}`;
     if(!PASSY.test(lo)&&(TD_NEG.test(lo)||TD_QUAL.test(lo))&&/\b(tds?|touchdowns?|score[sd]?|scorer)\b/.test(lo))return{no:'A “no touchdown”, last-TD or each-half TD bet is graded by hand'};
-    if(!PASSY.test(lo)&&TD_FIRST.test(lo)){const f=b&&b.firstTD;if(!(f&&f.name))return done(g)?res(-1,null,'No touchdowns that game'):res(-1,null,'No touchdown yet'+clock(g),false);if(pl.name==='No stats yet')return res(-1,null,`First TD: ${f.name}`,f.team!==pl.team);const hit=nameKey(f.name)===nameKey(pl.name);return res(hit?1:-1,null,`First TD: ${f.name}`,true)}
+    if(!PASSY.test(lo)&&TD_FIRST.test(lo)){const f=b&&b.firstTD;if(!(f&&f.name))return done(g)?res(-1,null,'No touchdowns that game',false,{m:'tdFirst',op:'first',v:0,line:1,team:pl.team,have,s:{}}):res(-1,null,'No touchdown yet'+clock(g),false,{m:'tdFirst',op:'first',v:0,line:1,team:pl.team,have,s:{}});if(pl.name==='No stats yet')return res(-1,null,`First TD: ${f.name}`,f.team!==pl.team,{m:'tdFirst',op:'first',v:0,line:1,team:pl.team,have:false,s:{nm:f.name}});const hit=nameKey(f.name)===nameKey(pl.name);return res(hit?1:-1,null,`First TD: ${f.name}`,true,{m:'tdFirst',op:'first',v:hit?1:0,line:1,team:pl.team,have,s:{nm:f.name}})}
     if(!PASSY.test(lo)&&(TD_TWO.test(lo)||/\b3 ?\+ ?(tds?|touchdowns?)\b/.test(lo))&&pl.pos==='QB'&&!/\b(rush|run|rec|scor)/.test(lo))return{no:'A quarterback’s “2+ TDs” could mean passing or scoring touchdowns, so it’s graded by hand'};
-    if(!PASSY.test(lo)&&TD_TWO.test(lo))return res(tdN>=2?1:-1,null,tdl,tdN>=2);
-    if(!PASSY.test(lo)&&(TD_ANY.test(lo)||(/\b(td|touchdown)s?\b/.test(lo)&&!/pass|over|under|\d/.test(lo))))return res(tdN>=1?1:-1,null,tdl,tdN>=1);
+    if(!PASSY.test(lo)&&TD_TWO.test(lo))return res(tdN>=2?1:-1,null,tdl,tdN>=2,{m:'tdN',op:'>=',v:tdN,line:2,team:pl.team,have,s});
+    if(!PASSY.test(lo)&&(TD_ANY.test(lo)||(/\b(td|touchdown)s?\b/.test(lo)&&!/pass|over|under|\d/.test(lo))))return res(tdN>=1?1:-1,null,tdl,tdN>=1,{m:'td',op:'>=',v:tdN,line:1,team:pl.team,have,s});
     const st=posStat((STATS.find(([re])=>re.test(lo))||[])[1],lo,pl)||(/\bsacks?\b/.test(lo)?'Sacks':(pl.pos==='K'||s.kPts!=null)&&/\bpoints?\b|\bpts\b/.test(lo)?'Kicking Points':null);if(!st||(/\b(tds?|touchdowns?)\b/.test(lo)&&st!=='Passing TDs'))return{no:'Couldn\'t tell which stat'};
     const v={'Sacks':s.sacks||0,'Pass + Rush Yds':(s.passYds||0)+(s.rushYds||0),'Rush + Rec Yds':(s.rushYds||0)+(s.recYds||0),'Longest Reception':s.recLong||0,'Longest Rush':s.rushLong||0,'Passing TDs':s.passTD||0,'Receiving Yds':s.recYds||0,'Rushing Yds':s.rushYds||0,'Passing Yds':s.passYds||0,'Pass Attempts':s.passAtt||0,'Completions':s.passCmp||0,'Rush Attempts':s.rushAtt||0,'Receptions':s.rec||0,'Interceptions':s.passInt||0,'Field Goals Made':s.fgm||0,'Kicking Points':s.kPts||0}[st];if(v===undefined)return{no:'The box scores don\u2019t have that stat, so it\u2019s graded by hand'};
     const plus=lineAfter(/(\d+(?:\.\d+)?) ?\+(?! ?\d)/),ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);const nm=pl.name==='No stats yet'?'':pl.name+': ';const lbl=`${nm}${v} ${st.toLowerCase()}`;
+    const pmx={m:/^Longest/.test(st)?'long':'prop',st,team:pl.team,pace:/^(Receiving|Rushing|Passing|Pass \+ Rush|Rush \+ Rec) Yds$|^(Receptions|Completions|Pass Attempts|Rush Attempts|Kicking Points)$/.test(st),rev:/Yds$/.test(st),step:st==='Sacks'?.5:1,have,s};
     const need=x=>!done(g)&&v<x?` · needs ${Math.round((x-v)*10)/10} more`:'';const up=!/Yds$/.test(st);   // yards can still go down (a sack, a loss); counts can't
-    if(plus!=null)return res(v>=plus?1:-1,v-plus,lbl+need(plus)+clock(g),up&&v>=plus);if(un!=null)return res(v<un?1:v>un?-1:0,un-v,lbl+clock(g),up&&v>un);if(ov!=null)return res(v>ov?1:v<ov?-1:0,v-ov,lbl+need(Math.floor(ov)+1)+clock(g),up&&v>ov);return{no:'Couldn\'t find the line'}}
+    if(plus!=null)return res(v>=plus?1:-1,v-plus,lbl+need(plus)+clock(g),up&&v>=plus,{...pmx,op:'>=',v,line:plus});if(un!=null)return res(v<un?1:v>un?-1:0,un-v,lbl+clock(g),up&&v>un,{...pmx,op:'<',v,line:un});if(ov!=null)return res(v>ov?1:v<ov?-1:0,v-ov,lbl+need(Math.floor(ov)+1)+clock(g),up&&v>ov,{...pmx,op:'>',v,line:ov});return{no:'Couldn\'t find the line'}}
   if(type==='Other')return{no:'Not a bet the app can read'};
   if(!teams.length)return{no:'Couldn\'t tell which team'};
   let g=gameFor(R,teams[0]);if(teams.length===2&&g&&!(teams.includes(g.home)&&teams.includes(g.away))){const g2=(R.byTeam[teams[0]]||[]).find(x=>teams.includes(x.home)&&teams.includes(x.away));if(!g2)return{no:'Those two teams didn\'t play each other that week'};g=g2}
   G=g;if(!g)return{no:`No ${TEAM_NM(teams[0])} game that week`};if(open(g))return wait(g);
-  const score=`${TEAM_NM(g.away)} ${half?pts(g,g.away)[0]:g.as}, ${TEAM_NM(g.home)} ${half?pts(g,g.home)[0]:g.hs}${half?' at the half':''}${clock(g)}`;
+  const score=`${TEAM_NM(g.away)} ${half?pts(g,g.away)[0]:g.as}, ${TEAM_NM(g.home)} ${half?pts(g,g.home)[0]:g.hs}${half?' at the half':''}${clock(g)}`;const sx=()=>({aw:half?pts(g,g.away)[0]:g.as,hm:half?pts(g,g.home)[0]:g.hs});
   if((type==='Total'||type==='Team total')&&!ptsOnly(lo))return{no:'This isn’t a points total, so it’s graded by hand'};
-  if(type==='Total'&&teams.length===1){const ln=lineAfter(/\b(?:over|under|o|u) ?(\d+(?:\.\d+)?)/);if(ln!=null&&ln<(half?17:34)){const[a]=pts(g,teams[0]);const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);return un!=null?res(un-a,un-a,score,a>un):res(a-ov,a-ov,score,a>ov)}}   // one team and a team-sized line: that team's points
-  if(type==='Moneyline'){const[a,b]=pts(g,teams[0]);return res(a-b,a-b,score)}
-  if(type==='Total'){const[a,b]=pts(g,g.home);const tot=a+b;const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);if(ov==null&&un==null)return{no:'Couldn\'t find the line'};return un!=null?res(un-tot,un-tot,`${score} (${tot} total)`,tot>un):res(tot-ov,tot-ov,`${score} (${tot} total)`,tot>ov)}
-  if(type==='Team total'){const[a]=pts(g,teams[0]);const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);if(ov==null&&un==null)return{no:'Couldn\'t find the line'};return un!=null?res(un-a,un-a,score,a>un):res(a-ov,a-ov,score,a>ov)}
-  if(type==='Spread'){const L=/\bpk\b|pick ?em/.test(lo)?0:(()=>{const x=[...lo.matchAll(/(^|[^\d])([+-]) ?(\d+(?:\.\d+)?)(?!\d|\.\d)/g)].find(x=>+x[3]<50);return x?(x[2]==='-'?-1:1)*+x[3]:null})();if(L==null)return{no:'Couldn\'t find the line'};const[a,b]=pts(g,teams[0]);return res(a-b+L,a-b+L,score)}
+  if(type==='Total'&&teams.length===1){const ln=lineAfter(/\b(?:over|under|o|u) ?(\d+(?:\.\d+)?)/);if(ln!=null&&ln<(half?17:34)){const[a]=pts(g,teams[0]);const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);return un!=null?res(un-a,un-a,score,a>un,{m:'teamTotal',op:'<',v:a,line:un,team:teams[0],pace:true,s:sx()}):res(a-ov,a-ov,score,a>ov,{m:'teamTotal',op:'>',v:a,line:ov,team:teams[0],pace:true,s:sx()})}}   // one team and a team-sized line: that team's points
+  if(type==='Moneyline'){const[a,b]=pts(g,teams[0]);return res(a-b,a-b,score,false,{m:'ml',op:'>',v:a-b,line:0,team:teams[0],s:sx()})}
+  if(type==='Total'){const[a,b]=pts(g,g.home);const tot=a+b;const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);if(ov==null&&un==null)return{no:'Couldn\'t find the line'};return un!=null?res(un-tot,un-tot,`${score} (${tot} total)`,tot>un,{m:'total',op:'<',v:tot,line:un,pace:true,s:sx()}):res(tot-ov,tot-ov,`${score} (${tot} total)`,tot>ov,{m:'total',op:'>',v:tot,line:ov,pace:true,s:sx()})}
+  if(type==='Team total'){const[a]=pts(g,teams[0]);const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);if(ov==null&&un==null)return{no:'Couldn\'t find the line'};return un!=null?res(un-a,un-a,score,a>un,{m:'teamTotal',op:'<',v:a,line:un,team:teams[0],pace:true,s:sx()}):res(a-ov,a-ov,score,a>ov,{m:'teamTotal',op:'>',v:a,line:ov,team:teams[0],pace:true,s:sx()})}
+  if(type==='Spread'){const L=/\bpk\b|pick ?em/.test(lo)?0:(()=>{const x=[...lo.matchAll(/(^|[^\d])([+-]) ?(\d+(?:\.\d+)?)(?!\d|\.\d)/g)].find(x=>+x[3]<50);return x?(x[2]==='-'?-1:1)*+x[3]:null})();if(L==null)return{no:'Couldn\'t find the line'};const[a,b]=pts(g,teams[0]);return res(a-b+L,a-b+L,score,false,{m:'spread',op:'>',v:a-b+L,line:0,team:teams[0],diff:a-b,hcp:L,s:sx()})}
   return{no:'Not a bet the app can read'}}
 const slateSun=d=>{const e=d&&NFL[d+'|0'];const g=e&&e.data&&(e.data.games||[])[0];const s=g&&sunOf(etDay(g.at));return s&&s>d?s:null};   // that Sunday can have no games (the one after the conference games): once its schedule is loaded, follow where the games really are
 function checkDate(w){   // the game day a slip covers: a special's own day, a side parlay's parent, otherwise the Sunday on or after the day it was started
@@ -2850,39 +2852,118 @@ function checkDate(w){   // the game day a slip covers: a special's own day, a s
   if(!w.date)return null;const k=dowOf(w.date);const d=k===0?w.date:addDays(w.date,7-k);return slateSun(d)||d}
 function sweatable(w){if(!w||!league().sync)return false;const l=league();if(season().id!==newestOf(l).id)return false;const d=checkDate(w);if(!d)return false;const t=etDay(new Date().toISOString());
   return t>=addDays(d,-4)&&t<=addDays(d,2)&&Object.values(w.picks||{}).some(p=>p.status==='pending'&&String(p.text||'').trim())}   // this slip's games are on around now
-function liveLine(w,mid){const p=w.picks[mid];if(!p||p.status!=='pending'||!String(p.text||'').trim()||!sweatable(w))return'';const R=RESULTS[checkDate(w)];if(!R)return'';
-  const r=gradeLeg(p,R,true);if(!r.status)return'';
-  if(r.final)return`<span class="lv ${r.status}">Final · ${r.status==='hit'?'✓ hit':r.status==='miss'?'✗ miss':'push'}${r.margin!=null?` by ${h(fmtMargin(r.margin,p.um&&p.unit?p.unit:unitFor(p.text)))}`:''} · ${h(r.detail)}</span>`;
-  if(r.locked)return`<span class="lv ${r.status}">${r.status==='hit'?'✅ Cashed':'❌ Dead'} · ${h(r.detail)}</span>`;
-  return`<span class="lv ${r.status==='hit'?'up':r.status==='push'?'even':'down'}">${r.status==='hit'?'🟢 On track':r.status==='push'?'🟡 Even right now':'🔴 Behind'} · ${h(r.detail)}</span>`}
+function liveLine(w,mid,prepared,showChip){const p=w.picks[mid];if(!p||p.status!=='pending'||!String(p.text||'').trim()||!sweatable(w))return'';
+  const L=prepared||legLive(w,{mid,...p},null),v=L.v;if(!v)return'';
+  const visible=showChip==null?w.placed&&!!document.getElementById(`lvt-${w.id}-${mid}`):showChip;
+  return`${!visible?`<span class="lv-tag ${v.cls}">${h(v.chip)}</span>`:''}<span class="lv-row"><span class="lv lv-main ${v.tone}">${h(v.main)}</span>${v.clock?`<span class="lv-clock">${h(v.clock)}</span>`:''}</span>${v.sub?`<span class="lv-sub">${h(v.sub)}</span>`:''}${v.bar?`<span class="lv-bar ${v.tone}" role="img" aria-label="${h(v.bar.label)}">${v.bar.projected!=null?`<i class="lv-projected" style="width:${v.bar.projected}%"></i>`:''}<i class="lv-actual" style="width:${v.bar.pct}%"></i><i class="lv-tick" style="left:${v.bar.tick}%"></i></span>`:''}`}
 const ETK=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'short',hour:'numeric',minute:'2-digit'});
-function legChip(w,l,cl){   // once the bet is in, a leg shows where it stands instead of "pick in": its kickoff time, how it's doing live, or how it ended
-  const nfl=(cl&&cl.nfl)||weekNfl(w);const g=legGame(l,nfl,cl&&cl.claims&&cl.claims[l.mid]);const R=sweatable(w)?RESULTS[checkDate(w)]:null;const r=R?gradeLeg(l,R,true):null;
-  const G=g&&R?R.games.find(x=>x.id===g.id):null;
-  if(r&&r.status){
-    if(r.final)return r.status==='hit'?['hit','✓ Hit']:r.status==='miss'?['miss','✗ Miss']:['push','P Push'];
-    if(r.locked)return r.status==='hit'?['hit','✓ Hit']:['miss','💀 Dead'];
-    const u=l.um&&l.unit?l.unit:unitFor(l.text);const late=G&&G.state==='in'&&(G.hq||[]).length>=4;
-    if(late&&r.margin!=null&&r.margin<=(u==='yds'?10:u==='pts'?3:1))return['sweat','😬 Sweating'];
-    return r.status==='hit'?['up','🟢 On track']:r.status==='miss'?['down','🔴 Behind']:['even','🟡 Even']}
-  if(G&&G.state==='in')return['live','● Live'];
-  if(G&&G.state==='post')return['live','Final · grading'];
+function legTiming(d){   // how far into the game we are, read only from the scoreboard's own words
+  const s=String(d||'').trim(),lo=s.toLowerCase();const no={known:false,period:0,f:0,ot:false,end:false,fin:false};
+  if(!s||/postpon|delay|cancel|suspend/.test(lo))return no;
+  if(/^final/.test(lo))return{known:true,period:/ot/.test(lo)?5:4,f:1,ot:/ot/.test(lo),end:true,fin:true};
+  if(/\bot\b|overtime/.test(lo))return{known:true,period:5,f:1,ot:true,end:/^end/.test(lo),fin:false};
+  if(/halftime|^half\b|end of (the )?(2nd|second)/.test(lo))return{known:true,period:2,f:.5,ot:false,end:true,fin:false};
+  const q=lo.match(/\b([1-4])(?:st|nd|rd|th)\b/);if(!q)return no;const n=+q[1];
+  if(/^end/.test(lo))return{known:true,period:n,f:n/4,ot:false,end:true,fin:false};
+  const c=lo.match(/\b(\d{1,2}):(\d{2})\b/);if(!c||+c[2]>59||+c[1]*60+ +c[2]>900)return{...no,period:n};
+  return{known:true,period:n,f:(n-1+Math.max(0,Math.min(900,900-((+c[1])*60+(+c[2]))))/900)/4,ot:false,end:false,fin:false}}
+const canProject=(x,t,fresh)=>!!(fresh&&x&&x.have&&x.pace&&t&&t.known&&!t.fin&&(x.half?t.f>=.125&&t.f<.5:!t.ot&&t.f>=.25&&t.f<1));   // enough of the bet's own period has run, and it is still running
+const lvRun=(x,t,g)=>!!(g&&!g.final&&g.state==='in'&&!t.fin&&(!t.known||(x&&x.half?t.f<.5:!t.ot&&t.f<1)));   // the bet's period is still going
+const lvProj=(x,t)=>{const f=x.half?Math.min(1,t.f*2):t.f;return f>0?x.v/f:null};   // where this pace ends up
+const lvOk=(op,v,line)=>op==='<'?v<line:op==='>'?v>line:v>=line;
+const lvNeed=x=>x.m==='spread'?Math.floor(-x.v)+1:Math.round(((x.op==='>'?(Math.floor(x.line/(x.step||1))+1)*(x.step||1):x.line)-x.v)*10)/10;   // how much more it takes to win from here
+const lvProx=x=>(x.m==='long'||/Yds$/.test(x.st||''))?10:(x.m==='ml'||x.m==='spread'||x.m==='total'||x.m==='teamTotal'||x.m==='tScore'||x.st==='Kicking Points')?3:(x.step||1);
+const lvN=n=>String(Math.round(n*10)/10);
+const lvPts=n=>n===.5?'half a point':n===1?'1 point':`${lvN(n)} points`;
+const lvAgo=ms=>{const m=Math.round(ms/6e4);return m<1?'just now':m<60?`${m}m ago`:`${Math.round(m/60)}h ago`};
+const LVNOUN={'Receptions':'catches','Completions':'completions','Pass Attempts':'pass attempts','Rush Attempts':'carries','Kicking Points':'kicking points','Passing TDs':'passing TDs','Interceptions':'interceptions','Field Goals Made':'field goals','Sacks':'sacks'};
+const lvNoun=x=>(x.m==='total'||x.m==='teamTotal')?'points':(x.m==='long'||/Yds$/.test(x.st||''))?'yds':(LVNOUN[x.st]||'');
+const lvScore=(g,x)=>!g?'':((x&&x.s&&x.s.aw!=null)?`${TEAM_NM(g.away)} ${x.s.aw}, ${TEAM_NM(g.home)} ${x.s.hm}`:`${TEAM_NM(g.away)} ${g.as||0}, ${TEAM_NM(g.home)} ${g.hs||0}`);
+const lvClock=(g,r)=>!g?'':((r&&r.final&&r.x&&r.x.half)?'1H final':(g.final||g.state==='post')?(/ot/i.test(g.detail||'')?'Final/OT':'Final'):(g.detail||'Clock unavailable'));
+function lvContext(x){const a=x.s||{};if(!x.have)return'';const st=x.st||'';
+  if(/Receiving|Receptions|Longest Reception/.test(st))return[a.rec!=null?`${a.rec} ${a.rec===1?'catch':'catches'}${a.tgt!=null?` on ${a.tgt} targets`:''}`:'',a.recYds!=null?`${a.recYds} yds`:'',a.recLong!=null?`long ${a.recLong}`:''].filter(Boolean).join(' · ');
+  if(/Rushing|Rush Attempts|Longest Rush/.test(st))return[a.rushAtt!=null?`${a.rushAtt} ${a.rushAtt===1?'carry':'carries'}`:'',a.rushYds!=null?`${a.rushYds} yds`:'',a.rushLong!=null?`long ${a.rushLong}`:''].filter(Boolean).join(' · ');
+  if(/Passing|Completions|Pass Attempts|Interceptions/.test(st))return[a.passCmp!=null&&a.passAtt!=null?`${a.passCmp}/${a.passAtt} passing`:'',a.passYds!=null?`${a.passYds} yds`:'',a.passTD!=null?`${a.passTD} passing TD${a.passTD===1?'':'s'}`:''].filter(Boolean).join(' · ');
+  if(/Pass \+ Rush|Rush \+ Rec/.test(st))return[a.passYds!=null?`${a.passYds} pass yds`:'',a.rushYds!=null?`${a.rushYds} rush yds`:'',a.recYds!=null?`${a.recYds} rec yds`:''].filter(Boolean).join(' · ');
+  return''}
+function lvBar(x,proj,noun,tone){const max=Math.max(1,x.line*1.25,x.v,proj||0),pct=v=>Math.max(0,Math.min(100,v/max*100));return{pct:pct(x.v),projected:proj==null?null:pct(proj),tick:pct(x.line),label:`${lvN(x.v)} ${noun}; line ${lvN(x.line)}${proj==null?'':`; projected ${lvN(proj)}`}`,tone}}
+function legView(r,g,fresh,age=0){   // one leg's card: which state it is in, the chip's words, and the lines under it. Same inputs, same card
+  if(!r)return null;
+  const t=legTiming(g&&g.detail);const x=r.x||null;const gone=!!(g&&(g.final||g.state==='post'));
+  const stale=!fresh?`Last checked ${lvAgo(Math.max(0,age))}`:'';
+  if(r.no)return{code:'HAND',kind:'neutral',word:'By hand',icon:'',cls:'none',chip:'By hand',tone:'',main:'',sub:String(r.no||''),clock:'',bar:null,over:gone};
+  if(!r.status){
+    if(r.pre){const word=(g&&/postpon/i.test(g.detail||''))?'Postponed':(g&&/delay/i.test(g.detail||''))?'Delayed':((r.at&&!isNaN(Date.parse(r.at)))?ETK.format(new Date(r.at)):'On the slip');return{code:'PRE',kind:'neutral',word,icon:'',cls:'pre',chip:word,tone:'',main:'',sub:'',clock:'',bar:null,over:false}};
+    if(gone)return{code:'GRADING',kind:'neutral',word:'Final · grading',icon:'',cls:'live',chip:'Final \xB7 grading',tone:'',main:'',sub:'',clock:'',bar:null,over:true};
+    return{code:'WAITSTATS',kind:'neutral',word:'Waiting for stats',icon:'',cls:'none',chip:'Waiting for stats',tone:'',main:lvScore(g,null),sub:'',clock:stale||lvClock(g,null),bar:null,over:false}}
+  const hit=r.status==='hit',ps=r.status==='push';
+  const side=!!x&&(x.m==='ml'||x.m==='spread'),yes=!!x&&(x.m==='dst'||x.m==='tScore'||x.m==='tdFirst'||x.m==='tFirst'),tdm=!!x&&(x.m==='td'||x.m==='tdN');
+  const noun=x?lvNoun(x):'';
+  const val=()=>tdm?`${x.v} TD${x.v===1?'':'s'}`:noun?`${lvN(x.v)} ${noun}`:lvN(x.v);
+  const ofl=()=>tdm?`${x.v} of ${x.line} TD${x.line===1?'':'s'}`:`${lvN(x.v)} of ${lvN(x.line)}${noun?' '+noun:''}`;
+  const past=!!x&&(x.op==='<'?x.v>x.line:x.v>=x.line);
+  const sideMain=()=>{const d=x.m==='spread'?x.diff:x.v;return d>0?`Up ${lvN(d)}`:d<0?`Down ${lvN(-d)}`:((x.s&&x.s.aw!=null)?`Tied ${x.s.aw}\u2013${x.s.hm}`:'Tied')};
+  const yesMain=()=>x.m==='dst'?(x.v>0?`${TEAM_NM(x.team)} D/ST scored`:`No ${TEAM_NM(x.team)} D/ST touchdown yet`):x.m==='tScore'?(x.v>0?`${TEAM_NM(x.team)} scored ${x.v}`:`No ${TEAM_NM(x.team)} points yet`):x.m==='tdFirst'?((x.s&&x.s.nm)?`First TD: ${x.s.nm}`:'No touchdown yet'):((x.s&&x.s.tm)?`First score: ${TEAM_NM(x.s.tm)}`:'No score yet');
+  const sideNeed=()=>{const n=lvNeed(x);return ` \xB7 needs ${lvN(n)} more point${n===1?'':'s'}${x.m==='spread'?' to cover':''}`};
+  const mainWin=fin=>side?(sideMain()+(x.m==='spread'?` \xB7 ${fin?'covered by':'covering by'} ${lvPts(Math.abs(x.v))}`:'')):yes?yesMain():tdm?val():x.op==='<'?`${val()} \xB7 ${lvN(x.line-x.v)} to spare`:`${val()} \xB7 ${lvN(x.v-x.line)} over the line`;
+  const mainLose=()=>side?(sideMain()+sideNeed()):yes?yesMain():tdm?(x.v===0?'No touchdown yet':`${val()} \xB7 needs ${lvN(lvNeed(x))} more`):x.op==='<'?`${val()} \xB7 ${lvN(x.v-x.line)} over the line`:`${ofl()} \xB7 needs ${lvN(lvNeed(x))} more`;
+  const mainSettled=()=>side?(sideMain()+(x.m==='spread'?` \xB7 ${r.final?'missed by':'missing by'} ${lvPts(Math.abs(x.v))}`:'')):yes?yesMain():tdm?(x.v===0?'No touchdown':`${val()} \xB7 ${lvN(x.line-x.v)} short`):x.op==='<'?`${val()} \xB7 ${lvN(x.v-x.line)} over the line`:`${val()} \xB7 ${lvN(x.line-x.v)} short`;
+  const mainPush=()=>side?(sideMain()+(x.m==='spread'?' \xB7 right on the number':'')):yes?yesMain():`${val()} \xB7 right on the number${((x.op==='>'||x.op==='>=')&&!r.final)?` \xB7 needs ${lvN(lvNeed(x))} more`:''}`;
+  const ck=r.final?lvClock(g,r):(stale||lvClock(g,r));
+  const proj=x&&!r.final&&!r.locked&&canProject(x,t,fresh)?lvProj(x,t):null;
+  const sub=[x?lvContext(x):'',lvScore(g,x),proj!=null?`Projected: ~${lvN(proj)} ${noun}`:'',(x&&x.rev&&past&&!r.final)?'Yardage can still go down':''].filter(Boolean).join(' · ');
+  const mk=(code,cls,chip,tone,main)=>({code,cls,chip,kind:code==='HIT'||code==='MISS'||code==='PUSH'?'solid':code==='ONPACE'||code==='OFFPACE'?'dash':'tint',word:code==='PUSH'?'Push':chip.replace(/^[^A-Za-z]+/u,''),icon:code==='PUSH'?'P':(chip.match(/^[^A-Za-z]+/u)||[''])[0].trim(),tone,main,sub,clock:ck,bar:x&&x.have&&x.pace&&Number.isFinite(x.line)?lvBar(x,proj,noun,tone):null,over:gone});
+  if(r.final)return mk(ps?'PUSH':hit?'HIT':'MISS',ps?'push':hit?'hit':'miss',ps?'P Push':hit?'\u2713 Hit':'\u2717 Missed',ps?'push':hit?'hit':'miss',!x?String(r.detail||''):ps?mainPush():hit?mainWin(true):mainSettled());
+  if(r.locked)return mk(ps?'PUSH':hit?'HIT':'MISS',ps?'push':hit?'hit':'miss',ps?'P Push':hit?'\u{1F512} Hit':'\u2717 Missed',ps?'push':hit?'hit':'miss',!x?String(r.detail||''):ps?mainPush():hit?((side||yes||tdm)?mainWin(true):`${val()} \xB7 can't lose it`):mainSettled());
+  if(x&&x.have===false)return{code:'WAITSTATS',kind:'neutral',word:'Waiting for stats',icon:'',cls:'none',chip:'Waiting for stats',tone:'',main:lvScore(g,x),sub:'',clock:ck,bar:null,over:gone};
+  if(ps)return mk('PUSHING','even','\u{1F7E1} Pushing','even',!x?String(r.detail||''):mainPush());
+  if(x&&x.op==='<'&&hit&&proj!=null&&!lvOk(x.op,proj,x.line)&&(x.half?t.f>=.25:(t.period>=3||(t.end&&t.period===2))))return mk('SWEAT','sweat','\u{1F62C} Sweating','even',mainWin(false));
+  const shortOver=!!x&&x.pace&&(x.op==='>'||x.op==='>=')&&!hit;
+  if(x&&g&&g.state==='in'&&((g.hq||[]).length>=4||t.ot)&&Math.abs(x.v-x.line)<=lvProx(x)&&!shortOver)return mk('SWEAT','sweat','\u{1F62C} Sweating','even',hit?mainWin(false):mainLose());
+  if(hit)return mk('HITTING','up','\u{1F7E2} Hitting','up',!x?String(r.detail||''):mainWin(false));
+  if(shortOver&&proj!=null){const on=lvOk(x.op,proj,x.line);return mk(on?'ONPACE':'OFFPACE','k-dash',on?'\u2197 On pace':'\u2198 Off pace','',`${ofl()} \xB7 needs ${lvN(lvNeed(x))} more`)}
+  if(shortOver&&lvRun(x,t,g))return mk('EARLY','even','\u23F3 Not there yet','even',`${ofl()} \xB7 needs ${lvN(lvNeed(x))} more`);
+  return mk('MISSING','down','\u{1F534} Missing','down',!x?String(r.detail||''):mainLose())}
+function legLive(w,l,cl){   // everything one leg's card needs: the grade, its game, and whether the numbers are fresh
+  const R=sweatable(w)?RESULTS[checkDate(w)]:null;const r=R?gradeLeg(l,R,true):null;
+  const gid=(r&&((r.x&&r.x.gid)||r.gid))||null;
+  let g=(R&&gid&&R.games.find(y=>y.id===gid))||null,sg=null;
+  if(!g){sg=legGame(l,(cl&&cl.nfl)||weekNfl(w),cl&&cl.claims&&cl.claims[l.mid]);if(R&&sg)g=R.games.find(y=>y.id===sg.id)||null}   /* only when the grade didn't name the game: the schedule knows it */
+  const age=R?Math.max(0,Date.now()-(R.at||0)):0;const fresh=!!R&&!LIVE_FAILED.has(R)&&age<4*6e4;
+  return{R,r,g,sg,fresh,v:r?legView(r,g,fresh,age):null}}
+function legChip(w,l,cl,prepared){   // once the bet is in, a leg shows where it stands instead of "pick in": its kickoff time, how it's doing live, or how it ended
+  const L=prepared||legLive(w,l,cl);if(L.v)return[L.v.cls,L.v.chip];
+  const g=L.sg;const G=(L.R&&g)?L.R.games.find(x=>x.id===g.id):null;
+  if(G&&G.state==='in')return['live','\u25CF Live'];
+  if(G&&G.state==='post')return['live','Final \xB7 grading'];
   if(g&&g.at&&Date.parse(g.at)>Date.now())return['pre',ETK.format(new Date(g.at))];
   return['none','On the slip']}
-function liveBanner(w){if(!sweatable(w))return'';const R=RESULTS[checkDate(w)];if(!R)return'';const k={cash:0,dead:0,up:0,down:0,wait:0};
-  k.push=0;k.check=0;const killed=[];
-  for(const[mid,p]of Object.entries(w.picks)){if(!member(mid)||!String(p.text||'').trim())continue;if(p.status!=='pending'){if(p.status==='miss')killed.push(mid);k[p.status==='miss'?'dead':p.status==='push'?'push':'cash']++;continue}const r=gradeLeg(p,R,true);
-    if(!r.status){k[r.no?'check':'wait']++;continue}if(r.status==='push'){k.push++;continue}if(r.locked&&r.status==='miss')killed.push(mid);if(r.locked)k[r.status==='miss'?'dead':'cash']++;else k[r.status==='miss'?'down':'up']++}
-  if(!k.cash&&!k.dead&&!k.up&&!k.down&&!k.push)return'';const bits=[k.cash&&`${k.cash} cashed`,k.up&&`${k.up} on track`,k.push&&`${k.push} even`,k.down&&`${k.down} behind`,k.dead&&`${k.dead} dead`,k.wait&&`${k.wait} to play`,k.check&&`${k.check} to check by hand`].filter(Boolean).join(' · ');
-  const who=killed.length?`Killed by ${killed.slice(0,2).map(mid=>`${h(member(mid)?.name||'?')}’s ${h(w.picks[mid].text)}`).join(' and ')}${killed.length>2?` and ${killed.length-2} more`:''}`:'';
-  return`<div class="lvbanner ${k.dead?'dead':''}"><b>${k.dead?'💀 Parlay\'s dead':k.down?'😬 Parlay alive':'🔥 Parlay alive'}</b>${who?`<span>${who}</span>`:''}<span>${bits}</span></div>`}
+function liveBanner(w,prepared){if(!sweatable(w))return'';const R=RESULTS[checkDate(w)];if(!R)return'';
+  const k={hit:0,hitting:0,onpace:0,sweat:0,pushing:0,early:0,offpace:0,missing:0,miss:0,push:0,play:0,hand:0};const killed=[];const cl0=prepared||{nfl:weekNfl(w),live:{}};
+  const CODE={HIT:'hit',MISS:'miss',PUSH:'push',HITTING:'hitting',ONPACE:'onpace',SWEAT:'sweat',PUSHING:'pushing',EARLY:'early',OFFPACE:'offpace',MISSING:'missing'};
+  for(const[mid,p]of Object.entries(w.picks)){if(!member(mid)||!String(p.text||'').trim())continue;
+    if(p.status!=='pending'){if(p.status==='miss')killed.push(mid);k[p.status==='miss'?'miss':p.status==='push'?'push':'hit']++;continue}
+    const v=(cl0.live[mid]||legLive(w,{mid,...p},cl0)).v;if(!v){k.play++;continue}
+    if(v.code==='MISS')killed.push(mid);
+    if(v.code==='HAND'){k.play++;if(v.over)k.hand++;continue}
+    if(v.code==='PRE'||v.code==='GRADING'||v.code==='WAITSTATS'){k.play++;continue}
+    k[CODE[v.code]]++}
+  if(!k.hit&&!k.miss&&!k.push&&!(k.hitting+k.onpace+k.sweat+k.pushing+k.early+k.offpace+k.missing))return'';
+  const bits=[k.hit&&`${k.hit} hit`,k.hitting&&`${k.hitting} hitting`,k.onpace&&`${k.onpace} on pace`,k.sweat&&`${k.sweat} sweating`,k.pushing&&`${k.pushing} pushing`,k.early&&`${k.early} not there yet`,k.offpace&&`${k.offpace} off pace`,k.missing&&`${k.missing} missing`,k.miss&&`${k.miss} missed`,k.push&&`${k.push} push`,k.play&&`${k.play} to play`,k.hand&&`${k.hand} to grade by hand`].filter(Boolean).join(' \xB7 ');
+  const who=killed.length?`Killed by ${killed.slice(0,2).map(mid=>`${h(member(mid)?.name||'?')}\u2019s ${h(w.picks[mid].text)}`).join(' and ')}${killed.length>2?` and ${killed.length-2} more`:''}`:'';
+  return`<div class="lvbanner ${k.miss?'dead':''}"><b>${k.miss?'\u{1F480} Parlay\'s dead':(k.missing||k.offpace||k.sweat||k.pushing)?'\u{1F62C} Parlay alive':'\u{1F525} Parlay alive'}</b>${who?`<span>${who}</span>`:''}<span>${bits}</span></div>`}
+const LIVE_FAILED=new WeakSet();
 let liveT=null,liveBusy=false;
+function livePaint(w){const cw=currentWeek();if(VIEW!=='week'||cw!==w)return;const cl0={nfl:weekNfl(w),live:{}};
+  for(const mid of Object.keys(w.picks)){const p=w.picks[mid];if(p.status!=='pending')continue;const L=cl0.live[mid]=legLive(w,{mid,...p},cl0);const el=document.getElementById(`lv-${w.id}-${mid}`),ct=document.getElementById(`lvt-${w.id}-${mid}`);
+    if(ct&&w.placed){const c=legChip(w,{mid,...p},cl0,L);if(ct.textContent!==c[1])ct.textContent=c[1];if(ct.className!=='stag '+c[0])ct.className='stag '+c[0]}
+    if(!el)continue;const html=liveLine(w,mid,L,!!ct&&w.placed);if(el.innerHTML!==html)el.innerHTML=html}
+  const bn=document.getElementById(`lvb-${w.id}`);if(bn){const html=liveBanner(w,cl0);if(bn.innerHTML!==html)bn.innerHTML=html}}
 function liveWatch(delay){clearTimeout(liveT);liveT=setTimeout(liveTick,delay==null?1500:delay)}
-async function liveTick(){liveT=null;if(liveBusy||document.visibilityState!=='visible'||VIEW!=='week')return;const w=S.weeks.length?currentWeek():null;if(!sweatable(w))return;liveBusy=true;
-  try{const R=await loadResults(checkDate(w),45e3);const cw=currentWeek();if(cw&&cw.id===w.id){for(const mid of Object.keys(w.picks)){const el=document.getElementById(`lv-${w.id}-${mid}`);const ct=document.getElementById(`lvt-${w.id}-${mid}`);if(ct&&w.placed){const c=legChip(w,{mid,...w.picks[mid]},null);if(ct.textContent!==c[1]){ct.textContent=c[1];ct.className='stag '+c[0]}}if(!el)continue;const html=liveLine(w,mid);if(el.innerHTML!==html)el.innerHTML=html}
-      const bn=document.getElementById(`lvb-${w.id}`);if(bn){const html=liveBanner(w);if(bn.innerHTML!==html)bn.innerHTML=html}}
-    const soon=R.games.some(g=>g.state==='in'||(g.state==='pre'&&Date.parse(g.at)-Date.now()<30*60e3&&Date.parse(g.at)>Date.now()-6*3600e3));liveWatch(soon?60e3:10*60e3)}   // every minute while games are on
-  catch(e){liveWatch(2*60e3)}finally{liveBusy=false}}
+async function liveTick(){liveT=null;if(liveBusy||document.visibilityState!=='visible'||VIEW!=='week')return;const w=S.weeks.length?currentWeek():null;if(!sweatable(w))return;liveBusy=true;const date=checkDate(w),owner=league(),sn=season();let delay=2*60e3;
+  try{const R=await loadResults(date,45e3);LIVE_FAILED.delete(R);if(league()===owner&&season()===sn)livePaint(w);
+    const soon=R.games.some(g=>g.state==='in'||(g.state==='pre'&&Date.parse(g.at)-Date.now()<30*60e3&&Date.parse(g.at)>Date.now()-6*3600e3));delay=soon?60e3:10*60e3}
+  catch(e){const R=RESULTS[date];if(R)LIVE_FAILED.add(R);if(league()===owner&&season()===sn)livePaint(w)}finally{liveBusy=false;liveWatch(league()===owner&&season()===sn&&currentWeek()===w?delay:1500)}}
 async function checkSlip(w){   // the commissioner's Check button: look up every ungraded leg, then grade them in one tap
   const date=checkDate(w);if(!date){toast('This week has no date, so there are no games to check','bad');return}
   const legs=Object.entries(w.picks).filter(([mid,p])=>member(mid)&&p.status==='pending'&&String(p.text||'').trim());if(!legs.length){toast('Nothing left to grade on this slip','good');return}
