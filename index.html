@@ -1138,8 +1138,8 @@ async function pull(l=league(),loud=false,force=false,read=null){
   if(!l.sync||pullBusy||pushTof(l)||pendingPick)return;
   if(l.sync.role==='admin'&&l.sync.dirty&&!l.sync.stuck){if(!read){push(l);return}read.waiting=true;await push(l);read.waiting=!!l.sync.dirty;if(read.waiting||read.current&&!read.current())return false}   // this device's edits go up before anything comes down
   if(force||loud)await retryPriceEdits(l);if(outboxHas(l))await flushOutbox(l);   // so does a pick that hasn't reached the league yet
-  if(read?.current&&!read.current())return false;pullBusy=true;const was=dotWas();setSyncDot('busy');const asKey=l.meKey,dn=dotN;
-  try{const d=await api(l,'');if(read?.current&&!read.current())return false;delete l.sync.stuck;if(l.meKey!==asKey){setSyncDot('ok');setTimeout(()=>pull(l,false,true),50)}   // this device became someone else mid-fetch: fetch again as them
+  if(read?.current&&!read.current())return false;pullBusy=true;const was=dotWas();setSyncDot('busy');const asKey=l.meKey,dn=dotN;let gone=false;
+  try{const d=await api(l,'');if(read?.current&&!read.current()){gone=true;return false}delete l.sync.stuck;if(l.meKey!==asKey){setSyncDot('ok');setTimeout(()=>pull(l,false,true),50)}   // this device became someone else mid-fetch: fetch again as them
     else if(pushTof(l)||pendingPick||l.sync.dirty){setSyncDot('ok')}   // an edit landed mid-fetch: it pushes first
     else if(force||d.rev!==l.sync.rev){applyState(l,d);save();if(!quiet())render();else needRender=true}
     else if(d.person&&(()=>{const ahead=rvAhead(l,d.person);if(!mergePerson(l,d.person))return false;save();if(ahead)afterPerson(l);else softRender();return true})()){}   // watched something on another device (or a device/upload changed)
@@ -1147,8 +1147,8 @@ async function pull(l=league(),loud=false,force=false,read=null){
     if(Object.keys(l.personPend||{}).length)sendPerson(l);   // this device is still ahead of the server: send it again
     hello(l);
     setSyncDot('ok');if(loud)toast('Up to date','good');if(!upl)loadPending();const clean=!pushTof(l)&&!pendingPick&&!l.sync.dirty&&!outboxHas(l)&&l.meKey===asKey;if(read){read.checked=l.meKey===asKey;read.waiting=!clean}return clean}
-  catch(e){if(read)read.error=e;if(!read?.current||read.current())setSyncDot('bad');if(loud)toast(failNote(e,'Couldn’t check for updates','Nothing was lost. You’re looking at what this phone had last. Pull down or tap Refresh when you have signal.','Nothing on this phone was lost. Close the app fully, open it again, and pull down.'),'bad');return false}
-  finally{pullBusy=false;if(read?.current&&!read.current()&&dotStill(dn))settleDot(was)}   // the league or person changed mid-read: this read's spinner is not left on the new one
+  catch(e){if(read)read.error=e;if(!read?.current||read.current())setSyncDot('bad');else gone=true;if(loud)toast(failNote(e,'Couldn’t check for updates','Nothing was lost. You’re looking at what this phone had last. Pull down or tap Refresh when you have signal.','Nothing on this phone was lost. Close the app fully, open it again, and pull down.'),'bad');return false}
+  finally{pullBusy=false;if(read?.current&&!read.current()&&dotStill(dn))settleDot(was);if(gone)setTimeout(()=>pull(league(),false,true),50)}   // the league or person changed mid-read: this read's spinner is not left on the new one, and the league now on screen is read (its own request was turned away while this one was out)
 }
 function schedulePush(){const l=league();if(!l.sync||l.sync.role!=='admin')return;l.sync.dirty=true;l.sync.seq=(l.sync.seq||0)+1;clearPushT(l);pushTs[l.id]=setTimeout(()=>{delete pushTs[l.id];push(l)},700)}
 // members' own picks that reached the league after this device last synced: fold them into this device's copy
