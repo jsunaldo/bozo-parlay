@@ -73,7 +73,7 @@ s, n = re.subn(r"^const SHARE_SITES=\{.*\};$", lambda m: "const SHARE_SITES={sel
 assert n == 1, 'SHARE_SITES line not found'
 s = re.sub(r"^const SEED_MARGINS=.*$", "const SEED_MARGINS={};", s, flags=re.M)
 s, n = re.subn(r"^const LEAGUE_LOGOS=\{.*\};$", "const LEAGUE_LOGOS={};", s, flags=re.M); assert n == 1, 'LEAGUE_LOGOS line not found'   # a club app only ever shows its own icon
-sub("(async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined)pull();})();", "pull(league(),false);")
+sub("(async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined){if(refreshedIn)reopenRead();else pull()}})();", "if(refreshedIn)reopenRead();else pull(league(),false);")   # after Refresh reopens the app, the first read says how it went
 s = s.replace("__LEAGUE_ID__", A.league).replace("__MEMBER_KEY__", A.key).replace("__SYNC_URL__", A.url).replace("__LEAGUE_NAME__", A.name.replace("'", "\\'"))
 sub("<title>Bozo Commish</title>", f"<title>{A.title}</title>")
 sub('<meta name="apple-mobile-web-app-title" content="Bozo Commish">', f'<meta name="apple-mobile-web-app-title" content="{A.short}">')
