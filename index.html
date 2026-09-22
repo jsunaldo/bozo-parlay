@@ -491,9 +491,9 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .typerow .tname .rank{color:var(--dim);font-size:11px;width:14px;flex:none;text-align:right}
 .tlogo{width:22px;height:22px;object-fit:contain;flex:none}
 .typerow>.chev{color:var(--dim);font-size:16px;line-height:1}
-.typerow{grid-template-columns:minmax(0,1fr) 64px 52px 50px 40px}.typerow.nav{grid-template-columns:minmax(0,1fr) 56px 52px 50px 40px 12px}
+.typerow{grid-template-columns:minmax(0,1fr) 64px 52px 40px 50px}.typerow.nav{grid-template-columns:minmax(0,1fr) 56px 52px 40px 50px 12px}
 .tuc{text-align:right;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}.tuc.good{color:var(--green)}.tuc.bad{color:var(--red)}
-@media (max-width:430px){.teamrow{grid-template-columns:minmax(0,1fr) 56px 52px 36px;gap:8px}.typerow{grid-template-columns:minmax(0,1fr) 28px 52px 46px 34px;gap:6px}.typerow.nav{grid-template-columns:minmax(0,1fr) 28px 52px 46px 34px 10px;gap:6px}}   /* phones: shorter bars so team names fit */
+@media (max-width:430px){.teamrow{grid-template-columns:minmax(0,1fr) 56px 52px 36px;gap:8px}.typerow{grid-template-columns:minmax(0,1fr) 28px 52px 34px 46px;gap:6px}.typerow.nav{grid-template-columns:minmax(0,1fr) 28px 52px 34px 46px 10px;gap:6px}}   /* phones: shorter bars so team names fit */
 .crumbs{display:flex;flex-wrap:wrap;gap:4px;align-items:center;font-size:12px;margin-bottom:12px}
 .crumb{background:var(--surface2);border-radius:999px;padding:5px 11px;font-weight:600;cursor:pointer;color:var(--muted)}
 .crumb.cur{background:var(--blue);color:#fff;cursor:default}
@@ -2182,7 +2182,7 @@ const fmtUnits=u=>{if(u==null)return'—';const{r,s}=uNum(u);return(r>0?'+':r<0?
 const uCls=u=>u>0.004?'good':u<-0.004?'bad':'';
 const uOf=rec=>rec&&(rec.w+rec.l+rec.p)>(rec.uq||0)?(rec.u||0):null;   // null when nothing could be counted
 function places(list,same){const r=[];list.forEach((x,i)=>r.push(i>0&&same(list[i-1],x)?r[i-1]:i+1));return r}   // a tie shares the place: 1, 1, 3
-function statRow({label,logo,avatar,rec,act,data,nav,rank}){const r=rateOf(rec);const n=rec.w+rec.l;return`<div class="typerow tap ${nav?'nav':''}" data-act="${act}" ${data}><span class="tname">${rank!=null?`<span class="rank">${rank}</span>`:''}${logo?`<img class="tlogo" src="${LOGO(logo)}" alt="">`:''}${avatar||''}<span class="nm">${h(label)}</span></span><span class="tbar"><i style="width:${Math.round((r||0)*100)}%"></i></span><span class="mono trec">${recStr(rec)}</span><span class="mono tuc ${uCls(uOf(rec))}">${uOf(rec)!=null?fmtU(uOf(rec)):'—'}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span>${nav?'<span class="chev">›</span>':''}</div>`}
+function statRow({label,logo,avatar,rec,act,data,nav,rank}){const r=rateOf(rec);const n=rec.w+rec.l;return`<div class="typerow tap ${nav?'nav':''}" data-act="${act}" ${data}><span class="tname">${rank!=null?`<span class="rank">${rank}</span>`:''}${logo?`<img class="tlogo" src="${LOGO(logo)}" alt="">`:''}${avatar||''}<span class="nm">${h(label)}</span></span><span class="tbar"><i style="width:${Math.round((r||0)*100)}%"></i></span><span class="mono trec">${recStr(rec)}</span><span class="tpct ${r>=.5?'good':'bad'}">${n?Math.round(r*100)+'%':'—'}</span><span class="mono tuc ${uCls(uOf(rec))}">${uOf(rec)!=null?fmtU(uOf(rec)):'—'}</span>${nav?'<span class="chev">›</span>':''}</div>`}
 function explorerCard(g){
   if(!g.legs.length)return'';
   const rows=TYPE_ORDER.filter(t=>g.legs.some(l=>l.type===t)).map(t=>statRow({label:t,rec:recOf(nodeLegs(g.legs,{type:t})),act:'x-go',data:`data-node="${encNode({type:t})}"`,nav:true})).join('');
