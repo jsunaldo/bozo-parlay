@@ -2484,14 +2484,14 @@ async function loadAN(nfl,slugs){const wk=anWeek(nfl);if(!wk||!slugs.length||loa
     const players={};for(const p of d.players||[])players[p.id]={n:p.full_name,t:teams[p.team_id]||''};
     const bk=(d.markets&&d.markets['68']&&d.markets['68'].event)||{};for(const s of need)AN[wk.season+'|'+wk.week+'|'+s]={at,got:Date.now(),rows:bk[s]||[],players,teams};autoTidySoon()}
   catch(e){for(const s of need)AN_ERR[s]=Date.now()}finally{loadAN.busy=false;if(Date.now()-anFail>=30*60e3)autoTidySoon()}}   // a hiccup: just those bet types, again in a few minutes
-function anLookup(text,nfl){   // DraftKings' price from Action Network: {price} | {other} | {none} | null (nothing it could have)
-  const want0=anWant(text,nfl);if(!want0)return null;const r1=anLookup1(text,nfl,want0);if(r1&&r1.price||!want0.alt)return r1;const r2=anLookup1(text,nfl,want0.alt);return r2&&r2.price?r2:(r1&&r1.other?r1:r2&&r2.other?r2:r1)}
-function anLookup1(text,nfl,want0){let want=want0;const wk=anWeek(nfl);if(!wk||!nfl.teamGame)return null;
+function anLookup(text,nfl,quiet){   // DraftKings' price from Action Network: {price} | {other} | {none} | null (nothing it could have); quiet: only what is already loaded, no request
+  const want0=anWant(text,nfl);if(!want0)return null;const r1=anLookup1(text,nfl,want0,quiet);if(r1&&r1.price||!want0.alt)return r1;const r2=anLookup1(text,nfl,want0.alt,quiet);return r2&&r2.price?r2:(r1&&r1.other?r1:r2&&r2.other?r2:r1)}
+function anLookup1(text,nfl,want0,quiet){let want=want0;const wk=anWeek(nfl);if(!wk||!nfl.teamGame)return null;
   let team=want.team,pl=null;if(!team){pl=matchPlayer(text,nfl);if(!pl)return{none:'player'};team=pl.team}
   if(pl&&pl.pos==='QB'&&/_(67|68)_to_score_/.test(want.slug)&&!/\b(rush|run|rec|scor)/.test(String(text).toLowerCase()))return{none:'qbtd'};   // a QB's "2+ TDs": passing or scoring? don't guess
   const g=nfl.teamGame[team];if(!g)return{none:'player'};if(!(Date.parse(g.at)>Date.now()))return{none:'started'};
-  const e=AN[wk.season+'|'+wk.week+'|'+want.slug];if(!e){loadAN(nfl,[want.slug]);return{none:Date.now()-anFail<30*60e3?'blocked':'loading'}}
-  const age=Date.now()-e.at;if(age>3600e3||(Date.parse(g.at)-Date.now()<2*3600e3&&age>20*60e3)){loadAN(nfl,[want.slug]);return{none:'loading'}}
+  const e=AN[wk.season+'|'+wk.week+'|'+want.slug];if(!e){if(!quiet)loadAN(nfl,[want.slug]);return{none:Date.now()-anFail<30*60e3?'blocked':'loading'}}
+  const age=Date.now()-e.at;if(age>3600e3||(Date.parse(g.at)-Date.now()<2*3600e3&&age>20*60e3)){if(!quiet)loadAN(nfl,[want.slug]);return{none:'loading'}}
   const fmt=o=>o>0?'+'+o:String(o);const nm=pl&&nameKey(pl.name);
   const rows=want.team?e.rows.filter(r=>e.teams[r.team_id]===team):e.rows.filter(r=>{const p=e.players[r.player_id];return p&&nameKey(p.n)===nm&&(!p.t||p.t===team)});
   if(!rows.length)return{none:'market'};
@@ -2572,14 +2572,14 @@ function oaLookup(text,nfl,noBuy){   // {price, src:'oa'} | {other} | {none:'loa
     if(b&&(!other||!/_alternate/.test(m)&&other.alt))other={other:k.kind==='team'?`${TEAM_NM(k.team)} ${b[3]!=null?fl(b[3]):'Moneyline'} (${fmt(b[2])})`:`${k.player?k.player+' ':k.team?TEAM_NM(k.team)+' ':''}${b[0]} ${b[3]??''} (${fmt(b[2])})`.replace(/\s+/g,' '),alt:/_alternate/.test(m)}}   // the hint: the nearest line, from the main market when there is one
   return other||(seen?{none:'market'}:held?{none:'held'}:null)}
 const srcName=s=>s==='oa'?'The Odds API':s==='an'?'Action Network':'ESPN';
-function dkPrice(text,nfl,noBuy){   // DraftKings' price for this exact bet: The Odds API first (the owner's pick), then ESPN, then Action Network only when The Odds API can't help; an "X+" leg is DraftKings' milestone bet, so its ladder comes first
+function dkPrice(text,nfl,noBuy,quiet){   // DraftKings' price for this exact bet: The Odds API first (the owner's pick), then ESPN, then Action Network only when The Odds API can't help; an "X+" leg is DraftKings' milestone bet, so its ladder comes first. noBuy: buy nothing; quiet: ask Action Network for nothing either (Build a pick's lines)
   const type=betType(text);const o=oaLookup(text,nfl,noBuy);if(o&&o.none==='loading')return o;   // The Odds API is answering: wait for it rather than save a price that's about to be replaced
   const lo=' '+String(text||'').toLowerCase()+' ';const rungFirst=type==='Player prop'&&/(\d+) ?\+(?! ?\d)/.test(lo)&&!/\b(tds?|touchdowns?)\b/.test(lo);
   const e1=espnOdds(text,nfl);const r=type==='Player prop'?propLookup(text,nfl):null;const oa=o&&o.price&&!o.fb?o:null;
   const esp=e1?{price:e1,at:Date.parse(nfl.at)||nfl.loadedAt||0}:!rungFirst&&r&&r.price?{price:r.price,at:r.at||0}:null;
   if(oa&&!(esp&&esp.at>oa.at))return oa;if(esp)return{price:esp.price,src:'espn',at:esp.at};   // the same DraftKings bet in both: the newer copy wins
   if(type!=='Player prop'&&type!=='Team total')return o&&(o.price||o.other)?o:null;
-  const x=anLookup(text,nfl);if(x&&x.price)return x;if(o&&o.price)return o;if(r&&r.price)return{price:r.price,src:'espn',at:r.at||0};if(r&&r.other)return r;if(o&&o.other)return o;if(x&&x.other)return x;return(x&&x.none!=='market'?x:null)||r||x||o||null}
+  const x=anLookup(text,nfl,quiet);if(x&&x.price)return x;if(o&&o.price)return o;if(r&&r.price)return{price:r.price,src:'espn',at:r.at||0};if(r&&r.other)return r;if(o&&o.other)return o;if(x&&x.other)return x;return(x&&x.none!=='market'?x:null)||r||x||o||null}
 function propLookup(text,nfl){   // DraftKings' price for a player prop (ESPN only shows the popular ones): {price} | {other: their line} | {none} | null (not a prop it could have)
   if(!nfl||!nfl.teamGame||betType(text)!=='Player prop')return null;const lo=' '+String(text||'').toLowerCase().replace(/[’']/g,'').replace(/\s+/g,' ')+' ';
   if(PROP_PART.test(lo)||/\b2nd half\b|\bsecond half\b/.test(lo))return{none:'part'};if(/\bd ?\/ ?st\b|\bdefen[cs]e\b|\bdst\b/.test(lo))return{none:'dst'};if(propCombo(lo)||legTeams(text,nfl).length)return{none:'combo'};
