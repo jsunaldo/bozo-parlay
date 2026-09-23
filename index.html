@@ -22,13 +22,13 @@
 :root{
   --bg:#f5f5f7;--surface:#fff;--surface2:#f5f5f7;--surface3:#e8e8ed;--line:rgba(0,0,0,.08);--line2:rgba(0,0,0,.14);
   --text:#1d1d1f;--muted:#6e6e73;--dim:#757579;--glass:rgba(255,255,255,.78);
-  --green:#177c36;--on-green:#fff;--amber-tx:#9a5100;--red:#ff3b30;--pace-red:#c5221a;--amber:#ff9f0a;--blue:#0071e3;--pink:#ff2d55;--purple:#af52de;
+  --green:#177c36;--on-green:#fff;--amber-tx:#9a5100;--red:#ff3b30;--pace-red:#c5221a;--red-tx:#c5221a;--amber:#ff9f0a;--blue:#0071e3;--pink:#ff2d55;--purple:#af52de;
   --green-bg:rgba(52,199,89,.13);--red-bg:rgba(255,59,48,.12);--amber-bg:rgba(255,159,10,.15);--blue-bg:rgba(0,113,227,.1);
   --r:22px;--rs:14px;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);--shadow-lg:0 12px 40px rgba(0,0,0,.12);
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;
   --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,monospace;
 }
-@media(prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--text:#f5f5f7;--muted:#98989d;--dim:#8e8e93;--on-green:#06230f;--amber-tx:var(--amber);--glass:rgba(28,28,30,.78);--green:#30d158;--red:#ff453a;--pace-red:#ff453a;--amber:#ffd60a;--blue:#0a84ff;--pink:#ff375f;--purple:#bf5af2;--green-bg:rgba(48,209,88,.16);--red-bg:rgba(255,69,58,.16);--amber-bg:rgba(255,214,10,.14);--blue-bg:rgba(10,132,255,.16);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);--shadow-lg:0 16px 48px rgba(0,0,0,.6)}}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--text:#f5f5f7;--muted:#98989d;--dim:#8e8e93;--on-green:#06230f;--amber-tx:var(--amber);--glass:rgba(28,28,30,.78);--green:#30d158;--red:#ff453a;--pace-red:#ff453a;--red-tx:#ff8a80;--amber:#ffd60a;--blue:#0a84ff;--pink:#ff375f;--purple:#bf5af2;--green-bg:rgba(48,209,88,.16);--red-bg:rgba(255,69,58,.16);--amber-bg:rgba(255,214,10,.14);--blue-bg:rgba(10,132,255,.16);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);--shadow-lg:0 16px 48px rgba(0,0,0,.6)}}
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%;color-scheme:light dark}
@@ -233,7 +233,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .srow .sp{grid-column:1/-1;display:flex;align-items:center;gap:8px;min-width:0;padding-left:30px}
 .srow .sp .betchip{flex:1;min-width:0}.srow .sp .odds{font-weight:600;white-space:nowrap}.srow .sp .odds.bad{color:var(--red)}
 .srow .sx{grid-column:1/-1;padding-left:30px;font-size:12px;line-height:1.35}
-.srow .sx.flag{color:var(--red);font-weight:600}
+.srow .sx.flag{color:var(--red-tx);font-weight:600}   /* red words that must be read: at least 4.5:1 on the card and on the red tint, light and dark */
 .srow .sx .leg-margin{grid-column:auto}
 .srow .edit{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .srow .edit .leg-inputs,.srow .edit .leg-margin,.srow .edit .leg-tidy{grid-column:auto}
@@ -273,7 +273,7 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .fld{display:flex;flex-direction:column;gap:6px;margin:12px 0 0}.fld>span{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .fld input{font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text);width:100%;box-sizing:border-box}
 .chiprow{display:flex;flex-wrap:wrap;gap:6px}.chiprow button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:6px 12px;cursor:pointer}.chiprow button.on{background:var(--purple);border-color:var(--purple);color:#fff}
-.clashline{font-size:12px;color:var(--red);background:var(--red-bg);border-radius:10px;padding:6px 10px;line-height:1.35}
+.clashline{font-size:12px;color:var(--red-tx);background:var(--red-bg);border-radius:10px;padding:6px 10px;line-height:1.35}
 .clashline.quiet{color:var(--muted);background:none;padding:0 2px}
 .np-group{display:flex;flex-direction:column;gap:4px;padding-left:8px;border-left:3px solid var(--purple);border-radius:3px}
 .np-sg{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);margin:2px 0}
