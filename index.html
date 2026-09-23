@@ -408,6 +408,20 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .dot.hit{background:var(--green);border-color:var(--green);opacity:1}
 .dot.miss{background:var(--red);border-color:var(--red);opacity:1}
 .dot.push{background:var(--amber);border-color:var(--amber);opacity:1}
+.hs{margin-bottom:14px}.hs-box{position:relative;display:flex;align-items:center}.hs-box::before{content:'🔍';position:absolute;left:12px;font-size:14px;opacity:.65;pointer-events:none}   /* pick history search: one box under the season buttons */
+#hsIn{min-height:44px;padding:10px 44px 10px 36px;border-radius:14px;font-size:16px;background:var(--surface);border-color:var(--line2)}#hsIn:focus{border-color:var(--blue)}#hsIn::-webkit-search-cancel-button,#hsIn::-webkit-search-decoration{-webkit-appearance:none;appearance:none;display:none}
+.hs-x{position:absolute;right:0;top:0;width:44px;height:44px;border:0;background:none;color:var(--muted);font:inherit;font-size:22px;line-height:1;border-radius:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.hs-sum{margin:10px 2px 0;font-size:13px;font-weight:600;color:var(--muted);line-height:1.4}.hs-sum:empty{margin:0}
+.hs-f{display:flex;flex-direction:column;gap:8px;margin:10px 0}.hs-chips{display:flex;flex-wrap:wrap;gap:6px}
+.hs-chips button{min-height:44px;padding:0 14px;border-radius:999px;border:1px solid var(--line2);background:var(--surface);color:var(--text);font:inherit;font-size:13px;font-weight:600;cursor:pointer;-webkit-tap-highlight-color:transparent}.hs-chips button[aria-pressed="true"]{background:var(--text);border-color:var(--text);color:var(--bg)}
+.hs-sel{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:8px}.hs-sel label{display:flex;flex-direction:column;gap:3px;min-width:0;font-size:11px;font-weight:600;color:var(--muted)}.hs-sel select{min-height:44px;font-size:14px;color:var(--text);background-color:var(--surface);border-color:var(--line2)}.hs-sel select:focus{border-color:var(--blue)}
+.hs-list{display:flex;flex-direction:column;gap:8px}
+.hs-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;min-height:44px;padding:10px 12px;text-align:left;font:inherit;color:inherit;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);cursor:pointer;-webkit-tap-highlight-color:transparent}.hs-row:active{transform:scale(.985)}
+.hs-mid{min-width:0;display:flex;flex-direction:column;gap:4px}.hs-mid .betchip{font-weight:600}.hs-sub{font-size:12px;line-height:1.45;color:var(--muted);min-width:0;overflow-wrap:anywhere}.hs-sub .avatar{vertical-align:-3px;margin-right:4px}
+.hs-res{display:flex;flex-direction:column;align-items:flex-end;border-radius:10px;padding:4px 9px;font-size:12px;font-weight:700;line-height:1.25;white-space:nowrap}.hs-res small{font-size:10px;font-weight:600;opacity:.9}
+.hs-res.hit{background:var(--green-bg);color:var(--green)}.hs-res.miss{background:var(--red-bg);color:var(--pace-red)}.hs-res.push{background:var(--amber-bg);color:var(--amber-tx)}.hs-res.pending{background:var(--surface2);color:var(--muted)}
+.hs-more{margin-top:10px;min-height:44px;background:var(--surface);border-color:var(--line2)}.hs-none{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;margin-top:10px;font-size:14px}.hs-none p{margin:0 0 8px}.hs-none p:last-child{margin:0}.hs-none .btn{min-height:44px}
+.hs-row:focus-visible,.hs-chips button:focus-visible,.hs-x:focus-visible,.hs-more:focus-visible,.hs-none .btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 
 /* stats */
 .scope{display:flex;background:var(--surface2);border-radius:980px;padding:4px;margin-bottom:14px;gap:2px}
@@ -3275,7 +3289,47 @@ function renderFirstBozo(){
 }
 
 /* ---- history ---- */
-function renderHistory(){return scopeBar()+withAll(renderHistoryInner)}
+function renderHistory(){HX=null;const box=hsBox();return scopeBar()+box+`<div id="hsWeeks"${box&&hsOn()?' hidden':''}>${withAll(renderHistoryInner)}</div>`}   // the pick search sits above the weeks; while it has letters in it, its results take the weeks' place
+/* ---- pick history search (TODO #40): every pick of every season, by player, team or person, with how it did. Read-only: nothing is saved, sent or changed ---- */
+const HS_PAGE=50,HS_SORTS=[['new','Newest'],['old','Oldest'],['price','Biggest price'],['close','Closest finish']],HS_ST={all:'All',hit:'Hits',miss:'Misses',push:'Pushes',pending:'Not graded yet'},HS_ONE={hit:'Hit',miss:'Miss',push:'Push',pending:'Not graded yet'},HS_NONE={hit:'hit',miss:'missed',push:'pushed'};
+const HS_SFX=new Set(['jr','sr','ii','iii','iv','v']);   // name endings a search may leave off
+const FIND_TEAM={LAC:['Los Angeles'],LAR:['Los Angeles','LA'],NYG:['New York'],NYJ:['New York'],WSH:['WAS'],JAX:['JAC']};   // search-only words on top of TEAMS, which grading reads and so stays exactly as it is
+let HS={l:null,q:'',res:'all',sid:'',sort:'new',n:HS_PAGE},HX=null;   // what this visit typed and chose (this screen only, never saved or sent), and the search list of the last History paint
+const hsNorm=s=>String(s??'').normalize('NFKD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/['’‘`´ʼʻ.]/g,'').replace(/[^a-z0-9]+/g,' ').trim();   // one spelling for every name: no case, accents, apostrophes, periods or hyphens
+const hsOn=()=>hsNorm(HS.q).replace(/ /g,'').length>=2;   // two letters before anything is searched
+const hsCl=r=>(r.st==='hit'||r.st==='miss')&&r.margin!=null&&r.margin!==''&&(r.unit||'pts')!=='none'&&Number.isFinite(+r.margin)?+r.margin:null;   // how close it finished, where the league recorded it
+function hsList(){const l=league();if(HX&&HX.l===l)return HX;const v=allTimeSeason(),al=aliasesOf(l)||{},names={},who={},tw={},rows=[];   // every pick with words in it, in every season: exactly the weeks All-time shows, so never a week after a reveal this viewer still owes
+  for(const sn of l.seasons)for(const m of sn.data.members||[]){const p=v.pmap[sn.id+'|'+m.id];if(p)(names[p]??=new Set()).add(m.name)}
+  for(const[p,ns]of Object.entries(names)){const ks=new Set();for(const n of ns){const k=crewKey(n,l);ks.add(n);ks.add(k);for(const a of Object.keys(al))if(al[a]===k)ks.add(a)}who[p]=hsNorm([...ks].join(' '))}   // every name the person has gone by here, and the nicknames the league knows for them
+  const team=a=>tw[a]??=hsNorm([a,...(TEAMS[a]||[]),NICK[a]||'',...(FIND_TEAM[a]||[])].join(' '));
+  const real=S;S=v;try{v.weeks.forEach((w,i)=>{const sid=String(w.id).split('|')[0],label=String(w.label||'').replace(/^\s*·\s*/,'');for(const g of calc(w).legs){const t=String(g.text||'').trim(),m=member(g.mid);if(!t||!m)continue;const tx=hsNorm(t),tm=(g.teams||[]).filter(a=>ownKey(TEAMS,a)),pw=who[g.mid]||hsNorm(m.name);
+    rows.push({i,k:rows.length,wid:w.id,sid,label,text:t,teams:tm,name:m.name,color:m.color,odds:g.oddsN,st:['hit','miss','push'].includes(g.status)?g.status:'pending',margin:g.margin,unit:g.unit,tw:tx.split(' '),pw:pw.split(' '),words:[...new Set(`${tx} ${pw} ${tm.map(team).join(' ')}`.split(' ').filter(Boolean))]})}})}finally{S=real}
+  const held=!!l.sync&&l.seasons.some(sn=>{const hd=hiddenIn(sn,l);return!!(hd&&hd.size)});   // some weeks are held back until a reveal is watched: said, never named
+  return HX={l,rows,held,seasons:seasonSorted(l).filter(sn=>rows.some(r=>r.sid===sn.id))}}
+const hsRun=(ws,f)=>{for(let i=0;i<ws.length;i++){let s='';for(let j=i;j<ws.length&&s.length<f.length;j++)s+=ws[j];if(s.startsWith(f))return true}return false};   // the letters typed together, from the start of a word on (amonra = Amon-Ra, jamarr chase = Ja'Marr Chase)
+function hsMatch(r,t,f){return t.every((x,j)=>r.words.some(w=>w.startsWith(x))||(j>0&&j===t.length-1&&HS_SFX.has(x)))||(f.length>=4&&(hsRun(r.tw,f)||hsRun(r.pw,f)))}   // every typed word starts a word of the pick, its person or its teams (a last Jr or III may be left off), or the letters run together through the pick's words or the person's names
+function hsSort(a,b){const s=HS.sort;if(s==='old')return a.i-b.i||a.k-b.k;if(s==='price'){const x=a.odds??-1e9,y=b.odds??-1e9;if(x!==y)return y-x}if(s==='close'){const x=hsCl(a),y=hsCl(b);if(x!==y){if(x==null)return 1;if(y==null)return-1;return x-y}}return b.i-a.i||a.k-b.k}   // newest first breaks every tie
+function hsFind(){const X=hsList(),t=hsNorm(HS.q).split(' ').filter(Boolean),f=t.join('');if(HS.sid&&!X.seasons.some(x=>x.id===HS.sid))HS.sid='';
+  const all=X.rows.filter(r=>hsMatch(r,t,f)),inS=HS.sid?all.filter(r=>r.sid===HS.sid):all,cnt={all:inS.length,hit:0,miss:0,push:0,pending:0};for(const r of inS)cnt[r.st]++;
+  return{X,all,inS,cnt,res:(HS.res==='all'?inS:inS.filter(r=>r.st===HS.res)).sort(hsSort)}}
+function hsSay(F){const c=F.cnt,q=HS.q.trim(),sn=HS.sid?(F.X.seasons.find(x=>x.id===HS.sid)?.name||'that season'):'',g=c.hit+c.miss;if(!F.X.rows.length)return'No picks to search yet. Every pick shows up here once it’s entered.';if(!c.all)return`No picks match “${q}”${sn?` in ${sn}`:''}.`;
+  return`${c.all} pick${c.all===1?'':'s'}${sn?` in ${sn}`:''}: ${c.hit} hit, ${c.miss} missed${c.push?`, ${c.push} push${c.push===1?'':'es'}`:''}${c.pending?`, ${c.pending} not graded yet`:''}${g?` (${Math.round(c.hit/g*100)}% hit)`:''}.`}   // how many and how they did, in words a screen reader reads well
+function hsRow(r){const mg=hsCl(r)!=null?fmtMargin(r.margin,r.unit):'';return`<button type="button" class="hs-row" data-act="open-week" data-wid="${h(r.wid)}"><span class="hs-mid">${betChip(r.text,r.teams)}<span class="hs-sub"><span class="avatar xs" style="--c:${h(r.color)}" aria-hidden="true">${h(initials(r.name))}</span>${[h(r.name),h(r.label),r.odds!=null?`<span class="mono">${h(fmtOdds(r.odds))}</span>`:'no price'].join('\u00a0· ').replace(/ · /g,'\u00a0· ')}</span></span><span class="hs-res ${r.st}">${HS_ONE[r.st]}${mg?`<small>by ${h(mg)}</small>`:''}</span></button>`}   // tapping it opens that week, like a week card
+function hsParts(F){const c=F.cnt,n=F.res.length;
+  const chips=c.all?Object.keys(HS_ST).filter(k=>k==='all'||c[k]||HS.res===k).map(k=>`<button type="button" data-act="hs-set" data-k="res" data-v="${k}" aria-pressed="${HS.res===k}">${HS_ST[k]} ${c[k]}</button>`).join(''):'';
+  const rows=!c.all?`<div class="hs-none"><p>Nothing in ${h(F.X.seasons.find(x=>x.id===HS.sid)?.name||'that season')} matches. ${F.all.length} pick${F.all.length===1?'':'s'} in other seasons ${F.all.length===1?'does':'do'}.</p><button type="button" class="btn sm block" data-act="hs-set" data-k="sid" data-v="">Search every season</button></div>`
+    :!n?`<div class="hs-none"><p>${HS.res==='pending'?`Every one of these ${c.all} picks is graded.`:`None of these ${c.all} picks ${HS_NONE[HS.res]}.`}</p><button type="button" class="btn sm block" data-act="hs-set" data-k="res" data-v="all">Show all ${c.all}</button></div>`
+    :`<div class="hs-list">${F.res.slice(0,HS.n).map(hsRow).join('')}</div>${n>HS.n?`<button type="button" class="btn block hs-more" data-act="hs-more">Show ${Math.min(HS_PAGE,n-HS.n)} more of ${n}</button>`:''}`;
+  return{chips,rows}}
+function hsHtml(F){if(!F.X.rows.length)return'';const held=F.X.held?`<p class="muted tiny" style="margin:10px 2px 0">Weeks after a reveal you haven’t watched yet are left out of the search. Nothing is lost: watch it on the This Week tab and they show up here.</p>`:'';
+  if(!F.all.length)return`<div class="hs-none"><p>Check the spelling, or try a last name (Kelce), a team (Chiefs or KC) or a person’s name.</p></div>${held}`;
+  const P=hsParts(F),sel=`<div class="hs-sel">${F.X.seasons.length>1?`<label>Season<select id="hsSeason"><option value="">Every season</option>${F.X.seasons.map(x=>`<option value="${h(x.id)}"${x.id===HS.sid?' selected':''}>${h(x.name||'Season')}</option>`).join('')}</select></label>`:''}<label>Order<select id="hsSort">${HS_SORTS.map(([k,t])=>`<option value="${k}"${k===HS.sort?' selected':''}>${t}</option>`).join('')}</select></label></div>`;
+  return`<div class="hs-f"><div id="hsChips" class="hs-chips" role="group" aria-label="Show"${P.chips?'':' hidden'}>${P.chips}</div>${sel}</div><div id="hsRows">${P.rows}</div>${held}`}
+function hsBox(){const l=league();if(HS.l!==l.id)HS={l:l.id,q:'',res:'all',sid:'',sort:'new',n:HS_PAGE};if(!l.seasons.some(x=>(x.data.weeks||[]).length))return'';const on=hsOn(),F=on?hsFind():null;   // another league on this phone starts with an empty box
+  return`<div class="hs"><div class="hs-box" role="search"><input id="hsIn" type="search" value="${h(HS.q)}" placeholder="Player, team or person" aria-label="Search every pick by player, team or person" maxlength="80" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search"><button type="button" class="hs-x" data-act="hs-clear" aria-label="Clear the search"${HS.q?'':' hidden'}>×</button></div><p id="hsSay" class="hs-sum" role="status" aria-live="polite">${on?h(hsSay(F)):''}</p><div id="hsOut">${on?hsHtml(F):''}</div></div>`}
+function hsPaint(focus,part){const o=document.getElementById('hsOut');if(!o)return;const on=hsOn(),F=on?hsFind():null,s=document.getElementById('hsSay'),wk=document.getElementById('hsWeeks'),x=document.querySelector('#view .hs-x'),ch=document.getElementById('hsChips'),rw=document.getElementById('hsRows');   // only the search's own part of the page is redrawn: the box keeps its letters, its place and the keyboard
+  if(part&&on&&F.all.length&&ch&&rw){const P=hsParts(F);ch.innerHTML=P.chips;ch.hidden=!P.chips;rw.innerHTML=P.rows}else o.innerHTML=on?hsHtml(F):'';   // a changed order or season keeps its own box (redrawing a list box would pop it open again on a phone)
+  if(s)s.textContent=on?hsSay(F):'';if(wk)wk.hidden=on;if(x)x.hidden=!HS.q;if(focus)try{(typeof focus==='string'?document.querySelector(focus):focus)?.focus({preventScroll:true})}catch(e){}}   // the count's line is always on the page (empty while nothing is searched), so a screen reader hears every new count
 function renderHistoryInner(){
   if(!S.weeks.length)return empty('No weeks yet','Start Week 1 from the This Week tab.');
   const{g}=stats();const net=g.paid-g.staked;
@@ -3930,6 +3984,9 @@ const ACT={
   'pick-season'(el){const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid)){l.activeSeason=el.dataset.sid;S=season().data}statScope='season';ALLTIME=null;xNode={};detailOpen=null;save();render()},
   'week-prev'(){const i=S.weeks.indexOf(currentWeek());if(i>0){BROWSED=true;REPLAY.clear();REPLAY_RUN.clear();S.currentWeekId=S.weeks[i-1].id;save();render();loadPending()}},
   'week-next'(){const i=S.weeks.indexOf(currentWeek());if(i<S.weeks.length-1){BROWSED=true;REPLAY.clear();REPLAY_RUN.clear();S.currentWeekId=S.weeks[i+1].id;save();render();loadPending()}},
+  'hs-set'(el){const k=el.dataset.k,v=el.dataset.v||'';if(k==='res'&&ownKey(HS_ST,v))HS.res=v;else if(k==='sid'&&(!v||league().seasons.some(x=>x.id===v)))HS.sid=v;else return;HS.n=HS_PAGE;hsPaint(`#hsChips [data-v="${HS.res}"]`)},   // a result filter, or back to every season: the keyboard stays on the filters (never on a list box, which a phone would pop open)
+  'hs-clear'(){HS.q='';HS.n=HS_PAGE;const i=document.getElementById('hsIn');if(i)i.value='';hsPaint(i)},
+  'hs-more'(){const k=HS.n;HS.n+=HS_PAGE;hsPaint(null,1);document.querySelectorAll('#hsRows .hs-row')[k]?.focus({preventScroll:true})},   // the keyboard lands on the first new result
   'open-week'(el){BROWSED=true;REPLAY.clear();REPLAY_RUN.clear();const wid=el.dataset.wid;if(wid.includes('|')){const[sid,w]=wid.split('|');const l=league();if(l.seasons.find(x=>x.id===sid)){l.activeSeason=sid;S=season().data}S.currentWeekId=w}else S.currentWeekId=wid;VIEW='week';save();render();pageTo(0,'smooth')},
   status(el){
     const w=el.dataset.wid?week(el.dataset.wid):currentWeek();const p=w&&w.picks[el.dataset.mid];if(!p)return stale();const st=el.dataset.st;const was=calc(w).result;
@@ -4173,6 +4230,9 @@ const ACT={
     const a=root._actions?.[el.dataset.i];const r=a?.onClick?.();if(r!==false)closeModal()},
 };
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='plBoost')boostFill()});
+document.addEventListener('input',e=>{if(e.target?.id!=='hsIn')return;HS.q=String(e.target.value||'').slice(0,80);HS.n=HS_PAGE;hsPaint()});   // the pick search answers every letter
+document.addEventListener('change',e=>{const t=e.target,id=t&&t.id;if(id==='hsSort'){if(HS_SORTS.some(([k])=>k===t.value))HS.sort=t.value;HS.n=HS_PAGE;hsPaint(null,1)}else if(id==='hsSeason'){HS.sid=t.value&&league().seasons.some(x=>x.id===t.value)?t.value:'';HS.n=HS_PAGE;hsPaint(null,1)}});
+document.addEventListener('keydown',e=>{if(e.target?.id!=='hsIn')return;if(e.key==='Enter'){e.preventDefault();e.target.blur()}else if(e.key==='Escape'&&e.target.value){e.preventDefault();e.target.value='';HS.q='';HS.n=HS_PAGE;hsPaint()}});   // Enter puts the keyboard away; Escape empties the box
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='plShotIn'){const fs=[...(t.files||[])];const room=2-SHOTS_PICK.length;SHOTS_PICK.push(...fs.slice(0,Math.max(0,room)));if(fs.length>room)toast(room<=0?'Two screenshots at most. Tap × on one to swap it.':'Two screenshots at most. The first '+(room===1?'one was':room+' were')+' added.','bad');t.value='';shotsPreview()}
   else if(t&&t.dataset&&t.dataset.shotadd){const l=league();const w=week(t.dataset.shotadd);const f=t.files&&t.files[0];t.value='';if(!w||!f)return;const used=(w.shots||[]).map(x=>x.n);const n=used.includes(0)?1:0;toast('Adding the screenshot…');
     sendShot(l,w,n,f).then(d=>{takeState(l,d);save();render();toast('Screenshot added','good')}).catch(err=>toast('The screenshot didn’t upload: '+friendly(err)+'. Nothing else changed. Tap “+ Screenshot” to try again.','bad'))}});
