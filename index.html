@@ -1529,7 +1529,7 @@ const fmt$=n=>(n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{minimumFrac
 const fmt$0=n=>(n<0?'-':'')+'$'+Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:0});
 const pct=v=>v==null?'—':Math.round(v*100)+'%';
 function fmtDate(d){if(!d)return'';const[y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString(undefined,{month:'short',day:'numeric'})}
-const today=()=>new Date().toISOString().slice(0,10);
+const today=()=>etDay(Date.now())||new Date().toISOString().slice(0,10);   // the Eastern day, like the league server: the UTC day is already tomorrow from 8pm ET on
 const addDays=(d,n)=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd+n)).toISOString().slice(0,10)};
 const dowOf=d=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(y,m-1,dd)).getUTCDay()};
 const DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
