@@ -1700,8 +1700,10 @@ function spoilerHidden(l=league()){   // weeks this phone mustn't see yet, in th
 }
 function render(){const hid=spoilerHidden();if(!hid)return render0();const sn=season(league());if(S!==sn.data)return render0();
   if(hid.has(S.currentWeekId)){const p=homeWeekId(league(),sn);if(p&&p!==S.currentWeekId){S.currentWeekId=p;save()}}   // keep the page and the buttons on the same week
-  const real=S.weeks;RV_GATE=spoilerCut(sn,league());HIDNOW={sid:sn.id,set:hid,all:real};
-  S.weeks=real.filter(w=>!hid.has(w.id));ALLTIME=null;try{render0()}finally{S.weeks=real;RV_GATE=null;HIDNOW=null}}
+  spoilerPass(sn,hid,render0)}
+function spoilerPass(sn,hid,fn){const real=S.weeks;RV_GATE=spoilerCut(sn,league());HIDNOW={sid:sn.id,set:hid,all:real};   // one paint of the season on screen with the weeks this viewer mustn't see yet taken out
+  S.weeks=real.filter(w=>!hid.has(w.id));ALLTIME=null;try{return fn()}finally{S.weeks=real;RV_GATE=null;HIDNOW=null}}
+const guarded=fn=>{const hid=spoilerHidden(),sn=hid&&season(league());return hid&&S===sn.data?spoilerPass(sn,hid,fn):fn()};   // render()'s own guard, for a part of the page drawn on its own (the History weeks while the page waits)
 const needWho=(l=league())=>!!(l&&l.sync&&l.sync.rev&&!l.me&&!l.guest&&S.members.some(m=>m.active));
 function render0(){
   if(needWho())setTimeout(()=>{if(needWho()&&!document.getElementById('modal-root')._open)pickMe(league(),false,true)},250);   // who are you? a crew name, or Guest
@@ -1714,14 +1716,15 @@ function render0(){
   if(keepDone)try{main.querySelector(keepDone)?.focus({preventScroll:true})}catch(e){}
   main.classList.remove('enter');void main.offsetWidth;main.classList.add('enter');
   main.querySelectorAll('textarea.pick-in').forEach(autosize);
-  document.getElementById('seasonLabel').textContent=seasonLabelText();
-  const bn=document.getElementById('brandName');if(bn)bn.textContent=league().name||'Bozo Parlay';
-  const bl=document.getElementById('brandLogo');if(bl){const u=leagueLogo();if(bl.dataset.src!==u){bl.dataset.src=u;bl.style.backgroundImage=`url("${u}")`}}
   if(v==='week'&&!liveT)liveWatch();   // game day: the slip follows the games
-  const st=S.weeks.length?stats().g:null;
-  document.getElementById('topRight').innerHTML=st?`<span class="badge ${st.paid-st.staked>=0?'won':'lost'}" style="font-size:11px">${st.won}–${st.lost} · ${fmt$0(st.paid-st.staked)}</span>`:'';
+  paintHead();
   if(document.body.classList.contains('typing')){const af=document.activeElement;if(!(af&&af.matches&&af.matches('input:not([type=file]),textarea,select'))){document.body.classList.remove('typing');needRender=false}}   /* nothing is being typed in any more */
 }
+function paintHead(){document.getElementById('seasonLabel').textContent=seasonLabelText();   // the header: the season's name, the league's name and logo, and the record and net of the weeks this viewer may see
+  const bn=document.getElementById('brandName');if(bn)bn.textContent=league().name||'Bozo Parlay';
+  const bl=document.getElementById('brandLogo');if(bl){const u=leagueLogo();if(bl.dataset.src!==u){bl.dataset.src=u;bl.style.backgroundImage=`url("${u}")`}}
+  const st=S.weeks.length?stats().g:null;
+  document.getElementById('topRight').innerHTML=st?`<span class="badge ${st.paid-st.staked>=0?'won':'lost'}" style="font-size:11px">${st.won}–${st.lost} · ${fmt$0(st.paid-st.staked)}</span>`:''}
 function seasonLabelText(){const sn=String(S.season||season().name||'').trim();return sn||'Season'}
 const LEAGUE_LOGOS={'bozo parlay':'icons/parlay/icon.svg','bozo university':'icons/university/icon.svg','stags bozo parlay':'icons/stags/icon.svg'};
 function leagueLogo(l=league()){if(SHARE_MODE)return'icon.svg';return LEAGUE_LOGOS[canonName(l.name)]||'icons/parlay/icon.svg'}   // each league's own app icon
@@ -3293,7 +3296,7 @@ function renderFirstBozo(){
 }
 
 /* ---- history ---- */
-function renderHistory(){HX=null;const box=hsBox();return scopeBar()+box+`<div id="hsWeeks"${box&&hsOn()?' hidden':''}>${withAll(renderHistoryInner)}</div>`}   // the pick search sits above the weeks; while it has letters in it, its results take the weeks' place
+function renderHistory(){HX=null;ALLTIME=null;const box=hsBox(),bar=scopeBar(),html=withAll(renderHistoryInner);HW={sig:hwSig(),bar,html};return bar+box+`<div id="hsWeeks"${box&&hsOn()?' hidden':''}>${html}</div>`}   // the pick search sits above the weeks; while it has letters in it, its results take the weeks' place. All-time is worked out afresh on every paint, as on Stats: a watched record that lands on its own (with no league update) changes which weeks it may show
 /* ---- pick history search (TODO #40): every pick of every season, by player, team or person, with how it did. Read-only: nothing is saved, sent or changed ---- */
 const HS_PAGE=50,HS_SORTS=[['new','Newest'],['old','Oldest'],['price','Biggest price'],['close','Closest finish']],HS_ST={all:'All',hit:'Hits',miss:'Misses',push:'Pushes',pending:'Not graded yet'},HS_ONE={hit:'Hit',miss:'Miss',push:'Push',pending:'Not graded yet'},HS_NONE={hit:'hit',miss:'missed',push:'pushed'};
 const HS_SFX=new Set(['jr','sr','ii','iii','iv','v']);   // name endings a search may leave off
@@ -3318,8 +3321,18 @@ function hsList(){const l=league(),sig=hsSig(l);if(hsFresh(l,sig))return HX;cons
     rows.push({i,k:rows.length,wid:w.id,sid,label,text:t,teams:tm,name:m.name,color:m.color,odds:g.oddsN,st:['hit','miss','push'].includes(g.status)?g.status:'pending',margin:g.margin,unit:g.unit,tw:tx.split(' '),pw:pw.split(' '),words:[...new Set(`${tx} ${pw} ${tm.map(team).join(' ')}`.split(' ').flatMap(x=>/^[+-]\d/.test(x)?[x,x.slice(1)]:[x]).filter(Boolean))]})}})}finally{S=real}   // +2.5 is found by +2.5 or 2.5, never by -2.5
   const held=l.sync?seasonSorted(l).reverse().flatMap(sn=>{const hd=hiddenIn(sn,l),c=hd&&hd.size&&spoilerCut(sn,l);return c?[{wid:sn.id+'|'+c.id,name:`${l.seasons.length>1?(sn.name||'Season')+' ':''}${wkName(c)}`}]:[]}):[];   // each reveal (oldest season first) this viewer still owes with weeks waiting behind it: the week is named, never its picks or its Bozo
   return HX={l,sig,pk:known,rows,held,seasons:seasonSorted(l).filter(sn=>rows.some(r=>r.sid===sn.id))}}
-function hsLand(){const o=document.getElementById('hsOut');if(!o||!hsOn()||hsFresh(league()))return;HX=null;const a=document.activeElement,inO=!!a&&a!==document.body&&o.contains(a),tag=b=>[b.className,...['act','k','v','wid'].map(k=>b.dataset[k]||'')].join('|'),was=inO&&a.localName==='button'?tag(a):null;   // a league update, a restore, a grade or a reveal watched (or newly owed) landed while the rest of the page waits (the box is in use, or an upload is going): the results are drawn again at once from the league as it now is, so a week now held back leaves them before another letter is typed
+function hsLand(){hwLand();const o=document.getElementById('hsOut');if(!o||!hsOn()||hsFresh(league()))return;HX=null;const a=document.activeElement,inO=!!a&&a!==document.body&&o.contains(a),tag=b=>[b.className,...['act','k','v','wid'].map(k=>b.dataset[k]||'')].join('|'),was=inO&&a.localName==='button'?tag(a):null;   // a league update, a restore, a grade or a reveal watched (or newly owed) landed while the page waits (the box is in use, or an upload is going): the weeks under the box (hwLand) and the results are drawn again at once from the league as it now is, so a week now held back leaves them before another letter is typed
   hsPaint(null,inO?1:0);if(was&&!a.isConnected)[...o.querySelectorAll('button')].find(b=>tag(b)===was)?.focus({preventScroll:true})}   // only the results are redrawn: the box keeps its letters, its caret and the keyboard, a list box in use keeps its place, and the keyboard on a result or a filter lands on the same one again
+let HW=null;   // what the History weeks on screen were drawn from, so an update landing while the page waits draws them again at once
+const hwSig=(l=league())=>`${l.id}\u0005${statScope}\u0005${l.activeSeason}\u0005${hsSig(l)}`;   // the league as the weeks see it (its version, every week's reveals, people and picks, what this viewer has watched) and which season or All-time is lit
+function hwLand(){const wk=document.getElementById('hsWeeks');if(!wk||!HW)return;const sig=hwSig();if(sig===HW.sig)return;HW.sig=sig;   // the History weeks under the search (their cards, the tiles, the line about weeks waiting) and the header's record follow an update the moment it lands, whether or not anything is typed: a week now held back never stays on screen, not even before the keyboard goes away
+  const html=guarded(()=>{ALLTIME=null;const x=withAll(renderHistoryInner);paintHead();return x}),bar=scopeBar(),v=wk.parentNode;   // exactly what the next full paint would draw, through render()'s own spoiler guard
+  if(html!==HW.html){HW.html=html;keepFocus(wk,()=>{wk.innerHTML=html})}   // the box above is never touched: its letters, caret and keyboard stay
+  if(bar!==HW.bar){HW.bar=bar;const ob=v.querySelector('.scope.seasons');keepFocus(v,()=>{if(ob)ob.remove();if(bar)v.insertAdjacentHTML('afterbegin',bar)})}}   // the season buttons too, when a restore changed the seasons
+const focusKey=b=>b.classList.contains('wk')?'w|'+b.dataset.wid:[b.className.replace(/\bon\b/,'').trim(),...['act','k','v','wid','sid','scope'].map(k=>b.dataset[k]||'')].join('|');   // which button this is, whatever it now says: a week by its week, a filter or a season button by what it does
+function keepFocus(box,draw){const a=document.activeElement,on=!!a&&a!==document.body&&box.contains(a)&&a.localName==='button',g=!on?'':a.classList.contains('hs-row')?'.hs-row':a.classList.contains('wk')?'.wk':a.closest('#hsChips')?'#hsChips button':'button',ks=on?[...box.querySelectorAll(g)].map(focusKey):[],i=on?ks.indexOf(focusKey(a)):-1;   // the keyboard on a button in a part of the page about to be drawn again, and the buttons of its kind around it
+  draw();if(!on||a.isConnected)return;const n=new Map([...box.querySelectorAll(g)].map(b=>[focusKey(b),b]));let t=null;for(let j=i;j<ks.length&&!t;j++)t=n.get(ks[j]);for(let j=i-1;j>=0&&!t;j--)t=n.get(ks[j]);   // the same one if it is still there, else the next one still there, else the one before it
+  (t||[...n.values()][Math.min(i,n.size-1)]||box.querySelector('#hsRows button')||box.querySelector('button'))?.focus({preventScroll:true})}   // (else the nearest button left there): never the page itself, and a screen reader hears where the keyboard now is
 const hsRun=(ws,f)=>{for(let i=0;i<ws.length;i++){let s='';for(let j=i;j<ws.length&&s.length<f.length;j++)s+=ws[j];if(s.startsWith(f))return true}return false};   // the letters typed together, from the start of a word on (amonra = Amon-Ra, jamarr chase = Ja'Marr Chase)
 function hsMatch(r,t,f){return t.every((x,j)=>(/\d/.test(x)?hsNum(r.words,x):r.words.some(w=>w.startsWith(x)))||(j>0&&j===t.length-1&&HS_SFX.has(x)))||(f.length>=4&&!/[\d.+-]/.test(f)&&(hsRun(r.tw,f)||hsRun(r.pw,f)))}   // every typed word starts a word of the pick, its person or its teams (a last Jr or III may be left off), or the letters run together through the pick's words or the person's names
 function hsSort(a,b){const s=HS.sort;if(s==='old')return a.i-b.i||a.k-b.k;if(s==='price'){const x=a.odds??-1e9,y=b.odds??-1e9;if(x!==y)return y-x}if(s==='close'){const x=hsGrp(a),y=hsGrp(b);if(x!==y)return x-y;if(x<9&&hsCl(a)!==hsCl(b))return hsCl(a)-hsCl(b)}return b.i-a.i||a.k-b.k}   // newest first breaks every tie
@@ -3348,7 +3361,7 @@ function hsPaint(focus,part){const o=document.getElementById('hsOut');if(!o)retu
   const ss=document.getElementById('hsSeason'),hb=document.getElementById('hsHeld');
   if(part&&on&&F.all.length&&ch&&rw&&hb&&!!ss===F.X.seasons.length>1){const P=hsParts(F);ch.innerHTML=P.chips;ch.hidden=!P.chips;rw.innerHTML=P.rows;hb.innerHTML=hsHeld(F.X);if(ss){if([...ss.querySelectorAll('option')].map(x=>x.value+'='+x.textContent).join('|')!==['=Every season',...F.X.seasons.map(x=>x.id+'='+(x.name||'Season'))].join('|'))ss.innerHTML=hsOpts(F.X);ss.value=HS.sid}}   // a changed order or season keeps its own box (redrawing a list box would pop it open again on a phone); so does an update landing while one is in use
   else{const ae=document.activeElement;if(ae&&o.contains(ae)&&ae.matches('input,select,textarea'))ae.blur();o.innerHTML=on?hsHtml(F):''}   // a list box about to be redrawn is left first (Safari sends nothing when a focused box is deleted, and the app would stay in typing mode)
-  if(s)s.textContent=on?hsSay(F):'';if(wk)wk.hidden=on;if(x)x.hidden=!HS.q;if(focus)try{(typeof focus==='string'?document.querySelector(focus):focus)?.focus({preventScroll:true})}catch(e){}}   // the count's line is always on the page (empty while nothing is searched), so a screen reader hears every new count
+  if(s)s.textContent=on?hsSay(F):'';if(wk){wk.hidden=on;if(!on)hwLand()}if(x)x.hidden=!HS.q;if(focus)try{(typeof focus==='string'?document.querySelector(focus):focus)?.focus({preventScroll:true})}catch(e){}}   // the count's line is always on the page (empty while nothing is searched), so a screen reader hears every new count; with nothing searched the weeks under the box show, brought up to date first
 function renderHistoryInner(){
   if(!S.weeks.length)return empty('No weeks yet','Start Week 1 from the This Week tab.');
   const{g}=stats();const net=g.paid-g.staked;
