@@ -3176,16 +3176,6 @@ const TOP=new Map();   // text → team, remembered once the full list is in (ch
 function teamOfPlayer(text){if(betType(text)!=='Player prop')return[];if(TOP.has(text))return TOP.get(text);const idx=playersIndex();if(!idx)return[];const pl=matchPlayer(text,idx);const t=pl?[pl.team]:[];TOP.set(text,t);return t}
 function nextSlate(w){const p=nextPlan(w);return p.sunday?nflData(slipDate(w),0):p.special?nflData(p.special.day,0):nflData(w.date,1)}   // the NFL week the next parlay is on
 function nextRule(w){const p=nextPlan(w);return p.special?{day:p.special.day,name:p.special.name}:{sunday:true,monday:monOk()}}
-function nextPickList(w,c,me){
-  const exp=c.legs.map(x=>x.mid);const next=w.next||{};
-  const nfl=nextSlate(w);const ok=nfl&&nfl.games?nfl:null;
-  const items=exp.filter(mid=>next[mid]&&String(next[mid].text||'').trim()).map(mid=>({mid,text:next[mid].text,teams:next[mid].teams,tm:false,odds:next[mid].odds}));
-  if(!items.length)return'';
-  const cl=dayCheck(weekClaims(items,ok),items,nextRule(w),false);const groups=bunch(items,x=>cl.claims[x.mid]?.game?.id);
-  const row=x=>{const m=member(x.mid);const cm=cl.claims[x.mid];const f=(cl.clashes[x.mid]||[])[0];const off=cl.off[x.mid];return`<div class="np-row ${x.mid===me?'mine':''} ${f||off?'clash':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span>${f?`<span class="tag bad">${CLASH[f.kind]} ${h(member(f.with)?.name||'')}</span>`:off?`<span class="tag bad">${h(offText(off,cl.rule))}</span>`:'<span></span>'}<span class="np-pick">${betChip((ok&&cleanPick(x.text,ok))||x.text,cm?.teams||x.teams)}<span class="mono muted">${h(x.odds||'')}</span></span></div>`};
-  const missing=exp.filter(mid=>!(next[mid]&&String(next[mid].text||'').trim()));
-  return`<div class="pd-sub" style="margin:12px 0 6px">${h(nextName(w))} picks so far <span class="muted">· ${items.length} of ${exp.length}</span></div><div class="np-list">${groups.map(g=>g.game&&g.items.length>1?`<div class="np-group"><div class="np-sg">Same game · ${h(gameLabel(cl.claims[g.items[0].mid].game))}</div>${g.items.map(row).join('')}</div>`:g.items.map(row).join('')).join('')}${missing.map(mid=>{const m=member(mid);return`<div class="np-row"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="muted tiny">not in yet</span></div>`}).join('')}</div>${hasFlags(cl)?`<small class="muted tiny">Flagged picks can't all win together, a sportsbook won't take them in one parlay, or the game is on the wrong day. ${h(ruleText(cl.rule))}. Same-game picks that work together are just grouped.</small>`:''}${nfl&&nfl.failed?`<small class="muted tiny">Couldn't load next week's NFL schedule, so only exact duplicates are checked right now.</small>`:''}`;
-}
 function nextPickBox(w,c){
   const l=league(),me=l.me;if(!me||!memberCan('picks')||w.final||seasonOver()||!c.legs.some(x=>x.mid===me))return'';
   const aw=realWeeks(),nx0=nextMainIn(aw,w);if(nx0&&nx0!==lastMain(aw)||nextMain(w))return'';
