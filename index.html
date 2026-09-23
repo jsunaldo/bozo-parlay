@@ -1698,7 +1698,9 @@ function render0(){
   const main=document.getElementById('view');
   const keepDone=(a=>a&&a.matches&&main.contains(a)&&a.matches('[data-act="leg-done"]')?`[data-act="leg-done"][data-wid="${a.dataset.wid}"][data-mid="${a.dataset.mid}"]`:'')(document.activeElement);   // the keyboard on a leg's Done (where Build a pick leaves it after saving) stays there through a repaint
   {const ae=document.activeElement;if(ae&&ae!==document.body&&ae.blur&&main.contains(ae))ae.blur()}   /* Safari sends nothing when a focused box is deleted: leave it first or the app stays stuck in typing mode */
+  const setAt=v==='crew'?DB.active+'|'+(league().activeSeason||''):null,keepTyped=setAt&&main._set===setAt?[...main.querySelectorAll(SET_TYPED)].filter(x=>x.value&&x.closest('.setpane')?.hidden).map(x=>[x.id?'#'+x.id:'[data-form="add-member"] input',x.value]):[];   // words waiting for their Go or Add in a Settings pane that isn't on screen outlast the repaint (the same league and season only)
   main.innerHTML=v==='week'?renderWeek():v==='history'?renderHistory():v==='stats'?renderStats():renderCrew();
+  main._set=setAt;for(const[k,t]of keepTyped){const x=main.querySelector(k);if(x&&!x.value)x.value=t}
   if(keepDone)try{main.querySelector(keepDone)?.focus({preventScroll:true})}catch(e){}
   main.classList.remove('enter');void main.offsetWidth;main.classList.add('enter');
   main.querySelectorAll('textarea.pick-in').forEach(autosize);
@@ -3743,6 +3745,7 @@ function settingsLeague(){   // Settings → League: how this league runs. The c
   </section>${act?`<section class="card"><h3>Recent activity</h3>${act}</section>`:''}`;
 }
 const SET_PANES=[['me','Me'],['crew','Crew'],['rules','Rules'],['league','League']];
+const SET_TYPED='#linkIn,#linkConnect,[data-form="add-member"] input';   // Settings boxes whose words wait for a button (Go, Add): render0 keeps them when their pane is hidden
 function settingsRole(l){const me=l.me?member(l.me):null;if(!isAdmin(l))return l.guest?'Watching as a guest':'Member';if(notLinked(l))return'Not connected on this device yet';if(!l.sync)return'Commissioner, on this device only';return'Commissioner'+(me?', playing as '+me.name:l.guest?', not playing':'')}   // the hat this device wears in the league on screen
 function renderCrew(){   // the Settings tab. Its view id stays 'crew', so an older app mid-refresh still hands over. All four panes are drawn every time and only the chosen one shows, so switching panes never repaints or loses typing
   const l=league(),p=SET_PANES.some(x=>x[0]===PANE)?PANE:'me',body={me:settingsMe(),crew:settingsCrew(),rules:settingsRules(),league:settingsLeague()};
