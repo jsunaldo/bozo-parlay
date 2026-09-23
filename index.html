@@ -1696,7 +1696,7 @@ function render0(){
   const v=VIEW;
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const main=document.getElementById('view');
-  const keepDone=(a=>a&&a.matches&&main.contains(a)&&a.matches('[data-act="leg-done"]')?`[data-act="leg-done"][data-wid="${a.dataset.wid}"][data-mid="${a.dataset.mid}"]`:'')(document.activeElement);   // the keyboard on a leg's Done (where Build a pick leaves it after saving) stays there through a repaint
+  const keepDone=(a=>!(a&&a.matches&&main.contains(a))?'':a.matches('[data-act="leg-done"]')?`[data-act="leg-done"][data-wid="${a.dataset.wid}"][data-mid="${a.dataset.mid}"]`:a.matches('.settabs [role="tab"]')&&a.id?'#'+a.id:'')(document.activeElement);   // the keyboard on a leg's Done (where Build a pick leaves it after saving), or on a Settings tab just chosen, stays there through a repaint
   {const ae=document.activeElement;if(ae&&ae!==document.body&&ae.blur&&main.contains(ae))ae.blur()}   /* Safari sends nothing when a focused box is deleted: leave it first or the app stays stuck in typing mode */
   const setAt=v==='crew'?DB.active+'|'+(league().activeSeason||''):null,keepTyped=setAt&&main._set===setAt?[...main.querySelectorAll(SET_TYPED)].filter(x=>x.value&&x.closest('.setpane')?.hidden).map(x=>[x.id?'#'+x.id:'[data-form="add-member"] input',x.value]):[];   // words waiting for their Go or Add in a Settings pane that isn't on screen outlast the repaint (the same league and season only)
   main.innerHTML=v==='week'?renderWeek():v==='history'?renderHistory():v==='stats'?renderStats():renderCrew();
@@ -4268,11 +4268,14 @@ function screenCheck(){   // the few numbers that tell a zoomed page, the iOS re
   const txt=rows.map(([k,x])=>`${k}: ${x}`).join('\n');
   modal({title:'Screen check',body:`<p class="muted tiny" style="margin:0 0 10px">If the tab bar is out of place, open this right then and send it over.</p><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><small>${h(k)}</small><b style="font-size:13px">${h(String(x))}</b></div>`).join('')}</div>`,actions:[{label:'Copy',cls:'ghost',onClick:()=>{copyText(txt);return false}},{label:'Done',cls:'primary'}]})}
 document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input:not([type=file]),textarea,select'))document.body.classList.add('typing')});
+let pressAt=0;const pressWait=[];const pressDone=()=>{pressAt=0;setTimeout(()=>{for(const f of pressWait.splice(0))f()},0)};   // a mouse button still down: a repaint now would replace the very button being pressed and its click would never come. The wait ends after the click the release brings
+document.addEventListener('pointerdown',e=>{if(e.isPrimary&&e.button===0)pressAt=Date.now()},true);document.addEventListener('pointerup',pressDone,true);document.addEventListener('pointercancel',pressDone,true);
+const afterPress=f=>{if(!pressAt||Date.now()-pressAt>5000)return f();pressWait.push(f);setTimeout(()=>{const i=pressWait.indexOf(f);if(i>=0){pressWait.splice(i,1);f()}},5000)};   // held more than 5 s: paint anyway
 document.addEventListener('focusout',e=>{const t=e.target;if(t&&t.matches&&t.matches('textarea.pick-in')&&t.dataset.bind){const[k,wid,mid,c]=t.dataset.bind.split('|');if(k==='pick'&&c==='text')tidyLeg(wid,mid,t,true)}
   setTimeout(()=>{const a=document.activeElement;if(a&&a.matches('input:not([type=file]),textarea,select'))return;
     const back=()=>{document.body.classList.remove('typing');if(tidyWait){tidyWait=0;autoTidySoon()}if(needRender&&!quiet()){needRender=false;render()}};
     if(isTouch()&&t&&t.matches&&t.matches('input:not([type=file]):not([type=checkbox]):not([type=radio]),textarea,select'))afterSettle(()=>{const b=document.activeElement;if(b&&b.matches('input:not([type=file]),textarea,select'))return;back();resyncFixed()});   // after typing on a touch screen: the bar comes back once the keyboard is gone
-    else back()},120)});
+    else afterPress(()=>{const b=document.activeElement;if(b&&b.matches&&b.matches('input:not([type=file]),textarea,select'))return;back()})},120)});   // a slow mouse click after typing: the league's news is drawn once the click has landed (a tab switched, a friend added), and words in a pane it hid are kept
 document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(PLAYER){closePlayer(true);return}if(!document.getElementById('modal-root')._required)closeModal()}if(e.key==='Enter'&&e.target.classList?.contains('pick-in')){e.preventDefault();const n=e.target.closest('.leg-inputs')?.querySelector('[data-odds]');n?n.focus():e.target.blur()}});
 let impShared=false;
 const vidsGone=d=>d&&d.lostVideos?` ${d.lostVideos} vote video${d.lostVideos===1?' is':'s are'} gone, so ${d.lostVideos===1?'that person is':'those people are'} asked to record a new one.`:'';
