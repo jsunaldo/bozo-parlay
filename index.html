@@ -1615,7 +1615,7 @@ function addFriend(n){   // Add a friend: the same person keeps their id, so the
 function newWeek(bozoId){
   const prev=lastWeek();const plan=nextPlan(prev);const early=(prev&&prev.next)||{};
   const ps=prev&&prev.kind!=='special'?checkDate(prev):null;   // started on (or before) the finished week's own Sunday: date it the day after, so it covers NEXT Sunday and never gets graded from games already played
-  const w={id:uid(),num:plan.num,date:ps&&today()<=ps?addDays(ps,1):today(),bozoId,stake:S.stake,picks:{},votes:{},...plan.extra};
+  const d0=ps&&today()<=ps?addDays(ps,1):today();const w={id:uid(),num:plan.num,date:plan.extra.kind!=='special'&&dowOf(d0)===0?addDays(d0,1):d0,bozoId,stake:S.stake,picks:{},votes:{},...plan.extra};   // never dated on a Sunday: a Sunday slip would cover that day's games, already under way (a crown on a later Sunday night)
   S.members.filter(m=>m.active||m.id===bozoId).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:false,...(np.raw?{raw:np.raw}:{}),by:np.by||m.id,...(np.at?{at:np.at}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
   S.weeks.push(w);S.currentWeekId=w.id;
   const sd=prev&&prev.kind==='special'?sideOf(prev):null;if(sd){sd.of=w.id;S.weeks.splice(S.weeks.indexOf(sd),1);S.weeks.push(sd)}   // a side parlay belongs with the Sunday parlay
