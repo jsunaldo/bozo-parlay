@@ -1916,7 +1916,7 @@ function dkCompare(text,nfl){   // what DraftKings (via ESPN's schedule) has for
   if(type==='Player prop'||type==='Team total')return dkPrice(t,nfl)||{none:'loading'};
   {const o=oaLookup(t,nfl);if(o&&(o.price||o.none==='loading'))return o}   // The Odds API first
   if(!['Moneyline','Spread','Total'].includes(type)||/\b(1st|first|2nd|second|3rd|third|4th|fourth) ?(half|quarter|qtr)\b|\b[12]h\b|\bq[1-4]\b|\b[1-4]q\b|\(alt\)|\balt\b|team total|\btt\b/.test(lo))return{none:'kind'};
-  const teams=detectTeams(t);const g=nfl&&nfl.teamGame&&teams.length?nfl.teamGame[teams[0]]:null;const o=g&&g.odds;if(!o)return{none:'nodata'};
+  const teams=detectTeams(t);const g=nfl&&nfl.teamGame&&teams.length?nfl.teamGame[teams[0]]:null;const o=g&&g.odds;if(!o||!dkSrc(o.src))return{none:'nodata'};   // ESPN's lines count only when ESPN names DraftKings as their book: another book's number is never shown as DraftKings'
   const side=teams[0]===g.home?'home':teams[0]===g.away?'away':null;const fl=v=>v===0?'PK':v>0?'+'+v:String(v);
   if(type==='Moneyline'&&side)return o.ml&&o.ml[side]?{price:o.ml[side]}:{none:'nodata'};
   if(type==='Spread'&&side){const x=[...lo.matchAll(/([+-]) ?(\d+(?:\.\d+)?)(?!\d|\.\d)/g)].find(x=>+x[2]<50);const L=/\bpk\b|pick ?em/.test(lo)?0:x?(x[1]==='-'?-1:1)*+x[2]:null;const sp=o.spread&&o.spread[side];if(!sp||sp.line==null)return{none:'nodata'};return sp.line===L&&sp.odds?{price:sp.odds}:{other:`${TEAM_NM(teams[0])} ${fl(sp.line)}${sp.odds?` (${sp.odds})`:''}`}}
