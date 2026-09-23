@@ -59,6 +59,7 @@ html.shell #app{height:100%;max-width:none;display:flex;flex-direction:column;pa
 .np-form .pickicon.empty{width:28px;flex:none;text-align:center;opacity:.5}
 .np-form input.mono{width:100%;padding:10px 6px}
 .np-form>.btn{min-height:44px}   /* Save, which also starts a clear when the box is empty (5.6): a full 44 px target */
+.leg-inputs>input,.np-form>input{min-height:44px}.np-cancel{display:inline-flex;align-items:center;min-height:44px;min-width:44px;padding:0 6px}   /* the typed price boxes and next week's Cancel: full-size targets too */
 .np-list{display:flex;flex-direction:column;gap:4px}
 .np-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 8px;font-size:13px;padding:7px 10px;border-radius:10px;background:var(--surface2)}
 .np-row .nm{font-weight:600;text-align:left;justify-self:start}
@@ -322,7 +323,7 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .leg.hit::before{background:var(--green)}.leg.miss::before{background:var(--red)}.leg.push::before{background:var(--amber)}
 .pickbox{display:flex;align-items:center;gap:6px;background:var(--surface2);border-radius:12px;padding-left:8px;min-width:0;border:1px solid transparent;transition:border-color .2s,box-shadow .2s,background .2s}
 .pickbox:focus-within{background:var(--surface);border-color:var(--blue);box-shadow:0 0 0 4px var(--blue-bg)}
-.pickbox textarea{background:transparent;border:0;padding:9px 10px 9px 2px;box-shadow:none;flex:1;resize:none;overflow:hidden;line-height:1.35;min-height:40px;display:block}
+.pickbox textarea{background:transparent;border:0;padding:9px 10px 9px 2px;box-shadow:none;flex:1;resize:none;overflow:hidden;line-height:1.35;min-height:44px;display:block}
 .pickbox textarea:focus{background:transparent;border:0;box-shadow:none}
 .leg-inputs{align-items:start}
 .pickicon{display:inline-flex;align-items:center;gap:3px;flex:none;border:0;background:none;padding:0;cursor:pointer;height:30px;-webkit-tap-highlight-color:transparent}
@@ -1670,7 +1671,7 @@ function awards(per){
 }
 
 /* ============================== RENDER ============================== */
-function autosize(t){t.style.height='auto';t.style.height=Math.max(40,t.scrollHeight)+'px'}
+function autosize(t){t.style.height='auto';t.style.height=Math.max(44,t.scrollHeight)+'px'}
 let BROWSED=false;   // this session the person went to another week on purpose (This Week clears it)
 function homeWeekId(l,sn){const ws=sn.data.weeks;const lw=lastMain(ws);if(!lw)return null;
   const c=l&&l.sync?spoilerCut(sn,l):null;return c?c.id:lw.id}   // the newest week, or the oldest reveal they still owe
@@ -1743,7 +1744,7 @@ function renderUpcoming(w,c){   // next week's slip during the vote: the same ro
     const fl=[...(cl.clashes[mid]||[]).map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`),...(cl.off[mid]?[`⚠ ${h(offText(cl.off[mid],cl.rule))}`]:[])];
     const editing=isMe&&mineIn&&(nextEdit.has(w.id)||!has);const tap=isMe&&mineIn&&has&&!editing;const dr=isMe?draftOf(w):null;const gk=guideKey(w.id,me,true);if(isMe){const g=GUIDE_DRAFT.get(gk);if(g&&(!dr||g.base!==String(np?.text||'')))GUIDE_DRAFT.delete(gk);EMPTIED.delete(gk)}const gh=editing&&isMe?guideHint(gk):null;   // words held from Enter manually go with the draft they were typed in
     const chooseN=editing&&!has&&!String(dr?.text||'').trim()&&guidedNextAllowed(w,me)&&guidedOffer(w,true)&&!GUIDE_MANUAL.has(guideKey(w.id,me,true));   // no pick saved or typed yet: Build your pick first, with Manually enter pick under it
-    const typedN=editing?`${guidedNextAllowed(w,me)&&guidedOffer(w,true)?`<button class="btn sm ghost" style="margin-bottom:10px" data-act="guide-open" data-wid="${w.id}" data-mid="${me}" data-next="1">Build a pick</button>`:''}<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="${rule.sunday?'Pick, e.g. Chiefs -3.5':`Pick a ${h(rule.name)} game`}" autocomplete="off" enterkeyhint="next"${gh?' aria-describedby="gh-next"':''}>${h(dr?dr.text:np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="Price" aria-label="DraftKings’ price"${gh?' aria-describedby="gh-next"':''} value="${h(dr?dr.odds:np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div>${gh?gapHtml(gk,gh):''}${has?`<div class="np-clear"><button class="btn sm ghost" data-act="next-clear" data-wid="${w.id}">Clear pick</button></div>`:''}<small class="muted tiny">${h(ruleText(rule))}. Must be -200 or longer.${has?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small>`:'';   /* today's box; under the choice it waits hidden in the page */
+    const typedN=editing?`${guidedNextAllowed(w,me)&&guidedOffer(w,true)?`<button class="btn sm ghost" style="margin-bottom:10px" data-act="guide-open" data-wid="${w.id}" data-mid="${me}" data-next="1">Build a pick</button>`:''}<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="${rule.sunday?'Pick, e.g. Chiefs -3.5':`Pick a ${h(rule.name)} game`}" aria-label="Your pick" autocomplete="off" enterkeyhint="next"${gh?' aria-describedby="gh-next"':''}>${h(dr?dr.text:np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="Price" aria-label="DraftKings’ price"${gh?' aria-describedby="gh-next"':''} value="${h(dr?dr.odds:np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div>${gh?gapHtml(gk,gh):''}${has?`<div class="np-clear"><button class="btn sm ghost" data-act="next-clear" data-wid="${w.id}">Clear pick</button></div>`:''}<small class="muted tiny">${h(ruleText(rule))}. Must be -200 or longer.${has?' <a href="#" class="np-cancel" data-act="next-cancel">Cancel</a>':''}</small>`:'';   /* today's box; under the choice it waits hidden in the page */
     const heavy=has&&np.odds&&!legal(parseOdds(np.odds));
     return`<div class="srow ${isMe?'mine':''} ${editing?'open':''} ${tap?'tap':''}" ${tap?'data-act="next-edit"':''}>
       <span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}${isMe?'<span class="muted tiny" style="font-weight:500">you</span>':''}</span>
@@ -2303,8 +2304,8 @@ function renderLeg(w,l,cl){
   const choose=open&&empty&&!dr&&guidedAllowed(w,l.mid)&&!GUIDE_MANUAL.has(guideKey(w.id,l.mid));   // an empty leg the builder can take starts with Build your pick (Manually enter pick under it); where the builder isn't offered, today's typed box
   const typed=open?`
       ${guidedAllowed(w,l.mid)?`<button class="btn sm ghost" style="margin-bottom:10px" data-act="guide-open" data-wid="${w.id}" data-mid="${l.mid}">Build a pick</button>`:''}
-      <div class="leg-inputs"><div class="pickbox">${pickIcon(dr&&!l.tm?{...shown,teams:pickTeamsFor(dr.text,slipNfl(w))}:shown,w.id)}<textarea class="pick-in" rows="1" placeholder="${isSide(w)?'Pick, e.g. Bijan Robinson Anytime TD':'Pick, e.g. Chiefs -3.5'}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next"${gh?` aria-describedby="${gapId(gk)}"`:''}>${h(dr?dr.text:l.text)}</textarea></div>
-      <input class="mono ${bad?'bad':''}" placeholder="Price" aria-label="${oddsPinned(l)?'Commissioner’s price':'DraftKings’ price'}"${gh?` aria-describedby="${gapId(gk)}"`:''} value="${h(dr?dr.odds:l.odds)}" data-bind="pick|${w.id}|${l.mid}|odds" data-odds="${l.mid}" autocomplete="off" inputmode="text" ${oddsPinned(l)&&!isAdmin()?'readonly':''}></div>${gh?gapHtml(gk,gh):''}
+      <div class="leg-inputs"><div class="pickbox">${pickIcon(dr&&!l.tm?{...shown,teams:pickTeamsFor(dr.text,slipNfl(w))}:shown,w.id)}<textarea class="pick-in" rows="1" placeholder="${isSide(w)?'Pick, e.g. Bijan Robinson Anytime TD':'Pick, e.g. Chiefs -3.5'}" aria-label="${mine?'Your pick':member(l.mid)?.name?`${h(member(l.mid).name)}’s pick`:'Pick'}" data-bind="pick|${w.id}|${l.mid}|text" autocomplete="off" enterkeyhint="next"${gh?` aria-describedby="${gapId(gk)}"`:''}>${h(dr?dr.text:l.text)}</textarea></div>
+      <input class="mono ${bad?'bad':''}" placeholder="Price" aria-label="${oddsPinned(l)?'Commissioner’s price':isAdmin()?'DraftKings’ price, or type the commissioner’s price':'DraftKings’ price'}"${gh?` aria-describedby="${gapId(gk)}"`:''} value="${h(dr?dr.odds:l.odds)}" data-bind="pick|${w.id}|${l.mid}|odds" data-odds="${l.mid}" autocomplete="off" inputmode="text" ${oddsPinned(l)&&!isAdmin()?'readonly':''}></div>${gh?gapHtml(gk,gh):''}
       ${oddsPinned(l)?`<p class="tiny muted">${priceEditWaiting(w,l)?'Price change waiting. The former price is still held.':'Price set by the commissioner.'}${isAdmin()&&pinOpen(w,l)?' Tap Details to use DraftKings’ price again.':!isAdmin()?' Ask the commissioner to change it.':''}${pinMoved(l,nflOk(slipNfl(w)))?' The pick has changed; ask the commissioner to review the price.':''}</p>`:''}
       ${tidyRow}
       <div class="leg-warn" data-halfwarn="${l.mid}" ${pushWarnOn()&&wholeLine(l.text)!=null?'':'hidden'}>⚠ ${halfWarn(l.text)}</div>
@@ -4392,7 +4393,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 document.addEventListener('input',e=>{const id=e.target?.id;if(id!=='npText'&&id!=='npOdds')return;const w=week(UPCOMING);if(w){guideNextInput(w,id);setDraft(w,document.getElementById('npText')?.value,document.getElementById('npOdds')?.value)}});
 document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a,b2,c]=b.split('|');
   if(k==='pick'){const w=week(a);const p=w?.picks[b2];if(!p)return;if(c==='odds'&&oddsPinned(p)&&!isAdmin()){e.target.value=p.oddsPin.value;return}
-    if((c==='text'||c==='odds')&&guideGate(w,b2,c,e.target))return;   // words held from Enter manually, or a box emptied over a saved pick: nothing is written, saved or sent
+    if((c==='text'||c==='odds')&&guideGate(w,b2,c,e.target)){if(e.target.tagName==='TEXTAREA')try{autosize(e.target)}catch(x){}return}   // words held from Enter manually, or a box emptied over a saved pick: nothing is written, saved or sent (the box still grows and shrinks with its words, or with its placeholder once emptied, so neither is cut off)
     if(c==='text'||c==='odds')editStart(w,b2);
     if(c==='text')startPriceEdit(league(),w,b2);if(c==='odds')forgetPriceEdit(league(),w,b2);
     if(c==='margin')p.margin=e.target.value===''?null:Math.abs(Number(e.target.value));
