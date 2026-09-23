@@ -1559,7 +1559,7 @@ function calc(w){
   let d=1,hits=0,misses=0,pushes=0,pending=0,missingOdds=0;
   for(const l of legs){
     if(l.status==='hit')hits++;else if(l.status==='miss')misses++;else if(l.status==='push')pushes++;else pending++;
-    if(l.status!=='push'){if(l.oddsN==null)missingOdds++;else d*=dec(l.oddsN)}
+    if(l.status!=='push'){if(l.oddsN==null||(l.status||'pending')==='pending'&&!String(l.text||'').trim())missingOdds++;else d*=dec(l.oddsN)}   // a leg with no pick has no price yet, even when the commissioner's price stays with it after a clear
   }
   const n=legs.length;
   let result='pending';
