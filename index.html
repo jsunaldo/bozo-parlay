@@ -1303,8 +1303,10 @@ function bakSheet(){const rows=bakRows();
   const fmt=at=>{const t=Date.parse(at);return t?new Date(t).toLocaleString('en-US',{weekday:'short',month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}):'earlier'};
   modal({title:'Copies kept on this phone',body:`<p class="muted tiny" style="margin:0 0 10px">Each line is a copy saved on this phone before the league’s version took over. Opening one puts it back as its own league on this phone only: the league everyone shares does not change.</p><div class="rank-list">${rows.map(r=>`<div class="row between" style="padding:8px 0;border-bottom:1px solid var(--line)"><span><b>${h(r.name)}</b><br><span class="muted tiny">${h(fmt(r.at))} · ${r.seasons} season${r.seasons===1?'':'s'} · ${r.weeks} weeks</span></span><button class="btn sm" data-act="bak-go" data-k="${h(r.k)}" data-i="${r.i}">Open it</button></div>`).join('')}</div>`,actions:[{label:'Close',cls:'ghost'}]})}
 function askWhichCopy(name,ahead){return new Promise(res=>{modal({title:`Which ${name} should win?`,body:`<p>This device has results the league doesn't: <b>${h(ahead.slice(0,6).join(', '))}${ahead.length>6?` and ${ahead.length-6} more`:''}</b>.</p><p><b>Use this device's copy</b> uploads it, replacing anything entered in the league since, including picks members typed in the app. <b>Use the league's copy</b> keeps the league as it is and drops this device's version (a backup is kept on this device).</p>`,actions:[{label:"Use this device's copy",cls:'ghost danger',onClick:()=>{res('mine')}},{label:"Use the league's copy",cls:'primary',onClick:()=>{res('server')}}],onClose:()=>res('server')})})}   // closed without choosing: the safe one
+function askRefusedCopy(name,ahead,e,again){return new Promise(res=>{modal({title:`${name} changed after this copy was made`,body:`<p>${h(friendly(e).replace(/[\s.]+$/,''))}.</p>${ahead.length?`<p>Only this device has <b>${h(ahead.slice(0,6).join(', '))}${ahead.length>6?` and ${ahead.length-6} more`:''}</b>. Whichever you choose, this device keeps its own copy under Crew → <b>Copies kept on this phone</b>, so you can look those up there and enter them again.</p>`:''}<p><b>Not now</b> changes nothing, here or in the league${again?'. This device asks again the next time the app opens':''}.</p>`,actions:[{label:'Not now',cls:'ghost',onClick:()=>{res('later')}},{label:'Use the league’s copy',cls:'primary',onClick:()=>{res('server')}}],onClose:()=>res('later')})})}   // the league turned down this device's copy because it would undo a newer change: say why in the league's words, and offer its copy right here (closed without choosing: nothing changes)
+const notNow=new Set();   // leagues whose copy here the league turned down and the commissioner said Not now: the account doesn't ask again until the app opens next
 async function adoptLink(id,key,opt={}){
-  let l=null,created=false,prev=null;
+  let l=null,created=false,prev=null,ahead=[],refused=null;
   try{if(!opt.quiet)toast('Connecting as commissioner…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`,{headers:{'X-BP-Pins':'1'}});const d=await r.json().catch(()=>({}));if(!d.ok||d.role!=='admin')throw Object.assign(new Error(d.error||'that link doesn\'t work'),{status:r.status});
     if(!opt.quiet&&!DB.acct&&isOwner())mergeBuiltIns();   // only a commissioner link gets here: this is the commish's device (an account brings its own leagues)
     l=DB.leagues.find(x=>x.sync&&x.sync.id===id)||DB.leagues.find(x=>!x.sync&&canonName(x.name)===canonName(d.name));
@@ -1312,20 +1314,24 @@ async function adoptLink(id,key,opt={}){
     prev={sync:l.sync,shareKey:l.shareKey,features:l.features,claims:l.claims};
     l.sync={url:SYNC_URL,id,key,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features=d.features||{};l.claims=d.claims||{};
     const hadLocal=!created&&l.seasons.length&&hasContent(l);
-    let upload=!!(d.fresh&&hadLocal&&!opt.quiet);   // brand-new league: this device's copy becomes the league (never from a device link)
-    if(hadLocal&&!upload){const ahead=aheadOf(l,d);if(ahead.length){
+    let upload=!!(d.fresh&&hadLocal&&!opt.quiet&&!opt.keep);   // brand-new league: this device's copy becomes the league (never from a device link)
+    if(hadLocal&&!upload&&!opt.keep){ahead=aheadOf(l,d);if(ahead.length){
       if(opt.quiet&&!opt.askAhead)throw Object.assign(new Error('this device has results the league doesn\u2019t'),{ahead:1});   // never quietly drop results only this device has: ask next time the app is open
       upload=(await askWhichCopy(l.name,ahead))==='mine'}}   // results only this device has: ask (a device link keeps the league's copy and a backup here)
-    if(hadLocal)backupLeague(l);
-    if(upload){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,features:l.features||{},clubName:l.clubName||d.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:d.rev}});applyState(l,d2)}
-    else applyState(l,d);   // the league's copy; this device's edits push from now on
+    if(hadLocal&&!opt.keep)backupLeague(l);   // (the league's copy after it turned this one down: the backup was made the first time)
+    if(upload){const d2=await api(l,'',{method:'PUT',body:{seasons:l.seasons,activeSeason:newestOf(l).id,name:l.name,features:l.features||{},clubName:l.clubName||d.clubName||'',...(l.mondayOk!==undefined?{mondayOk:!!l.mondayOk}:{}),baseRev:d.rev}}).catch(x=>{if(x.status===409&&x.data&&x.data.changedBy&&x.data.error&&x.data.error!=='stale')refused=x;throw x});applyState(l,d2)}   // turned down because it would undo a newer change the league has: the league says whose, and why
+    else{applyState(l,d);if(opt.keep&&opt.onReplaced)opt.onReplaced(l.name)}   // the league's copy; this device's edits push from now on
     delete l.sync.dirty;
     DB.leagues=DB.leagues.filter(x=>x===l||x.sync||hasContent(x));   // drop the empty placeholder a fresh phone starts with
     if(opt.me&&!(d.adminAs&&d.adminAs.mid)&&l.seasons.some(x=>x.data.members.some(m=>m.id===opt.me)))l.me=opt.me;   // the league's own answer wins
+    notNow.delete(id);
     if(!opt.quiet){DB.active=l.id;S=season().data;VIEW='crew';save();render();acctNote({leagues:{[id]:{key}}});toast(`${l.name} is live: you run it from here too`,'good')}else save();return true;
   }catch(e){
     if(l){if(created)DB.leagues=DB.leagues.filter(x=>x!==l);else if(prev){l.sync=prev.sync;l.shareKey=prev.shareKey;l.features=prev.features;l.claims=prev.claims;if(!l.sync)delete l.sync}}   // back to exactly how it was
-    save();if(opt.quiet)return false;render();toast(failNote(e,'Couldn’t connect','Nothing on this phone changed. Try again when you have signal.','Open the commissioner link again from the device that already runs this league, or make a new one there.'),'bad');return false}
+    save();
+    if(refused){if((await askRefusedCopy(l.name,ahead,refused,opt.quiet&&!!DB.acct))==='server')return adoptLink(id,key,{...opt,keep:true});   // the league's copy, as the league's answer says; this device's copy stays as a backup
+      notNow.add(id);if(opt.onRefused)opt.onRefused(friendly(refused));if(!opt.quiet)render();return false}   // Not now: nothing changed anywhere, and the account doesn't ask again this time the app is open
+    if(opt.quiet)return false;render();toast(failNote(e,'Couldn’t connect','Nothing on this phone changed. Try again when you have signal.','Open the commissioner link again from the device that already runs this league, or make a new one there.'),'bad');return false}
 }
 /* ---- the Commish account: the commissioner's league list, the same on every device they link ---- */
 async function acctApi(path,opts={}){const a=DB.acct;const r=await fetch(`${SYNC_URL}/acct${path}`,{method:opts.method||'GET',headers:{'Content-Type':'application/json',...(a?{'X-BP-Acct':a.id+'.'+a.secret}:{})},body:opts.body?JSON.stringify(opts.body):undefined});
@@ -1345,7 +1351,7 @@ async function acctSync0(boot){   // bring this device in line with the account:
   try{const mine=new Map(DB.leagues.filter(l=>l.sync).map(l=>[l.sync.id,l]));
     for(const[id,e]of Object.entries(A.leagues||{})){const l=mine.get(id);
       if(e.gone){if(l){DB.leagues=DB.leagues.filter(x=>x!==l);changed=true}continue}   // removed on another of their devices
-      if(!l){const ok=e.role==='admin'?await adoptLink(id,e.key,{quiet:true,askAhead:document.visibilityState==='visible'&&!quiet()}):await joinLink(id,e.key,{quiet:true,...(e.meKey?{meKey:e.meKey}:{})});if(ok)changed=true}
+      if(!l){if(e.role==='admin'&&notNow.has(id))continue;const ok=e.role==='admin'?await adoptLink(id,e.key,{quiet:true,askAhead:document.visibilityState==='visible'&&!quiet()}):await joinLink(id,e.key,{quiet:true,...(e.meKey?{meKey:e.meKey}:{})});if(ok)changed=true}   // Not now to the league's copy: asked again the next time the app opens, not every minute
       else if(e.role==='member'&&e.meKey&&!l.meKey){if(await joinLink(id,e.key,{quiet:true,meKey:e.meKey}))changed=true}}   // your name there, from another device
     const add={};for(const l of DB.leagues)if(l.sync&&!(A.leagues||{})[l.sync.id])add[l.sync.id]=acctEntry(l);if(Object.keys(add).length){DB.acctQ={leagues:{...((DB.acctQ||{}).leagues||{}),...add},active:(DB.acctQ||{}).active};save()}   // leagues only this device knew about
     const names=new Set(Object.values(A.leagues||{}).map(e=>canonName(e.name)));   // removed ones too: a stale copy here never brings one back
@@ -1413,22 +1419,23 @@ async function redeemLinkCode2(code){
     try{const d=await api(l,'');applyState(l,d);save()}catch(x){}sendPerson(l,true);hello(l);render();
     toast(`You're ${member(e.me)?.name||'set'} on this device too${was&&was!==e.me?` (was ${member(was)?.name||'someone else'})`:''}`,'good');return true}
   // the Commish app: every league, the way the other device has it
-  let n=0;const names=[],failed=[],kept=[],replaced=[];closeModal();
+  let n=0;const names=[],failed=[],kept=[],replaced=[],refused=[];closeModal();
   if(b.acct&&b.acct.id&&b.acct.secret){DB.acct={id:b.acct.id,secret:b.acct.secret};DB.acctQ=null;save()}   // this device joins the other one's account
-  for(const e of b.leagues||[]){
-    const ok=e.role==='admin'?await adoptLink(e.id,e.key,{quiet:true,askAhead:true,me:e.me,onReplaced:nm=>replaced.push(nm)}):await joinLink(e.id,e.key,{quiet:true,...(e.meKey?{meKey:e.meKey}:{})});
-    if(ok){n++;names.push(e.name)}else failed.push(e.name)}
+  for(const e of b.leagues||[]){let why='';
+    const ok=e.role==='admin'?await adoptLink(e.id,e.key,{quiet:true,askAhead:true,me:e.me,onReplaced:nm=>replaced.push(nm),onRefused:w=>{why=w}}):await joinLink(e.id,e.key,{quiet:true,...(e.meKey?{meKey:e.meKey}:{})});
+    if(ok){n++;names.push(e.name)}else if(why)refused.push({name:e.name,why});else failed.push(e.name)}   // turned down by the league (and Not now): its reason goes in the last message, since a new code would be turned down the same way
   for(const x of b.local||[]){   // leagues that live only on the other device: copied here (they don't sync)
     const inc={name:String(x.name||'League'),seasons:(x.seasons||[]).filter(sn=>sn&&SAFE_ID.test(sn.id)).map(sn=>({...sn,data:migrate(JSON.parse(JSON.stringify(sn.data||fresh())))}))};
     const old=DB.leagues.find(y=>!y.sync&&canonName(y.name)===canonName(inc.name));
     if(old&&hasContent(old)&&aheadOf(old,inc).length){kept.push(old.name);continue}   // this device's copy has results the other one doesn't: keep it
     if(old){backupLeague(old);DB.leagues=DB.leagues.filter(y=>y!==old)}
     const l={id:x.id&&SHARE_SITES[x.id]&&!DB.leagues.some(y=>y.id===x.id)?x.id:uid(),name:inc.name,seasons:inc.seasons,activeSeason:x.activeSeason,clubName:String(x.clubName||''),...(x.mondayOk!==undefined?{mondayOk:!!x.mondayOk}:{})};if(!l.seasons.find(sn=>sn.id===l.activeSeason))l.activeSeason=l.seasons[0]?.id;DB.leagues.push(l);n++;names.push(inc.name+' (copy)')}
-  if(!n&&!kept.length){modal({title:'Nothing linked',body:'<p>None of the leagues on that code could be connected. Nothing changed on this device. Make a new code on your other device and try again.</p>',actions:[{label:'OK',cls:'primary'}]});render();return false}
+  const refusedNote=refused.length?`${refused.map(x=>`<p style="color:var(--red)">Not on this device yet: <b>${h(x.name)}</b>. ${h(x.why.replace(/[\s.]+$/,''))}.</p>`).join('')}<p>${DB.acct?`This device asks again the next time the app opens: choose <b>Use the league’s copy</b> then.`:`To bring ${refused.length>1?'them':'it'} over, make a new code on your other device, type it here and choose <b>Use the league’s copy</b>.`}</p>`:'';   // the league's own reason and the step that works (a new code alone would be turned down the same way)
+  if(!n&&!kept.length){modal({title:refused.length?'Nothing linked yet':'Nothing linked',body:`${failed.length||!refused.length?`<p>${refused.length?`Couldn't connect <b>${failed.map(h).join(', ')}</b>.`:'None of the leagues on that code could be connected.'} Nothing changed on this device. Make a new code on your other device and try again.</p>`:''}${refusedNote}`,actions:[{label:'OK',cls:'primary'}]});render();return false}
   DB.leagues=DB.leagues.filter(x=>x.sync||hasContent(x));if(!DB.leagues.find(x=>x.id===DB.active))DB.active=DB.leagues[0]?.id;
   S=season().data;VIEW='week';save();render();
   if(DB.acct){try{await acctPatchAll()}catch(e){}acctSyncAt=0;acctSync(true)}   // this device's own leagues join the account too
-  modal({title:'This device is linked',body:`${n?`<p>Now on this device: <b>${names.map(h).join(', ')}</b>. It stays in sync on its own from here.</p>`:''}${kept.length?`<p>Kept this device's own <b>${kept.map(h).join(', ')}</b>: it has results the other device's copy doesn't.</p>`:''}${replaced.length?`<p class="muted tiny">This device had older results for <b>${replaced.map(h).join(', ')}</b>. The league's copy is used now, and a backup of the old one is saved on this device.</p>`:''}${failed.length?`<p style="color:var(--red)">Couldn't connect <b>${failed.map(h).join(', ')}</b>. Make a new code on your other device to bring ${failed.length>1?'them':'it'} over.</p>`:''}`,actions:[{label:'OK',cls:'primary'}]});return n>0;
+  modal({title:'This device is linked',body:`${n?`<p>Now on this device: <b>${names.map(h).join(', ')}</b>. It stays in sync on its own from here.</p>`:''}${kept.length?`<p>Kept this device's own <b>${kept.map(h).join(', ')}</b>: it has results the other device's copy doesn't.</p>`:''}${replaced.length?`<p class="muted tiny">This device had older results for <b>${replaced.map(h).join(', ')}</b>. The league's copy is used now, and a backup of the old one is saved on this device.</p>`:''}${failed.length?`<p style="color:var(--red)">Couldn't connect <b>${failed.map(h).join(', ')}</b>. Make a new code on your other device to bring ${failed.length>1?'them':'it'} over.</p>`:''}${refusedNote}`,actions:[{label:'OK',cls:'primary'}]});return n>0;
 }
 async function useLink(text){if(LINK_RE.test(text||''))return redeemLinkCode(text);const p=parseLink(text);if(!p){toast('That doesn\'t look like a league link. Paste the whole link.','bad');return false}return p.kind==='admin'?adoptLink(p.id,p.key):joinLink(p.id,p.key)}
 async function adoptFromUrl(){
