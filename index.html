@@ -643,7 +643,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .sw{width:30px;height:30px;border-radius:50%;border:3px solid transparent;cursor:pointer;background:var(--c);transition:transform .15s}
 .sw.on{border-color:var(--text);transform:scale(1.15)}
 .seasonchips{width:100%;display:flex;gap:6px;flex-wrap:wrap;padding-top:4px}
-.fitchips{display:grid;grid-template-columns:repeat(var(--fc,1),minmax(0,1fr));gap:6px}.fitchips>.chip{min-width:44px;padding-left:6px;padding-right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}.fitchips.fc-m{display:flex;flex-wrap:nowrap}.fitchips.fc-m>.chip{flex:none;min-width:0}
+.fitchips{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}.fitchips>.chip{min-width:44px;padding-left:6px;padding-right:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}.fitchips.fc-m{display:flex;flex-wrap:nowrap}.fitchips.fc-m>.chip{flex:none;min-width:0}
 .chip{border:1px solid var(--line2);background:var(--surface);color:var(--text);font:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:980px;cursor:pointer;-webkit-tap-highlight-color:transparent}
 .chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .teamgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;max-height:50vh;overflow-y:auto;padding:2px}
@@ -1713,7 +1713,7 @@ function render0(){
   document.getElementById('topRight').innerHTML=st?`<span class="badge ${st.paid-st.staked>=0?'won':'lost'}" style="font-size:11px">${st.won}–${st.lost} · ${fmt$0(st.paid-st.staked)}</span>`:'';
   if(document.body.classList.contains('typing')){const af=document.activeElement;if(!(af&&af.matches&&af.matches('input:not([type=file]),textarea,select'))){document.body.classList.remove('typing');needRender=false}}   /* nothing is being typed in any more */
 }
-function fitChips(){try{for(const g of document.querySelectorAll('.fitchips')){const W=g.clientWidth,k=[...g.children],n=k.length;if(!(W>0)||n<2)continue;g.classList.add('fc-m');const need=Math.max(44,...k.map(x=>x.offsetWidth));g.classList.remove('fc-m');let c=1;for(let i=n;i>1;i--)if(n%i===0&&i*need+(i-1)*6<=W){c=i;break}g.style.setProperty('--fc',String(c))}}catch(e){}}   // Jason's grid rule for a row of chips (seasons, leagues): as many to a row as fit the widest one whole (44 px at the least), and only a number that fills every row, so none is left alone on the last; otherwise one to a row
+function fitChips(){try{for(const g of document.querySelectorAll('.fitchips')){const W=g.clientWidth,k=[...g.children],n=k.length;if(!(W>0)||n<2)continue;g.classList.add('fc-m');const ws=k.map(x=>Math.max(44,x.offsetWidth)),need=Math.max(...ws);g.classList.remove('fc-m');let c=1;for(let i=n;i>1;i--)if(n%i===0&&i*need+(i-1)*6<=W){c=i;break}g.style.gridTemplateColumns=c<n&&ws.reduce((a,b)=>a+b,0)+(n-1)*6<=W?`repeat(${n},auto)`:`repeat(${c},minmax(0,1fr))`}}catch(e){}}   // Jason's grid rule for a row of chips (seasons, leagues): all in one row when they fit (each as wide as its name, sharing what is left over), else as many to a row as fit the widest one whole, and only a number that fills every row, so none is left alone on the last; otherwise one to a row. None under 44 px
 addEventListener('resize',()=>fitChips());
 function seasonLabelText(){return headOfS()||'Season'}
 function headOfS(){const x=(league().seasons||[]).find(y=>y.data===S);return x?seasonHead(x):String(S&&S.season||'').trim()}   // the name of the season being shown, as the header and shared slips print it (the all-time view keeps its own)
