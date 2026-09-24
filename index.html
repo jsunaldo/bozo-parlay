@@ -1477,7 +1477,8 @@ const dowOf=d=>{const[y,m,dd]=d.split('-').map(Number);return new Date(Date.UTC(
 const DOW=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 const sunOf=d=>{const k=dowOf(d);return k===0?d:k===1?addDays(d,-1):addDays(d,7-k)};   // the Sunday of the NFL week a game day belongs to (Monday night counts with the Sunday before)
 let ETF=null;
-function etDay(iso){try{ETF??=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'});const p=Object.fromEntries(ETF.formatToParts(new Date(iso)).map(x=>[x.type,x.value]));return`${p.year}-${p.month}-${p.day}`}catch(e){return''}}   // the game's date on the East Coast, so a late Sunday kickoff is still Sunday
+function etDay(iso){if(iso==null||iso==='')return'';try{ETF??=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'});const p=Object.fromEntries(ETF.formatToParts(new Date(iso)).map(x=>[x.type,x.value]));return`${p.year}-${p.month}-${p.day}`}catch(e){return''}}   // the game's date on the East Coast, so a late Sunday kickoff is still Sunday; '' when there is no start time to read (never 1969 for a missing one)
+const slateDay=nfl=>{for(const g of (nfl&&nfl.games)||[]){const d=g&&etDay(g.at);if(d)return d}return''};   // the date of the first game whose start time can be read ('' if none can): a first game with no time yet ('', TBD) never stops the week from showing
 function fmtDay(d){if(!d)return'';const[y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}
 
 const wkName=w=>w.label||`Week ${w.num}`;const wkShort=w=>w.short||`W${w.num}`;
@@ -1485,7 +1486,7 @@ const wkName=w=>w.label||`Week ${w.num}`;const wkShort=w=>w.short||`W${w.num}`;
 function weekSun(w){
   if(!w)return null;if(w.kind==='special'&&w.day)return sunOf(w.day);
   const p=prevMain(w);if(p&&p.kind==='special'&&p.num===w.num&&p.day)return sunOf(p.day);
-  const nfl=w.date?nflData(w.date,0):null;const g=nfl&&nfl.games&&nfl.games[0];const gd=g&&etDay(g.at);if(gd)return sunOf(gd);
+  const nfl=w.date?nflData(w.date,0):null;const gd=slateDay(nfl);if(gd)return sunOf(gd);
   if(!w.date)return null;const k=dowOf(w.date);return k===0?w.date:addDays(w.date,7-k);
 }
 const specialsOf=()=>(S.specials||[]).filter(sp=>!S.weeks.some(w=>w.kind==='special'&&w.day===sp.day));   // planned and not started yet
@@ -3243,7 +3244,7 @@ function gradeLeg(p,R,live){   // → {status,margin,detail,final,locked} | {wai
   if(type==='Team total'){const[a]=pts(g,teams[0]);const ov=lineAfter(/\b(?:over|o) ?(\d+(?:\.\d+)?)/),un=lineAfter(/\b(?:under|u) ?(\d+(?:\.\d+)?)/);if(ov==null&&un==null)return{no:'Couldn\'t find the line'};return un!=null?res(un-a,un-a,score,a>un,{m:'teamTotal',op:'<',v:a,line:un,team:teams[0],pace:true,s:sx()}):res(a-ov,a-ov,score,a>ov,{m:'teamTotal',op:'>',v:a,line:ov,team:teams[0],pace:true,s:sx()})}
   if(type==='Spread'){const L=/\bpk\b|pick ?em/.test(lo)?0:(()=>{const x=[...lo.matchAll(/(^|[^\d])([+-]) ?(\d+(?:\.\d+)?)(?!\d|\.\d)/g)].find(x=>+x[3]<50);return x?(x[2]==='-'?-1:1)*+x[3]:null})();if(L==null)return{no:'Couldn\'t find the line'};const[a,b]=pts(g,teams[0]);return res(a-b+L,a-b+L,score,false,{m:'spread',op:'>',v:a-b+L,line:0,team:teams[0],diff:a-b,hcp:L,s:sx()})}
   return{no:'Not a bet the app can read'}}
-const slateSun=d=>{const e=d&&NFL[d+'|0'];const g=e&&e.data&&(e.data.games||[])[0];const s=g&&sunOf(etDay(g.at));return s&&s>d?s:null};   // that Sunday can have no games (the one after the conference games): once its schedule is loaded, follow where the games really are
+const slateSun=d=>{const e=d&&NFL[d+'|0'];const gd=slateDay(e&&e.data);const s=gd&&sunOf(gd);return s&&s>d?s:null};   // that Sunday can have no games (the one after the conference games): once its schedule is loaded, follow where the games really are (by the first start time that can be read)
 function checkDate(w){   // the game day a slip covers: a special's own day, a side parlay's parent, otherwise the Sunday on or after the day it was started
   if(!w)return null;if(w.kind==='special'&&w.day)return w.day;const par=parentOf(w);if(par)return checkDate(par);
   const pm=prevMain(w);if(pm&&pm.kind==='special'&&pm.num===w.num&&pm.day)return sunOf(pm.day);
