@@ -1995,9 +1995,9 @@ function legInfo(w,mid){   // everything about one leg: what was typed, what the
   const t0=p.teams&&p.teams.length?p.teams:pickTeamsFor(p.text,nfl);const tms=t0.slice(0,2).map(x=>TEAM_NM(x)).filter(Boolean);   // no logo saved: the teams read from the pick as the slip reads them, a player's own team first (never a city in his name)
   if(text&&!unrecorded(p))row('Teams',tms.length?`${h(tms.join(' vs '))} · ${p.tmh?'set by hand':'matched from the pick, using ESPN’s schedule and rosters'}`:'None found in the pick');
   const st=p.status||'pending';
-  if(st==='pending'){const R=RESULTS[checkDate(w)];const lv=R&&text?gradeLeg(p,R,true):null;const sg=(nfl&&legGame(p,nfl))||(nfl&&nfl.teamGame&&t0.length?nfl.teamGame[t0[0]]:null);let sub='';   // the leg's game as the slip reads it (legGame): a player's own game, never a city in his name
+  if(st==='pending'){const R=RESULTS[checkDate(w)];const lv=R&&text?gradeLeg(p,R,true):null;const sg=(nfl&&legGame(p,nfl))||(nfl&&nfl.teamGame&&t0.length?nfl.teamGame[t0[0]]:null);let sub='';   // the leg's game as the slip reads it (legGame): a player's own game, never a city in his name, and with a logo set by hand on a later game, the words' game the pick locks at (its kickoff time too, not the logo's)
     if(lv&&lv.status&&lv.detail)sub=`Right now: ${h(lv.detail)}`;
-    else if(text){const at=(lv&&lv.pre&&lv.at)||(sg&&sg.at);const gn=sg?`${TEAM_NM(sg.away)} @ ${TEAM_NM(sg.home)}`:lv&&lv.wait?String(lv.wait).split(':')[0]:'';
+    else if(text){const at=sg?(lv&&lv.pre&&lv.at&&lv.gid===sg.id?lv.at:sg.at):(lv&&lv.pre&&lv.at);const gn=sg?`${TEAM_NM(sg.away)} @ ${TEAM_NM(sg.home)}`:lv&&lv.wait?String(lv.wait).split(':')[0]:'';
       if(at&&Date.parse(at)>Date.now())sub=`${gn?h(gn)+' · ':''}Kicks off ${fmtET(at)}`;else if(lv&&lv.wait)sub=h(lv.wait);else if(Number.isFinite(startMs(at)))sub=`${gn?h(gn)+' · ':''}Kicked off ${fmtET(at)}`;else if(sg)sub=`${gn?h(gn)+' · ':''}Time not set yet`}   // a start time that can't be read says so (a 'TBD' read as kicked off)
     row('Result',`Not graded yet${sub?`<br><span class="muted">${sub}</span>`:''}`)}
   else{row('Result',`<span class="stag ${st}">${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[st]||h(st)}</span>${p.margin!=null&&unit!=='none'&&st!=='push'?` ${st==='hit'?'covered':'missed'} by ${h(fmtMargin(p.margin,unit))}`:''}`);
@@ -2953,9 +2953,11 @@ const resNflOf=R=>{if(!R)return null;if(!R._nfl){const tg={};for(const g of R.ga
 const RES_WANT=new Set();let resBusy=0;
 function resNfl(date){const R=RESULTS[date];if(R)return resNflOf(R);if(!RES_WANT.has(date)&&resBusy<3){RES_WANT.add(date);resBusy++;loadResults(date,365*86400e3).then(()=>softRender()).catch(()=>{setTimeout(()=>{RES_WANT.delete(date);softRender()},60e3)}).finally(()=>{resBusy--})}return null}
 function weekNfl(w){const d=slipDate(w);if(!d)return null;const l=league();const sn=seasonOfWeek(l,w);return sn&&sn.id===newestOf(l).id?nflOk(nflData(d,0)):resNfl(d)}   // never ask the schedule feed about an old season: it would answer with this season's games
-function legGame(l,nfl,cm){if(noPickYet(l)||!nfl)return null;const g=(cm&&cm.game)||(claimOf(l.text,l.teams,l.tm,nfl)||{}).game;return g||(nfl.games&&nfl.games.length===1?nfl.games[0]:null)}   // a one-game slate (the Super Bowl): every bet is on that game, coin toss included
+function claimGame(l,nfl,cm){const g=(cm&&cm.game)||(claimOf(l.text,l.teams,l.tm,nfl)||{}).game;return g||(nfl.games&&nfl.games.length===1?nfl.games[0]:null)}   // the game the pick's teams read as (a logo set by hand: its team, as the grader goes by it). A one-game slate (the Super Bowl): every bet is on that game, coin toss included
+const lockGame=(l,nfl)=>{let k=null,kt=Infinity;for(const g of kickGames(l,nfl)){const t=Date.parse(g.at);if(Number.isFinite(t)&&t<kt){k=g;kt=t}}return k};   // the game Jason's pick lock goes by: the first kickoff among the games the words name and a logo set by hand's (kickGames; a tie keeps the words' game); null when no start time can be read
+function legGame(l,nfl,cm){if(noPickYet(l)||!nfl)return null;return lockGame(l,nfl)||claimGame(l,nfl,cm)}   // a leg's game on the slip (heading, grouping, same-game line, kickoff chip, Details): the game its lock goes by, so a logo set by hand on a later game than the words never puts the leg under that game's heading while it locks at the earlier one
 const WIN_MEMO=new Map();
-function legWin(d,l,peek){if(!d||noPickYet(l))return null;const k=`${d}|${l.text}|${(l.teams||[]).join(',')}|${l.tm?1:0}`;if(WIN_MEMO.has(k))return WIN_MEMO.get(k);const nfl=peek?resNflOf(RESULTS[d]):resNfl(d);if(!nfl)return undefined;const g=legGame(l,nfl);const v=(g&&winGroup(g.at))||null;WIN_MEMO.set(k,v);return v}   // a finished bet's kickoff window (undefined while that week's scores load)
+function legWin(d,l,peek){if(!d||noPickYet(l))return null;const k=`${d}|${l.text}|${(l.teams||[]).join(',')}|${l.tm?1:0}`;if(WIN_MEMO.has(k))return WIN_MEMO.get(k);const nfl=peek?resNflOf(RESULTS[d]):resNfl(d);if(!nfl)return undefined;const g=claimGame(l,nfl);const v=(g&&winGroup(g.at))||null;WIN_MEMO.set(k,v);return v}   // a finished bet's kickoff window (undefined while that week's scores load): the game it was graded on, so a logo set by hand counts its bet where the grader settled it
 function slipPlan(w,c,cl){   // how a slip lists its legs: people with no pick yet first, then picks by kickoff (a game's picks together), then picks whose game isn't known; member order breaks ties. Also each leg's game.
   const nfl=cl&&Object.prototype.hasOwnProperty.call(cl,'nfl')?cl.nfl:weekNfl(w);const games={};
   for(const l of c.legs){const cm=cl&&cl.claims&&cl.claims[l.mid];games[l.mid]=legGame(l,nfl,cm)}
@@ -3343,8 +3345,9 @@ function legLive(w,l,cl){   // everything one leg's card needs: the grade, its g
   const gid=(r&&((r.x&&r.x.gid)||r.gid))||null;
   let g=(R&&gid&&R.games.find(y=>y.id===gid))||null,sg=null;
   if(!g){sg=legGame(l,(cl&&cl.nfl)||weekNfl(w),cl&&cl.claims&&cl.claims[l.mid]);if(R&&sg)g=R.games.find(y=>y.id===sg.id)||null}   /* only when the grade didn't name the game: the schedule knows it */
-  const age=R?Math.max(0,Date.now()-(R.at||0)):0;const fresh=!!R&&!LIVE_FAILED.has(R)&&age<4*6e4;
-  return{R,r,g,sg,fresh,v:r?legView(r,g,fresh,age,l):null}}
+  const age=R?Math.max(0,Date.now()-(R.at||0)):0;const fresh=!!R&&!LIVE_FAILED.has(R)&&age<4*6e4;let v=r?legView(r,g,fresh,age,l):null;
+  if(v&&v.code==='PRE'&&g){const k=legGame(l,(cl&&cl.nfl)||weekNfl(w),cl&&cl.claims&&cl.claims[l.mid]),kg=k&&k.id!==g.id?(R.games.find(y=>y.id===k.id)||k):null;if(kg)v=pregameChip(kg)?legView({...r,at:kg.at},kg,fresh,age,l):null}   // the grade waits on a logo set by hand on a later game than the words: until the pick's first game kicks off the chip gives that kickoff, when the pick locks; after it, no kickoff at all (the logo's later one would read as the lock's), as for any leg whose game is under way with no grade yet. The grade still goes by the logo
+  return{R,r,g,sg,fresh,v}}
 function legChip(w,l,cl,prepared){   // once the bet is in, a leg shows where it stands instead of "pick in": its kickoff time, how it's doing live, or how it ended
   const L=prepared||legLive(w,l,cl);if(L.v){const pre=L.v.code==='HAND'&&pregameChip(L.g||L.sg);return pre?['pre',L.v.chip+'\n'+pre]:[L.v.cls,L.v.chip]}
   const g=L.sg;const G=(L.R&&g)?L.R.games.find(x=>x.id===g.id):null;
