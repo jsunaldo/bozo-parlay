@@ -22,13 +22,13 @@
 :root{
   --bg:#f5f5f7;--surface:#fff;--surface2:#f5f5f7;--surface3:#e8e8ed;--line:rgba(0,0,0,.08);--line2:rgba(0,0,0,.14);
   --text:#1d1d1f;--muted:#6e6e73;--dim:#757579;--glass:rgba(255,255,255,.78);
-  --green:#177c36;--on-green:#fff;--amber-tx:#9a5100;--red:#ff3b30;--pace-red:#c5221a;--amber:#ff9f0a;--blue:#0071e3;--pink:#ff2d55;--purple:#af52de;
+  --green:#177c36;--on-green:#fff;--amber-tx:#9a5100;--red:#ff3b30;--pace-red:#c5221a;--red-tx:#c5221a;--amber:#ff9f0a;--blue:#0071e3;--pink:#ff2d55;--purple:#af52de;
   --green-bg:rgba(52,199,89,.13);--red-bg:rgba(255,59,48,.12);--amber-bg:rgba(255,159,10,.15);--blue-bg:rgba(0,113,227,.1);
   --r:22px;--rs:14px;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 16px rgba(0,0,0,.06);--shadow-lg:0 12px 40px rgba(0,0,0,.12);
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;
   --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,monospace;
 }
-@media(prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--text:#f5f5f7;--muted:#98989d;--dim:#8e8e93;--on-green:#06230f;--amber-tx:var(--amber);--glass:rgba(28,28,30,.78);--green:#30d158;--red:#ff453a;--pace-red:#ff453a;--amber:#ffd60a;--blue:#0a84ff;--pink:#ff375f;--purple:#bf5af2;--green-bg:rgba(48,209,88,.16);--red-bg:rgba(255,69,58,.16);--amber-bg:rgba(255,214,10,.14);--blue-bg:rgba(10,132,255,.16);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);--shadow-lg:0 16px 48px rgba(0,0,0,.6)}}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--text:#f5f5f7;--muted:#98989d;--dim:#8e8e93;--on-green:#06230f;--amber-tx:var(--amber);--glass:rgba(28,28,30,.78);--green:#30d158;--red:#ff453a;--pace-red:#ff453a;--red-tx:#ff8a80;--amber:#ffd60a;--blue:#0a84ff;--pink:#ff375f;--purple:#bf5af2;--green-bg:rgba(48,209,88,.16);--red-bg:rgba(255,69,58,.16);--amber-bg:rgba(255,214,10,.14);--blue-bg:rgba(10,132,255,.16);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);--shadow-lg:0 16px 48px rgba(0,0,0,.6)}}
 *{box-sizing:border-box;margin:0;padding:0}
 [hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%;color-scheme:light dark}
@@ -58,15 +58,6 @@ html.shell #app{height:100%;max-width:none;display:flex;flex-direction:column;pa
 .srow .np-form{grid-template-columns:minmax(0,1fr) auto}.srow .np-form .pickbox{grid-column:1/-1}.srow .np-form input.mono{width:96px}
 .np-form .pickicon.empty{width:28px;flex:none;text-align:center;opacity:.5}
 .np-form input.mono{width:100%;padding:10px 6px}
-.np-list{display:flex;flex-direction:column;gap:4px}
-.np-row{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 8px;font-size:13px;padding:7px 10px;border-radius:10px;background:var(--surface2)}
-.np-row .nm{font-weight:600;text-align:left;justify-self:start}
-.np-row .tag{justify-self:end}
-.np-row.mine{box-shadow:inset 0 0 0 1px var(--blue)}
-.np-row.clash{background:var(--amber-bg)}
-.np-pick{grid-column:1/-1;display:flex;align-items:center;gap:8px;min-width:0;padding-left:24px}
-.np-pick .betchip{flex:1;min-width:0}
-.np-row>.muted.tiny{grid-column:2/-1}
 .np-saved{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:6px 0;background:var(--surface2);border-radius:12px;padding:8px 10px}
 .np-bet{display:flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap}
 .substat{background:var(--surface2);border-radius:14px;padding:10px 12px;margin:10px 0}
@@ -233,7 +224,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .srow .sp{grid-column:1/-1;display:flex;align-items:center;gap:8px;min-width:0;padding-left:30px}
 .srow .sp .betchip{flex:1;min-width:0}.srow .sp .odds{font-weight:600;white-space:nowrap}.srow .sp .odds.bad{color:var(--red)}
 .srow .sx{grid-column:1/-1;padding-left:30px;font-size:12px;line-height:1.35}
-.srow .sx.flag{color:var(--red);font-weight:600}
+.srow .sx.flag{color:var(--red-tx);font-weight:600}   /* red words that must be read: at least 4.5:1 on the card and on the red tint, light and dark */
 .srow .sx .leg-margin{grid-column:auto}
 .srow .edit{grid-column:1/-1;display:flex;flex-direction:column;gap:8px;margin-top:4px}
 .srow .edit .leg-inputs,.srow .edit .leg-margin,.srow .edit .leg-tidy{grid-column:auto}
@@ -273,9 +264,8 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .fld{display:flex;flex-direction:column;gap:6px;margin:12px 0 0}.fld>span{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
 .fld input{font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--text);width:100%;box-sizing:border-box}
 .chiprow{display:flex;flex-wrap:wrap;gap:6px}.chiprow button{font:inherit;font-size:13px;font-weight:600;border:1px solid var(--line);background:var(--surface);color:var(--text);border-radius:999px;padding:6px 12px;cursor:pointer}.chiprow button.on{background:var(--purple);border-color:var(--purple);color:#fff}
-.clashline{font-size:12px;color:var(--red);background:var(--red-bg);border-radius:10px;padding:6px 10px;line-height:1.35}
-.np-group{display:flex;flex-direction:column;gap:4px;padding-left:8px;border-left:3px solid var(--purple);border-radius:3px}
-.np-sg{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--purple);margin:2px 0}
+.clashline{font-size:12px;color:var(--red-tx);background:var(--red-bg);border-radius:10px;padding:6px 10px;line-height:1.35}
+.clashline.quiet{color:var(--muted);background:none;padding:0 2px}
 .tag.warn{background:var(--amber-bg);color:#b25e00}
 .tag.unsure{background:var(--surface3);color:var(--muted);border:0;cursor:pointer;font:inherit;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:980px}
 @media(prefers-color-scheme:dark){.tag.warn{color:var(--amber)}}
@@ -1749,12 +1739,12 @@ function upcomingBtn(w,c){
 function renderUpcoming(w,c){   // next week's slip during the vote: the same rows as a real slip
   const l=league();const me=l.me;const exp=c.legs.map(x=>x.mid);const next=w.next||{};const rule=nextRule(w);
   const nfl=nextSlate(w);const ok=nflOk(nfl);
-  const items=exp.filter(mid=>String(next[mid]?.text||'').trim()).map(mid=>({mid,text:next[mid].text,teams:next[mid].teams,tm:false,odds:next[mid].odds}));
+  const items=exp.filter(mid=>String(next[mid]?.text||'').trim()).map(mid=>({mid,text:next[mid].text,raw:next[mid].raw,teams:next[mid].teams,tm:false,odds:next[mid].odds}));
   const cl=dayCheck(weekClaims(items,ok),items,rule,false);
   const r=w.reveal&&revealSeen(w)?w.reveal:null;const bz=r&&r.winner?member(r.winner):null;
   const st=subStatus(w);const mineIn=!!me&&(isAdmin()||(st(me).voted&&st(me).video));
   const row=mid=>{const m=member(mid);const np=next[mid];const has=!!String(np?.text||'').trim();const isMe=mid===me;const cm=cl.claims[mid];const pre=has?pregameChip(legGame({mid,text:np.text,teams:np.teams},ok,cm)):'';
-    const fl=[...(cl.clashes[mid]||[]).map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`),...(cl.off[mid]?[`⚠ ${h(offText(cl.off[mid],cl.rule))}`]:[])];
+    const fl=[...clashGroups(cl.clashes[mid]).map(g=>clashSay(g,false)),...(cl.off[mid]?[`⚠ ${h(offText(cl.off[mid],cl.rule))}`]:[])];
     const editing=isMe&&mineIn&&(nextEdit.has(w.id)||!has);const tap=isMe&&mineIn&&has&&!editing;const dr=isMe?draftOf(w):null;
     const chooseN=editing&&!has&&!String(dr?.text||'').trim()&&guidedNextAllowed(w,me)&&guidedOffer(w,true)&&!GUIDE_MANUAL.has(guideKey(w.id,me,true));   // no pick saved or typed yet: first the choice between Build a pick and Enter manually
     const typedN=editing?`${guidedNextAllowed(w,me)&&guidedOffer(w,true)?`<button class="btn sm ghost" style="margin-bottom:10px" data-act="guide-open" data-wid="${w.id}" data-mid="${me}" data-next="1">Build a pick</button>`:''}<div class="np-form"><div class="pickbox"><span class="pickicon empty">🏈</span><textarea id="npText" class="pick-in" rows="1" placeholder="${rule.sunday?'Pick, e.g. Chiefs -3.5':`Pick a ${h(rule.name)} game`}" autocomplete="off" enterkeyhint="next">${h(dr?dr.text:np?.text||'')}</textarea></div><input id="npOdds" class="mono" placeholder="-110" value="${h(dr?dr.odds:np?.odds||'')}" autocomplete="off" inputmode="text"><button class="btn primary sm" data-act="next-save">Save</button></div><small class="muted tiny">${h(ruleText(rule))}. Must be -200 or longer.${has?' <a href="#" data-act="next-cancel">Cancel</a>':''}</small>`:'';   /* today's box; under the choice it waits hidden in the page */
@@ -1771,6 +1761,7 @@ function renderUpcoming(w,c){   // next week's slip during the vote: the same ro
   return`<div class="week-nav"><button class="icon-btn" data-act="upcoming-back" aria-label="Back">‹</button><div class="week-title"><strong>${h(nextName(w))}</strong><small class="muted tiny">upcoming slip</small></div><span style="width:40px"></span></div>
   <div class="kindbar"><span class="kb-ic">🤡</span><span class="kb-t"><b>${bz?`${h(bz.name)} is the Bozo`:r?'Bozo: tie, revote under way':`Bozo: decided by the ${h(wkName(w))} vote`}</b>These picks land on the slip the moment the Bozo is crowned. ${h(ruleText(rule))}.</span></div>
   <section class="ticket"><div class="ticket-head"><div class="row between"><div class="eyebrow">Upcoming slip · ${exp.length} leg${exp.length===1?'':'s'}</div><span class="badge pending">${items.length}/${exp.length} in</span></div></div>
+  ${cl.pairs.length?`<div class="pickstat">${clashLines({...cl,off:{},notd:{},flags:0})}</div>`:''}
   <div class="legs slip">${renderSlipRows(plan,x=>row(x.mid))}</div>
   ${nfl&&nfl.failed?`<p class="muted tiny" style="padding:0 16px 14px">Couldn't load next week's NFL schedule, so only exact duplicates are checked right now.</p>`:''}</section>
   <button class="btn ghost block" data-act="upcoming-back">‹ Back to ${h(wkName(w))}</button>`;
@@ -1806,7 +1797,7 @@ function renderExtras(w){   // commissioner: add a side or special parlay to the
   const fin=`<div class="ex"><button class="btn ghost block sm" data-act="toggle-final" data-wid="${w.id}">${w.final?'🏁 Final week of the season (tap to undo)':'🏁 Mark as the season\'s final week'}</button><small class="muted">${w.final?'No Bozo vote after this one and no next week.':'The last parlay of the season: no Bozo vote afterwards, and the app won\'t start a next week.'}</small></div>`;
   return`<section class="card extras"><h3>Extra parlays</h3>${side}${special}${fin}${up.length?`<div class="pd-sub" style="margin:14px 0 6px">Coming up</div>${up.map(sp=>`<div class="row between ex-plan"><span>${spIcon(sp.name)} ${h(sp.name)} parlay · ${h(fmtDay(sp.day))}</span><button class="mini danger" data-act="drop-special" data-day="${sp.day}" title="Remove">×</button></div>`).join('')}`:''}</section>`;
 }
-function clashLines(cl){if(!hasFlags(cl))return'';const nm=mid=>h(member(mid)?.name||'');return`<div class="clashlines">${cl.pairs.map(p=>`<div class="clashline">⚠ <b>${nm(p.a)}</b> and <b>${nm(p.b)}</b> ${CLASH_SUM[p.kind]}${p.game?' · '+h(p.game.name):''}</div>`).join('')}${Object.entries(cl.off||{}).map(([mid,o])=>`<div class="clashline">⚠ <b>${nm(mid)}</b> picked a ${h(offText(o,cl.rule))} · ${h(o.game.name)}</div>`).join('')}${Object.keys(cl.notd||{}).map(mid=>`<div class="clashline">⚠ <b>${nm(mid)}</b>'s pick isn't an Anytime TD bet. This side parlay is ATTD only.</div>`).join('')}</div>`}
+function clashLines(cl){if(!hasFlags(cl))return'';const q=!!cl.quiet,nm=mid=>h(member(mid)?.name||''),line=t=>`<div class="clashline${q?' quiet':''}">${q?'':'⚠ '}${t}</div>`;return`<div class="clashlines">${cl.pairs.map(p=>line(`<b>${nm(p.a)}</b> and <b>${nm(p.b)}</b> ${h(p.say||CLASH_SUM[p.kind])}${p.game?'&nbsp;· '+gameNb(p.game):''}${CANT.has(p.kind)?'. They can’t both win.':''}`)).join('')}${Object.entries(cl.off||{}).map(([mid,o])=>line(`<b>${nm(mid)}</b> picked a ${h(offText(o,cl.rule))} · ${h(o.game.name)}`)).join('')}${Object.keys(cl.notd||{}).map(mid=>line(`<b>${nm(mid)}</b>'s pick isn't an Anytime TD bet. This side parlay is ATTD only.`)).join('')}</div>`}   // quiet once the bet is placed or graded, and on old weeks: a note, never a scare
 const bozoOfW=w=>{if(!w)return null;const p=parentOf(w);return p?p.bozoId:w.bozoId};
 const shotUrl=(l,w,x)=>{const k=l.sync.role==='admin'&&l.shareKey?l.shareKey:l.sync.key;return`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/shot/${encodeURIComponent(w.id)}/${x.n}?k=${encodeURIComponent(k)}&v=${encodeURIComponent(x.at)}`};
 async function shrinkShot(file){   // a phone screenshot, made small enough to send (longest side 1600px, JPEG)
@@ -1907,12 +1898,12 @@ function pickStatus(w,c,cl){
   const offCrew=isAdmin()&&here0&&!isSide(w)&&!w.placed&&!w.locked&&w===lastWeek()?S.members.filter(m=>(m.active||m.id===w.bozoId)&&!w.picks[m.id]):[];   // in the crew but never put on this slip (a slip an older app built)
   const offLine=offCrew.length?`<div class="pickstat-who">In the crew, not on this slip ${offCrew.map(m=>`<span class="waitchip">${h(m.name)}</span>`).join('')} ＋ Add a leg for… below puts them on.</div>`:'';
   if(!tot)return offTxt+offLine;
-  if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}<div class="pickstat all"><b>All ${tot} picks are in</b><span class="muted tiny">${w.locked?'Locked.':hasFlags(cl)?'Sort out the flagged picks first.':isSide(w)?'Ready to place it.':'Ready for the Bozo to place it.'}</span></div>${offTxt}${offLine}${hasFlags(cl)?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
+  if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}<div class="pickstat all"><b>All ${tot} picks are in</b><span class="muted tiny">${w.locked?'Locked.':hasFlags(cl)&&!cl.quiet?'Sort out the flagged picks first.':isSide(w)?'Ready to place it.':'Ready for the Bozo to place it.'}</span></div>${offTxt}${offLine}${hasFlags(cl)?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
   const names=missing.map(l=>member(l.mid)?.name).filter(Boolean);
   return`<div class="pickstat"><div class="row between"><b>${inCount} of ${tot} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div><div class="pickstat-who">Waiting on ${missing.filter(l=>member(l.mid)).map(l=>`<span class="waitchip">${h(member(l.mid).name)}</span>`).join('')}</div>${offTxt}${offLine}${clashLines(cl)}${tidyBtn}${note}</div>`;
 }
 function renderTicket(w,c){
-  const b=member(w.bozoId);const cl=slipClaims(w,c);
+  const b=member(w.bozoId);const cl=slipClaims(w,c)||histClaims(w,c);
   const missing=S.members.filter(m=>(m.active||m.id===w.bozoId)&&!w.picks[m.id]);
   return`<section class="ticket ${c.result}" id="ticket">
     <div class="ticket-head">
@@ -1946,6 +1937,7 @@ function legInfo(w,mid){   // everything about one leg: what was typed, what the
   const text=String(p.text||'').trim();const tidied=p.raw&&p.raw!==p.text;const nfl=nflOk(slipNfl(w));
   row('Pick',text?`<b>${h(p.text)}</b>`:'<span class="muted">No pick entered</span>');
   if(tidied)row('Typed',`“${h(p.raw)}”<br><span class="muted">The app rewrote it in sportsbook wording, matching team and player names to ESPN’s schedule and rosters. The meaning didn’t change.</span>`);
+  if(text){const c0=calc(w),cl0=slipClaims(w,c0)||histClaims(w,c0,true),cx=((cl0&&cl0.clashes[mid])||[]).filter(x=>CANT.has(x.kind));if(cx.length)row('Can’t both win',cx.map(x=>`${h(member(x.with)?.name||'Someone')} ${x.kind==='firsttd'?'picked a different first TD scorer':x.kind==='overunder'&&x.side?`took the ${x.side==='<'?'under':'over'}`:'took the other side'}: <b>${h(w.picks[x.with]?.text||'')}</b>${x.game?`&nbsp;<span class="muted">· ${gameNb(x.game)}</span>`:''}`).join('<br>')+`<br><span class="muted">These picks can’t both win.${cl0.quiet?'':' It’s a heads-up only; no pick was changed.'}</span>`)}   // the pick on the other side of this one, on any week; "heads-up" only while the slip is still open
   row('Entered',(p.by==='admin'?'By the commissioner':p.by?`By ${h(member(p.by)?.name||m.name)}`:'Not recorded (entered before the app kept track)')+(p.by&&p.at&&fmtET(p.at)?`, ${fmtET(p.at)}`:'')+(p.eby?`<br><span class="muted">Changed by the commissioner${p.eat&&fmtET(p.eat)?`, ${fmtET(p.eat)}`:''}</span>`:''));
   if(text&&oddsPinned(p)){const open=pinOpen(w,p),now=open?dkPrice(p.text,nfl,true):null,dk=now&&now.price;row('Odds',`${priceEditWaiting(w,p)?'Price change waiting · former commissioner price':'Set by the commissioner'}: <b>${h(p.oddsPin.value)}</b>${p.oddsPin.at&&fmtET(p.oddsPin.at)?`<br><span class="muted">${h(fmtET(p.oddsPin.at))}</span>`:''}${open?`<br>DraftKings now: ${dk?`<b>${h(dk)}</b> <span class="muted">(via ${srcName(now.src)})</span>`:'<span class="muted">No current price in the feeds for this exact bet</span>'}`:p.oddsDk?`<br>Last recorded DraftKings price: <b>${h(p.oddsDk)}</b>`:''}<br><span class="muted">${priceEditWaiting(w,p)?'The pick was saved, but its price change is waiting. To retry, pull down to refresh (or tap Refresh in Settings → Me). Or ask the commissioner to review the price before placing it.':open?'This price is held for this bet. The commissioner can change it or choose Use DraftKings’ price.':'The slip used the price set by the commissioner.'}</span>${pinMoved(p,nfl)?`<br><span class="muted">This price was set for “${h(p.oddsPin.text)}”. The pick has changed; ask the commissioner to review its price.</span>`:''}`)}
   else if(text&&releaseOpen(p)&&!String(p.odds||'').trim()&&(p.status||'pending')==='pending'){const back=releaseBack(p,nfl);row('Odds',`<b>Waiting for a price for this exact bet.</b><br><span class="muted">${back?'The commissioner’s price was taken off when the bet changed, and the leg is now back on the bet that price was set for.':'The former price belonged to the previous bet and was removed.'}${priceSlipEditable(league(),w,p)?isAdmin()?back?' Tap Set former price to put it back, or enter a price on this leg.':' Enter a price on this leg if needed before placing it.':back?' Ask the commissioner to set it again, or check again before placing it.':' Check again before placing it, or ask the commissioner to set a price.':''}</span>`)}
@@ -2126,7 +2118,7 @@ function renderLeg(w,l,cl){
   if(editable&&empty&&mine&&!isAdmin())slipOpen.add(key);   // your own empty leg opens as a form and stays open until Done
   const open=editable&&slipOpen.has(key);
   const cm=cl&&cl.claims[l.mid];const shown=(l.teams&&l.teams.length)?l:cm&&cm.teams.length?{...l,teams:cm.teams}:{...l,teams:teamOfPlayer(l.text)};
-  const flags=cl?[...(cl.clashes[l.mid]||[]).map(x=>`⚠ ${CLASH[x.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(member(x.with)?.name||'')}`),...(cl.off&&cl.off[l.mid]?[`⚠ ${h(offText(cl.off[l.mid],cl.rule))}`]:[]),...(cl.notd&&cl.notd[l.mid]?['⚠ Not an Anytime TD bet. This side parlay is ATTD only.']:[])]:[];
+  const wn=cl&&cl.quiet?'':'⚠ ',flags=cl?[...clashGroups(cl.clashes[l.mid]).map(g=>clashSay(g,cl.quiet)),...(cl.off&&cl.off[l.mid]?[`${wn}${h(offText(cl.off[l.mid],cl.rule))}`]:[]),...(cl.notd&&cl.notd[l.mid]?[`${wn}Not an Anytime TD bet. This side parlay is ATTD only.`]:[])]:[];
   const tag={hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[l.status];
   const quick=isAdmin()&&l.status==='pending'&&!empty&&!open?`<div class="seg q">${['hit','miss','push'].map(st=>`<button class="${st}" data-act="status" data-wid="${w.id}" data-mid="${l.mid}" data-st="${st}" aria-label="${st}">${st==='hit'?'✓':st==='miss'?'✗':'P'}</button>`).join('')}</div>`:'';
   const live=!tag&&!empty?legLive(w,l,cl):null;const candidate=!tag&&!empty&&l.status==='pending'?legChip(w,l,cl,live):null;const chip=w.placed||candidate?.[0]==='pre'?candidate:null;
@@ -2161,7 +2153,7 @@ function renderLeg(w,l,cl){
     ${!open&&marginTxt?`<div class="sx muted">${marginTxt}</div>`:''}
     ${!open&&mine&&tidyRow?`<div class="sx">${tidyRow}</div>`:''}
     ${needMargin?`<div class="sx">${marginRow}</div>`:''}
-    ${(()=>{const f=[...flags,...(pushWarnOn()&&l.status==='pending'&&wholeLine(l.text)!=null?['⚠ '+halfWarn(l.text,!mine)]:[])];return f.length?`<div class="sx flag">${f.join('<br>')}</div>`:''})()}
+    ${(()=>{const pw=pushWarnOn()&&l.status==='pending'&&wholeLine(l.text)!=null?['⚠ '+halfWarn(l.text,!mine)]:[];const f=cl&&cl.quiet?pw:[...flags,...pw];return(cl&&cl.quiet&&flags.length?`<div class="sx muted">${flags.join('<br>')}</div>`:'')+(f.length?`<div class="sx flag">${f.join('<br>')}</div>`:'')})()}
     ${!open&&l.status==='pending'&&!empty&&sweatable(w)?`<div class="sx lvline" id="lv-${w.id}-${l.mid}">${liveLine(w,l.mid,live,showChip)}</div>`:''}
     ${edit}
   </div>`;
@@ -2681,22 +2673,67 @@ function claimOf(text,teams,tm,nfl){
   const side=/\bunder\b|\bu ?\d/.test(lo)?'Under':/\bover\b|\bo ?\d|\d+\+|anytime|\battd\b|\btd\b/.test(lo)?'Over':null;
   return{norm:lo.replace(/[^a-z0-9+.-]/g,' ').replace(/\s+/g,' ').trim(),type,teams:tt,game,team:tt[0]||null,side,player:pl?pl.name:null,stat:type==='Player prop'?propKind(t):null};
 }
+const NO_TD=/^(.+?)\s+(?:no (?:any ?time )?(?:td|touchdown)(?: scorer)?|no att?d|not (?:an? )?(?:any ?time (?:td|touchdown)(?: scorer)?|att?d)|(?:not|to not) (?:to )?score(?: an?)?(?: (?:td|touchdown))?|(?:wont|will not|doesnt|does not) score(?: an?)?(?: (?:td|touchdown))?|(?:any ?time (?:td|touchdown)(?: scorer)?|att?d):? no)$/i,NO_TD_FIRST=/^no (?:any ?time )?(?:td|touchdown|att?d)(?: scorer)?:?\s+(.+)$/i,TD_HALF=/^(.+?)\s+(over|o|under|u) ?0?\.5 (?:tds?|touchdowns?)$/i;   // "Cook no TD", "Cook no anytime TD", "Cook not ATTD", "Cook Anytime TD: No", "Cook not to score", "No TD Cook": the plain ways to bet that a player won't score. "Over / Under 0.5 TDs" is scoring / no TD (not for a quarterback, whose TDs may mean passing)
+const BET_QUAL=/\b(?:no|not|non|never|nor|wont|will not|dont|doesnt|does not|cant|cannot|fails?|fade|against|opp|opponents?|opposing|lose|loses|losing|loser|without|if|unless|except|exact(?:ly)?|margin|by|or (?:less|more|fewer|better)|in (?:ot|overtime)|division|div|conference|afc|nfc|super ?bowl|sb|playoffs?|postseason|mvp|awards?|season|week|wk|next|championship|champions?|title|futures?|series)\b|\bthe (?:east|west|north|south)\b/;
+const betQual=t=>BET_QUAL.test(' '+String(t||'').replace(/\bNO\b/g,' ').toLowerCase().replace(/[’']/g,'')+' ');   // a "not", the other side, a future, another week, a margin or a condition ("Dolphins not to win", "against Bills ML", "to win the AFC East", "by 10+", "if Tua plays"): loose words carrying one are never called the same market. "NO" in capitals is the Saints
+function betWords(text,nfl){   // the words as typed, less only what never changes the bet: a " - " or brackets between words, "incl OT", "this week", "outright", "on DK", and this slate's own "Week 3" or "Super Bowl". Everything else stays, so the reading stays exact
+  const wk=(nfl&&nfl.week)||{},PRICE=/\s[+-]\d{3,6}$/;let t=' '+String(text||'').replace(/\s[-–—]+\s(?!\.?\d+(?:\.\d+)?(?:\s|$))/g,' ').replace(/[()[\]]/g,' ').replace(/\s+/g,' ').trim().replace(PRICE,'')+' ';   // " - " before a number is a minus ("Bills - 3.5"), so it stays. A price at the end is dropped, as priceMeaning drops it
+  t=t.replace(/\b(?:incl(?:uding|udes|\.)?|inc\.?|with|w\/) ?(?:ot|overtime)\b|\b(?:this week|today|tonight|outright)\b|\bdraft ?kings\b|\s(?:on|at|via|per|from|by) dk\s*$/gi,' ').replace(/\b([ou])(?=\d)/gi,'$1 ');   // a bare "DK" stays: it may be DK Metcalf. "o250.5" is "o 250.5"
+  if(String(wk.type)==='2'&&wk.num)t=t.replace(/\b(?:week|wk)\.? ?(\d{1,2})\b/gi,(m,n)=>+n===+wk.num?' ':m);   // another week stays, so it is never read as this one
+  if(/super ?bowl/i.test(String(wk.label||'')))t=t.replace(/\b(?:super ?bowl|sb)(?: [lxvi]+| \d+)?\b/gi,' ');
+  t=t.replace(/\s+/g,' ').trim().replace(PRICE,'').replace(/\b((?:over|under|o|u) ?\d+(?:\.\d+)?) (?:total )?(?:pts|points)\b/gi,'$1').replace(/^((?:over|under|o|u) ?\d+(?:\.\d+)?) (.+)$/i,'$2 $1');   // a price, "pts" after the line, the over or under typed first ("Over 44.5 Bills" is "Bills Over 44.5")
+  const GAME=/\bgame (?=(?:total (?:points )?)?(?:over|under|o|u) ?\d)/i;if(GAME.test(t)){const tm=detectTeams(t),g=tm.length===1&&nfl&&nfl.teamGame&&nfl.teamGame[tm[0]];t=tm.length===2?t.replace(GAME,''):g?t.replace(GAME,`@ ${g.home===tm[0]?g.away:g.home} `):t}   // "Bills game over 44.5" is the total of the Bills' game, never their team total
+  return t.replace(/\s+/g,' ').trim()}
+const PART_LOOSE=/\b(?:half|halves|ht|quarters?|qtrs?|periods?|intermission|end of)\b|\b(?:1st|2nd|3rd|4th|first|second|third|fourth)\b(?! ?(?:td|touchdown|to score|scorer))/i;   // "at the half", "ML ht", "end of 3rd", "in the 1st": a part of the game, but not one the app can read exactly ("1st TD" is a scorer)
+const PART_WORDS=/\b(?:(1st|first|2nd|second)[ -]?half|([12])h|h([12])|([1-4])(?:st|nd|rd|th)?[ -]?(?:quarter|qtr)|q([1-4])|([1-4])q|(first|second|third|fourth)[ -]?(?:quarter|qtr))\b/gi;   // the same period words priceMeaning reads
+function partOf(lo){const ps=[...lo.matchAll(PART_WORDS)],rest=lo.replace(PART_WORDS,' ');if(ps.length>1)return'?';if(!ps.length)return PERIOD_OTHER.test(lo)?'?':HALF1.test(lo)?'h1':PART_LOOSE.test(lo)?'?':'';const p=ps[0],k=p[1]?(/^(1st|first)$/i.test(p[1])?'h1':'h2'):p[2]||p[3]?'h'+(p[2]||p[3]):'q'+(p[4]||p[5]||p[6]||({first:1,second:2,third:3,fourth:4}[p[7].toLowerCase()]));return PERIOD_OTHER.test(rest)||HALF1.test(rest)&&k!=='h1'||PART_LOOSE.test(rest)?'?':k}   // which part of the game loose words are about: '' the game, h1/h2, q1–q4, or '?' when the words don't say exactly ("qtr 2", "3rd period", "after halftime", "at the half")
+const BET_MEMO=new WeakMap();
+const saintsNo=(t,nfl)=>{if(!/\bNO\b/.test(t))return false;const x=t.replace(/\bNO\b/g,' '),pl=matchPlayer(x,nfl),g=pl&&nfl.teamGame[pl.team];return !!(g&&(g.home==='NO'||g.away==='NO'))||detectTeams(x).includes('NO')};   // "NO" in capitals is the Saints' code, never a "no", when the Saints play in that player's game or the words name them ("Alvin Kamara (NO) Anytime TD", "Mike Evans NO TD")
+function betRead(text,nfl){   // the exact bet, read the way DraftKings' prices are matched: [game, home, away, part, market, who, side, line]; null when the app can't be sure
+  if(!nfl||!nfl.teamGame)return null;const t=String(text||'').replace(/\s*\(alt(?:ernate)?\)|\balt(?:ernate)?\b/gi,' ').replace(/\s+/g,' ').trim();if(!t)return null;let M=BET_MEMO.get(nfl);if(!M)BET_MEMO.set(nfl,M=new Map());if(M.has(t))return M.get(t);
+  let k=null;try{const t0=t.replace(/[’']/g,'').replace(/[;,!:]+$/,'').replace(/(?<=[a-z])\.$/i,'').replace(/\s+\(?[+-]\d{3,6}\)?$/,'').trim(),tn=saintsNo(t0,nfl)?t0.replace(/\bNO\b/g,' ').replace(/\s+/g,' ').trim():t0,n=(tn.match(NO_TD)||tn.match(NO_TD_FIRST)||[])[1],o=!n&&t0.match(TD_HALF),pl=o&&matchPlayer(o[1],nfl);
+    const td=(who,no)=>{const a=priceMeaning(who+' Anytime TD',nfl),x=a&&JSON.parse(a);return x&&x[4]==='player_anytime_td'?(no?[...x.slice(0,4),'player_no_td',...x.slice(5)]:x):null};
+    if(n)k=td(n,true);else if(o&&pl&&pl.pos!=='QB')k=td(o[1],/^u/i.test(o[2]));else{const a=priceMeaning(t,nfl);k=a?JSON.parse(a):null}}catch(e){k=null}   /* the price or a full stop after "no TD" is dropped as priceMeaning drops it. Never a second try through the tidied wording: tidy can drop a part of the game, a line or a "not", so words priceMeaning can't read stay unread */
+  M.set(t,k);return k}
+const PART_IN=(p,q)=>p===q||q===''||(q==='h1'&&/^q[12]$/.test(p))||(q==='h2'&&/^q[34]$/.test(p));   // part p of a game sits inside part q: the full game holds every half and quarter
+const CANT=new Set(['opposite','overunder','firsttd']);   // the clashes where the two picks can't both win
+function cantBoth(a,b){   // two exactly-read bets that no final score lets both win → 'opposite' | 'overunder' | 'firsttd', else null. Only a pair that CAN'T both win: leaning different ways is fine
+  if(!a||!b||a[0]!==b[0])return null;const TD=new Set(['player_anytime_td','player_1st_td','player_tds']),side=m=>m==='moneyline'||m==='spread';
+  if(side(a[4])&&side(b[4])){if(a[3]!==b[3]||a[5]===b[5])return null;const x=a[4]==='moneyline'?0:+a[7],y=b[4]==='moneyline'?0:+b[7];if(!Number.isFinite(x)||!Number.isFinite(y))return null;return Math.floor(-x)+1>Math.ceil(y)-1?'opposite':null}   // a moneyline wins by 1+ (a tie is a push). a's team must win by more than -x and b's keeps it under y: no whole-number margin does both
+  if(a[4]==='player_no_td'||b[4]==='player_no_td')return a[5]===b[5]&&(TD.has(a[4])||TD.has(b[4]))?'opposite':null;
+  if(a[4]==='player_1st_td'&&b[4]==='player_1st_td')return a[5]!==b[5]?'firsttd':null;   // one game has one first touchdown
+  const leq=(o,u)=>PART_IN(o[3],u[3])&&(o[4]===u[4]&&o[5]===u[5]||o[4]==='teamTotal'&&u[4]==='total');   // o's number can never be more than u's: the same line, a part of the game against the whole, a team's points against the game's
+  for(const[o,u]of[[a,b],[b,a]]){if(!(o[6]==='>'||o[6]==='>=')||u[6]!=='<'||!leq(o,u))continue;const k=o[4]==='sacks'?.5:1,lo=o[6]==='>='?Math.ceil(o[7]/k)*k:(Math.floor(o[7]/k)+1)*k,hi=(Math.ceil(u[7]/k)-1)*k;if(Number.isFinite(lo)&&Number.isFinite(hi)&&lo>hi)return'overunder'}   /* the smallest number that wins the over is more than the biggest that wins the under (whole numbers; sacks go in halves) */
+  return null}
 // only true clashes: can't all win, or a book won't take them together. Correlated same-game picks are fine and just get grouped.
 function clashKind(a,b){
   if(!a||!b)return null;if(a.norm===b.norm)return'duplicate';
-  if(!a.game||!b.game||a.game.id!==b.game.id)return null;
+  if(a.bet&&b.bet){const x=a.bet,y=b.bet;if(x[0]!==y[0])return null;if(JSON.stringify(x)===JSON.stringify(y))return'duplicate';const k=cantBoth(x,y);if(k)return k;const up=s=>s==='<'?-1:s?1:0;return x[3]===y[3]&&x[4]===y[4]&&x[5]===y[5]&&up(x[6])===up(y[6])?'market':null}   // both read exactly: only what can't both win, or the same market the same way
+  if(!a.game||!b.game||a.game.id!==b.game.id||a.part!==b.part||a.part==='?'||a.qual||b.qual||[a,b].some(c=>c.bet&&c.bet[4]==='player_no_td'))return null;   // loose words from here: only the same part of the game, named exactly the same way (a half or a quarter is its own bet), and never words with a "not", a future or a condition, or a no TD bet against words the app can't read
   const sideBet=x=>x.type==='Spread'||x.type==='Moneyline';
-  if(sideBet(a)&&sideBet(b)&&a.team&&b.team)return a.team!==b.team?'opposite':a.type===b.type?'market':null;
-  if(a.type==='Total'&&b.type==='Total'&&a.side&&b.side)return a.side!==b.side?'overunder':'market';
-  if(a.type==='Team total'&&b.type==='Team total'&&a.team===b.team&&a.side&&b.side)return a.side!==b.side?'overunder':'market';
-  if(a.player&&a.player===b.player&&a.stat===b.stat)return a.side&&b.side&&a.side!==b.side?'overunder':'market';
+  if(sideBet(a)&&sideBet(b)&&a.team&&b.team)return a.team===b.team&&a.type===b.type?'market':null;   // loose words are never called a pair that can't both win: that needs both bets read exactly
+  if(a.type==='Total'&&b.type==='Total'&&a.side&&b.side)return a.side===b.side?'market':null;
+  if(a.type==='Team total'&&b.type==='Team total'&&a.team===b.team&&a.side&&b.side)return a.side===b.side?'market':null;
+  if(a.player&&a.player===b.player&&a.stat===b.stat)return a.side&&b.side&&a.side!==b.side?null:'market';
   return null;
 }
-const CLASH={duplicate:'same bet as',market:'same market as',opposite:'opposite side from',overunder:'over vs under with'};
-const CLASH_SUM={duplicate:'made the same bet',market:'doubled up on the same market',opposite:'are on opposite sides',overunder:'took the over and the under'};
-function weekClaims(items,nfl){   // items: [{mid,text,teams,tm}]
-  const claims={},clashes={},pairs=[];for(const x of items)claims[x.mid]=claimOf(x.text,x.teams,x.tm,nfl);
-  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i].mid,b=items[j].mid;const k=clashKind(claims[a],claims[b]);if(!k)continue;(clashes[a]??=[]).push({with:b,kind:k});(clashes[b]??=[]).push({with:a,kind:k});pairs.push({a,b,kind:k,game:claims[a].game||claims[b].game})}
+const CLASH={duplicate:'same bet as',market:'same market as',opposite:'opposite side from',overunder:'over vs under with',firsttd:'different first TD scorer from'};
+const CLASH_SUM={duplicate:'made the same bet',market:'doubled up on the same market',opposite:'are on opposite sides',overunder:'took the over and the under',firsttd:'picked different first TD scorers'};
+const gameNb=g=>h(g.name).replace(/ /g,'&nbsp;');   // "MIA @ BUF" never breaks over two lines
+function clashGroups(xs){const out=[];for(const x of [...(xs||[])].sort((p,q)=>CANT.has(q.kind)-CANT.has(p.kind))){const g=out.find(o=>o.kind===x.kind&&(o.game&&o.game.id)===(x.game&&x.game.id));if(g)g.with.push(x.with);else out.push({kind:x.kind,game:x.game,with:[x.with]})}return out}   // one leg's clashes, one line per kind and game (the people named together), the ones that can't both win first
+const clashSay=(g,quiet)=>`${quiet?'':'⚠ '}${CLASH[g.kind].replace(/^./,ch=>ch.toUpperCase())} ${h(andList(g.with.map(m=>member(m)?.name||'')))}${CANT.has(g.kind)?`${g.game?'&nbsp;· '+gameNb(g.game):''}. They can’t both win.`:''}`;   // one leg's flag: who it clashes with and, when they can't both win, the game. The dot stays with the word before it
+function clashToast(cl,mid){const gs=clashGroups(((cl&&cl.clashes[mid])||[]).filter(x=>CANT.has(x.kind)));if(!gs.length)return;const m=member(mid),who=mid===league().me?'your pick':m?`${m.name}’s pick`:'this pick';toast(`Heads-up on ${who}: ${gs.map((g,i)=>`${i?CLASH[g.kind].replace(/^./,ch=>ch.toUpperCase()):CLASH[g.kind]} ${andList(g.with.map(x=>member(x)?.name||'someone'))}${g.game?'\u00a0· '+String(g.game.name).replace(/ /g,'\u00a0'):''}.`).join(' ')} They can’t both win.`,'bad')}   // warn-only, as a pick that can't win alongside another is saved: toasts are read out by screen readers. It changes nothing
+const PART_NM={h1:'1st half',h2:'2nd half',q1:'1st quarter',q2:'2nd quarter',q3:'3rd quarter',q4:'4th quarter'};
+const ouSay=(x,y)=>{if(!x||!y||x[3]===y[3]&&x[4]===y[4])return'';const nm=b=>b[4]==='teamTotal'?`${b[3]?PART_NM[b[3]]+' ':''}${NICK[b[5]]||b[5]} team total`:PART_NM[b[3]]||'game',sd=b=>b[6]==='<'?'under':'over';return`took the ${nm(x)} ${sd(x)} and the ${nm(y)} ${sd(y)}`};   // an over and an under of two different totals say which is which: "took the 1st half over and the game under"
+const NUMS=s=>(String(s).match(/(?<![\w.])\d+(?:\.\d+)?(?![\w.])/g)||[]).map(Number).sort((a,b)=>a-b).join();   // the numbers in some words, in order ("over 47.5" is 47.5; "1st", "Q4" and "2H" are not numbers)
+function clashWords(x,nfl){   // [words, exact bet] a pick's clashes are read from, or null for no flag at all. The shown words decide: they are what is priced and graded. A pick tidy rewrote counts only when its typed words say nothing tidy dropped: no "not", "against", future or condition, no second bet or "or", no regulation time, the same part of the game, the same side of the line and, when the typed words don't read exactly, the same numbers. Typed words that read as another bet (left over from an older app, or a slip of tidy's) never count
+  const T=String(x.text||'').trim(),R=String(x.raw||'').trim(),wt=betWords(T,nfl),bt=betRead(wt,nfl);if(!R||R===T)return[wt,bt];if(!bt)return null;   // tidied, and the shown words don't read exactly: no flag
+  const wr=betWords(R,nfl),br=betRead(wr,nfl),lo=wr.toLowerCase(),sd=/\bunder\b|\bu ?\d/.test(lo)?'<':/\bover\b|\bo ?\d|\d+\+/.test(lo)?'>':'';if(br&&JSON.stringify(br)===JSON.stringify(bt))return[wt,bt];
+  return !betQual(wr)&&!propCombo(lo)&&!/\b3 ?-? ?way\b|\breg(?:ulation)?\b|\bexcl/.test(lo)&&partOf(lo)===bt[3]&&(!sd||(sd==='<')===(bt[6]==='<'))&&(br||NUMS(wr)===NUMS(wt))?[wt,bt]:null}   // "Bills Dolphins over 47.5" shown as "Dolphins @ Bills Over 47.5" is read; "Dolphins not to win", "Bills ML at the half" or "Bills +7.5 ML" shown as a moneyline is not
+function weekClaims(items,nfl){   // items: [{mid,text,raw,teams,tm}]. Clashes are read from the shown words, and from a pick tidy rewrote only while its typed words (raw) still say that bet (clashWords)
+  const claims={},said={},clashes={},pairs=[];for(const x of items){const c=claimOf(x.text,x.teams,x.tm,nfl);claims[x.mid]=c;const r=c&&clashWords(x,nfl),t=r?r[0]:'',k=r&&(t===String(x.text||'').trim()?{...c}:claimOf(t,x.teams,x.tm,nfl));if(k){const lo=t.toLowerCase();k.bet=r[1];k.part=partOf(lo);k.qual=betQual(t);k.combo=propCombo(lo)}said[x.mid]=k||null}   // claims: the shown words (game days, kickoff chips); said: the words clashes are read from
+  const gOf=(a,b)=>(said[a].bet&&(nfl&&nfl.games||[]).find(g=>String(g.id)===said[a].bet[0]))||said[a].game||said[b].game||claims[a].game||claims[b].game||null;
+  for(let i=0;i<items.length;i++)for(let j=i+1;j<items.length;j++){const a=items[i].mid,b=items[j].mid;const k=clashKind(said[a],said[b]);if(!k)continue;const game=gOf(a,b),x=said[a].bet,y=said[b].bet,ou=k==='overunder'&&x&&y;(clashes[a]??=[]).push({with:b,kind:k,game,side:ou?y[6]:''});(clashes[b]??=[]).push({with:a,kind:k,game,side:ou?x[6]:''});pairs.push({a,b,kind:k,game,say:ou?ouSay(x,y):''})}   // side: the other pick's side of an over and under
   return{claims,clashes,pairs,nfl};
 }
 const noPickYet=l=>!String(l.text||'').trim()&&(l.status||'pending')==='pending';
@@ -2853,7 +2890,9 @@ function dayCheck(cl,items,rule,attd){cl.rule=rule;cl.off={};cl.notd={};
   cl.flags=Object.keys(cl.off).length+Object.keys(cl.notd).length;return cl}
 const offText=(o,rule)=>`${DOW[dowOf(o.day)]} game${rule.sunday?`, ${ruleText(rule)}`:`, not ${rule.name}`}`;
 const hasFlags=cl=>!!cl&&!!(cl.pairs.length||cl.flags);
-function slipClaims(w,c){if(!liveSlip(w)||!slipDate(w))return null;const nfl=nflData(slipDate(w),0);const ok=nfl&&nfl.games?nfl:null;const items=c.legs.filter(l=>String(l.text||'').trim()).map(l=>({mid:l.mid,text:l.text,teams:l.teams,tm:l.tm}));const cl=weekClaims(items,ok);cl.state=ok?'ok':nfl&&nfl.failed?'failed':'loading';return dayCheck(cl,items,dayRule(parentOf(w)?{}:w),isSide(w))}
+function slipClaims(w,c){if(!liveSlip(w)||!slipDate(w))return null;const nfl=nflData(slipDate(w),0);const ok=nfl&&nfl.games?nfl:null;const items=c.legs.filter(l=>String(l.text||'').trim()).map(l=>({mid:l.mid,text:l.text,raw:l.raw,teams:l.teams,tm:l.tm}));const cl=weekClaims(items,ok);cl.state=ok?'ok':nfl&&nfl.failed?'failed':'loading';cl.quiet=!!(w.placed||c.graded);return dayCheck(cl,items,dayRule(parentOf(w)?{}:w),isSide(w))}   // once the bet is placed or graded, what's flagged stays as a quiet note
+function histClaims(w,c,peek){if(!w||liveSlip(w)||!slipDate(w))return null;const nfl=peek?weekNflPeek(w):weekNfl(w);if(!nfl||!nfl.teamGame)return null;const items=c.legs.filter(l=>String(l.text||'').trim()).map(l=>({mid:l.mid,text:l.text,raw:l.raw,teams:l.teams,tm:l.tm}));const r=weekClaims(items,nfl),pairs=r.pairs.filter(p=>CANT.has(p.kind));if(!pairs.length)return null;const clashes={};for(const[m,xs]of Object.entries(r.clashes)){const x=xs.filter(y=>CANT.has(y.kind));if(x.length)clashes[m]=x}return{claims:{},clashes,pairs,off:{},notd:{},flags:0,state:'history',quiet:true}}   // an old week: only the picks that couldn't both win, as a quiet note, read from that week's own games (never this season's schedule for a past season). No claims or schedule are handed on, so the slip lists and shows its legs exactly as before. peek: only what this phone already holds, asking for nothing
+function weekNflPeek(w){const d=slipDate(w);if(!d)return null;const l=league(),sn=seasonOfWeek(l,w);if(sn&&sn.id===newestOf(l).id){const e=NFL[d+'|0'];return nflOk(e&&e.data)}return RESULTS[d]?resNflOf(RESULTS[d]):null}   // weekNfl without loading anything
 const TD_FIRST=/\b(first|1st) (td|touchdown|tuddy|scorer)\b|\bftd\b|\bto score first\b|\bfirst to score\b|\bscores? first\b/,PASSY=/\bpass(es|ed|ing)?\b|\bthrow(s|n)?\b|\bthrew\b/,TD_NEG=/\b(no|not|never|wont|won t|doesnt|fails? to)\b/,TD_QUAL=/\blast\b|\beach half\b|\bboth halves\b|\bevery half\b|\bteams? first\b|\bfirst (td|touchdown) for (his|the|their) team\b/,TD_TWO=/\b2 ?\+ ?(tds?|touchdowns?|tuddies)\b|\btwo (tds|touchdowns)\b/,TD_ANY=/\bany ?time\b|\batt?d\b|\btuddy\b|\bto score\b|\btd scorer\b|\bscores? an? (td|touchdown)\b/;
 const STATS=[[/long(est)? ?(pass(ing)? ?)?(completion|comp|pass)\b/,'Longest Completion'],[/long(est)? ?(made |successful )?(fg|field goal)|\d ?\+? ?-?(yd|yard)s? ?(fg|field goal)/,'Longest Field Goal'],[/pass(ing)? ?(\+|\/|and|&) ?rush(ing)?/,'Pass + Rush Yds'],[/(rush(ing)?|rec(eiving)?) ?(\+|\/|and|&|n) ?(rush(ing)?|rec(eiving)?)\b|scrimmage|total y(ar)?ds/,'Rush + Rec Yds'],[/longest rec(eption)?/,'Longest Reception'],[/longest rush/,'Longest Rush'],[/pass(ing)? ?(tds?|touchdowns?)|\btds? pass(es)?\b|\btd throws?\b|\b(tds?|touchdowns?) passing\b/,'Passing TDs'],[/rush(ing)? att(empt)?s?|carries/,'Rush Attempts'],[/rec(eiving)? ?y(ar)?ds?|receiving\b/,'Receiving Yds'],[/rush(ing)? ?y(ar)?ds?|rushing\b/,'Rushing Yds'],[/pass(ing)? ?y(ar)?ds?|passing\b/,'Passing Yds'],[/pass(ing)? att(empt)?s?|\battempts\b/,'Pass Attempts'],[/completions?|\bcomps?\b/,'Completions'],[/receptions?|catches|\brecs?\b/,'Receptions'],[/interceptions?|\bints?\b|\bpicks thrown\b/,'Interceptions'],[/field goals?|\bfgs?\b/,'Field Goals Made'],[/kick(ing)? p(oin)?ts/,'Kicking Points']];
 // sportsbook wording for a pick, or null when the app isn't sure (then the text is left exactly as typed). House style: player props '{First Last} Anytime TD | First TD | 2+ TDs | N+ {Stat} | Over/Under X {Stat}' (no Jr./Sr./III); team bets '{Nickname} ±X', '{Nickname} Moneyline', '{Nickname} Team Total Over/Under X', totals '{Away} @ {Home} Over/Under X'
@@ -3168,16 +3207,6 @@ function teamOfPlayer(text){if(betType(text)!=='Player prop')return[];if(TOP.has
 function playersKnown(){if(!PIDX){const k=keptPlayers();if(k)PIDX={data:k,retry:0}}return PIDX?PIDX.data:null}   // the list this phone already has (loaded, or kept today), never asked for: so nothing is sent, and the commissioner's phone never fills in teams and pushes (the pick search)
 function nextSlate(w){const p=nextPlan(w);return p.sunday?nflData(slipDate(w),0):p.special?nflData(p.special.day,0):nflData(w.date,1)}   // the NFL week the next parlay is on
 function nextRule(w){const p=nextPlan(w);return p.special?{day:p.special.day,name:p.special.name}:{sunday:true,monday:monOk()}}
-function nextPickList(w,c,me){
-  const exp=c.legs.map(x=>x.mid);const next=w.next||{};
-  const nfl=nextSlate(w);const ok=nfl&&nfl.games?nfl:null;
-  const items=exp.filter(mid=>next[mid]&&String(next[mid].text||'').trim()).map(mid=>({mid,text:next[mid].text,teams:next[mid].teams,tm:false,odds:next[mid].odds}));
-  if(!items.length)return'';
-  const cl=dayCheck(weekClaims(items,ok),items,nextRule(w),false);const groups=bunch(items,x=>cl.claims[x.mid]?.game?.id);
-  const row=x=>{const m=member(x.mid);const cm=cl.claims[x.mid];const f=(cl.clashes[x.mid]||[])[0];const off=cl.off[x.mid];return`<div class="np-row ${x.mid===me?'mine':''} ${f||off?'clash':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span>${f?`<span class="tag bad">${CLASH[f.kind]} ${h(member(f.with)?.name||'')}</span>`:off?`<span class="tag bad">${h(offText(off,cl.rule))}</span>`:'<span></span>'}<span class="np-pick">${betChip((ok&&cleanPick(x.text,ok))||x.text,cm?.teams||x.teams)}<span class="mono muted">${h(x.odds||'')}</span></span></div>`};
-  const missing=exp.filter(mid=>!(next[mid]&&String(next[mid].text||'').trim()));
-  return`<div class="pd-sub" style="margin:12px 0 6px">${h(nextName(w))} picks so far <span class="muted">· ${items.length} of ${exp.length}</span></div><div class="np-list">${groups.map(g=>g.game&&g.items.length>1?`<div class="np-group"><div class="np-sg">Same game · ${h(gameLabel(cl.claims[g.items[0].mid].game))}</div>${g.items.map(row).join('')}</div>`:g.items.map(row).join('')).join('')}${missing.map(mid=>{const m=member(mid);return`<div class="np-row"><span class="avatar xs" style="--c:${m?.color||'#888'}">${h(initials(m?.name))}</span><span class="nm">${h(m?.name||'?')}</span><span class="muted tiny">not in yet</span></div>`}).join('')}</div>${hasFlags(cl)?`<small class="muted tiny">Flagged picks can't all win together, a sportsbook won't take them in one parlay, or the game is on the wrong day. ${h(ruleText(cl.rule))}. Same-game picks that work together are just grouped.</small>`:''}${nfl&&nfl.failed?`<small class="muted tiny">Couldn't load next week's NFL schedule, so only exact duplicates are checked right now.</small>`:''}`;
-}
 function nextPickBox(w,c){
   const l=league(),me=l.me;if(!me||!memberCan('picks')||w.final||seasonOver()||!c.legs.some(x=>x.mid===me))return'';
   const aw=realWeeks(),nx0=nextMainIn(aw,w);if(nx0&&nx0!==lastMain(aw)||nextMain(w))return'';
@@ -4152,7 +4181,7 @@ const ACT={
   'leg-story-retry'(){document.getElementById('modal-root')._storyReload?.()},
   'leg-story-tab'(el){const root=document.getElementById('modal-root'),story=el.dataset.pane==='story';root.querySelector('#leg-story-pane').hidden=!story;root.querySelector('#leg-details-pane').hidden=story;for(const b of root.querySelectorAll('[data-act=leg-story-tab]')){const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))}root.querySelector('.modal-body').scrollTop=0},
   'leg-info'(el,e){if(e&&e.target&&e.target.closest&&e.target.closest('input,select,textarea,label'))return;const w=week(el.dataset.wid);if(w)legInfo(w,el.dataset.mid)},
-  'leg-done'(el){const a=document.activeElement;if(a&&a.blur)a.blur();{const w=week(el.dataset.wid);const p=w&&w.picks[el.dataset.mid];if(p&&pushWarnOn()&&wholeLine(p.text)!=null)toast('⚠ '+halfWarn(p.text),'bad')}slipOpen.delete(el.dataset.wid+'|'+el.dataset.mid);GUIDE_MANUAL.delete(guideKey(el.dataset.wid,el.dataset.mid));setTimeout(render,60)},
+  'leg-done'(el){const a=document.activeElement;if(a&&a.blur)a.blur();{const w=week(el.dataset.wid);const p=w&&w.picks[el.dataset.mid];if(p&&pushWarnOn()&&wholeLine(p.text)!=null)toast('⚠ '+halfWarn(p.text),'bad');if(p&&String(p.text||'').trim()){const cl=slipClaims(w,calc(w));if(cl&&!cl.quiet)clashToast(cl,el.dataset.mid)}}slipOpen.delete(el.dataset.wid+'|'+el.dataset.mid);GUIDE_MANUAL.delete(guideKey(el.dataset.wid,el.dataset.mid));setTimeout(render,60)},
   'next-go'(el){const d=el.dataset,w=week(d.wid);if(d.lid!==league().id||d.sid!==season().id)return stale();if(d.mid!==league().me)return whoMoved();if(!guidedNextAllowed(w,d.mid))return weekMoved();UPCOMING=w.id;render();pageTo(0,'smooth')},   /* a button left over from another league, season or person is not the week moving on: say what really changed */
   'upcoming'(el){const w=week(el.dataset.wid);if(!w||w!==currentWeek()||!upcomingBtn(w,calc(w)))return weekMoved();UPCOMING=w.id;render();pageTo(0,'smooth')},
   'upcoming-back'(){leaveUpcoming(()=>{UPCOMING=null;render();pageTo(0,'smooth')})},
@@ -4183,7 +4212,7 @@ const ACT={
       if(!String(p.odds||'').trim()&&priceIn(p.text))p.odds=priceIn(p.text);p.raw=p.raw||p.text;p.text=x.to;if(!p.tm)p.teams=pickTeamsFor(x.to,nfl);if(!p.um)p.unit=unitFor(x.to);n++}
     if(!n)return stale();commit();toast(`Tidied ${n} pick${n===1?'':'s'}`,'good')}}]})},
   'peek'(el){const wid=el.dataset.wid;peek.add(wid);render();clearTimeout(peekT);peekT=setTimeout(()=>{peek.delete(wid);if(!quiet())render()},4000)},
-  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');else if(pushWarnOn(l)&&wholeLine(text)!=null)toast('⚠ '+halfWarn(text,false,l),'bad');{const nfl=nflOk(nextSlate(w))||playersIndex();const clean=cleanPick(text,nfl);sendNext(l,w,clean||text,odds,clean&&clean!==text?text:'',false)}},
+  'next-save'(){const l=league();const w=currentWeek();const text=(document.getElementById('npText')?.value||'').trim();const odds=(document.getElementById('npOdds')?.value||'').trim();if(!text){toast('Type your pick first','bad');return}const n=parseOdds(odds);if(odds&&!legal(n))toast('Heads up: that\'s heavier than -200','bad');else if(pushWarnOn(l)&&wholeLine(text)!=null)toast('⚠ '+halfWarn(text,false,l),'bad');{const nfl=nflOk(nextSlate(w))||playersIndex();const clean=cleanPick(text,nfl);{const nx=w.next||{},ok=nflOk(nextSlate(w)),its=Object.keys(nx).filter(m=>m!==l.me&&member(m)&&String(nx[m]?.text||'').trim()).map(m=>({mid:m,text:nx[m].text,raw:nx[m].raw,teams:nx[m].teams,tm:false}));if(ok&&its.length)clashToast(weekClaims([...its,{mid:l.me,text:clean||text,raw:text,teams:[],tm:false}],ok),l.me)}sendNext(l,w,clean||text,odds,clean&&clean!==text?text:'',false)}},
   'next-edit'(){nextEdit.add(currentWeek().id);render()},
   'next-cancel'(el,e){e.preventDefault();dropDraft(currentWeek());nextEdit.delete(currentWeek().id);render()},
   'resume-upload'(){const l=league();if(!pendingUp||!pendingUp.file)return;if(!l.me){pickMe(l);return}const w=week(pendingUp.weekId)||currentWeek();if(pendingUp.mid!==l.me){toast('That upload belongs to a different name on this device','bad');return}uploadVideo(l,w,pendingUp.file,pendingUp)},
