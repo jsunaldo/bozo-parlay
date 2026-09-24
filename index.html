@@ -1991,7 +1991,7 @@ function legInfo(w,mid){   // everything about one leg: what was typed, what the
   if(st==='pending'){const R=RESULTS[checkDate(w)];const lv=R&&text?gradeLeg(p,R,true):null;const sg=nfl&&nfl.teamGame&&t0.length?nfl.teamGame[t0[0]]:null;let sub='';
     if(lv&&lv.status&&lv.detail)sub=`Right now: ${h(lv.detail)}`;
     else if(text){const at=(lv&&lv.pre&&lv.at)||(sg&&sg.at);const gn=sg?`${TEAM_NM(sg.away)} @ ${TEAM_NM(sg.home)}`:lv&&lv.wait?String(lv.wait).split(':')[0]:'';
-      if(at&&Date.parse(at)>Date.now())sub=`${gn?h(gn)+' · ':''}Kicks off ${fmtET(at)}`;else if(lv&&lv.wait)sub=h(lv.wait);else if(at)sub=`${gn?h(gn)+' · ':''}Kicked off ${fmtET(at)}`}
+      if(at&&Date.parse(at)>Date.now())sub=`${gn?h(gn)+' · ':''}Kicks off ${fmtET(at)}`;else if(lv&&lv.wait)sub=h(lv.wait);else if(Number.isFinite(startMs(at)))sub=`${gn?h(gn)+' · ':''}Kicked off ${fmtET(at)}`;else if(sg)sub=`${gn?h(gn)+' · ':''}Time not set yet`}   // a start time that can't be read says so (a 'TBD' read as kicked off)
     row('Result',`Not graded yet${sub?`<br><span class="muted">${sub}</span>`:''}`)}
   else{row('Result',`<span class="stag ${st}">${{hit:'✓ Hit',miss:'✗ Miss',push:'P Push'}[st]||h(st)}</span>${p.margin!=null&&unit!=='none'&&st!=='push'?` ${st==='hit'?'covered':'missed'} by ${h(fmtMargin(p.margin,unit))}`:''}`);
     const how=p.gby==='check'?'With the Check button, from ESPN’s box score':p.gby==='hand'?'By hand, by the commissioner':p.gby==='auto'||p.auto?'Automatically, from ESPN’s box score':'By the commissioner';
@@ -2026,7 +2026,7 @@ function renderSlipRows({legs,games},row){
   const gid=l=>{const g=games[l.mid];return g?g.id||g.name:null};
   const rows=list=>bunch(list,gid).map(g=>g.game&&g.items.length>1?`<div class="slip-group"><div class="slip-sg">Same game · ${h(gameLabel(games[g.items[0].mid]))}</div>${g.items.map(row).join('')}</div>`:g.items.map(row).join('')).join('');
   if(!legs.some(l=>games[l.mid]))return rows(legs);   // no schedule to go on yet: just the list
-  const secs=[];for(const l of legs){const g=games[l.mid];const k=noPickYet(l)?{key:'none',label:'No pick yet',slot:'none'}:(g&&kickWin(g.at))||{key:'unk',label:'Game not found',slot:'unk'};   // one section per TV window
+  const secs=[];for(const l of legs){const g=games[l.mid];const k=noPickYet(l)?{key:'none',label:'No pick yet',slot:'none'}:g?kickWin(g.at)||{key:'tbd',label:'Time not set yet',slot:'unk'}:{key:'unk',label:'Game not found',slot:'unk'};   // one section per TV window (a game on the list whose start time can't be read yet says so: it isn't a game that wasn't found)
     const last=secs[secs.length-1];const s=last&&last.key===k.key?last:(secs.push({...k,items:[],times:[]}),secs[secs.length-1]);s.items.push(l);if(k.time&&!s.times.includes(k.time))s.times.push(k.time)}
   return secs.map(s=>{const t=s.plain||!s.times.length||(s.slot==='early'&&s.times.join()==='1:00')?'':s.times.join(' & ');return`<div class="slip-win w-${s.slot}"><i></i><b>${h(s.label)}</b>${t?`<span>${h(t)}</span>`:''}</div>${rows(s.items)}`}).join('');
 }
@@ -2953,8 +2953,9 @@ function slipPlan(w,c,cl){   // how a slip lists its legs: people with no pick y
 }
 const slipOrder=(w,c,cl)=>slipPlan(w,c,cl).legs;
 let ETW;
-function kickWin(at){   // the TV window a kickoff is in (Eastern): Sunday Morning / 1 PM / 4 PM / Night, Thursday Night, Monday Night; any other daytime slot shows its time
-  const d=new Date(at);if(isNaN(d))return null;ETW??=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'long',hour:'numeric',minute:'2-digit',hourCycle:'h23'});
+const startMs=at=>at==null||at===''?NaN:new Date(at).getTime();   // a game's start time, NaN when it can't be read ('', 'TBD', null, none): never read as 1969
+function kickWin(at){   // the TV window a kickoff is in (Eastern): Sunday Morning / 1 PM / 4 PM / Night, Thursday Night, Monday Night; any other daytime slot shows its time. null when the start time can't be read
+  const d=new Date(startMs(at));if(isNaN(d))return null;ETW??=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',weekday:'long',hour:'numeric',minute:'2-digit',hourCycle:'h23'});
   const p={};for(const x of ETW.formatToParts(d))p[x.type]=x.value;const hr=(+p.hour)%24,time=`${hr%12||12}:${p.minute}`;
   const slot=hr<12?'morning':hr<16?'early':hr<18?'late':'night';const sun=p.weekday==='Sunday';   // 6:30 PM (Super Bowl, title games) is prime time
   const label=slot==='night'?`${p.weekday} Night`:sun?`Sunday ${{morning:'Morning',early:'1 PM',late:'4 PM'}[slot]}`:`${p.weekday} ${time} ${hr<12?'AM':'PM'}`;
@@ -2963,7 +2964,7 @@ function kickWin(at){   // the TV window a kickoff is in (Eastern): Sunday Morni
 function bunch(list,gameOf){   // keep the order, but pull same-game picks up next to the first one
   const out=[],done=new Set();for(const x of list){if(done.has(x.mid))continue;done.add(x.mid);const g=gameOf(x);const grp=[x];if(g)for(const y of list)if(!done.has(y.mid)&&gameOf(y)===g){grp.push(y);done.add(y.mid)}out.push({game:g,items:grp})}return out;
 }
-const gameWhen=g=>{try{return new Date(g.at).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})}catch(e){return''}};
+const gameWhen=g=>{const t=startMs(g&&g.at);if(!Number.isFinite(t))return'time not set yet';try{return new Date(t).toLocaleString([],{weekday:'short',hour:'numeric',minute:'2-digit'})}catch(e){return''}};   // a start time that can't be read says so (it said Invalid Date, or Wed 7:00 PM for a missing one)
 const gameLabel=g=>`${g.name}${gameWhen(g)?' · '+gameWhen(g):''}`;
 function nflOk(x){return x&&x.games?x:null}
 const priceIn=t=>{const m=String(t||'').match(/(?:^|\s)([+-]\d{3,4})(?=\s|$)/);return m?m[1]:null};   // "-110" typed into the pick
