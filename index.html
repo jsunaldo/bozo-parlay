@@ -360,6 +360,15 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 @media(prefers-color-scheme:dark){.hint{color:var(--amber)}}
 .won-line{margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--green-bg);font-weight:600;font-size:14px;color:var(--green)}
 .foot-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:space-between}
+/* #47 Export to DraftKings / Ride It: the button by the slip's totals and its sheet (existing colour tokens only; every target 44 px) */
+.btn.dk-go{min-height:44px;margin-top:12px;background:var(--surface);border-color:var(--line2);color:var(--text)}.btn.dk-go:hover{background:var(--surface3)}
+.dk-intro{margin:0 0 12px}.dk-exp{padding:12px 14px;border-radius:14px;background:var(--surface2);margin:0 0 12px}.dk-exp b{display:block;color:var(--text);font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.modal-body .dk-exp p{margin:4px 0 0;color:var(--muted)}
+.dk-all{display:flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 16px;border-radius:980px;background:var(--text);color:var(--surface);font-weight:600;text-decoration:none;text-align:center;overflow-wrap:anywhere}.modal-body .dk-note{margin:6px 0 12px;color:var(--muted)}
+.dk-legs{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:8px}.dk-leg{border:1px solid var(--line2);border-radius:14px;padding:2px 12px 8px}
+.dk-tick{display:flex;align-items:center;gap:10px;min-height:44px;cursor:pointer;color:var(--text)}.dk-tick input{flex:none;width:24px;height:24px;min-width:24px;margin:0;padding:0;border:2px solid var(--muted);border-radius:7px;background:var(--surface);display:grid;place-items:center;cursor:pointer}.dk-tick input:focus{border-color:var(--muted);background:var(--surface);box-shadow:none}.dk-tick input:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.dk-tick input:checked{background:var(--green);border-color:var(--green)}.dk-tick input:checked::after{content:'';width:6px;height:11px;margin-top:-3px;border:solid var(--on-green);border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}   /* the app's boxes have no look of their own (appearance:none): a plain square, green with a tick once ticked */.dk-bet{flex:1;min-width:0;overflow-wrap:anywhere;font-weight:600}.dk-price{flex:none}.dk-tick input:checked~.dk-bet{text-decoration:line-through;color:var(--muted)}
+.dk-open{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 14px;border:1px solid var(--line2);border-radius:980px;color:var(--blue);font-weight:600;text-decoration:none}.modal-body .dk-find{margin:0 0 4px;color:var(--muted);overflow-wrap:anywhere}.dk-find b{color:var(--text);font-weight:600}
+.btn.dk-copy{min-height:44px}
+.modal-body .dk-chgd{margin:0 0 6px;color:var(--text);font-weight:600}.modal-body .dk-gone{margin:0 0 12px;color:var(--text)}
 
 /* vote */
 .vote.next{border-color:var(--blue);box-shadow:0 0 0 3px var(--blue-bg),var(--shadow-lg)}
@@ -1054,7 +1063,7 @@ function applyState(l,d,ro){   // ro: a read-only look (Refresh on a phone that 
     if(l.me!==was)setTimeout(()=>pull(l,false,true),60)}   // fetch again as that person (their vote, their progress)
   l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;if(d.updatedAt)l.sync.base=d.updatedAt;
   l.sync.known=[];for(const x of l.seasons)for(const w of x.data.weeks)l.sync.known.push(w.id);   // what the league had, to tell a delete from a week this copy never saw
-  if(league()===l){S=season().data;ALLTIME=null;if(quiet())hsLand()}   // the page waits (someone is typing): the pick search's results follow the league at once all the same
+  if(league()===l){S=season().data;ALLTIME=null;if(quiet()){hsLand();try{dkSync()}catch(e){}}}   // the page waits (someone is typing): the pick search's results, and an open Export to DraftKings / Ride It sheet (a tick box focused on it counts as typing), follow the league at once all the same
   if(v0){const v1=JSON.stringify(refreshView());if(v1!==v0){leagueMoves++;leagueView=v1}}
 }
 function setSyncDot(state){dotN++;const d=document.getElementById('syncDot');if(!d)return;const l=league();d.className='syncdot '+(l.sync?state:'off');d.title={ok:'Up to date',bad:'Couldn’t update. Your changes are safe on this phone',busy:'Updating…',waiting:'Changes are waiting to be saved. They are safe on this phone'}[state]||''}
@@ -1761,6 +1770,7 @@ function render0(){
   if(v==='week'&&!liveT)liveWatch();   // game day: the slip follows the games
   paintHead();
   if(document.body.classList.contains('typing')){const af=document.activeElement;if(!(af&&af.matches&&af.matches('input:not([type=file]),textarea,select'))){document.body.classList.remove('typing');needRender=false}}   /* nothing is being typed in any more */
+  try{dkSync()}catch(e){}   // an open Export to DraftKings / Ride It sheet follows the slip (E47-R02)
 }
 function paintHead(){document.getElementById('seasonLabel').textContent=seasonLabelText();   // the header: the season's name, the league's name and logo, and the record and net of the weeks this viewer may see
   const bn=document.getElementById('brandName');if(bn)bn.textContent=league().name||'Bozo Parlay';
@@ -2581,7 +2591,7 @@ function ticketFoot(w,c,mid=''){
     <div><small>Each</small><b class="mono" id="f-each">${eachTxt(c)}</b></div>
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
-  <div id="f-won">${wonLine(w,c)}</div>${mid}
+  <div id="f-won">${wonLine(w,c)}</div><div id="f-dk">${dkFoot(w,c)}</div>${mid}
   <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync&&!c.graded?(w.placed?`<button class="btn sm ghost" data-act="placed-undo" data-wid="${w.id}">🔓 Undo placed</button>`:w.locked?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">🔓 Unlock picks</button>`:`<button class="btn sm ghost" data-act="placed-open" data-wid="${w.id}">✅ I placed it</button>`):isAdmin()&&!league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastMain(realWeeks())===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`;
 }
 const pushedOut=c=>pushOutOn()&&c.result==='won'?c.legs.filter(l=>l.status==='push').map(l=>member(l.mid)?.name).filter(Boolean):[];   // who collects nothing on a slip that cashed
@@ -2595,13 +2605,94 @@ function patchTicket(w){
   $('f-hint').hidden=!(c.missingOdds&&c.n);
   $('tbadge').innerHTML=resultBadge(c);
   const b=member(w.bozoId);
-  $('f-won').innerHTML=wonLine(w,c);
+  $('f-won').innerHTML=wonLine(w,c);{const f=$('f-dk');if(f)f.innerHTML=dkFoot(w,c)}try{dkSync()}catch(e){}   // Export to DraftKings / Ride It follows the prices as they are typed
   for(const l of c.legs){
     const bad=l.odds!==''&&l.odds!=null&&!legal(l.oddsN);
     const inp=document.querySelector(`[data-odds="${l.mid}"]`);if(inp)inp.classList.toggle('bad',bad);
     const warn=document.querySelector(`[data-warn="${l.mid}"]`);if(warn)warn.hidden=!bad;
   }
 }
+/* ---- #47 Export to DraftKings (the Bozo and the commissioner) and #47a Ride It (everyone else): the finished slip, leg by leg in DraftKings' own words, to bet on DraftKings.
+   Nothing about the picks, prices, grading or placement changes. DraftKings addresses come only from the league's copy of the odds feed and are only ever opened by the person tapping them
+   (an <a href>): the app itself never asks DraftKings for anything. Plan and what's unconfirmed: docs/plans/DK-EXPORT.md ---- */
+const dkAllIn=c=>c.n>0&&c.legs.every(l=>String(l.text||'').trim()&&l.oddsN!=null);   // every leg has words and a price
+function dkShow(w,c){if(!w||!c||c.graded||!liveSlip(w)||!dkAllIn(c)||spoilerHidden()?.has(w.id))return null;const l=league();return isAdmin()||(l.me&&l.me===bozoOfW(w))?'export':'ride'}   // the league's current slip only (old weeks look as they always did), until it is graded
+function dkFoot(w,c){const k=dkShow(w,c);return k?`<button class="btn block dk-go" data-act="dk-open" data-wid="${h(w.id)}">${k==='export'?'Export to DraftKings':'Ride It'}</button>`:''}
+const dkUrl=v=>{const s=typeof v==='string'?v.trim():'';if(!s||s.length>300)return null;try{const u=new URL(s);return u.protocol==='https:'&&/(^|\.)draftkings\.com$/i.test(u.hostname)&&!u.username&&!u.password?u.href:null}catch(e){return null}};   // only an https DraftKings address the feed gave is ever offered
+const dkSid=v=>{const s=typeof v==='string'?v.trim():'';return s&&s.length<=100&&/^[\x21-\x7e]+$/.test(s)?s:null};
+const DKL={},DKL_AT={};   /* the league's copy of DraftKings' lines as the export sheet looked at it, '<game>|<market>' as in OA, for its links only: never read for a price (OA stays the one copy prices come from) */
+function dkWant(p,nfl){   /* E47-R01: the DraftKings outcome a leg is priced from (oaWant: its game, markets and row), only when it is PROVEN to be the very bet the league grades, read from the whole saved pick {text, raw, teams, tm} exactly as
+     the grader and the pick lock read it: the grader grades these saved words itself (kickRead is sure, gradeTeams isn't by hand), the words as typed don't disagree (legHand says nothing), the words the league keeps read as the same outcome, every game
+     the lock reads is this outcome's game, every team tag on the leg is one of its two teams, and the team or player the grader goes by is the outcome's (for a player, the only one of that name in the game: the feed's rows go by name).
+     Anything else is null (a stat an older app reworded, two players with one name and a tag on the other one's team, a bet the commissioner grades): the sheet says Search DraftKings for, and the leg is never part of Open all */
+  const t=String(p&&p.text||'').trim();if(!t||!nfl||!nfl.teamGame)return null;
+  try{const q=oaWant(t,nfl);if(!q||legHand(p,nfl))return null;const gid=String(q.g.id),two=[q.g.home,q.g.away],same=a=>!!a&&JSON.stringify([String(a.g.id),a.markets,a.k])===JSON.stringify([gid,q.markets,q.k]);
+    const sv=kickTidy(t,nfl).pop();if(sv!==t&&!same(oaWant(sv,nfl)))return null;
+    const r=kickRead(p,nfl);if(!r.sure||!r.games.length||r.games.some(g=>String(g.id)!==gid))return null;
+    const G=gradeTeams(p,nfl),g=G&&!G.hand?gradeGame(G,nfl):null;if(!g||String(g.id)!==gid)return null;
+    if((Array.isArray(p.teams)?p.teams:[]).some(a=>!two.includes(String(a))))return null;
+    const k=q.k;if(k.player){const pk=nameKey(k.player);return G.pl&&nameKey(G.pl.name)===pk&&((nfl.full||{})[pk]||[]).filter(x=>two.includes(x.team)).length===1?q:null}
+    if(G.pl)return null;return k.dst||k.team?(G.teams[0]===(k.dst||k.team)?q:null):q}catch(e){return null}}
+function dkOut(q){   // DraftKings' own link and outcome id for a proven outcome (dkWant's: the first of its markets that has it, as oaLookup reads it): {link, sid} | null
+  if(!q)return null;const k=q.k;
+  for(const m of q.markets){const hits=[OA[q.g.id+'|'+m],DKL[q.g.id+'|'+m]].map(e=>e&&Array.isArray(e.rows)?e.rows.find(r=>Array.isArray(r)&&oaRow(r,k)&&Number.isFinite(r[2])&&(!k.side||r[0]===k.side)&&(k.point==null||r[3]===k.point)):null).filter(Boolean);
+    if(!hits.length)continue;for(const r of hits){const link=dkUrl(r[4]),sid=dkSid(r[5]);if(link||sid)return{link,sid}}return null}
+  return null}
+function dkAll(outs){   /* every leg in one DraftKings address, built only when the feed's own links show the pattern: each carries its outcome id as the whole value of the same query parameter, on the same
+     DraftKings host. The first leg's address, that parameter holding every id joined by "+". Unconfirmed until Jason's phone test, so the sheet says to add any missing leg from the list */
+  if(outs.length<2||outs.some(o=>!o||!o.link||!o.sid)||new Set(outs.map(o=>o.sid)).size!==outs.length)return null;
+  const parts=u=>u.search.replace(/^\?/,'').split('&').filter(Boolean).map(p=>{const i=p.indexOf('=');return i<0?[p,null]:[p.slice(0,i),p.slice(i+1)]}),dq=v=>{try{return decodeURIComponent(String(v).replace(/\+/g,' '))}catch(e){return null}};
+  let host=null,name=null;const vals=[];
+  for(const o of outs){let u;try{u=new URL(o.link)}catch(e){return null}if(host!=null&&u.hostname!==host)return null;host=u.hostname;const ps=parts(u),hit=ps.filter(([,v])=>v!=null&&dq(v)===o.sid);
+    if(hit.length!==1)return null;const[n,v]=hit[0];if(name!=null&&n!==name)return null;name=n;if(ps.filter(([x])=>x===n).length!==1||!v||/[+,\s]/.test(v))return null;vals.push(v)}
+  const u0=new URL(outs[0].link);return u0.origin+u0.pathname+'?'+parts(u0).map(([x,v])=>x===name?x+'='+vals.join('+'):v==null?x:x+'='+v).join('&')+u0.hash}
+function dkLegs(w,c){   /* the slip's legs in the slip's own order, each with its identity (dkId), its words (DraftKings' wording, the house wording, for a proven outcome; otherwise the saved words exactly as saved, never reworded into another bet), its price,
+     and DraftKings' link and id only for an outcome dkWant proves */
+  const nfl=nflOk(slipNfl(w)),cl=slipClaims(w,c)||histClaims(w,c),order=[];renderSlipRows(slipPlan(w,c,cl),l=>{order.push(l);return''});
+  return order.map(l=>{const t=String(l.text||'').trim(),q=nfl?dkWant(l,nfl):null,odds=normPrice(l.odds)||String(l.odds||'').trim();let hw=t;if(q)try{hw=kickTidy(t,nfl).pop()||t}catch(e){}
+    return{mid:l.mid,id:dkId(w,l,odds),q,text:hw,odds,out:dkOut(q)}})}
+const dkId=(w,p,odds)=>JSON.stringify([w.id,p.mid,String(p.text||''),String(p.raw||''),Array.isArray(p.teams)?p.teams.map(String):[],!!p.tm,odds]);   // E47-R02: a leg's identity on the sheet: the week, the member, the exact saved pick (its words, the words as typed, its team tags) and its price. Its row, its tick and Copy are bound to it
+function dkExpected(c,legs){let d=1;for(const x of legs){const o=parseOdds(x.odds);if(o==null)return'';d*=dec(o)}const s=+c.stake||0,m=v=>Math.abs(v-Math.round(v))<0.005?fmt$0(Math.round(v)):fmt$(v);return`Expected: ${amer(d)}${s>0?` · ${m(s)} to win ${m(s*d)}`:''}`}   // the legs' prices multiplied, the way the slip's Parlay is
+const dkCopyText=(w,c,legs)=>[`${wkName(w)} · ${legs.length} leg${legs.length===1?'':'s'}`,...legs.map((x,i)=>`${i+1}. ${x.text}  ${x.odds}`),dkExpected(c,legs)].filter(Boolean).join('\n');
+const DK_TICKS=CACHE_PREFIX+'dk-ticks';   // tick-offs: this phone only, per week ({'<league>|<season>|<week>': {at, m: {member: the identity of the exact leg ticked (dkId)}}}); a tick counts only for that exact leg, so a leg that changes in any way (words, typed words, team tags, price) is unticked
+const dkTickKey=w=>{const l=league();return l.id+'|'+(seasonOfWeek(l,w)?.id||'')+'|'+w.id};
+function dkTicks(){try{const v=JSON.parse(localStorage.getItem(DK_TICKS)||'{}');return v&&typeof v==='object'&&!Array.isArray(v)?v:{}}catch(e){return{}}}
+function dkTicked(w,mid,id){const t=dkTicks()[dkTickKey(w)];return !!(t&&t.m&&typeof t.m==='object'&&Object.prototype.hasOwnProperty.call(t.m,mid)&&t.m[mid]===id)}
+function dkTick(w,mid,id,on){const all=dkTicks(),k=dkTickKey(w),e=all[k]&&typeof all[k]==='object'&&all[k].m&&typeof all[k].m==='object'?all[k]:{m:{}};if(on)e.m[mid]=id;else delete e.m[mid];e.at=Date.now();
+  if(Object.keys(e.m).length)all[k]=e;else delete all[k];for(const x of Object.entries(all).sort((a,b)=>(+b[1]?.at||0)-(+a[1]?.at||0)).slice(12))delete all[x[0]];   // the 12 weeks ticked most lately
+  try{localStorage.setItem(DK_TICKS,JSON.stringify(all))}catch(err){toast('This phone couldn’t remember that tick (its storage is full or turned off), so it goes when you close this. Nothing on the slip changed. To keep ticks, free up some space on the phone, or open the app outside private browsing.','bad')}}
+function dkLegRow(w,x){const on=dkTicked(w,x.mid,x.id);return`<li class="dk-leg"><label class="dk-tick"><input type="checkbox" data-act="dk-tick" data-wid="${h(w.id)}" data-mid="${h(x.mid)}" data-key="${h(x.id)}"${on?' checked':''}><span class="dk-bet">${h(x.text)}</span><b class="mono dk-price">${h(x.odds)}</b></label>${DK_NEW.has(x.id)?'<p class="tiny dk-chgd">Changed just now</p>':''}${x.out&&x.out.link?`<a class="dk-open" href="${h(x.out.link)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${h(x.text)} in DraftKings">Open in DraftKings <span aria-hidden="true">↗</span></a>`:`<p class="dk-find">Search DraftKings for: <b>${h(x.text)}</b></p>`}</li>`}
+function dkBody(w,c,kind,legs){const all=dkAll(legs.map(x=>x.out)),exp=dkExpected(c,legs);
+  return`<p class="dk-intro">${kind==='export'?'Place the parlay on DraftKings leg by leg, in DraftKings’ own words.':'Bet the same parlay yourself on DraftKings, leg by leg, in DraftKings’ own words.'} Tick each leg off as it goes on your bet slip.</p>${exp?`<div class="dk-exp"><b>${h(exp)}</b><p class="tiny">DraftKings works out its own total, so it can differ a little if a price has moved.</p></div>`:''}${all?`<a class="dk-all" href="${h(all)}" target="_blank" rel="noopener noreferrer">Open all ${legs.length} legs in DraftKings <span aria-hidden="true">↗</span></a><p class="tiny dk-note">If DraftKings opens with fewer legs, add the rest from the list below.</p>`:''}<ol class="dk-legs">${legs.map(x=>dkLegRow(w,x)).join('')}</ol><button class="btn block dk-copy" data-act="dk-copy" data-wid="${h(w.id)}" data-copy="${h(dkCopyText(w,c,legs))}">Copy the slip</button>`}   // Copy copies exactly the text drawn with the rows (data-copy)
+const DK_NEW=new Set(),dkTitle=k=>k==='export'?'Export to DraftKings':'Ride It';   // DK_NEW: the identities of legs that changed while this sheet was open (marked "Changed just now")
+const dkSig=(w,c,kind,legs)=>{const s=JSON.stringify([kind,dkCopyText(w,c,legs),legs.map(x=>[x.id,x.text,x.out&&x.out.link||'',x.out&&x.out.sid||''])]);let a=0x811c9dc5;for(let i=0;i<s.length;i++){a^=s.charCodeAt(i);a=Math.imul(a,16777619)}return(a>>>0).toString(36)+'.'+s.length};   // a short fingerprint of everything the sheet shows (a DraftKings address is only ever an <a href>, never an attribute of its own): when it changes, the sheet is drawn again
+function dkSheet(w){const c=calc(w),kind=dkShow(w,c);if(!kind)return;const legs=dkLegs(w,c);DK_NEW.clear();
+  modal({title:dkTitle(kind),body:`<div id="dkSheet" data-lid="${h(league().id)}" data-wid="${h(w.id)}" data-sig="${h(dkSig(w,c,kind,legs))}">${dkBody(w,c,kind,legs)}</div>`,actions:[{label:'Done',cls:'ghost'}]});
+  if(legs.some(x=>x.q&&!(x.out&&x.out.link)))dkPeek(w,legs).then(got=>{if(got)dkSync()}).catch(()=>{})}   // links this phone doesn't hold yet: a free look at the league's copy (never a purchase), then the sheet again
+const dkWeekOf=el=>{const sh=el&&el.closest?el.closest('#dkSheet'):null,l=league();return sh&&l&&l.id===sh.dataset.lid?week(sh.dataset.wid)||null:null};   // the week an open sheet (or a tick box or button on it) is for: never another league's week with the same id
+function dkSync(quiet){   /* E47-R02: an open sheet follows the slip underneath it (every paint, a league update from another phone, a price typed). When what it shows is no longer the slip, it is drawn again in place (its scroll and focus kept where
+     they can be), a leg that changed is marked "Changed just now" and said briefly, and a tick stays only on the exact leg it was made on (dkId). Returns {say, lost, gone} when it changed, or null */
+  const el=document.getElementById('dkSheet');if(!el)return null;const w=dkWeekOf(el),c=w&&calc(w),kind=w?dkShow(w,c):null;
+  if(!kind){if(el.dataset.sig==='gone')return null;const ae=document.activeElement,inn=!!ae&&ae!==el&&el.contains(ae);if(inn&&ae.blur){BLURRING=1;try{ae.blur()}finally{BLURRING=0}}el.dataset.sig='gone';el.innerHTML=`<p class="dk-gone" role="status">The slip changed while this was open, so this list was taken away rather than show an old bet. Nothing was lost. Close this and look at the slip: Export to DraftKings and Ride It are there while every leg has a pick and a price, until the slip is graded.</p>`;if(inn)try{el.closest('.modal')?.focus({preventScroll:true})}catch(e){}return{say:[],lost:0,gone:true}}
+  const legs=dkLegs(w,c),sig=dkSig(w,c,kind,legs);if(sig===el.dataset.sig)return null;const say=[];let lost=0;
+  if(el.dataset.sig!=='gone'){const was=[...el.querySelectorAll('input[data-act="dk-tick"]')].map(i=>{const r=i.closest('.dk-leg');return{mid:i.dataset.mid,id:i.dataset.key,text:r?.querySelector('.dk-bet')?.textContent||'',odds:r?.querySelector('.dk-price')?.textContent||'',on:!!i.checked}});
+    for(const x of legs){const o=was.find(y=>y.mid===x.mid);if(o&&o.id===x.id)continue;DK_NEW.add(x.id);if(o&&o.on)lost++;say.push(!o?`“${x.text}” ${x.odds} was added`:o.text!==x.text?`“${o.text}” is now “${x.text}” ${x.odds}`:o.odds!==x.odds?`“${x.text}” is now ${x.odds} (it was ${o.odds})`:`“${x.text}” was edited in the league`)}
+    for(const o of was)if(!legs.some(x=>x.mid===o.mid))say.push(`“${o.text}” came off the slip`)}
+  const mb=el.closest('.modal-body'),top=mb?mb.scrollTop:0,ae=document.activeElement,inn=!!ae&&ae!==el&&el.contains(ae),fm=inn?ae.closest('.dk-leg')?.querySelector('input[data-act="dk-tick"]')?.dataset.mid:null,fc=inn?['input','a.dk-open','a.dk-all','.dk-copy'].find(q=>ae.matches(q)):null;
+  if(inn&&ae.blur){BLURRING=1;try{ae.blur()}finally{BLURRING=0}}   /* left first, as render0 leaves a box it repaints (Safari sends nothing when a focused box is deleted, and the app would stay in typing mode) */
+  el.dataset.sig=sig;el.innerHTML=dkBody(w,c,kind,legs);const t=document.getElementById('modalTitle');if(t&&t.textContent!==dkTitle(kind))t.textContent=dkTitle(kind);
+  if(mb)mb.scrollTop=top;if(inn){const row=fm!=null?[...el.querySelectorAll('input[data-act="dk-tick"]')].find(i=>i.dataset.mid===fm)?.closest('.dk-leg'):null,f=(fc&&(row||el).querySelector(fc))||row?.querySelector('input')||el.closest('.modal');try{f&&f.focus({preventScroll:true})}catch(e){}}   // the same leg's box or link, else the sheet itself: focus never falls out of it
+  if(say.length&&!quiet){const msg=`The slip changed while this was open: ${say.join('; ')}.${lost?` ${lost>1?'Those legs were':'That leg was'} ticked for the old bet, so ${lost>1?'they’re':'it’s'} unticked: tick again once ${lost>1?'they’re':'it’s'} on your bet slip.`:''}`;toast(msg,'',readMs(msg))}
+  return{say,lost,gone:false}}
+const dkStale=(r,what,again)=>`The slip changed while this was open, so ${what}${r&&r.say.length?`: ${r.say.join('; ')}`:''}. Nothing was lost. ${r&&r.gone?'Close this and look at the slip.':`The list now shows the slip as it is: ${again}.`}`;   // a tick or Copy made on a list the slip had already left behind
+async function dkPeek(w,legs){   // the league's copy of these legs' markets, for their links: the same free look Build a pick uses (0 credits, the same hourly limit on this phone), each game's markets at most once in 10 minutes
+  const l=league();if(!l||!l.sync||oaDown(l.id))return false;const nfl=nflOk(slipNfl(w)),now=Date.now();if(!nfl)return false;const by=new Map();
+  for(const x of legs){const q=x.q;if(!q||x.out&&x.out.link||!(Date.parse(q.g.at)>now))continue;/* only a proven outcome (dkWant) is ever looked for */const e=by.get(q.g.id)||{g:q.g,ms:new Set()};for(const m of q.markets)if(!(now-(DKL_AT[q.g.id+'|'+m]||0)<10*60e3))e.ms.add(m);by.set(q.g.id,e)}
+  let got=false;for(const{g,ms}of by.values()){const list=[...ms].slice(0,6);if(!list.length)continue;while(PEEK_LOG.length&&now-PEEK_LOG[0]>=3600e3)PEEK_LOG.shift();if(PEEK_LOG.length>=30)break;PEEK_LOG.push(now);for(const m of list)DKL_AT[g.id+'|'+m]=now;
+    try{const r=await fetch(`${l.sync.url||SYNC_URL}/leagues/${l.sync.id}/oddspeek?games=${encodeURIComponent([g.home,g.away,g.at||''].join('|'))}&markets=${list.join(',')}`,{headers:hdrs(l),signal:AbortSignal.timeout?AbortSignal.timeout(15e3):undefined});const d=await r.json().catch(()=>({}));const x=d&&d.ok&&d.peek&&!d.bad&&Array.isArray(d.games)?d.games[0]:null;
+      if(x&&x.markets)for(const m of list){const v=x.markets[m];if(v&&Array.isArray(v.rows)){DKL[g.id+'|'+m]={at:+v.at||0,rows:v.rows};got=true}}}catch(e){}}   // no answer, an older league or no Odds API: the legs keep their Search DraftKings for lines
+  return got}
+async function dkCopy(t){try{await navigator.clipboard.writeText(t);toast('Copied the slip. Paste it anywhere.','good')}catch(e){modal({stack:true,title:'Copy the slip',body:`<p class="tiny">This phone didn’t let the app copy it. Nothing was lost: press and hold the text below, choose Select All, then Copy.</p><textarea rows="8" readonly style="width:100%;font-family:var(--mono);font-size:12px">${h(t)}</textarea>`,actions:[{label:'Done',cls:'ghost'}]})}}
 /* ---- sealed vote: one name + one video per person, hidden until everyone with a leg is in ---- */
 let upl=null,pendingUp=null,upCancel=false;const subEdit=new Set();const peek=new Set();let peekT=null;
 function spoiler(cid,wid){const open=peek.has(wid);return open?`<b class="spoiled">${h(member(cid)?.name||'?')}</b>`:`<button type="button" class="spoiler" data-act="peek" data-wid="${wid}">👀 tap to see</button>`}
@@ -2768,7 +2859,7 @@ async function sendNext(l,w,text,odds,raw,keep,was){setSyncDot('busy');   /* was
   catch(e){setSyncDot('bad');toast(text?failNote(e,`Your ${nextName(w)} pick didn’t save`,'It’s still typed in the box. Tap Save again when you have signal.'):failNote(e,`Your ${nextName(w)} pick wasn’t cleared`,`It’s still saved as “${was||''}”. Tap Clear pick again when you have signal.`),'bad')}}
 /* ---- NFL slate: this week's games and who plays for whom, for same-game grouping and clash checks ---- */
 const NFL={};
-function softRender(){setTimeout(()=>{try{if(GUIDED)guidedPrices(GUIDED)}catch(e){}if(!quiet())render();else{needRender=true;hsLand()}},0)}   // Build a pick's cards take a price that just landed first; the page waits while someone types; the pick search's results never do (a reveal watched or newly owed changes what they may show)
+function softRender(){setTimeout(()=>{try{if(GUIDED)guidedPrices(GUIDED)}catch(e){}if(!quiet())render();else{needRender=true;hsLand();try{dkSync()}catch(e){}}},0)}   // Build a pick's cards take a price that just landed first; the page waits while someone types; the pick search's results never do (a reveal watched or newly owed changes what they may show)
 let autoTidyT=null,tidyWait=0;const autoTidySoon=()=>{clearTimeout(autoTidyT);autoTidyT=setTimeout(()=>{try{if(GUIDED)guidedPrices(GUIDED)}catch(e){}try{for(const k of GUIDE_DRAFT.keys())if(!GAP_T.has(k))gapPut(k)}catch(e){}try{autoTidyLive()}catch(e){}},400)};   // every price answer ends here: Build a pick's cards take it first, then the hint under a box held from Enter manually (a price that just landed is named), whatever else is going on
 function nflData(date,off=0){   // null while loading, {failed:true} if unavailable, else the prepared slate
   if(!date)return null;const k=date+'|'+off;const e=NFL[k];
@@ -4470,6 +4561,11 @@ const ACT={
   'remove-leg'(el){const wid=el.dataset.wid||(currentWeek()||{}).id;const w=week(wid);const mid=el.dataset.mid;const m=member(mid);if(!w||!m)return stale();confirm2('Remove leg?',`Drop ${h(m.name)} from the ${h(wkName(w))} slip. They sat this one out.`,'Remove',()=>{const ww=week(wid);if(!ww||!ww.picks[mid])return stale();delete ww.picks[mid];ww.votes={};commit()})},
   'copy-recap'(el){copyText(recap(week(el.dataset.wid)))},
   'share-slip'(el){shareSlip(week(el.dataset.wid))},
+  'dk-open'(el){const w=week(el.dataset.wid);if(!w||!dkShow(w,calc(w))){toast('The slip changed while that button was on screen, so nothing opened. Nothing was lost. Take another look at the slip: the button is there while every leg has a pick and a price, until the slip is graded.','bad');render();return}dkSheet(w)},
+  'dk-tick'(el){const w=dkWeekOf(el),c=w&&calc(w),x=w&&dkShow(w,c)?dkLegs(w,c).find(y=>y.mid===el.dataset.mid):null;   /* the tick is for the exact leg this box was drawn with (data-key): a leg that changed underneath is never ticked in its place */
+    if(!x||x.id!==el.dataset.key){el.checked=!el.checked;const r=dkSync(true);toast(dkStale(r,'that tick wasn’t kept','tick the leg again once it’s on your bet slip'),'bad');return}dkTick(w,x.mid,x.id,!!el.checked)},
+  'dk-copy'(el){const w=dkWeekOf(el),c=w&&calc(w),t=el.dataset.copy||'';   /* Copy copies what the sheet shows, and only while that is still the slip */
+    if(!w||!dkShow(w,c)||!t||dkCopyText(w,c,dkLegs(w,c))!==t){const r=dkSync(true);toast(dkStale(r,'nothing was copied','check it, then tap Copy the slip again'),'bad');return}dkCopy(t)},
   'delete-week'(el){const w=week(el.dataset.wid);const sd=sideOf(w);const side=isSide(w);confirm2(`Delete ${wkName(w)}?`,`This removes the slip, grades and votes for this ${side?'side parlay':'week'}${sd?', and its Anytime TD side parlay':''}. There is no undo, so export a backup first if unsure.`,side?'Delete side parlay':'Delete week',()=>{const ww=week(el.dataset.wid);if(!ww)return stale();const sd2=sideOf(ww);const l=league();if(l.sync)l.dropWeeks=[...new Set([...(l.dropWeeks||[]),ww.id,...(sd2?[sd2.id]:[])])];S.weeks=S.weeks.filter(x=>x.id!==ww.id&&(!sd2||x.id!==sd2.id));S.currentWeekId=(side&&week(ww.of)?.id)||lastWeek()?.id||null;commit();toast(`${wkName(ww)} deleted`)})},
   'add-side'(el){const w=lastWeek();if(!w||w.kind==='special'||sideOf(w))return;if(el.dataset.wid&&el.dataset.wid!==w.id)return stale();const wid=w.id;const prior=[...S.weeks].reverse().find(isSide);
     modal({title:'Anytime TD side parlay',body:`<p>Runs alongside <b>${h(wkName(w))}</b>. <b>Anytime TD bets only</b>, ${gameDays()} games only.</p><p>No Bozo and no vote, so win or lose it never decides the Bozo.</p><p class="muted tiny">Everyone starts with an empty leg. Tap × on anyone sitting it out.</p><label class="fld"><span>Stake</span><input id="sideStake" class="mono" type="number" min="0" step="1" value="${prior?.stake??5}" inputmode="numeric"></label><label class="fld"><span>Who pays</span>${payerSelect('sidePayer',w.bozoId,w.bozoId)}</label><p class="muted tiny">Whoever fronts the stake on DraftKings, usually the Bozo. It counts against their Net.</p>`,
