@@ -202,6 +202,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .avatar{width:36px;height:36px;border-radius:50%;display:inline-grid;place-items:center;font-weight:700;font-size:12px;letter-spacing:.02em;color:#fff;background:var(--c,#888);flex:none;text-shadow:0 1px 1px rgba(0,0,0,.15)}
 .avatar.sm{width:26px;height:26px;font-size:10px}
 .avatar.lg{width:52px;height:52px;font-size:17px}
+.avatar.md{width:44px;height:44px;font-size:15px}
 .avatar{position:relative;overflow:hidden}
 .avatar>.av-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}   /* #44: a person's photo covers their initials, at exactly the circle's size; the initials stay underneath while it loads, when there is none, and when it can't load */
 .me-photo{display:flex;align-items:center;gap:12px;margin:14px 0 10px}
@@ -456,23 +457,28 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .pd-wrap{margin-top:12px;animation:fadeUp .2s}
 .modal .pd{background:transparent;padding:0;animation:none}
 .modal .pd-cell,.modal .pd-bet{background:var(--surface2)}
-.modal .pd-title{margin:-2px 0 12px}
-.pd-grid.three{grid-template-columns:repeat(3,1fr)}
+.modal .pd-title{margin:0 0 12px}   /* never above the sheet's top edge: the photo is never cut off */
 .px-seg{margin:12px 0 12px}
 .modal .x-head b{font-size:17px}
-.modal .pd-title .avatar{width:34px;height:34px;font-size:13px}
 .modal .pd-title b{font-size:17px}
 .modal .pd-cell b,.modal .pd-sub,.modal .typerow,.modal .pd-bet b,.modal .pd-bet span{color:var(--text)}
-.pd-title{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:15px}
+.pd-title{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:15px}
 .pd-title b{font-weight:700}
+.pd-who{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}.pd-who b{white-space:nowrap}.pd-who .muted{font-size:13px}.pd-who .nw{display:inline-block;max-width:100%}@media(max-width:360px){.pd-compact em.pd-ex{display:none}.pd-who .sep{display:none}.pd-who .pd-scope{display:block}}   /* the record on one line; the muted line under it breaks only between its parts */
+.pd-title .pillbtn{flex:none;white-space:nowrap;background:transparent;box-shadow:inset 0 0 0 1px var(--line2)}   /* Explore: never squeezed; on the sheet's own background its blue reads at 4.5:1 in light and dark */
 .pd-title .mini{margin-left:auto}
 .pd{background:var(--surface2);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;animation:fadeUp .2s}
-.pd-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
-@media(min-width:480px){.pd-grid{grid-template-columns:repeat(4,1fr)}}
-.pd-cell{background:var(--surface);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:1px;min-width:0}
-.pd-cell small{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.pd-cell b{font-size:15px;font-weight:700}
-.pd-cell em{font-style:normal;font-size:11px;color:var(--muted);font-weight:500;white-space:normal;line-height:1.3}
+.pd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pd-grid.pd-compact{gap:6px}
+.pd-grid>:last-child:nth-child(odd){grid-column:1/-1}   /* never a lone card: an odd count in two columns, the last card takes the whole row */
+.pd-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.pd-grid.three>:last-child{grid-column:auto}
+@media(min-width:480px){.pd-grid.w3{grid-template-columns:repeat(3,minmax(0,1fr))}.pd-grid.w4{grid-template-columns:repeat(4,minmax(0,1fr))}.pd-grid.w3>:last-child,.pd-grid.w4>:last-child{grid-column:auto}}   /* wider screens: more columns only when the cards fill every row (pdGrid) */
+.pd-cell{background:var(--surface);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:1px;min-width:0}.pd-cell small{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.pd-cell b{font-size:15px;font-weight:700}.pd-cell em{font-style:normal;font-size:11px;color:var(--muted);font-weight:500;white-space:normal;line-height:1.3}
+.pd-compact .pd-cell{background:var(--surface);border-radius:10px;padding:6px 10px;min-height:44px;min-width:0;display:flex;flex-direction:row;flex-wrap:wrap;align-items:baseline;align-content:center;column-gap:6px;line-height:1.25}   /* compact: the label, then the value with its note after it on one line */
+.pd-compact .pd-cell small{text-wrap:balance;flex:0 0 100%;font-size:10px;line-height:1.2;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pd-compact .pd-cell b{flex:0 1 auto;min-width:0;font-size:15px;font-weight:700;overflow-wrap:anywhere}
+.pd-compact .pd-cell em{flex:0 1 auto;min-width:0;font-style:normal;font-size:11px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* the note after the value: beside it when it fits whole, else on the next line; … only when it is longer than the card */
+.pd-compact .pd-cell em.pd-ex{flex:1 1 0;min-width:min(2.5em,100%)}   /* a note that only explains the number (1u a pick, pts when hitting): stays beside it, shortened with … when there's no room */
+.pd-compact .pd-cell em.whole{flex-basis:100%;white-space:normal;text-wrap:balance}   /* a note that must be read whole (Units leaving out hits with no odds): a line of its own */
 .pd-bets{display:flex;flex-direction:column;gap:6px}
 .pd-sub{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .pd-bet .betchip{min-width:0}
@@ -1552,7 +1558,7 @@ const photoOf=(mid,l=league())=>{const v=l&&l.sync&&l.photos&&mid&&Object.protot
 const photoFor=(m,l=league())=>{const id=m&&(m.pmid??m.id);if(!id)return'';   // the photo of the PERSON: the one under their newest spot (the newest season they are in, found by All-time's own rule, personKey), so someone with another id in an older season shows it there too, and a photo left under an old id never shows
   if(m.pmid==null&&(m.name||m.pid)&&l&&l.photos){const k=personKey(m,l);for(const sn of seasonSorted(l)){const hit=((sn.data&&sn.data.members)||[]).filter(x=>personKey(x,l)===k);if(hit.length===1)return photoOf(hit[0].id,l);if(hit.length>1)break}}   // two of that name in one season: which is which isn't known, so their own id
   return photoOf(id,l)};
-const avIn=m=>{const n=m&&m.name,u=m?photoFor(m):'';return h(initials(n))+(u?`<img class="av-img" src="${h(u)}" alt="${h(n||'')}" loading="lazy" decoding="async">`:'')};   // what goes inside a round avatar: the initials, and the person's photo over them when there is one (All-time's people carry their newest season's id as pmid)
+const avIn=(m,now)=>{const n=m&&m.name,u=m?photoFor(m):'';return h(initials(n))+(u?`<img class="av-img" src="${h(u)}" alt="${h(n||'')}" loading="${now?'eager':'lazy'}" decoding="async">`:'')};   // what goes inside a round avatar: the initials, and the person's photo over them when there is one (All-time's people carry their newest season's id as pmid). now: load it at once (the player sheet's header: Safari may hold back a lazy picture inside a sheet until it is scrolled)
 
 const week=id=>S.weeks.find(w=>w.id===id);
 // the Bozo chain is every parlay except side parlays (a side parlay rides along with a Sunday parlay: no Bozo, no vote)
@@ -1796,7 +1802,9 @@ function stats(){
     p.net=p.earned-p.spent;p.units=uOf(p.all);
     p.avgMiss=p.missMargins.length?p.missMargins.reduce((a,b)=>a+b,0)/p.missMargins.length:null;p.avgHitMargin=p.hitMargins.length?p.hitMargins.reduce((a,b)=>a+b,0)/p.hitMargins.length:null;
     p.topTeam=Object.entries(p.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p))[0]||null;
-    p.bestType=Object.entries({...p.byType,...Object.assign({},...Object.values(p.bySub))}).filter(([k,o])=>k!=='Player prop'&&k!=='Other'&&o.w+o.l>=2).sort((a,b)=>b[1].w/(b[1].w+b[1].l)-a[1].w/(a[1].w+a[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;
+    const types=[...Object.entries(p.byType),...Object.entries(p.bySub).flatMap(([t,x])=>Object.entries(x).map(([k,o])=>[k,o,t]))].filter(([k,o])=>k!=='Player prop'&&k!=='Other'&&o.w+o.l>=2);   // a sub-type keeps the bet type it belongs to ([name, record, type]), so two with one name stay two   // the bet types Best at and Worst at choose from: 2 or more decided, props and Other left out
+    p.bestType=types.slice().sort((a,b)=>b[1].w/(b[1].w+b[1].l)-a[1].w/(a[1].w+a[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;
+    p.worstType=types.slice().sort((a,b)=>a[1].w/(a[1].w+a[1].l)-b[1].w/(b[1].w+b[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;if(p.worstType&&p.bestType&&p.worstType[0]===p.bestType[0]&&p.worstType[2]===p.bestType[2])p.worstType=null;   // Worst at: the worst win rate, then more decided bets; none when it would be Best at's own type
   });
   return{per,g};
 }
@@ -1959,11 +1967,11 @@ async function sendShot(l,w,n,file){const blob=await shrinkShot(file);const r=aw
 /* ---- #44 member photos (docs/plans/MEMBER-PHOTOS.md): each person adds, changes or removes their own in Settings → Me; the commissioner can remove anyone's ---- */
 const PHOTO_MAX=64*1024,PHOTO_PX=256;let PHOTO_BUSY=false;   // a photo is a square, 256 x 256 at most and 64 KB at most (the league refuses anything bigger)
 const photoErr=k=>Object.assign(new Error(k),{photo:k});
-async function shrinkPhoto(file){   // the middle square of the picture, shrunk on this phone: WebP where the phone makes one, else JPEG, at the first quality that fits in 64 KB
+async function shrinkPhoto(file){   // a square of the picture (the middle of a wide one, near the top of a tall one: faces sit high in a profile picture), shrunk on this phone: WebP where the phone makes one, else JPEG, at the first quality that fits in 64 KB
   let bmp,url='';try{bmp=await createImageBitmap(file)}catch(e){try{bmp=await new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>rej(photoErr('open'));i.src=url=URL.createObjectURL(file)})}catch(x){throw photoErr('open')}}
   try{const w=bmp.naturalWidth||bmp.width,ht=bmp.naturalHeight||bmp.height;if(!(w>0&&ht>0))throw photoErr('open');
     const side=Math.min(w,ht),px=Math.max(1,Math.min(PHOTO_PX,Math.round(side))),cv=document.createElement('canvas');cv.width=px;cv.height=px;const g=cv.getContext('2d');if(!g)throw photoErr('open');
-    g.fillStyle='#fff';g.fillRect(0,0,px,px);g.imageSmoothingQuality='high';g.drawImage(bmp,(w-side)/2,(ht-side)/2,side,side,0,0,px,px);   // a see-through picture gets a white background (a JPEG would turn it black)
+    g.fillStyle='#fff';g.fillRect(0,0,px,px);g.imageSmoothingQuality='high';g.drawImage(bmp,(w-side)/2,ht>w?Math.round((ht-side)*.15):(ht-side)/2,side,side,0,0,px,px);   // a see-through picture gets a white background (a JPEG would turn it black)
     let made=false;for(const type of ['image/webp','image/jpeg'])for(const q of [0.86,0.74,0.62,0.5,0.4]){const b=await new Promise(r=>{try{cv.toBlob(r,type,q)}catch(e){r(null)}});if(!b||b.type!==type)break;made=true;if(b.size<=PHOTO_MAX)return b}   // a phone that can't make WebP hands back something else: JPEG then
     throw photoErr(made?'big':'open')}
   finally{try{bmp&&bmp.close&&bmp.close()}catch(e){}if(url)try{URL.revokeObjectURL(url)}catch(e){}}}
@@ -2671,7 +2679,7 @@ function sheetBody(){
     const decs=legs.filter(l=>l.odds!=null).map(l=>dec(l.odds));const avg=decs.length?decs.reduce((a,b)=>a+b,0)/decs.length:null;
     const best=legs.filter(l=>l.status==='hit'&&l.odds!=null).sort((a,b)=>b.odds-a.odds)[0];const worst=legs.filter(l=>l.status==='miss'&&l.odds!=null).sort((a,b)=>a.odds-b.odds)[0];
     const who=l=>solo?h(l.wk):`${h(l.wk)} · ${h(member(l.mid)?.name||'')}`;
-    const tiles=`<div class="pd-grid three"><div class="pd-cell"><small>Avg odds</small><b class="mono">${avg?amer(avg):'—'}</b></div><div class="pd-cell"><small>Best hit</small><b class="mono good">${best?fmtOdds(best.odds):'—'}</b><em>${best?who(best):'—'}</em></div><div class="pd-cell"><small>Worst miss</small><b class="mono bad">${worst?fmtOdds(worst.odds):'—'}</b><em>${worst?who(worst):'—'}</em></div></div>`;
+    const tiles=pdGrid([`<div class="pd-cell"><small>Avg odds</small><b class="mono">${avg?amer(avg):'—'}</b></div>`,`<div class="pd-cell"><small>Best hit</small><b class="mono good">${best?fmtOdds(best.odds):'—'}</b><em>${best?who(best):'—'}</em></div>`,`<div class="pd-cell"><small>Worst miss</small><b class="mono bad">${worst?fmtOdds(worst.odds):'—'}</b><em>${worst?who(worst):'—'}</em></div>`],'three');
     const groups=nodeGroups(legs,n,solo?2:3);
     content=tiles+(groups.length?`<div class="pd-sub" style="margin-top:12px">Go deeper</div>${groups.map(gr=>`<div class="x-dim">${gr.dim==='Bet type'?'':`<small>${h(gr.dim)}</small>`}<div class="typerows">${gr.vals.map(v=>statRow({label:v.label,logo:v.logo,rec:recOf(nodeLegs(legs,v.node)),act:'px-go',data:`data-node="${encNode(v.node)}"`,nav:true})).join('')}</div></div>`).join('')}`:'<p class="muted tiny" style="margin-top:10px">Nothing deeper to split here.</p>');
   }
@@ -4046,19 +4054,21 @@ function renderStatsInner(){
   <section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--purple);background:transparent"></i>bozo</span></div></section>
   ${closeCalls(per)}`;
 }
+const pdGrid=(cells,cls='')=>{const n=(cells=cells.filter(Boolean)).length;return`<div class="pd-grid${cls?' '+cls:''}${n%4?n%3?'':' w3':' w4'}">${cells.join('')}</div>`};   // stat cards: two columns on a phone (an odd count's last card takes the whole row); on a wider screen 4 or 3 only when the cards fill every row
+const atType=x=>x&&x[2]?' · '+h(x[2]==='Moneyline'?'ML':x[2]):'';   // Best at / Worst at on a sub-type: its bet type in the label ('Worst at · ML' over 'Underdog (+)'), so 'Underdog' on a spread and on a moneyline never read as one
 function playerDetail(r){
   const rec=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`,pc=o=>((o.w+o.l)?Math.round(o.w/(o.w+o.l)*100)+'%':'—')+(uOf(o)!=null?` · ${fmtU(uOf(o))}`:'');
   const bet=x=>x?`<b class="mono">${fmtOdds(x.odds)}</b>${betChip(x.text,x.teams)}<small>${h(x.wk)}</small>`:'<span class="muted">—</span>';
   const cell=(k,v,q)=>`<div class="pd-cell ${q?'tap':''}" ${q?`data-act="${q.streak?'show-streak':'show-bets'}" data-node="${encNode(q)}"`:''}><small>${k}</small>${v}</div>`;
+  const wk=sp=>sp?h(sp[0]===sp[1]?sp[0]:sp.join('–')):'',bw=r.bozoWeeks;   // Bozo shows the latest two weeks, "…, " in front when there were more; Units' note about hits with no odds keeps a line of its own
   return`<div class="pd">
-    <div class="pd-grid">
-      ${cell('Plus-money bets',`<b>${rec(r.plus)}</b><em>${pc(r.plus)}</em>`,{f:{Odds:ODDS_VALS[0]},mid:r.m.id})}${cell('Minus-money bets',`<b>${rec(r.minus)}</b><em>${pc(r.minus)}</em>`,{f:{Odds:ODDS_VALS[1]},mid:r.m.id})}
-      ${cell('Units',`<b class="mono ${uCls(r.units||0)}">${r.units!=null?fmtU(r.units):'—'}</b><em>1u on every pick${r.all&&r.all.uq?` · leaves out ${r.all.uq} hit${r.all.uq===1?'':'s'} with no odds`:''}</em>`)}${cell('Avg odds',`<b class="mono">${r.avgDec?amer(r.avgDec):'—'}</b>`)}${cell('Avg odds · wins',`<b class="mono good">${r.avgWinDec?amer(r.avgWinDec):'—'}</b>`)}${cell('Avg odds · losses',`<b class="mono bad">${r.avgLoseDec?amer(r.avgLoseDec):'—'}</b>`)}
-      ${cell('Best streak',`<b class="good">${r.bestHit?r.bestHit+' hits':'—'}</b><em>${r.bestHitSpan?h(r.bestHitSpan[0]===r.bestHitSpan[1]?r.bestHitSpan[0]:r.bestHitSpan.join('–')):''}</em>`,r.bestHit?{streak:'hit',mid:r.m.id}:null)}${cell('Worst streak',`<b class="bad">${r.worstMiss?r.worstMiss+' misses':'—'}</b><em>${r.worstMissSpan?h(r.worstMissSpan[0]===r.worstMissSpan[1]?r.worstMissSpan[0]:r.worstMissSpan.join('–')):''}</em>`,r.worstMiss?{streak:'miss',mid:r.m.id}:null)}${cell('Bozo',`<b>${r.bozo}×</b><em>${r.bozoWeeks.length?h(r.bozoWeeks.join(', ')):'never'}</em>`)}
-      ${cell('As Bozo',`<b>${r.bozoLegs?Math.round(r.bozoLegsHit/r.bozoLegs*100)+'%':'—'}</b><em>${r.bozoLegs?`${r.bozoLegsHit}/${r.bozoLegs} legs hit · ${r.bozoCashed} cashed`:'never fronted it'}</em>`)}
-      ${cell('Avg cover',`<b class="good">${r.avgHitMargin!=null?'+'+r.avgHitMargin.toFixed(1):'—'}</b><em>pts when hitting</em>`)}${cell('Avg miss',`<b class="bad">${r.avgMiss!=null?'-'+r.avgMiss.toFixed(1):'—'}</b><em>pts when missing</em>`)}
-      ${cell('Best at',r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>')}
-    </div>
+    ${pdGrid([cell('Plus-money bets',`<b>${rec(r.plus)}</b><em>${pc(r.plus)}</em>`,{f:{Odds:ODDS_VALS[0]},mid:r.m.id}),cell('Minus-money bets',`<b>${rec(r.minus)}</b><em>${pc(r.minus)}</em>`,{f:{Odds:ODDS_VALS[1]},mid:r.m.id}),
+      cell('Units',`<b class="mono ${uCls(r.units||0)}">${r.units!=null?fmtU(r.units):'—'}</b><em class="pd-ex">1u a pick</em>${r.all&&r.all.uq?`<em class="whole">leaves out ${r.all.uq} hit${r.all.uq===1?'':'s'} (no odds)</em>`:''}`),cell('Avg odds',`<b class="mono">${r.avgDec?amer(r.avgDec):'—'}</b>`),cell('Avg odds · wins',`<b class="mono good">${r.avgWinDec?amer(r.avgWinDec):'—'}</b>`),cell('Avg odds · losses',`<b class="mono bad">${r.avgLoseDec?amer(r.avgLoseDec):'—'}</b>`),
+      cell('Best streak',`<b class="good">${r.bestHit?r.bestHit+' hits':'—'}</b><em>${wk(r.bestHitSpan)}</em>`,r.bestHit?{streak:'hit',mid:r.m.id}:null),cell('Worst streak',`<b class="bad">${r.worstMiss?r.worstMiss+' misses':'—'}</b><em>${wk(r.worstMissSpan)}</em>`,r.worstMiss?{streak:'miss',mid:r.m.id}:null),
+      cell('Bozo',`<b>${r.bozo}×</b><em>${bw.length?h((bw.length>2?'…, ':'')+bw.slice(-2).join(', ')):'never'}</em>`),
+      cell('As Bozo · legs hit',`<b>${r.bozoLegs?Math.round(r.bozoLegsHit/r.bozoLegs*100)+'%':'—'}</b><em>${r.bozoLegs?`${r.bozoLegsHit}/${r.bozoLegs} · ${r.bozoCashed} cashed`:'never fronted it'}</em>`),
+      cell('Avg cover',`<b class="good">${r.avgHitMargin!=null?'+'+r.avgHitMargin.toFixed(1):'—'}</b><em class="pd-ex">pts when hitting</em>`),cell('Avg miss',`<b class="bad">${r.avgMiss!=null?'-'+r.avgMiss.toFixed(1):'—'}</b><em class="pd-ex">pts when missing</em>`),
+      cell('Best at'+atType(r.bestType),r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>'),cell('Worst at'+atType(r.worstType),r.worstType?`<b>${h(r.worstType[0])}</b><em>${r.worstType[1].w}-${r.worstType[1].l}</em>`:'<b>—</b>')],'pd-compact')}
     ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type <span class="muted">· tap to dig in</span></div><div class="typerows">${typeRows(r.byType,r.m.id)}</div>`:''}
     ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most <span class="muted">· tap to dig in</span></div><div class="typerows">${mostBet(r.byTeam).slice(0,5).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'show-bets',data:`data-node="${encNode({team:a,mid:r.m.id})}"`})).join('')}</div>${Object.keys(r.byTeam).length>5?`<button class="btn ghost block sm" style="margin-top:8px" data-act="teams-all" data-mid="${r.m.id}">See all ${Object.keys(r.byTeam).length} teams</button>`:''}`:''}
     <div class="pd-bets">
@@ -4197,12 +4207,10 @@ function grudgeSheet(G,id){
     for(const v of x.voted)bits.push(`<span class="tiny">${v.R===2?'Revote: voted':'Voted'} ${v.c===id?'<b>themself</b>':`<b>${h(nm(v.c))}</b>`}</span>`);
     for(const R of [1,2]){const g=x.got.filter(y=>y.R===R);if(g.length)bits.push(`<span class="tiny">${g.length} ${R===2?'revote ':''}vote${g.length===1?'':'s'} against: ${g.map(y=>h(nm(y.v))).join(', ')}</span>`)}
     return`<div class="gb-ev"><span class="mono muted tiny">${h(x.label)}</span><div class="gb-bits">${bits.join('')}</div></div>`};
-  return`<div class="pd-grid">
-      ${cell('On the ballot',`${p.on}×`,p.on?`${Math.round(e*100)}% escaped`:p.solo?'only alone so far':p.got?'none decided yet':'never')}${cell('Picked',`${p.picked}×`,'as the Bozo')}
-      ${p.solo?cell('Only one on it',`${p.solo}×`,'automatic Bozo'):''}
-      ${cell('Votes cast',p.cast,p.self?`${p.self} for themself`:'')}${cell('Votes against',p.got,'')}
-      ${cell('With the room',p.roomN?`${p.room}/${p.roomN}`:'—','voted for the Bozo')}${cell('Revenge votes',p.revenge,p.lastRevenge?`latest ${h(p.lastRevenge.label)}, ${h(nm(p.lastRevenge.on))}`:'the week after')}
-    </div>
+  return`${pdGrid([cell('On the ballot',`${p.on}×`,p.on?`${Math.round(e*100)}% escaped`:p.solo?'only alone so far':p.got?'none decided yet':'never'),cell('Picked',`${p.picked}×`,'as the Bozo'),
+      p.solo?cell('Only one on it',`${p.solo}×`,'automatic Bozo'):'',
+      cell('Votes cast',p.cast,p.self?`${p.self} for themself`:''),cell('Votes against',p.got,''),
+      cell('With the room',p.roomN?`${p.room}/${p.roomN}`:'—','voted for the Bozo'),cell('Revenge votes',p.revenge,p.lastRevenge?`latest ${h(p.lastRevenge.label)}, ${h(nm(p.lastRevenge.on))}`:'the week after')])}
     <div class="pd-sub">Who they vote for</div>${list(p.to,p.cast?'Only themself so far.':'No votes on the record yet.')}
     <div class="pd-sub">Who votes for them</div>${list(p.from,'Nobody has voted for them yet.')}
     ${never.length?`<div class="pd-sub">Never voted for them</div><div class="gb-list">${never.map(([v,n])=>`<div class="gb-li">${av(v)}<span class="gb-nm">${h(nm(v))}</span><span class="muted tiny">${n} chance${n===1?'':'s'}</span></div>`).join('')}</div>`:''}
@@ -4915,7 +4923,7 @@ const ACT={
   'toggle-lock'(el){const w=week(el.dataset.wid);w.locked=!w.locked;commit();toast(w.locked?'Picks locked — nobody can change their pick':'Picks unlocked')},
   'verify-pick'(el){const w=el.dataset.wid?week(el.dataset.wid):currentWeek();const p=w&&w.picks[el.dataset.mid];if(!p)return stale();delete p.unsure;commit();toast('Marked verified')},
   'player-detail'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;const r={m,...p};
-    modal({title:m.name,body:`<div class="pd-title"><span class="avatar" style="--c:${m.color}">${avIn(m)}</span><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${pct(r.rate)} · ${r.picks} pick${r.picks===1?'':'s'}${statScope==='all'?' · all-time':' · '+h(seasonName(season()))}</span><button class="pillbtn" style="margin-left:auto" data-act="show-bets" data-node="${encNode({mid:m.id})}">Explore ›</button></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
+    modal({title:m.name,body:`<div class="pd-title"><span class="avatar md" style="--c:${m.color}">${avIn(m,1)}</span><div class="pd-who"><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${`<span class="nw">${pct(r.rate)}</span>&nbsp;· <span class="nw">${r.picks} pick${r.picks===1?'':'s'}</span><span class="sep">&nbsp;· </span><span class="nw pd-scope">${statScope==='all'?'all-time':h(seasonName(season()))}</span>`}</span></div><button class="pillbtn" data-act="show-bets" data-node="${encNode({mid:m.id})}">Explore ›</button></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
   'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=pageY();showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
@@ -5001,7 +5009,7 @@ function screenCheck(){   // the few numbers that tell a zoomed page, the iOS re
   const t=document.querySelector('.tabs');const r=t?t.getBoundingClientRect():null;
   const ae=document.activeElement;const rows=[['App',APP_VERSION],['Device',/iPad|Macintosh/.test(ua)&&navigator.maxTouchPoints>1?'iPad':/iPhone/.test(ua)?'iPhone':'Other'],['Safari',os||'unknown'],['Opened as',matchMedia('(display-mode: standalone)').matches||navigator.standalone?'Home Screen app':'Browser tab'],['Touch',document.documentElement.classList.contains('touch')?'yes':'no'],['Zoom',v?v.scale.toFixed(2):'—'],['Screen',v?`${Math.round(v.width)}×${Math.round(v.height)} (window ${innerWidth}×${innerHeight}, top ${Math.round(v.offsetTop)})`:`${innerWidth}×${innerHeight}`],['Too wide by',Math.max(0,document.documentElement.scrollWidth-document.documentElement.clientWidth)+'px'],['Tab bar',r?`${Math.round(innerHeight-r.bottom)}px above the bottom`:'—'],['Layout',SHELL()?'Header outside the scrolling list':'Page scrolls'],['Keyboard gap',v?`${Math.round(innerHeight-v.height)}px`:'—'],['Scroll',`page ${Math.round(window.scrollY)} · list ${Math.round(pageY())}`],['Focused',ae&&ae!==document.body?(ae.tagName.toLowerCase()+(ae.id?'#'+ae.id:'')):'nothing']];
   const txt=rows.map(([k,x])=>`${k}: ${x}`).join('\n');
-  modal({title:'Screen check',body:`<p class="muted tiny" style="margin:0 0 10px">If the tab bar is out of place, open this right then and send it over.</p><div class="pd-grid">${rows.map(([k,x])=>`<div class="pd-cell"><small>${h(k)}</small><b style="font-size:13px">${h(String(x))}</b></div>`).join('')}</div>`,actions:[{label:'Copy',cls:'ghost',onClick:()=>{copyText(txt);return false}},{label:'Done',cls:'primary'}]})}
+  modal({title:'Screen check',body:`<p class="muted tiny" style="margin:0 0 10px">If the tab bar is out of place, open this right then and send it over.</p>${pdGrid(rows.map(([k,x])=>`<div class="pd-cell"><small>${h(k)}</small><b style="font-size:13px">${h(String(x))}</b></div>`))}`,actions:[{label:'Copy',cls:'ghost',onClick:()=>{copyText(txt);return false}},{label:'Done',cls:'primary'}]})}
 document.addEventListener('focusin',e=>{if(e.target.matches&&e.target.matches('input:not([type=file]),textarea,select'))document.body.classList.add('typing')});
 let pressAt=0;const pressWait=[];const pressDone=()=>{pressAt=0;setTimeout(()=>{for(const f of pressWait.splice(0))f()},0)};   // a mouse button still down: a repaint now would replace the very button being pressed and its click would never come. The wait ends after the click the release brings
 document.addEventListener('pointerdown',e=>{if(e.isPrimary&&e.button===0)pressAt=Date.now()},true);document.addEventListener('pointerup',pressDone,true);document.addEventListener('pointercancel',pressDone,true);
