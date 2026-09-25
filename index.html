@@ -1085,11 +1085,12 @@ async function pull(l=league(),loud=false,force=false,read=null){
   if(l.sync.role==='admin'&&l.sync.dirty&&!l.sync.stuck){if(!read){push(l);return}read.waiting=true;await push(l);read.waiting=!!l.sync.dirty;if(read.waiting||read.current&&!read.current())return false}   // this device's edits go up before anything comes down
   if(force||loud)await retryPriceEdits(l);if(outboxHas(l))await flushOutbox(l);   // so does a pick that hasn't reached the league yet
   if(read?.current&&!read.current())return false;pullBusy=true;const was=dotWas();setSyncDot('busy');const asKey=l.meKey,dn=dotN;let gone=false;
-  try{const d=await api(l,'');if(read?.current&&!read.current()){gone=true;return false}delete l.sync.stuck;if(l.meKey!==asKey){setSyncDot('ok');setTimeout(()=>pull(l,false,true),50)}   // this device became someone else mid-fetch: fetch again as them
+  try{const d=await api(l,'');if(read?.current&&!read.current()){gone=true;return false}delete l.sync.stuck;const ph=takePhotos(l,d.photos);if(ph)save();   // #44: the league's list of photos lives beside the league, so it is taken whatever else this answer brings (it names no one's own data)
+    if(l.meKey!==asKey){setSyncDot('ok');setTimeout(()=>pull(l,false,true),50)}   // this device became someone else mid-fetch: fetch again as them
     else if(pushTof(l)||pendingPick||l.sync.dirty){setSyncDot('ok')}   // an edit landed mid-fetch: it pushes first
     else if(force||d.rev!==l.sync.rev){applyState(l,d);save();if(!quiet())render();else needRender=true}
     else if(d.person&&(()=>{const ahead=rvAhead(l,d.person);if(!mergePerson(l,d.person))return false;save();if(ahead)afterPerson(l);else softRender();return true})()){}   // watched something on another device (or a device/upload changed)
-    else if(takePhotos(l,d.photos)){save();softRender()}   // someone added, changed or removed a photo: nothing else in the league moved
+    else if(ph){softRender()}   // someone added, changed or removed a photo: nothing else in the league moved
     else if(needRender&&!quiet()){needRender=false;render()}
     if(Object.keys(l.personPend||{}).length)sendPerson(l);   // this device is still ahead of the server: send it again
     hello(l);
