@@ -1621,8 +1621,11 @@ function calc(w){
   const payout=result==='won'?potential:result==='void'?stake:0;
   const paid=pushOutOn()&&result==='won'?n-pushes:n;const share=paid?payout/paid:0;   // a push is left out of the winnings when either league rule says so
   const payees=pushOutOn()&&pushes<n?n-pushes:n;const each=result==='won'?share:(payees?potential/payees:0);   // what one person collects, the same number the payout line prints
-  return{legs,n,hits,misses,pushes,pending,dec:d,potential,payout,share,each,result,stake,missingOdds,slip,priced:n>0&&(!missingOdds||slip),graded:pending===0&&n>0};
+  const inN=legs.filter(l=>String(l.text||'').trim()).length,pn=legs.filter(l=>l.status!=='push'&&l.oddsN!=null&&String(l.text||'').trim()).length,priced=n>0&&(!missingOdds||slip);
+  const sofar=!priced&&result==='pending'&&pn>0?{potential,each:inN?potential/inN:0,inN}:null;   // Jason 09-24: while the slip fills up, To win follows the legs priced so far (as Parlay does) and Each splits it among the people with a pick in, not the whole league
+  return{legs,n,hits,misses,pushes,pending,dec:d,potential,payout,share,each,result,stake,missingOdds,slip,priced,sofar,graded:pending===0&&n>0};
 }
+const winTxt=c=>c.priced?fmt$(c.potential):c.sofar?fmt$(c.sofar.potential):'—',eachTxt=c=>c.priced?fmt$(c.each):c.sofar?fmt$(c.sofar.each):'—';   // the slip's To win and Each: the full slip's once every leg is priced, the slip so far before that
 function eligible(w){
   const c=calc(w);if(!c.graded)return{list:[],reason:'grade'};
   const by=st=>c.legs.filter(l=>l.status===st).map(l=>l.mid);
@@ -2565,8 +2568,8 @@ function ticketFoot(w,c,mid=''){
   return`<div class="foot-grid">
     <div><small>Parlay</small><b class="mono" id="f-odds">${c.n?amer(c.dec):'—'}</b></div>
     <div><small>Stake</small><b class="mono">$${isAdmin()?`<input type="number" class="inline-num" value="${c.stake}" min="0" step="1" data-bind="week|${w.id}|stake" inputmode="numeric">`:c.stake}</b></div>
-    <div><small>${c.result==='won'?'Paid':'To win'}</small><b class="mono ${c.result==='won'?'good':''}" id="f-win">${priced?fmt$(c.potential):'—'}</b></div>
-    <div><small>Each</small><b class="mono" id="f-each">${priced?fmt$(c.each):'—'}</b></div>
+    <div><small>${c.result==='won'?'Paid':'To win'}</small><b class="mono ${c.result==='won'?'good':''}" id="f-win">${winTxt(c)}</b></div>
+    <div><small>Each</small><b class="mono" id="f-each">${eachTxt(c)}</b></div>
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
   <div id="f-won">${wonLine(w,c)}</div>${mid}
@@ -2578,8 +2581,8 @@ function patchTicket(w){
   const c=calc(w);const priced=c.priced;const $=id=>document.getElementById(id);
   if(!$('tfoot'))return;
   $('f-odds').textContent=c.n?amer(c.dec):'—';
-  $('f-win').textContent=priced?fmt$(c.potential):'—';
-  $('f-each').textContent=priced?fmt$(c.each):'—';
+  $('f-win').textContent=winTxt(c);
+  $('f-each').textContent=eachTxt(c);
   $('f-hint').hidden=!(c.missingOdds&&c.n);
   $('tbadge').innerHTML=resultBadge(c);
   const b=member(w.bozoId);
@@ -4304,7 +4307,7 @@ async function slipImage(w){
   x.fillStyle='#f5f5f7';x.beginPath();x.arc(pad,y+22,20,0,7);x.arc(W-pad,y+22,20,0,7);x.fill();
   // totals
   const priced=c.priced;y+=70;
-  const cols=[['PARLAY',c.n?amer(c.dec):'—'],['STAKE',fmt$0(c.stake)],[c.result==='won'?'PAID':'TO WIN',priced?fmt$(c.potential):'—'],['EACH',priced?fmt$(c.each):'—']];
+  const cols=[['PARLAY',c.n?amer(c.dec):'—'],['STAKE',fmt$0(c.stake)],[c.result==='won'?'PAID':'TO WIN',winTxt(c)],['EACH',eachTxt(c)]];
   const cw=(R-L)/4;cols.forEach(([k,v],i)=>{const cx=L+cw*i;x.textAlign='left';try{x.letterSpacing='3px'}catch(e){}x.fillStyle=MU;x.font=F(600,20);x.fillText(k,cx,y+24);try{x.letterSpacing='0px'}catch(e){}
     const big=cols.some(([,v])=>v.length>8);x.fillStyle=i===2&&c.result==='won'?GREEN:T;x.font=F(600,big?(i===0?32:28):(i===0?40:36),true);x.fillText(v,cx,y+76)});
   y+=120;
