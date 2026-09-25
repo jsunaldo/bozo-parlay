@@ -1962,8 +1962,9 @@ function awards(per){
   add('🔥','Hot Streak','Most hits in a row',pick(p=>p.bestHit>1?p.bestHit:null),(p,v)=>({stat:`${v} straight hits`,detail:span(p.bestHitSpan)}));
   add('🧊','Cold Streak','Most misses in a row',pick(p=>p.worstMiss>1?p.worstMiss:null),(p,v)=>({stat:`${v} straight misses`,detail:span(p.worstMissSpan)}));
   if(S.pmap){const T=seasonTops(S),B=id=>seasonBest(T[id]);   // #43, the record book's missing pieces, on All-time only (one season's best rate is its Sharpest Bettor): each person's best season, counted by stats() on that season's weeks for this viewer, 8 or more legs hit or missed. The longest hit streak is Hot Streak above (on All-time it runs across seasons)
-    add('📈','Season Best',`Best hit rate in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).rate.rate:null),p=>{const x=B(p.id).rate;return{stat:pct(x.rate),detail:`${x.name} · ${x.hits}-${x.misses}`}});
-    add('🏅','Season Hits',`Most legs hit in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).hits.hits:null),p=>{const x=B(p.id).hits;return{stat:`${x.hits} hit${x.hits===1?'':'s'}`,detail:`${x.name} · ${pct(x.rate)}`}})}
+    const tieSafe=()=>{const a=A[A.length-1];if(a&&a.tied.length>1&&new Set(a.rows.filter(r=>a.tied.includes(r.who)).map(r=>r.detail)).size>1)delete a.detail};   // #43: tied holders from different seasons: the tile doesn't name one holder's season for all (each keeps theirs in the ranking)
+    add('📈','Season Best',`Best hit rate in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).rate.rate:null),p=>{const x=B(p.id).rate;return{stat:pct(x.rate),detail:`${x.name} · ${x.hits}-${x.misses}`}});tieSafe();
+    add('🏅','Season Hits',`Most legs hit in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).hits.hits:null),p=>{const x=B(p.id).hits;return{stat:`${x.hits} hit${x.hits===1?'':'s'}`,detail:`${x.name} · ${pct(x.rate)}`}});tieSafe()}
   return A;
 }
 
