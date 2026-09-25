@@ -4184,7 +4184,7 @@ function grudgeCard(){
     ${foot?`<p class="muted tiny" style="margin:10px 0 0">${h(foot)}</p>`:''}</section>`;
 }
 function grudgeSheet(G,id){
-  const p=G.P[id];const nm=x=>member(x)?.name||'?';const av=x=>{const m=member(x);return`<span class="avatar xs" style="--c:${m?.color||'#888'}">${avIn(m)}</span>`};
+  const p=G.P[id];const nm=x=>member(x)?.name||'?',me=h(nm(id));const av=x=>{const m=member(x);return`<span class="avatar xs" style="--c:${m?.color||'#888'}">${avIn(m)}</span>`};   // me: the person's own name wherever the sheet would say they/them (Jason 2026-09-25: "Never voted for Genes")
   const cell=(k,v,e)=>`<div class="pd-cell"><small>${k}</small><b>${v}</b>${e?`<em>${e}</em>`:''}</div>`;const e=gbEsc(p);
   const list=(src,none)=>{const rows=Object.entries(src).sort((a,b)=>b[1]-a[1]);return rows.length?`<div class="gb-list">${rows.map(([x,n])=>`<div class="gb-li">${av(x)}<span class="gb-nm">${h(nm(x))}</span><span class="pk-badge">×${n}</span></div>`).join('')}</div>`:`<p class="muted tiny" style="margin:0">${none}</p>`};
   const never=Object.entries(p.chance).filter(([v,n])=>n>0&&!p.from[v]&&member(v)).sort((a,b)=>b[1]-a[1]);
@@ -4194,18 +4194,18 @@ function grudgeSheet(G,id){
     if(b)bits.push(b.solo?`<span class="gb-chip bad">🤡 ${b.how==='push'?'Pushed, automatic Bozo':'Only one on the ballot'}${nxt}</span>`
       :b.bz===id?`<span class="gb-chip bad">🤡 Picked${nxt}${b.how&&howTxt[b.how]?` · ${howTxt[b.how]}`:''}</span>`
       :`<span class="gb-chip good">Escaped the ballot</span><span class="muted tiny">${h(nm(b.bz))} got ${x.next?h(x.next):'it'}</span>`);
-    for(const v of x.voted)bits.push(`<span class="tiny">${v.R===2?'Revote: voted':'Voted'} ${v.c===id?'<b>themself</b>':`<b>${h(nm(v.c))}</b>`}</span>`);
+    for(const v of x.voted)bits.push(`<span class="tiny">${v.R===2?'Revote: voted':'Voted'} ${v.c===id?`<b>${me}</b>`:`<b>${h(nm(v.c))}</b>`}</span>`);
     for(const R of [1,2]){const g=x.got.filter(y=>y.R===R);if(g.length)bits.push(`<span class="tiny">${g.length} ${R===2?'revote ':''}vote${g.length===1?'':'s'} against: ${g.map(y=>h(nm(y.v))).join(', ')}</span>`)}
     return`<div class="gb-ev"><span class="mono muted tiny">${h(x.label)}</span><div class="gb-bits">${bits.join('')}</div></div>`};
   return`<div class="pd-grid">
       ${cell('On the ballot',`${p.on}×`,p.on?`${Math.round(e*100)}% escaped`:p.solo?'only alone so far':p.got?'none decided yet':'never')}${cell('Picked',`${p.picked}×`,'as the Bozo')}
       ${p.solo?cell('Only one on it',`${p.solo}×`,'automatic Bozo'):''}
-      ${cell('Votes cast',p.cast,p.self?`${p.self} for themself`:'')}${cell('Votes against',p.got,'')}
+      ${cell('Votes cast',p.cast,p.self?`${p.self} for ${me}`:'')}${cell('Votes against',p.got,'')}
       ${cell('With the room',p.roomN?`${p.room}/${p.roomN}`:'—','voted for the Bozo')}${cell('Revenge votes',p.revenge,p.lastRevenge?`latest ${h(p.lastRevenge.label)}, ${h(nm(p.lastRevenge.on))}`:'the week after')}
     </div>
-    <div class="pd-sub">Who they vote for</div>${list(p.to,p.cast?'Only themself so far.':'No votes on the record yet.')}
-    <div class="pd-sub">Who votes for them</div>${list(p.from,'Nobody has voted for them yet.')}
-    ${never.length?`<div class="pd-sub">Never voted for them</div><div class="gb-list">${never.map(([v,n])=>`<div class="gb-li">${av(v)}<span class="gb-nm">${h(nm(v))}</span><span class="muted tiny">${n} chance${n===1?'':'s'}</span></div>`).join('')}</div>`:''}
+    <div class="pd-sub">Who ${me} votes for</div>${list(p.to,p.cast?`Only for ${me} so far.`:'No votes on the record yet.')}
+    <div class="pd-sub">Who votes for ${me}</div>${list(p.from,`Nobody has voted for ${me} yet.`)}
+    ${never.length?`<div class="pd-sub">Never voted for ${me}</div><div class="gb-list">${never.map(([v,n])=>`<div class="gb-li">${av(v)}<span class="gb-nm">${h(nm(v))}</span><span class="muted tiny">${n} chance${n===1?'':'s'}</span></div>`).join('')}</div>`:''}
     ${evs.length?`<div class="pd-sub">Week by week</div><div class="gb-evs">${evs.map(evRow).join('')}</div>`:''}`;
 }
 /* ---- survival by kickoff window: how often the parlay got out of each TV window alive ---- */
