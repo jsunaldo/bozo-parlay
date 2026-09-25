@@ -1008,9 +1008,9 @@ function gdCard(){   // one time, for people who already get pings: game-day pin
   const l=league();if(!l.sync||!l.me||l.guest||!pushWanted(l)||!pingsOf(l).gameday||!l.person||l.person.gameday!=null||!(l.person.push||[]).length)return'';
   return`<section class="card pushcard"><div class="row between"><h3>🏈 Game-day pings</h3><button class="mini" data-act="gd-no" title="No thanks">×</button></div><p>Want a ping as games finish? Your leg hits or misses, the slip dies, it's down to one leg, the slip cashes. Goes to all your devices.</p><button class="btn primary block" data-act="gd-on">🏈 Turn on game-day pings</button><p class="muted tiny" style="margin:8px 0 0">You can change this any time in Settings → Me.</p></section>`}
 const GD_PEND=new Map();   // a game-day switch on its way to the league: a pull meanwhile keeps showing it
-async function setGameday(l,v){if(!l.me||!l.sync||GD_PEND.has(l.id))return;const was=l.person?l.person.gameday:null;GD_PEND.set(l.id,v);l.person={...(l.person||{}),gameday:v};render();
-  try{const d=await api(l,'/me',{method:'POST',body:{gameday:v}});GD_PEND.delete(l.id);if(mergePerson(l,d.person))save();softRender();toast(v?'Game-day pings are on for all your devices':'Game-day pings are off. Turn them on any time in Settings → Me.','good')}
-  catch(e){GD_PEND.delete(l.id);l.person={...(l.person||{}),gameday:was};softRender();toast('Couldn\'t change that: '+friendly(e)+'. Nothing changed. Try again when you have signal.','bad')}}
+async function setGameday(l,v){if(!l.me||!l.sync||GD_PEND.has(l.id))return;const was=l.person?l.person.gameday:null,who=personWho(l);GD_PEND.set(l.id,v);l.person={...(l.person||{}),gameday:v};render();
+  try{const d=await api(l,'/me',{method:'POST',body:{gameday:v}});GD_PEND.delete(l.id);if(mergePerson(l,d.person,who))save();softRender();toast(v?'Game-day pings are on for all your devices':'Game-day pings are off. Turn them on any time in Settings → Me.','good')}
+  catch(e){GD_PEND.delete(l.id);if(personWho(l)===who)l.person={...(l.person||{}),gameday:was};softRender();toast('Couldn\'t change that: '+friendly(e)+'. Nothing changed. Try again when you have signal.','bad')}}
 const PING_TIMES=['06:00','09:00','12:00','15:00','18:00','21:00'],DAY1=['S','M','T','W','T','F','S'],DAYN=['Sundays','Mondays','Tuesdays','Wednesdays','Thursdays','Fridays','Saturdays'];
 const pingsOf=l=>{const p=(l&&l.pings)||{};const sch=x=>({on:!(x&&x.on===false),times:x&&Array.isArray(x.times)?[...x.times]:['12:00'],days:x&&Array.isArray(x.days)?[...x.days]:[0,1,2,3,4,5,6]});return{reveal:p.reveal!==false,graded:p.graded!==false,hand:p.hand!==false,gameday:p.gameday!==false,lastPick:p.lastPick!==false,placeIt:p.placeIt!==false,placed:p.placed!==false,kickoff:p.kickoff!==false,pick:sch(p.pick),vote:sch(p.vote)}};
 /* ---- each person's own notification choices (Settings → Me). The league keeps them on the person, so they follow them to every device, and the league's server applies them as each ping goes out; this app only shows and changes them ---- */
@@ -1168,10 +1168,10 @@ function applyState(l,d,ro){   // ro: a read-only look (Refresh on a phone that 
   if(!ro)autoTidySoon();
   if(!l.seasons.find(x=>x.id===l.activeSeason))l.activeSeason=(l.seasons.find(x=>x.id===d.activeSeason)||l.seasons[0])?.id;
   if(d.name)l.name=d.name;if(d.features!==undefined)l.features=d.features||{};if(d.halfPt!==undefined)l.halfPt=!!d.halfPt;if(d.pushBozo!==undefined)l.pushBozo=!!d.pushBozo;if(d.pings!==undefined){l.pingsSrv=d.pings;if(!PSET_PEND.has(l.id))l.pings=d.pings}if(d.clubName!==undefined)l.clubName=d.clubName||'';if(d.vapid)l.vapid=d.vapid;if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};takePhotos(l,d.photos);if(d.mondayOk!==undefined)l.mondayOk=!!d.mondayOk;if(d.claims!==undefined)l.claims=d.claims||{};if(d.limits)l.limits=d.limits;if(d.devs!==undefined)l.devs=d.devs||{};if(d.memberKey)l.shareKey=d.memberKey;if(d.events!==undefined)l.events=d.events;if(d.rev!==undefined)l.npVer=d.npVer||0;if(d.notifyAll!==undefined)l.npAll=d.notifyAll;if(d.uploads!==undefined)l.uploads=d.uploads;
-  if(l.meKey&&d.you===null){const still=!!(l.claims&&l.claims[l.me]);delete l.me;delete l.meKey;delete l.keyBound;delete l.pushEp;delete l.pushMid;setTimeout(()=>toast(still?'This device was signed out of your name. To use it here again: on one of your other devices go to Settings → Me → Use this on another device, and type that code here.':'This device was signed out of your name. Tap your name to use it here again.','bad'),80)}
+  if(l.meKey&&d.you===null){const still=!!(l.claims&&l.claims[l.me]);delete l.me;delete l.meKey;delete l.keyBound;delete l.pushEp;delete l.pushMid;pendOwn(l);setTimeout(()=>toast(still?'This device was signed out of your name. To use it here again: on one of your other devices go to Settings → Me → Use this on another device, and type that code here.':'This device was signed out of your name. Tap your name to use it here again.','bad'),80)}
   if(asWho!==undefined&&(d.role||l.sync.role)==='admin'&&l.asPend){const a=asWho||{};if((l.asPend.guest&&a.guest)||(l.asPend.mid&&a.mid===l.asPend.mid))delete l.asPend;else setTimeout(()=>sendAs(l),0)}   // this device's newer choice wins until it lands
   else if(asWho!==undefined&&(d.role||l.sync.role)==='admin'){const was=l.me;if(asWho&&asWho.mid){l.me=asWho.mid;delete l.guest}else if(asWho&&asWho.guest){delete l.me;l.guest=true}else if((l.me||l.guest)&&!asSent.has(l.sync.id)){asSent.add(l.sync.id);api(l,'/as',{method:'POST',body:l.me?{memberId:l.me}:{guest:true}}).catch(()=>asSent.delete(l.sync.id))}   // who the commissioner is lives with the league
-    if(l.me!==was)setTimeout(()=>pull(l,false,true),60)}   // fetch again as that person (their vote, their progress)
+    if(l.me!==was){pendOwn(l);setTimeout(()=>pull(l,false,true),60)}}   // fetch again as that person (their vote, their progress); what the phone watched as the one before is dropped
   l.sync.rev=d.rev;l.sync.role=d.role||l.sync.role;if(d.updatedAt)l.sync.base=d.updatedAt;
   l.sync.known=[];for(const x of l.seasons)for(const w of x.data.weeks)l.sync.known.push(w.id);   // what the league had, to tell a delete from a week this copy never saw
   if(league()===l){S=season().data;ALLTIME=null;if(quiet()){hsLand();try{dkSync()}catch(e){}}}   // the page waits (someone is typing): the pick search's results, and an open Export to DraftKings / Ride It sheet (a tick box focused on it counts as typing), follow the league at once all the same
@@ -1377,7 +1377,7 @@ async function adoptLink(id,key,opt={}){
   let l=null,created=false,prev=null,ahead=[],refused=null;
   try{if(!opt.quiet)toast('Connecting as commissioner…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`,{headers:{'X-BP-Pins':BP_READS}});const d=await r.json().catch(()=>({}));if(!d.ok||d.role!=='admin')throw Object.assign(new Error(d.error||'that link doesn\'t work'),{status:r.status});
     if(!opt.quiet&&!DB.acct&&isOwner())mergeBuiltIns();   // only a commissioner link gets here: this is the commish's device (an account brings its own leagues)
-    l=DB.leagues.find(x=>x.sync&&x.sync.id===id)||DB.leagues.find(x=>!x.sync&&canonName(x.name)===canonName(d.name));
+    l=DB.leagues.find(x=>x.sync&&x.sync.id===id);   // only a league this phone already holds by its id: a league kept only on this phone with the same name (or its "(kept on this phone)" copy) is never sent into it and stays as it is, a league of its own
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null};DB.leagues.push(l);created=true}
     prev={sync:l.sync,shareKey:l.shareKey,features:l.features,claims:l.claims};
     l.sync={url:SYNC_URL,id,key,role:'admin',rev:d.rev};l.shareKey=d.memberKey;l.features=d.features||{};l.claims=d.claims||{};
@@ -1390,7 +1390,7 @@ async function adoptLink(id,key,opt={}){
     else{if(hadLocal)backupLeague(l);applyState(l,d);if(opt.keep&&opt.onReplaced)opt.onReplaced(l.name)}   // the league's copy, with this device's own kept as a backup first; this device's edits push from now on
     delete l.sync.dirty;
     DB.leagues=DB.leagues.filter(x=>x===l||x.sync||hasContent(x));   // drop the empty placeholder a fresh phone starts with
-    if(opt.me&&!(d.adminAs&&d.adminAs.mid)&&l.seasons.some(x=>x.data.members.some(m=>m.id===opt.me)))l.me=opt.me;   // the league's own answer wins
+    if(opt.me&&!(d.adminAs&&d.adminAs.mid)&&l.seasons.some(x=>x.data.members.some(m=>m.id===opt.me))){l.me=opt.me;pendOwn(l)}   // the league's own answer wins
     notNow.delete(id);delete l.refusedBy;
     if(!opt.quiet){DB.active=l.id;S=season().data;VIEW='crew';PANE='league';save();render();acctNote({leagues:{[id]:{key}}});toast(`${l.name} is live: you run it from here too`,'good')}else save();return true;
   }catch(e){
@@ -1482,7 +1482,7 @@ async function redeemLinkCode2(code){
     if(!e||e.role!=='member'){modal({title:'That code is for a different app',body:`<p>${b.kind==='commish'?'That code came from the Commish app. Open the Commish app on this device and type it there.':'That code is for another league\'s app.'}</p>`,actions:[{label:'OK',cls:'primary'}]});return false}
     const l=league();const was=l.me;
     if(l.pushEp&&l.meKey&&l.meKey!==e.meKey){try{await api(l,'/push/unsubscribe',{method:'POST',body:{endpoint:l.pushEp}})}catch(x){}}   // this device's pings were for the old name
-    l.me=e.me;l.meKey=e.meKey;delete l.keyBound;delete l.guest;delete l.pushEp;delete l.pushMid;save();modalStack.length=0;closeModal();
+    l.me=e.me;l.meKey=e.meKey;delete l.keyBound;delete l.guest;delete l.pushEp;delete l.pushMid;pendOwn(l);save();modalStack.length=0;closeModal();
     try{const d=await api(l,'');applyState(l,d);save()}catch(x){}sendPerson(l,true);hello(l);render();
     toast(`You're ${member(e.me)?.name||'set'} on this device too${was&&was!==e.me?` (was ${member(was)?.name||'someone else'})`:''}`,'good');return true}
   // the Commish app: every league, the way the other device has it
@@ -1516,8 +1516,8 @@ async function joinLink(id,key,opt={}){
     const meKey=opt.meKey||(l&&l.meKey)||'';
     if(!opt.quiet)toast('Joining the league…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`,{headers:{'X-BP-Pins':BP_READS,...(meKey?{'X-BP-Me':meKey}:{})}});const d=await r.json().catch(()=>({}));if(!d.ok)throw Object.assign(new Error(d.error||'that link doesn\'t work'),{status:r.status});
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null,sync:{url:SYNC_URL,id,key,role:d.role,rev:0}};DB.leagues.push(l)}else{l.sync.key=key}
-    if(opt.meKey&&d.you){l.me=d.you;l.meKey=opt.meKey;delete l.keyBound}
-    applyState(l,d);DB.leagues=DB.leagues.filter(x=>x===l||(x.sync&&x.sync.id!==id)||(hasContent(x)&&canonName(x.name)!==canonName(l.name)));   // drop the built-in copy of the same league and the empty placeholder
+    if(opt.meKey&&d.you){l.me=d.you;l.meKey=opt.meKey;delete l.keyBound;pendOwn(l)}
+    applyState(l,d);for(const x of DB.leagues)if(x!==l&&x.sync&&x.sync.id===id&&hasContent(x))backupLeague(x);DB.leagues=DB.leagues.filter(x=>x===l||(x.sync?x.sync.id!==id:hasContent(x)));   // drop only an empty placeholder (a fresh phone's) and a second copy of this same league (kept first under Copies kept on this phone). A league kept only on this phone is never dropped for having the same name
     if(opt.quiet){save();return true}
     acctNote({leagues:{[id]:acctEntry(l)}});DB.active=l.id;S=season().data;VIEW='week';save();render();
     if(!l.me&&!l.guest)pickMe(l,true,true);else toast(l.me?`Welcome back, ${member(l.me)?.name||''}`:`You're in ${l.name}`,'good');return true;
@@ -1535,10 +1535,10 @@ function pickMe(l=league(),first=false,must=false){
 const isIPad=()=>/iPad/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);   // iPadOS Safari says it's a Mac
 const deviceName=()=>{const u=navigator.userAgent;return /iPhone/.test(u)?'iPhone':isIPad()?'iPad':/Android/.test(u)?'Android':/Mac/.test(u)?'Mac':'Browser'};
 async function claimMe(l,mid){
-  if(!l.sync||isAdmin(l)){l.me=mid;delete l.guest;subEdit.clear();save();closeModal();render();toast(`Got it: you're ${member(mid)?.name}`,'good');
+  if(!l.sync||isAdmin(l)){l.me=mid;delete l.guest;pendOwn(l);subEdit.clear();save();closeModal();render();toast(`Got it: you're ${member(mid)?.name}`,'good');
     if(l.sync){l.asPend={mid,at:Date.now()};save();sendAs(l)}return}   // every commissioner device agrees on who you are (retried until the league has it)
   setSyncDot('busy');
-  try{const d=await api(l,'/claim',{method:'POST',body:{memberId:mid,device:deviceName(),dev:DEV_ID}});l.me=d.memberId;l.meKey=d.meKey;l.keyBound=true;delete l.guest;applyState(l,d);save();modalStack.length=0;closeModal();render();setSyncDot('ok');sendPerson(l,true);hello(l);acctNote({leagues:{[l.sync.id]:acctEntry(l)}});toast(`Got it: you're ${member(mid)?.name}. Add your other devices in Settings → Me.`,'good')}
+  try{const d=await api(l,'/claim',{method:'POST',body:{memberId:mid,device:deviceName(),dev:DEV_ID}});l.me=d.memberId;l.meKey=d.meKey;l.keyBound=true;delete l.guest;pendOwn(l);applyState(l,d);save();modalStack.length=0;closeModal();render();setSyncDot('ok');sendPerson(l,true);hello(l);acctNote({leagues:{[l.sync.id]:acctEntry(l)}});toast(`Got it: you're ${member(mid)?.name}. Add your other devices in Settings → Me.`,'good')}
   catch(e){setSyncDot('bad');toast(e.status===409?(/already set up as/i.test(e.message||'')?e.message.charAt(0).toUpperCase()+e.message.slice(1).replace(/[\s.]+$/,'')+'.'   /* the league already named the phone, so use its words */:'That name is already set up on another phone. Nothing changed. If that phone is yours, open the app there, go to Settings → Me, tap Use this on another device, and type the code here.'):failNote(e,'Couldn’t claim that name','Nothing changed. Try again when you have signal.'),'bad')}
 }
 function ballotCount(w,id){return (w.votes?.[id]||0)+Object.values(w.ballots||{}).filter(c=>c===id).length}
@@ -2928,13 +2928,17 @@ function replayRunning(){const l=league();if(!l)return false;return(season(l).da
 function rvSet(w,v,R){const l=league();const r=rvOf(w,R);if(!r)return;const rk=w.id+'|'+(R===2?2:1);
   if(REPLAY.has(rk)&&rvStep(w,l,R)>=rvTop(w,R)){REPLAY.set(rk,{i:v.i,f:!!v.f});if(stepOf(v)>=rvTop(w,R))REPLAY_RUN.delete(replayRunKey(w,R,l));return}   // a rewatch moves only this screen
   const n=stepOf(v);if(n<=rvStep(w,l,R))return;const k=rvK(l,w,R);if(n>=2*(r.order.length+1)&&currentWeek()===w)BROWSED=true;   // finished it here: stay on its board until This Week
-  l.person={...(l.person||{}),rv:{...((l.person&&l.person.rv)||{}),[k]:{at:r.at,s:n}}};(l.personPend=l.personPend||{})[k]={at:r.at,s:n};save();sendPerson(l)}
+  l.person={...(l.person||{}),rv:{...((l.person&&l.person.rv)||{}),[k]:{at:r.at,s:n}}};pendAdd(l,k,r.at,n);save();sendPerson(l)}
 // has this PERSON watched the reveal through to the vote board (on any device)? nothing to watch counts as seen
 function revealSeen(w,l){if(!w||!w.reveal)return true;l=l||league();if(rvStep(w,l,1)<2*(w.reveal.order.length+1))return false;const r2=w.revote&&w.revote.reveal;return!r2||rvStep(w,l,2)>=2*(r2.order.length+1)}   // a revote has to be watched too
 function curRevealAt(l,k){const[sid,wid,R]=k.split('|');const sn=(l.seasons||[]).find(x=>x.id===sid);const w=sn&&sn.data.weeks.find(x=>x.id===wid);const r=w&&rvOf(w,+R);return r&&r.at}
-function mergePerson(l,p){   // the server's copy of the person, plus anything this device watched that hasn't reached it yet
-  if(!p)return false;const pend=l.personPend||{};const rv={...(p.rv||{})};
-  for(const[k,e]of Object.entries(pend)){const sv=rv[k];if(e.at!==curRevealAt(l,k)){delete pend[k];continue}if(sv&&sv.at===e.at&&sv.s>=e.s){delete pend[k];continue}rv[k]=e}
+const personWho=l=>(l.sync?l.sync.id:'')+'|'+(l.me||'');   // whose person record a request to the league is for: this league, this member
+function pendOwn(l){   // unsent reveal progress goes to the league only as the person who watched it, in the league they watched it in. Once the phone is someone else there (a Reset, a sign-out, a code, the commissioner playing as someone else) it is dropped, never sent as them
+  const p=l.personPend||{},lg=l.sync?l.sync.id:'';for(const k of Object.keys(p)){const e=p[k];if(!e||typeof e!=='object'||!l.me||e.me!==l.me||e.lg!==lg)delete p[k]}return p}
+function pendAdd(l,k,at,s){const p=pendOwn(l);if(l.me)p[k]={at,s,lg:l.sync?l.sync.id:'',me:l.me};l.personPend=p}   // each unsent step records the league and the member it belongs to (a guest has no record to send it to)
+function mergePerson(l,p,who){   // the server's copy of the person, plus anything this device watched that hasn't reached it yet. who: the person it was asked for (personWho): an answer that comes back after the phone became someone else is theirs, not this person's
+  if(!p||(who!==undefined&&who!==personWho(l)))return false;const pend=pendOwn(l);const rv={...(p.rv||{})};
+  for(const[k,e]of Object.entries(pend)){const sv=rv[k];if(e.at!==curRevealAt(l,k)){delete pend[k];continue}if(sv&&sv.at===e.at&&sv.s>=e.s){delete pend[k];continue}rv[k]={at:e.at,s:e.s}}
   const nx={...p,rv};if(GD_PEND.has(l.id))nx.gameday=GD_PEND.get(l.id);
   if(p.notify){NP_SRV.set(l.id,p.notify);const q=NP_PEND.get(l.id);if(q)nx.notify=npOver(npOver(p.notify,q.fly&&q.fly.patch),q.want)}else NP_SRV.delete(l.id);   // notification choices still on their way stay on screen
   const was=JSON.stringify(l.person||null);l.person=nx;l.personPend=pend;return was!==JSON.stringify(nx)}
@@ -2944,11 +2948,11 @@ function bindKey(l){if(binding||!l.sync||!l.meKey)return;binding=true;   // swap
   api(l,'/me/bind',{method:'POST',body:{dev:DEV_ID,name:deviceName()}}).then(d=>{if(d.meKey){l.meKey=d.meKey;l.keyBound=true;save()}}).catch(()=>{}).finally(()=>{binding=false})}
 function hello(l){if(!l||!l.sync||!l.me)return;if(l.meKey&&!l.keyBound&&!isAdmin(l))bindKey(l);const k='bp-hello:'+l.sync.id+':'+l.me;let last=0;try{last=+localStorage.getItem(k)||0}catch(e){}const known=l.person&&l.person.devices&&l.person.devices[DEV_ID];
   if(known&&Date.now()-last<86400e3)return;try{localStorage.setItem(k,String(Date.now()))}catch(e){}
-  api(l,'/me',{method:'POST',body:{hello:{dev:DEV_ID,name:deviceName(),app:APP_KIND}}}).then(d=>{if(mergePerson(l,d.person)){save();softRender()}}).catch(()=>{try{localStorage.removeItem(k)}catch(e){}})}
+  const who=personWho(l);api(l,'/me',{method:'POST',body:{hello:{dev:DEV_ID,name:deviceName(),app:APP_KIND}}}).then(d=>{if(mergePerson(l,d.person,who)){save();softRender()}}).catch(()=>{try{localStorage.removeItem(k)}catch(e){}})}
 function sendPerson(l,now){if(!l.sync||!l.me)return;clearTimeout(personT[l.id]);personT[l.id]=setTimeout(()=>flushPerson(l),now?0:700)}
-async function flushPerson(l,leaving){const pend=l.personPend||{};if(!l.sync||!l.me||!Object.keys(pend).length)return;const body={rv:{...pend}};
+async function flushPerson(l,leaving){const pend=pendOwn(l);if(!l.sync||!l.me||!Object.keys(pend).length)return;const who=personWho(l),rv={};for(const[k,e]of Object.entries(pend))rv[k]={at:e.at,s:e.s};const body={rv};   // only this person's own steps, in the shape the league has always had
   if(leaving){try{fetch((l.sync.url||SYNC_URL)+'/leagues/'+l.sync.id+'/me',{method:'POST',keepalive:true,headers:hdrs(l),body:JSON.stringify(body)})}catch(e){}return}   // the app is going to the background
-  try{const d=await api(l,'/me',{method:'POST',body});if(mergePerson(l,d.person))save()}catch(e){}}   // no signal: it goes with the next pull (the reply is our own echo: nothing to re-land)
+  try{const d=await api(l,'/me',{method:'POST',body});if(mergePerson(l,d.person,who))save()}catch(e){}}   // no signal: it goes with the next pull (the reply is our own echo: nothing to re-land)
 function rvAhead(l,p){if(!p||!p.rv)return false;for(const[k,e]of Object.entries(p.rv)){const cur=curRevealAt(l,k);if(!cur||e.at!==cur)continue;const m=l.person&&l.person.rv&&l.person.rv[k];if(!m||m.at!==e.at||e.s>m.s)return true}return false}   // watched further on another device
 function afterPerson(l){   // what the person has seen changed (maybe on another device): land where they would land there
   if(league()===l)ALLTIME=null;const nw=newestOf(l);if(!nw)return;const cur=nw.data.weeks.find(w=>w.id===nw.data.currentWeekId);
@@ -2958,7 +2962,7 @@ function migrateRv(){   // reveal progress this device kept before it followed t
   try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('bp-rv:'))ks.push(k)}if(!ks.length)return;
     for(const k of ks){const[,lid,wid,two]=k.split(':');const l=DB.leagues.find(x=>(x.sync?.id||x.id)===lid);let v=null;try{v=JSON.parse(localStorage.getItem(k)||'null')}catch(e){}
       const sn=l&&l.seasons.find(x=>x.data.weeks.some(w=>w.id===wid));const w=sn&&sn.data.weeks.find(x=>x.id===wid);const R=two==='2'?2:1;const r=w&&rvOf(w,R);
-      if(r&&v&&typeof v.i==='number'){const n=stepOf(v);const key=sn.id+'|'+wid+'|'+R;if(n>rvStep(w,l,R)){l.person={...(l.person||{}),rv:{...((l.person&&l.person.rv)||{}),[key]:{at:r.at,s:n}}};(l.personPend=l.personPend||{})[key]={at:r.at,s:n}}}
+      if(r&&v&&typeof v.i==='number'){const n=stepOf(v);const key=sn.id+'|'+wid+'|'+R;if(n>rvStep(w,l,R)){l.person={...(l.person||{}),rv:{...((l.person&&l.person.rv)||{}),[key]:{at:r.at,s:n}}};pendAdd(l,key,r.at,n)}}
       if(l)localStorage.removeItem(k)}   // another app on this site owns the rest: leave them for it
     save()}catch(e){}}
 function takeState(l,d){if(isAdmin(l)&&(l.sync.dirty||pushTof(l))){setTimeout(()=>pull(l,false,true),900);return}applyState(l,d)}   // unsent commissioner edits go up first, then the league comes down
@@ -4992,13 +4996,13 @@ const ACT={
   async 'push-remind'(){const l=league();try{const r=await api(l,'/push/remind',{method:'POST',body:{}});const nm=ids=>ids.map(id=>member(id)?.name).filter(Boolean).join(', ');const off=(r.owed||[]).filter(id=>!l.pushWho?.[id]);
       if((r.owed||[]).length&&!r.sent&&(r.errors||[]).length){toast(`The reminders didn\u2019t reach anyone’s phone. Nobody was pinged and nothing was lost. Text ${nm(r.owed)} yourself for now.`,'bad');return}
       toast(!(r.owed||[]).length?'Nobody owes a pick or vote right now':`Reminded ${nm((r.owed||[]).filter(id=>l.pushWho?.[id]))||'nobody'}${off.length?`. Text ${nm(off)} yourself`:''}`,'good')}catch(e){toast(failNote(e,'The reminders didn’t go out','Nobody was pinged and nothing else changed. Try again when you have signal.'),'bad')}},
-  'push-later'(){const l=league();const t=Date.now();try{localStorage.setItem('bp-push-later:'+l.sync.id,String(t))}catch(e){}l.person={...(l.person||{}),pushLater:t};if(l.me)api(l,'/me',{method:'POST',body:{pushLater:t}}).then(d=>{if(mergePerson(l,d.person))save()}).catch(()=>{});render();toast('You can turn them on any time in Settings → Me')},   // 'not now' holds on every device
+  'push-later'(){const l=league();const t=Date.now();try{localStorage.setItem('bp-push-later:'+l.sync.id,String(t))}catch(e){}l.person={...(l.person||{}),pushLater:t};const who=personWho(l);if(l.me)api(l,'/me',{method:'POST',body:{pushLater:t}}).then(d=>{if(mergePerson(l,d.person,who))save()}).catch(()=>{});render();toast('You can turn them on any time in Settings → Me')},   // 'not now' holds on every device
   async 'push-off-all'(){const l=league();try{const d=await api(l,'/push/unsubscribe',{method:'POST',body:{all:true,memberId:l.me,endpoint:l.pushEp||''}});delete l.pushEp;delete l.pushMid;takeState(l,d);save();render();toast('Notifications are off on all your devices')}catch(e){toast('Couldn\'t turn them off: '+friendly(e)+'. Nothing changed. Try again when you have signal.','bad')}},
   'check-results'(el){const w=week(el.dataset.wid)||currentWeek();checkSlip(w)},
   'dev-out'(el){const l=league();const dev=el.dataset.dev;const x=(l.person&&l.person.devices||{})[dev]||{};const here=dev===DEV_ID;const nm=x.name||'device';
     confirm2(here?'Sign out here?':`Sign out your ${nm}?`,`${here?'This device':'Your '+h(nm)} stops being ${h(member(l.me)?.name||'you')} in ${h(l.name)}: no picks, votes or pings from it. Everything you've done stays. To use it again, enter a code from one of your other devices.`,'Sign out',async()=>{
-      try{const d=await api(l,'/me/signout',{method:'POST',body:{dev}});if(here){SIGNED_OUT.add(l.id);delete l.me;delete l.meKey;delete l.keyBound;delete l.pushEp;delete l.pushMid;if(d.claims!==undefined)l.claims=d.claims||{};save();render();toast('Signed out on this device','good');return}
-        if(mergePerson(l,d.person))save();if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};render();toast(`Your ${nm} is signed out of ${l.name}`,'good')}
+      const who=personWho(l);try{const d=await api(l,'/me/signout',{method:'POST',body:{dev}});if(here){SIGNED_OUT.add(l.id);delete l.me;delete l.meKey;delete l.keyBound;delete l.pushEp;delete l.pushMid;pendOwn(l);if(d.claims!==undefined)l.claims=d.claims||{};save();render();toast('Signed out on this device','good');return}
+        if(mergePerson(l,d.person,who))save();if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};render();toast(`Your ${nm} is signed out of ${l.name}`,'good')}
       catch(e){toast('Couldn\'t sign it out: '+friendly(e)+'. Nothing changed. Try again when you have signal.','bad')}})},
   'gd-toggle'(){const l=league();setGameday(l,!(l.person&&l.person.gameday))},
   'sb-kind'(el){const l=league(),k=el.dataset.f;if(!SB_KINDS.some(x=>x[0]===k))return;sbDraft(l).kind=k;for(const b of document.querySelectorAll('#sbCard .sb-kind')){const on=b.dataset.f===k;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))}},   // #49: the kind, shown at once without a repaint (the words being typed stay put)
@@ -5052,7 +5056,7 @@ const ACT={
   'taken-me'(el){const m=member(el.dataset.mid);modal({stack:true,title:`Is that you, ${m?.name||''}?`,body:`<p>${h(m?.name||'That name')} is already set up on another device. If that's you, add this one with a code:</p><ol class="linksteps"><li>On the device that's already you, go to <b>Settings</b> → <b>Me</b> and tap <b>Use this on another device</b>.</li><li>Type the code it shows here.</li></ol><input id="linkIn2" class="linkin" maxlength="7" placeholder="ABC-123" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go"><p class="muted tiny">Not you? Go back and pick your own name, or Guest.</p>`,
     actions:[{label:'Back',cls:'ghost'},{label:'Link this device',cls:'primary',onClick:()=>{const v=document.getElementById('linkIn2')?.value||'';if(!LINK_RE.test(v)){toast('Type the 6-character code, like K7M-4QX','bad');return false}redeemLinkCode(v)}}],
     onOpen:r=>{const i=r.querySelector('#linkIn2');if(!i)return;i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();r.querySelector('[data-act="modal-action"][data-i="1"]')?.click()}});setTimeout(()=>i.focus(),60)}})},
-  'set-guest'(){const l=league();modalStack.length=0;closeModal();l.guest=true;delete l.me;save();render();
+  'set-guest'(){const l=league();modalStack.length=0;closeModal();l.guest=true;delete l.me;pendOwn(l);save();render();
     if(isAdmin(l)&&l.sync){l.asPend={guest:true,at:Date.now()};save();sendAs(l)}   // every commissioner device knows you're not playing
     toast(isAdmin(l)?'Got it: you run it but aren\'t playing':'Watching as a guest. Join the crew any time in Settings → Me.','good')},
   'set-me'(el){claimMe(league(),el.dataset.mid)},
