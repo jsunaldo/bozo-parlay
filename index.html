@@ -464,20 +464,21 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .modal .pd-cell b,.modal .pd-sub,.modal .typerow,.modal .pd-bet b,.modal .pd-bet span{color:var(--text)}
 .pd-title{display:flex;align-items:center;gap:10px;margin-bottom:8px;font-size:15px}
 .pd-title b{font-weight:700}
-.pd-who{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}.pd-who b{white-space:nowrap}.pd-who .muted{font-size:13px}.pd-who .nw{display:inline-block;max-width:100%}   /* the record on one line; the muted line under it breaks only between its parts */
+.pd-who{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}.pd-who b{white-space:nowrap}.pd-who .muted{font-size:13px}.pd-who .nw{display:inline-block;max-width:100%}@media(max-width:360px){.pd-compact em.pd-ex{display:none}.pd-who .sep{display:none}.pd-who .pd-scope{display:block}}   /* the record on one line; the muted line under it breaks only between its parts */
 .pd-title .pillbtn{flex:none;white-space:nowrap;background:transparent;box-shadow:inset 0 0 0 1px var(--line2)}   /* Explore: never squeezed; on the sheet's own background its blue reads at 4.5:1 in light and dark */
 .pd-title .mini{margin-left:auto}
 .pd{background:var(--surface2);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:10px;animation:fadeUp .2s}
-.pd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.pd-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.pd-grid.pd-compact{gap:6px}
 .pd-grid>:last-child:nth-child(odd){grid-column:1/-1}   /* never a lone card: an odd count in two columns, the last card takes the whole row */
 .pd-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}.pd-grid.three>:last-child{grid-column:auto}
 @media(min-width:480px){.pd-grid.w3{grid-template-columns:repeat(3,minmax(0,1fr))}.pd-grid.w4{grid-template-columns:repeat(4,minmax(0,1fr))}.pd-grid.w3>:last-child,.pd-grid.w4>:last-child{grid-column:auto}}   /* wider screens: more columns only when the cards fill every row (pdGrid) */
-.pd-cell{background:var(--surface);border-radius:10px;padding:6px 10px;min-height:44px;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;align-content:center;column-gap:6px;line-height:1.25}   /* compact: the label, then the value with its note after it on one line */
-.pd-cell small{flex:0 0 100%;font-size:10px;line-height:1.2;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-.pd-cell b{flex:0 1 auto;min-width:0;font-size:15px;font-weight:700;overflow-wrap:anywhere}
-.pd-cell em{flex:0 1 auto;min-width:0;font-style:normal;font-size:11px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* the note after the value: beside it when it fits whole, else on the next line; … only when it is longer than the card */
-.pd-cell em.pd-ex{flex:1 1 0;min-width:min(2.5em,100%)}   /* a note that only explains the number (1u a pick, pts when hitting): stays beside it, shortened with … when there's no room */
-.pd-cell em.whole{flex-basis:100%;white-space:normal}   /* a note that must be read whole (Units leaving out hits with no odds): a line of its own */
+.pd-cell{background:var(--surface);border-radius:10px;padding:8px 10px;display:flex;flex-direction:column;gap:1px;min-width:0}.pd-cell small{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}.pd-cell b{font-size:15px;font-weight:700}.pd-cell em{font-style:normal;font-size:11px;color:var(--muted);font-weight:500;white-space:normal;line-height:1.3}
+.pd-compact .pd-cell{background:var(--surface);border-radius:10px;padding:6px 10px;min-height:44px;min-width:0;display:flex;flex-direction:row;flex-wrap:wrap;align-items:baseline;align-content:center;column-gap:6px;line-height:1.25}   /* compact: the label, then the value with its note after it on one line */
+.pd-compact .pd-cell small{text-wrap:balance;flex:0 0 100%;font-size:10px;line-height:1.2;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.pd-compact .pd-cell b{flex:0 1 auto;min-width:0;font-size:15px;font-weight:700;overflow-wrap:anywhere}
+.pd-compact .pd-cell em{flex:0 1 auto;min-width:0;font-style:normal;font-size:11px;color:var(--muted);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* the note after the value: beside it when it fits whole, else on the next line; … only when it is longer than the card */
+.pd-compact .pd-cell em.pd-ex{flex:1 1 0;min-width:min(2.5em,100%)}   /* a note that only explains the number (1u a pick, pts when hitting): stays beside it, shortened with … when there's no room */
+.pd-compact .pd-cell em.whole{flex-basis:100%;white-space:normal;text-wrap:balance}   /* a note that must be read whole (Units leaving out hits with no odds): a line of its own */
 .pd-bets{display:flex;flex-direction:column;gap:6px}
 .pd-sub{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
 .pd-bet .betchip{min-width:0}
@@ -1801,9 +1802,9 @@ function stats(){
     p.net=p.earned-p.spent;p.units=uOf(p.all);
     p.avgMiss=p.missMargins.length?p.missMargins.reduce((a,b)=>a+b,0)/p.missMargins.length:null;p.avgHitMargin=p.hitMargins.length?p.hitMargins.reduce((a,b)=>a+b,0)/p.hitMargins.length:null;
     p.topTeam=Object.entries(p.byTeam).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p))[0]||null;
-    const types=Object.entries({...p.byType,...Object.assign({},...Object.values(p.bySub))}).filter(([k,o])=>k!=='Player prop'&&k!=='Other'&&o.w+o.l>=2);   // the bet types Best at and Worst at choose from: 2 or more decided, props and Other left out
+    const types=[...Object.entries(p.byType),...Object.entries(p.bySub).flatMap(([t,x])=>Object.entries(x).map(([k,o])=>[k,o,t]))].filter(([k,o])=>k!=='Player prop'&&k!=='Other'&&o.w+o.l>=2);   // a sub-type keeps the bet type it belongs to ([name, record, type]), so two with one name stay two   // the bet types Best at and Worst at choose from: 2 or more decided, props and Other left out
     p.bestType=types.slice().sort((a,b)=>b[1].w/(b[1].w+b[1].l)-a[1].w/(a[1].w+a[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;
-    p.worstType=types.slice().sort((a,b)=>a[1].w/(a[1].w+a[1].l)-b[1].w/(b[1].w+b[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;if(p.worstType&&p.bestType&&p.worstType[0]===p.bestType[0])p.worstType=null;   // Worst at: the worst win rate, then more decided bets; none when it would be Best at's own type
+    p.worstType=types.slice().sort((a,b)=>a[1].w/(a[1].w+a[1].l)-b[1].w/(b[1].w+b[1].l)||(b[1].w+b[1].l)-(a[1].w+a[1].l))[0]||null;if(p.worstType&&p.bestType&&p.worstType[0]===p.bestType[0]&&p.worstType[2]===p.bestType[2])p.worstType=null;   // Worst at: the worst win rate, then more decided bets; none when it would be Best at's own type
   });
   return{per,g};
 }
@@ -4054,6 +4055,7 @@ function renderStatsInner(){
   ${closeCalls(per)}`;
 }
 const pdGrid=(cells,cls='')=>{const n=(cells=cells.filter(Boolean)).length;return`<div class="pd-grid${cls?' '+cls:''}${n%4?n%3?'':' w3':' w4'}">${cells.join('')}</div>`};   // stat cards: two columns on a phone (an odd count's last card takes the whole row); on a wider screen 4 or 3 only when the cards fill every row
+const atType=x=>x&&x[2]?' · '+h(x[2]==='Moneyline'?'ML':x[2]):'';   // Best at / Worst at on a sub-type: its bet type in the label ('Worst at · ML' over 'Underdog (+)'), so 'Underdog' on a spread and on a moneyline never read as one
 function playerDetail(r){
   const rec=o=>`${o.w}-${o.l}${o.p?'-'+o.p:''}`,pc=o=>((o.w+o.l)?Math.round(o.w/(o.w+o.l)*100)+'%':'—')+(uOf(o)!=null?` · ${fmtU(uOf(o))}`:'');
   const bet=x=>x?`<b class="mono">${fmtOdds(x.odds)}</b>${betChip(x.text,x.teams)}<small>${h(x.wk)}</small>`:'<span class="muted">—</span>';
@@ -4066,7 +4068,7 @@ function playerDetail(r){
       cell('Bozo',`<b>${r.bozo}×</b><em>${bw.length?h((bw.length>2?'…, ':'')+bw.slice(-2).join(', ')):'never'}</em>`),
       cell('As Bozo · legs hit',`<b>${r.bozoLegs?Math.round(r.bozoLegsHit/r.bozoLegs*100)+'%':'—'}</b><em>${r.bozoLegs?`${r.bozoLegsHit}/${r.bozoLegs} · ${r.bozoCashed} cashed`:'never fronted it'}</em>`),
       cell('Avg cover',`<b class="good">${r.avgHitMargin!=null?'+'+r.avgHitMargin.toFixed(1):'—'}</b><em class="pd-ex">pts when hitting</em>`),cell('Avg miss',`<b class="bad">${r.avgMiss!=null?'-'+r.avgMiss.toFixed(1):'—'}</b><em class="pd-ex">pts when missing</em>`),
-      cell('Best at',r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>'),cell('Worst at',r.worstType?`<b>${h(r.worstType[0])}</b><em>${r.worstType[1].w}-${r.worstType[1].l}</em>`:'<b>—</b>')])}
+      cell('Best at'+atType(r.bestType),r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>'),cell('Worst at'+atType(r.worstType),r.worstType?`<b>${h(r.worstType[0])}</b><em>${r.worstType[1].w}-${r.worstType[1].l}</em>`:'<b>—</b>')],'pd-compact')}
     ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type <span class="muted">· tap to dig in</span></div><div class="typerows">${typeRows(r.byType,r.m.id)}</div>`:''}
     ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most <span class="muted">· tap to dig in</span></div><div class="typerows">${mostBet(r.byTeam).slice(0,5).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'show-bets',data:`data-node="${encNode({team:a,mid:r.m.id})}"`})).join('')}</div>${Object.keys(r.byTeam).length>5?`<button class="btn ghost block sm" style="margin-top:8px" data-act="teams-all" data-mid="${r.m.id}">See all ${Object.keys(r.byTeam).length} teams</button>`:''}`:''}
     <div class="pd-bets">
@@ -4921,7 +4923,7 @@ const ACT={
   'toggle-lock'(el){const w=week(el.dataset.wid);w.locked=!w.locked;commit();toast(w.locked?'Picks locked — nobody can change their pick':'Picks unlocked')},
   'verify-pick'(el){const w=el.dataset.wid?week(el.dataset.wid):currentWeek();const p=w&&w.picks[el.dataset.mid];if(!p)return stale();delete p.unsure;commit();toast('Marked verified')},
   'player-detail'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;const r={m,...p};
-    modal({title:m.name,body:`<div class="pd-title"><span class="avatar md" style="--c:${m.color}">${avIn(m,1)}</span><div class="pd-who"><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${[pct(r.rate),`${r.picks} pick${r.picks===1?'':'s'}`,statScope==='all'?'all-time':h(seasonName(season()))].map(x=>`<span class="nw">${x}</span>`).join('&nbsp;· ')}</span></div><button class="pillbtn" data-act="show-bets" data-node="${encNode({mid:m.id})}">Explore ›</button></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
+    modal({title:m.name,body:`<div class="pd-title"><span class="avatar md" style="--c:${m.color}">${avIn(m,1)}</span><div class="pd-who"><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${`<span class="nw">${pct(r.rate)}</span>&nbsp;· <span class="nw">${r.picks} pick${r.picks===1?'':'s'}</span><span class="sep">&nbsp;· </span><span class="nw pd-scope">${statScope==='all'?'all-time':h(seasonName(season()))}</span>`}</span></div><button class="pillbtn" data-act="show-bets" data-node="${encNode({mid:m.id})}">Explore ›</button></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
   'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=pageY();showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
