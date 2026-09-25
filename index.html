@@ -206,7 +206,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .avatar>.av-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%}   /* #44: a person's photo covers their initials, at exactly the circle's size; the initials stay underneath while it loads, when there is none, and when it can't load */
 .me-photo{display:flex;align-items:center;gap:12px;margin:14px 0 10px}
 .photo-btns{margin-bottom:0}.photo-btns .btn,.btn.photo-go{min-height:44px}
-.btn.photo-go{margin-top:8px}
+.btn.photo-go{margin-top:8px}.claimrow .photo-go{margin-top:0}@media(prefers-color-scheme:dark){.claimrow .btn.ghost.danger{color:#ff6961}}
 .tag{font-size:10px;font-weight:700;letter-spacing:.06em;padding:3px 8px;border-radius:980px;text-transform:uppercase}
 .tag.bozo{background:var(--purple);color:#fff}
 .tag.bad{background:var(--red-bg);color:var(--red)}
@@ -4428,7 +4428,7 @@ function settingsCrew(){   // Settings → Crew: this season's people. Everyone 
 }
 function pastPhotos(l){   /* #44: photos of people not on this season's crew (they can't reach Settings → Me here, and ✎ Edit only lists this season): the commissioner can still remove one */
   const ids=Object.keys(l.photos||{}).filter(id=>photoOf(id,l)&&!S.members.some(m=>m.id===id));if(!ids.length)return'';
-  return`<section class="card"><h3>Photos of people not in this season</h3><div class="claims">${ids.map(id=>{const m={...(anyMember(id,l)||{name:'Someone',color:'#8e8e93'}),id,pmid:id};return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><div class="mbody"><b>${h(m.name)}</b><small>Not in this season</small></div><button class="btn sm ghost danger" data-act="photo-drop" data-mid="${h(id)}">Remove photo</button></div>`}).join('')}</div></section>`}
+  return`<section class="card"><h3>Photos of people not in this season</h3><div class="claims">${ids.map(id=>{const m={...(anyMember(id,l)||{name:'Someone',color:'#8e8e93'}),id,pmid:id};return`<div class="claimrow"><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><div class="mbody"><b>${h(m.name)}</b><small>Not in this season</small></div><button class="btn sm ghost danger photo-go" data-act="photo-drop" data-mid="${h(id)}">Remove photo</button></div>`}).join('')}</div></section>`}
 function settingsLeague(){   // Settings → League: running the league (its health, link, seasons, videos, data and activity). How it runs is the Rules pane's alone: a member reads it there, and the commissioner changes it there
   const l=league();
   if(!isAdmin(l))return renderShare()+(SHARE_MODE?'':seasonsCard())+`<section class="card"><h3>Data</h3><button class="btn block" data-act="export">⬇ Export copy</button><p class="muted tiny" style="margin:8px 0 0">Downloads every season of ${h(l.name)}, as this phone has it, to a file you keep.</p></section>`;
