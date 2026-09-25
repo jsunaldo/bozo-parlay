@@ -995,18 +995,23 @@ const NP_ROWS=[   // one switch per kind of ping a person can turn off for thems
 const NQ_ZONES=[['America/New_York','Eastern'],['America/Chicago','Central'],['America/Denver','Mountain'],['America/Phoenix','Arizona'],['America/Los_Angeles','Pacific'],['America/Anchorage','Alaska'],['Pacific/Honolulu','Hawaii']];
 const zoneName=z=>(NQ_ZONES.find(x=>x[0]===z)||[])[1]||String(z||'').split('/').pop().replace(/_/g,' ');
 function phoneZone(){try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){return''}}   // this phone's own time zone: only ever offered, never saved without a tap
-const NP_PEND=new Map(),NP_SRV=new Map();let NP_SEQ=0;   // per league: choices tapped and not saved yet ({want, fly}); the league's own copy, to go back to if a save fails
+const NP_PEND=new Map(),NP_SRV=new Map(),NP_DRAWN=new Map();let NP_SEQ=0;   // per league: choices tapped and not saved yet ({want, base, fly}); the league's own copy, to go back to if a save fails; the copy Settings → Me was last drawn from ({who, n, rev, fr})
 const NP_OFFLINE='Couldn’t save that. Nothing changed, and your pings work as before. Try again when you have signal.';
 const npOn=l=>!!(l&&l.sync&&l.me&&l.person&&l.person.notify&&l.person.notify.types);   // this league's server keeps personal choices (an older one sends none: the switches aren't shown)
 const npWho=l=>[l.sync&&l.sync.id,l.me,l.meKey||'',l.sync&&l.sync.key].join('|');
 const npMerge=(a,b)=>{const o={...a};for(const[k,v]of Object.entries(b||{}))o[k]=k==='types'||k==='quiet'?{...(o[k]||{}),...v}:v;return o};   // later taps win, choice by choice
 const npOver=(n,x)=>!n||!x?n:{...n,...(x.types?{types:{...n.types,...x.types}}:{}),...(x.quiet?{quiet:{...n.quiet,...x.quiet}}:{}),...(x.tz?{tz:x.tz,tzSet:true}:{})};   // what the screen shows while a change is on its way
+const npFields=x=>[...Object.keys(x.types||{}),...['tz','quiet'].filter(k=>x[k]!==undefined)];   // the choices a change touches, as the league checks them for a newer change: each kind, the time zone, quiet hours (times, on and mode) as one
+const npVal=(n,f)=>JSON.stringify(f==='quiet'?['on','start','end','mode'].map(k=>(n.quiet||{})[k]):f==='tz'?n.tz:(n.types||{})[f]);
+const npSnap=l=>{const s=NP_DRAWN.get(l.id);return s&&s.who===npWho(l)?s:null};
+const npShown=l=>{const s=npSnap(l),q=NP_PEND.get(l.id);return s?npOver(npOver(s.n,q&&q.fly&&q.fly.patch),q&&q.want):l.person.notify};   // what this screen shows: the copy it was drawn from and this phone's own changes since, never a newer copy a refresh brought while the page waited for typing to end
+const npBaseOf=(l,f)=>{const s=npSnap(l);return s?Math.max(s.rev,s.fr[f]||0):Number((NP_SRV.get(l.id)||l.person.notify).rev)||0};   // the league's revision this screen showed that choice at (raised as this phone's own saves of it land)
 const zoneTime=(t,z)=>{try{const p={};for(const x of new Intl.DateTimeFormat('en-US',{timeZone:z,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(t)))p[x.type]=x.value;return hm12(p.hour+':'+p.minute)}catch(e){return''}};
 const etInstant=hm=>{const f=new Intl.DateTimeFormat('en-CA',{timeZone:'America/New_York'});const ds=f.format(new Date());const[y,m,d]=ds.split('-').map(Number),[hh,mm]=hm.split(':').map(Number);for(const off of[4,5]){const t=Date.UTC(y,m-1,d,hh+off,mm);if(zoneTime(t,'America/New_York')===hm12(hm))return t}return Date.UTC(y,m-1,d,hh+5,mm)};   // today's moment a New York wall time happens
 function zoneOpts(cur){const us=NQ_ZONES.map(x=>x[0]),extra=[...new Set([cur,phoneZone()].filter(z=>z&&!us.includes(z)))];let all=[];try{all=Intl.supportedValuesOf('timeZone')}catch(e){}
   return[...us,...extra].map(z=>`<option value="${h(z)}"${z===cur?' selected':''}>${h(zoneName(z))}</option>`).join('')+(all.length?`<optgroup label="Every time zone">${all.filter(z=>!us.includes(z)&&!extra.includes(z)).map(z=>`<option value="${h(z)}">${h(z.replace(/_/g,' '))}</option>`).join('')}</optgroup>`:'')}
 function npBlock(l){   // Settings → Me → Notifications: what this person gets (one switch per kind), their jobs, and their quiet hours
-  const n=l.person.notify,t=n.types||{},pg=pingsOf(l),gd=!!(l.person&&l.person.gameday);
+  const n=l.person.notify,t=n.types||{},pg=pingsOf(l),gd=!!(l.person&&l.person.gameday);NP_DRAWN.set(l.id,{who:npWho(l),n,rev:Number(n.rev)||0,fr:{}});   // a change made here is measured against this
   const rows=NP_ROWS.map(([k,name,sub,sends])=>{if(k==='gameday')return pg.gameday?`<div class="featrow" role="switch" aria-checked="${gd}" tabindex="0" data-act="gd-toggle"><div><b>${name}</b><small>${sub}</small></div><span class="toggle ${gd?'on':''}"><i></i></span></div>`:'';   // as it always was: off until turned on, and only while the league allows them
     if(!(k in t))return'';const lg=!!sends(l,pg),v=lg&&t[k]!==false;
     return lg?`<div class="featrow" role="switch" aria-checked="${v}" tabindex="0" data-act="np-kind" data-f="${k}"><div><b>${name}</b><small>${sub}</small></div><span class="toggle ${v?'on':''}"><i></i></span></div>`
@@ -1023,21 +1028,23 @@ function npBlock(l){   // Settings → Me → Notifications: what this person ge
     ${times.length&&zone!=='America/New_York'?`<p class="muted tiny" style="margin:8px 0 0">League reminders go out at ${times.map(hm12).join(', ')} Eastern (${h(times.map(x=>zoneTime(etInstant(x),zone)).join(', '))} ${h(zoneName(zone))} time).</p>`:''}`:'');
   const duty=`<p class="muted tiny" style="margin:8px 0 0">Always on while it’s your job: “time to place it” and the kickoff check when you’re the Bozo${isAdmin(l)?', and legs to grade by hand':''}.</p>`;
   return`<div class="pd-sub" style="margin:14px 0 6px">What you get · all your devices</div><div class="featrows">${rows}</div>${duty}<div class="pd-sub" style="margin:14px 0 6px">Quiet hours</div><div class="featrows">${quiet}</div>`}
-function npSave(l,patch){if(!npOn(l))return;const q=NP_PEND.get(l.id)||{want:{},fly:null};q.want=npMerge(q.want,patch);NP_PEND.set(l.id,q);l.person={...l.person,notify:npOver(l.person.notify,patch)};softRender();if(!q.fly)npFlush(l)}   // one save at a time per league; taps meanwhile join the next one
+function npSave(l,patch){if(!npOn(l))return;const q=NP_PEND.get(l.id)||{want:{},base:{},fly:null};q.want=npMerge(q.want,patch);for(const f of npFields(patch)){const b=npBaseOf(l,f);q.base[f]=f in q.base?Math.min(q.base[f],b):b}NP_PEND.set(l.id,q);l.person={...l.person,notify:npOver(l.person.notify,patch)};softRender();if(!q.fly)npFlush(l)}   // one save at a time per league; taps meanwhile join the next one, each choice with the revision the screen showed it at
 async function npFlush(l){const q=NP_PEND.get(l.id);if(!q||q.fly||!Object.keys(q.want).length||!npOn(l))return;
-  const patch=q.want,who=npWho(l),seq=++NP_SEQ,base=Number((NP_SRV.get(l.id)||l.person.notify).rev)||0;q.want={};q.fly={patch,seq};
+  const patch=q.want,bases=q.base||{},fs=npFields(patch),who=npWho(l),seq=++NP_SEQ,cur=NP_SRV.get(l.id)||l.person.notify,fr=cur.fr,old=fs.length?Math.min(...fs.map(f=>bases[f]||0)):Number(cur.rev)||0;q.want={};q.base={};q.fly={patch,seq};
+  const base=fr&&fs.every(f=>(Number(fr[f])||0)<=(bases[f]||0))?Math.max(old,Number(cur.rev)||0):old;   // none of these choices changed since the screen showed them: the newest copy's revision; otherwise the one they were shown at, so the league refuses the change instead of undoing a newer one (S23-R01)
   let d=null,e=null;try{d=await api(l,'/me/notifications',{method:'POST',body:{base,patch}})}catch(x){e=x}
   if(NP_PEND.get(l.id)!==q||!q.fly||q.fly.seq!==seq)return;q.fly=null;   // a newer save took over
   if(npWho(l)!==who){NP_PEND.delete(l.id);return}   // the league, the person or this phone's key changed while it was out: the answer is someone else's now
-  if(d){if(!Object.keys(q.want).length)NP_PEND.delete(l.id);if(mergePerson(l,d.person))save();softRender();if(NP_PEND.has(l.id))npFlush(l);return}
-  NP_PEND.delete(l.id);
+  if(d){const nn=d.person&&d.person.notify,r=Number(nn&&nn.rev)||0,s=npSnap(l),seen=s&&npOver(s.n,patch);if(nn)for(const f of fs)if(!seen||npVal(nn,f)===npVal(seen,f)){if(f in q.base)q.base[f]=Math.max(q.base[f],r);if(s)s.fr[f]=Math.max(s.fr[f]||0,r)}if(s)s.n=seen;   // saved: where the league's copy of a choice is now what the screen shows, the screen shows it as of this revision
+    if(!Object.keys(q.want).length)NP_PEND.delete(l.id);if(mergePerson(l,d.person))save();softRender();if(NP_PEND.has(l.id))npFlush(l);return}
+  NP_PEND.delete(l.id);{const a=document.activeElement;if(a&&/^nq(Start|End|Tz)$/.test(a.id||''))a.blur()}   // not saved: the time or zone box being changed lets go, so the screen can show the league's copy the message speaks of
   if(e&&e.data&&e.data.newer&&e.data.person){mergePerson(l,e.data.person);save();softRender();toast(e.data.error,'bad');return}   // changed on another device first: the newest choices show, and nothing of theirs was undone
   const srv=NP_SRV.get(l.id);if(srv)l.person={...l.person,notify:srv};softRender();
   toast(!e||!e.status?NP_OFFLINE:failNote(e,'Couldn’t save that','Nothing changed, and your pings work as before. Try again in a minute.','Your pings work as before.'),'bad')}
-function npTimes(){const l=league(),s=document.getElementById('nqStart'),e=document.getElementById('nqEnd');if(!npOn(l)||!s||!e)return;const a=String(s.value||'').slice(0,5),b=String(e.value||'').slice(0,5),q=l.person.notify.quiet||{};
+function npTimes(){const l=league(),s=document.getElementById('nqStart'),e=document.getElementById('nqEnd');if(!npOn(l)||!s||!e)return;const a=String(s.value||'').slice(0,5),b=String(e.value||'').slice(0,5),q=npShown(l).quiet||{};   // measured against what this screen shows, never a newer copy a refresh brought while the box was held: only a box the person changed is sent (S23-R01)
   if(!/^\d\d:\d\d$/.test(a)||!/^\d\d:\d\d$/.test(b)){s.value=q.start;e.value=q.end;toast('Choose a start and an end time. Nothing changed.','bad');return}
   if(a===b){s.value=q.start;e.value=q.end;toast('Choose different start and end times. Nothing changed.','bad');return}
-  if(a!==q.start||b!==q.end)npSave(l,{quiet:{start:a,end:b}})}
+  const p={};if(a!==q.start)p.start=a;if(b!==q.end)p.end=b;if(Object.keys(p).length)npSave(l,{quiet:p})}
 function npList(l){   // Settings → Crew, the commissioner's: what each person chose (Jason 2026-09-23, Q5), read-only; only they can change it
   const A=l.npAll,cur=(l.seasons||[]).length?newestOf(l):null;if(!A||!l.sync||!isAdmin(l)||!cur||season(l).id!==cur.id)return'';const nm=Object.fromEntries(NP_ROWS.map(r=>[r[0],r[1].replace(/^\S+\s/,'')]));
   const rows=S.members.map(m=>{const x=A[m.id],on=!!l.pushWho?.[m.id],bits=[on?'':'No device turned on',x&&x.off.length?'Off: '+x.off.map(k=>nm[k]||k).join(', ')+(x.gameday?'; game-day pings on':''):x&&x.gameday?'All pings on, game-day pings included':'All pings on except game-day pings (those are off until they turn them on)',x&&x.quiet?`quiet ${hm12(x.quiet.start)} to ${hm12(x.quiet.end)} ${zoneName(x.tz)}, ${x.quiet.mode==='mute'?'muted':'caught up after'}`:''].filter(Boolean);
@@ -4703,9 +4710,9 @@ const ACT={
         if(mergePerson(l,d.person))save();if(d.pushWho!==undefined)l.pushWho=d.pushWho||{};render();toast(`Your ${nm} is signed out of ${l.name}`,'good')}
       catch(e){toast('Couldn\'t sign it out: '+friendly(e)+'. Nothing changed. Try again when you have signal.','bad')}})},
   'gd-toggle'(){const l=league();setGameday(l,!(l.person&&l.person.gameday))},
-  'np-kind'(el){const l=league(),k=el.dataset.f;if(!npOn(l)||!(k in l.person.notify.types))return;npSave(l,{types:{[k]:l.person.notify.types[k]===false}})},   // this kind of ping, on or off, for all this person's devices
-  'np-quiet'(){const l=league();if(!npOn(l))return;npSave(l,{quiet:{on:!(l.person.notify.quiet&&l.person.notify.quiet.on)}})},   // the league fills in the times and choice (11 PM to 8 AM, catch me up) the first time
-  'np-mode'(el){const l=league(),m=el.dataset.f;if(!npOn(l)||!['catchup','mute'].includes(m)||(l.person.notify.quiet||{}).mode===m)return;npSave(l,{quiet:{mode:m}})},
+  'np-kind'(el){const l=league(),k=el.dataset.f;if(!npOn(l)||!(k in l.person.notify.types))return;npSave(l,{types:{[k]:(npShown(l).types||{})[k]===false}})},   // this kind of ping, on or off, for all this person's devices: the opposite of what the screen shows
+  'np-quiet'(){const l=league();if(!npOn(l))return;npSave(l,{quiet:{on:!(npShown(l).quiet||{}).on}})},   // the league fills in the times and choice (11 PM to 8 AM, catch me up) the first time
+  'np-mode'(el){const l=league(),m=el.dataset.f;if(!npOn(l)||!['catchup','mute'].includes(m)||(npShown(l).quiet||{}).mode===m)return;npSave(l,{quiet:{mode:m}})},
   'np-tz'(el){const l=league();if(!npOn(l)||!el.dataset.f)return;npSave(l,{tz:el.dataset.f})},   // only when tapped: a phone that travels never moves anyone's quiet hours by itself
   'gd-on'(){setGameday(league(),true)},
   'gd-no'(){setGameday(league(),false)},
@@ -4815,7 +4822,7 @@ function seasonBoxDone(el){const n=el.value.trim(),x=season();if(!x)return;if(!n
 document.addEventListener('visibilitychange',()=>{const a=document.activeElement;if(document.visibilityState==='hidden'&&a&&a.dataset&&a.dataset.bind==='season|name')seasonBoxDone(a)});   // the app put away with a name still in the box: kept, as leaving the box keeps it
 document.addEventListener('focusout',e=>{const a=e.target;if(a&&a.dataset&&a.dataset.bind==='season|name')seasonBoxDone(a)});   // leaving the box stores what it says even when the browser sees no change (a name kept when the app was put away, then taken back)
 document.addEventListener('click',e=>{if(e.target.closest&&e.target.closest('label')?.querySelector('#vidIn'))pickerOpen=Date.now()},true);
-document.addEventListener('change',e=>{const id=e.target?.id;if(id==='nqStart'||id==='nqEnd')npTimes();else if(id==='nqTz'){const l=league(),z=String(e.target.value||'');if(npOn(l)&&z&&z!==l.person.notify.tz)npSave(l,{tz:z})}});   // quiet hours' times and time zone, saved once chosen
+document.addEventListener('change',e=>{const id=e.target?.id;if(id==='nqStart'||id==='nqEnd')npTimes();else if(id==='nqTz'){const l=league(),z=String(e.target.value||'');if(npOn(l)&&z&&z!==npShown(l).tz)npSave(l,{tz:z})}});   // quiet hours' times and time zone, saved once chosen
 document.addEventListener('change',e=>{if(e.target.id==='vidIn'){pickerOpen=0;const f=e.target.files&&e.target.files[0];if(f)uploadVideo(league(),currentWeek(),f)}});
 document.addEventListener('cancel',e=>{if(e.target.id==='vidIn')pickerDone()},true);   // they backed out of the video picker
 document.addEventListener('pointerdown',()=>{if(pickerOpen)pickerDone(1)},true);   // any tap in the app means the picker is gone: let that tap finish, then paint
