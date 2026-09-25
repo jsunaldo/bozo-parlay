@@ -1962,7 +1962,7 @@ function awards(per){
   add('🔥','Hot Streak','Most hits in a row',pick(p=>p.bestHit>1?p.bestHit:null),(p,v)=>({stat:`${v} straight hits`,detail:span(p.bestHitSpan)}));
   add('🧊','Cold Streak','Most misses in a row',pick(p=>p.worstMiss>1?p.worstMiss:null),(p,v)=>({stat:`${v} straight misses`,detail:span(p.worstMissSpan)}));
   if(S.pmap){const T=seasonTops(S),B=id=>seasonBest(T[id]);   // #43, the record book's missing pieces, on All-time only (one season's best rate is its Sharpest Bettor): each person's best season, counted by stats() on that season's weeks for this viewer, 8 or more legs hit or missed. The longest hit streak is Hot Streak above (on All-time it runs across seasons)
-    add('🎯','Season Best',`Best hit rate in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).rate.rate:null),p=>{const x=B(p.id).rate;return{stat:pct(x.rate),detail:`${x.name} · ${x.hits}-${x.misses}`}});
+    add('📈','Season Best',`Best hit rate in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).rate.rate:null),p=>{const x=B(p.id).rate;return{stat:pct(x.rate),detail:`${x.name} · ${x.hits}-${x.misses}`}});
     add('🏅','Season Hits',`Most legs hit in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).hits.hits:null),p=>{const x=B(p.id).hits;return{stat:`${x.hits} hit${x.hits===1?'':'s'}`,detail:`${x.name} · ${pct(x.rate)}`}})}
   return A;
 }
@@ -4203,6 +4203,7 @@ function popRec(act,d){const n=d.node?decNode(d.node):null,mid=(n&&n.mid)||d.mid
   if(act==='show-bets'||act==='x-go'||act==='win-open')r.k='px';else if(act==='show-streak')r.streak=n&&n.streak;
   else if(act==='award-rank'){const a=withStats(()=>awards(stats().per)[+d.i]);if(a)r.award={name:a.name,icon:a.icon}}   // an award by its name, never its place in the list
   return r}
+const bdgNb=x=>String(x).replace(' ','\u00a0');   // a week name ("'26 W12") never splits across lines on a badge (a side parlay's "TD" may still go to the next line)
 const REC_ALL=['Season Best','Season Hits'];   // #43: the awards kept on All-time only
 function popDraw(st){const l=league(),where=statKey(l)==='all'?'any season':seasonName(season(l)),say=(title,t)=>({title,body:`<p class="pop-none">${h(t)}</p>`});   // st's popup in the scope on screen: {title, body}
   const mid=st.p?popMid(st.who):null;if(st.p&&!withStats(()=>Object.values(stats().per).some(x=>x.picks>0)))return say(st.name,`Nothing to crunch in ${where} yet.`);if(st.p&&!popPlayed(mid))return say(st.name,`${st.name} didn’t play in ${where}.`);if(mid)st.name=withStats(()=>member(mid).name);
@@ -4668,11 +4669,11 @@ function badgesOf(mid,sid,you){   // a person's badges in Jason's order, [] when
     for(let i=ws.length-1;i>=0;i--){const w=ws[i];if(isSide(w))continue;if(w.bozoId===aid)break;if(w.bozoId&&done(calc(w).legs.find(x=>x.mid===aid)))free++}   // back from the newest week this viewer sees: weeks the person played (a graded leg) with someone else the Bozo, until the week the person is the Bozo. A week the person sat out, or one with no Bozo on record, is skipped
     tops=seasonBest(seasonTops(v)[aid])}finally{S=real}
   const nm=(v.members.find(x=>x.id===aid)||{}).name||'',who=you?'you':nm,sp=p.bestHitSpan,out=[],tail=`Seasons with ${BDG_MIN} or more legs hit or missed count.`;
-  if(p.bestHit>=BDG_RUN)out.push({k:'hot',ic:'🔥',lab:'Hot hand',val:`${p.bestHit} in a row`,def:`Most legs ${who} hit in a row, across every season${sp?`: ${sp[0]===sp[1]?sp[0]:sp[0]+' to '+sp[1]}`:''}. A push doesn’t end a run.`});
-  if(cash)out.push({k:'cash',ic:'💵',lab:'First cash',val:wkShort(cash),say:cash.label||wkShort(cash),def:`The first parlay that paid ${who}: ${wkShort(cash)}`});
+  if(p.bestHit>=BDG_RUN)out.push({k:'hot',ic:'🔥',lab:'Hot hand',val:`${p.bestHit} in a row`,def:`Most legs ${who} hit in a row, across every season${sp?`: ${sp[0]===sp[1]?bdgNb(sp[0]):bdgNb(sp[0])+' to '+bdgNb(sp[1])}`:''}. A push doesn’t end a run.`});
+  if(cash)out.push({k:'cash',ic:'💵',lab:'First cash',val:bdgNb(wkShort(cash)),say:cash.label||wkShort(cash),def:`The first parlay that paid ${who} a share of its winnings.`});
   if(free>=BDG_FREE)out.push({k:'free',ic:'🛡️',lab:'Bozo-free',val:`${free} weeks`,def:`Weeks in a row ${who} ${you?'have':'has'} played, up to now, without being the Bozo. A week ${who} sat out is skipped.`});
   if(tops){const r=tops.rate,m=tops.hits;   // Jason's no-repeat rule (fix round 1): each only when its number isn't already on the card: Season best when it isn't the all-time Hit %, Season hits when it isn't the hits in the all-time Record (so never with one season)
-    if(pct(r.rate)!==pct(p.rate))out.push({k:'best',ic:'🎯',lab:'Season best',val:pct(r.rate),def:`${you?'Your':nm+'’s'} best hit rate in one season: ${r.name}, ${r.hits}-${r.misses}. ${tail}`});
+    if(pct(r.rate)!==pct(p.rate))out.push({k:'best',ic:'📈',lab:'Season best',val:pct(r.rate),def:`${you?'Your':nm+'’s'} best hit rate in one season: ${r.name}, ${r.hits}-${r.misses}. ${tail}`});
     if(m.hits!==p.hits)out.push({k:'hits',ic:'🏅',lab:'Season hits',val:String(m.hits),def:`The most legs ${who} hit in one season: ${m.name}. ${tail}`})}
   return out}
 function badgesHtml(list,at){if(!list.length)return'';   // the tiles (a card grid: balance() splits them into even rows), and the one line a tap puts under them (the definition alone: the badge's name is on its tile, and a line never has two colons). at: 'me' or 'cc', for the heading's and the line's ids. Nobody with no badge gets a heading or an empty box
