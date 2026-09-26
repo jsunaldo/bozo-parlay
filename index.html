@@ -643,7 +643,7 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .cell{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--surface2);font-size:14px;transition:transform .15s;border:0;padding:0;cursor:pointer;font:inherit;-webkit-tap-highlight-color:transparent}
 .cell:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 [data-act][tabindex="0"]:focus-visible,label.btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
-.srow[tabindex="0"]:focus-visible{outline-width:3px;outline-offset:3px}   /* a leg's row reached by Tab: a 3 px ring 3 px outside the row, so it is never taken for the thin blue line just inside the edge of your own row (both show on your own row) */
+.srow[tabindex="0"]:focus-visible{outline-width:3px;outline-offset:1px}   /* a leg's row reached by Tab: a 3 px ring 3 px outside the row, so it is never taken for the thin blue line just inside the edge of your own row (both show on your own row) */
 .cell:hover{transform:scale(1.15)}
 .cell.hit{background:var(--green);color:var(--on-green)}.cell.miss{background:var(--red);color:#2b0603}.cell.push{background:var(--amber);color:#1d1d1f}.cell.pending{background:var(--amber-bg);outline:1px dashed var(--amber);outline-offset:-1px}
 .cell.bz{box-shadow:0 0 0 2px var(--purple)}
