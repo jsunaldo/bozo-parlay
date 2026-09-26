@@ -587,6 +587,7 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .pk-kill{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px}
 .pk-kill .bet-chip,.pk-kill .betchip{flex:1;min-width:140px}
 .pk-row .chev{color:var(--dim);font-size:18px}
+.rc-rows{display:flex;flex-direction:column}.rc-row{display:flex;align-items:center;gap:12px;width:100%;min-height:44px;margin:0;padding:10px 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none;color:var(--text);font:inherit;text-align:left}.rc-row:first-child{border-top:0;padding-top:2px}button.rc-row{cursor:pointer;-webkit-tap-highlight-color:transparent}.rc-ref:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}.rc-ic{flex:none;width:30px;font-size:24px;line-height:1;text-align:center}.rc-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.rc-b small{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);text-wrap:balance}.rc-blurb{text-transform:none;letter-spacing:0;font-weight:500}.rc-b b{font-size:15px;font-weight:700;overflow-wrap:anywhere}.rc-b em{font-style:normal;font-size:13px;font-weight:500;color:var(--muted);overflow-wrap:anywhere}.rc-see{font-size:14px;font-weight:600;color:var(--blue)}.rc-row .chev{flex:none;font-size:18px}.rc-share{margin-top:12px}.rc-sub{margin:-4px 0 10px;text-wrap:balance}
 .gb-row .rank{width:18px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);flex:none}
 .gb-rate{display:flex;flex-direction:column;align-items:flex-end;flex:none}.gb-rate b{font-size:17px;font-weight:700;font-variant-numeric:tabular-nums}.gb-rate small{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 .gb-tag{display:inline-block;font-size:10px;font-weight:700;border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:middle;text-transform:uppercase;letter-spacing:.04em}.gb-tag.teflon{background:rgba(52,199,89,.15);color:var(--green)}.gb-tag.magnet{background:rgba(255,69,58,.14);color:var(--red)}
@@ -4369,7 +4370,7 @@ function renderStatsInner(){
       <td class="${r.cur>0?'good':r.cur<0?'bad':''}">${r.cur>0?'W'+r.cur:r.cur<0?'L'+(-r.cur):'—'}</td></tr>`).join(''))(places(rows,(a,b)=>a[sortKey]===b[sortKey]&&a.hits===b.hits&&(sortKey!=='hits'||a.misses===b.misses)))}
   </tbody></table></div><p class="muted tiny" style="margin:8px 0 0">Tap a name for the full breakdown.${rows.some(r=>r.all&&r.all.uq)?' * Units leave out hits with no odds written down.':''}</p></section>
   ${A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map((a,i)=>{const m=member(a.who);return`<div class="award tap" data-act="award-rank" data-i="${i}"><div class="aw-head"><span class="ic">${a.icon}</span><div class="ab"><small>${a.name} <span class="aw-blurb">· ${h(a.blurb)}</span></small>${a.tied&&a.tied.length>1?`<b>${a.tied.map(id=>h(member(id)?.name||'?')).join(' & ')} <span class="tag">tie</span></b>`:`<b style="color:${m.color}">${h(m.name)}</b>`}</div></div><div class="aw-stat">${h(a.stat||'')}</div>${a.bet&&a.bet.text?`<div class="aw-bet">${betChip(a.bet.text,a.bet.teams)}${a.bet.odds!=null&&a.bet.odds!==''?`<span class="mono muted">${fmtOdds(a.bet.odds)}</span>`:''}</div>`:''}${a.detail?`<em>${h(a.detail)}</em>`:''}<span class="aw-more">Full ranking ›</span></div>`}).join('')}</div></section>`:''}
-  ${killerClubCard(per)}${grudgeCard()}${survivalCard()}${explorerCard(g)}${kingsCard(per)}${teamsCard(g)}
+  ${recapCard(per,A)}${killerClubCard(per)}${grudgeCard()}${survivalCard()}${explorerCard(g)}${kingsCard(per)}${teamsCard(g)}
   <section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--purple);background:transparent"></i>bozo</span></div></section>
   ${closeCalls(per)}`;
 }
@@ -4591,16 +4592,37 @@ function heatmap(){
   let groups='';if(weeks.some(w=>w.seasonName)){const gs=[];weeks.forEach(w=>{const last=gs[gs.length-1];if(last&&last.name===w.seasonName)last.n++;else gs.push({name:w.seasonName,n:1})});groups=`<tr><th></th>${gs.map(g=>`<th colspan="${g.n}" class="season-h">${h(g.name)}</th>`).join('')}</tr>`}
   return`<div class="heat-wrap"><table class="heat"><thead>${groups}<tr><th></th>${weeks.map(w=>`<th title="${h(wkName(w))}">${h((w.col||wkShort(w)).replace(/^W/,''))}</th>`).join('')}</tr></thead><tbody>${S.members.map(m=>`<tr><th aria-label="${h(m.name)}"><span class="avatar sm" style="--c:${m.color}" title="${h(m.name)}">${avIn(m)}</span></th>${weeks.map(w=>{const p=w.picks[m.id];const st=p?p.status:'none';const bz=w.bozoId===m.id;return`<td><button type="button" class="cell ${st} ${bz?'bz':''}" data-act="cell-tip" data-wid="${w.id}" data-mid="${m.id}" aria-label="${h(m.name)} ${h(wkShort(w))}: ${st==='hit'?'hit':st==='miss'?'miss':st==='push'?'push':st==='pending'?'not graded yet':'no leg'}${bz?', the Bozo':''}">${bz?'🤡':st==='hit'?'✓':st==='miss'?'✗':st==='push'?'P':''}</button></td>`}).join('')}</tr>`).join('')}</tbody></table></div>`;
 }
+const closeAll=per=>{const all=[];Object.values(per).forEach(p=>p.history.forEach(x=>{if(x.status==='miss'&&x.margin!=null)all.push({...x,id:p.id})}));return all};   // every missed leg with a margin on record, as Closest misses reads them (#41's recap reads the same list)
+const closeSort=l=>[...l].sort((a,b)=>a.margin-b.margin),CLOSE_N=5,CLOSE_UNITS=[['pts','Points'],['yds','Yards'],['rec','Receptions']];   // Closest misses' order (the smallest margin first), how many it shows for each measure, and its measures in their order
 function closeCalls(per){
-  const all=[];Object.values(per).forEach(p=>p.history.forEach(x=>{if(x.status==='miss'&&x.margin!=null)all.push({...x,id:p.id})}));
+  const all=closeAll(per);
   if(!all.length)return'';
   const row=x=>{const m=member(x.id);return`<div class="call"><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><div class="call-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${h(x.wk||'W'+x.num)}</span></b><small>${betChip(x.text,x.teams)}</small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`};
-  const UNITS_ORDER=[['pts','Points'],['yds','Yards'],['rec','Receptions']];
+  const UNITS_ORDER=CLOSE_UNITS;
   const section=(title,pickFn,n,minCount)=>{const blocks=UNITS_ORDER.map(([u,label])=>{const list=all.filter(x=>(x.unit||'pts')===u);if(list.length<minCount)return'';return`<div class="pd-sub" style="margin:10px 0 6px">${label}</div><div class="calls">${pickFn(list).slice(0,n).map(row).join('')}</div>`}).join('');return blocks?`<h3>${title}</h3>${blocks}`:''};
-  const closest=section('Closest misses',l=>[...l].sort((a,b)=>a.margin-b.margin),5,1);
+  const closest=section('Closest misses',closeSort,CLOSE_N,1);
   const chokes=section('Biggest chokes',l=>[...l].sort((a,b)=>b.margin-a.margin),3,4);
   return`<section class="card">${closest}${chokes?`<div style="height:8px"></div>${chokes}`:''}<p class="muted tiny" style="margin-top:12px">Ranked within each measure — a yardage miss is never compared to a points miss.</p></section>`;
 }
+/* ---- #41 Season recap (Jason, approved 2026-09-22; docs/plans/SEASON-RECAP.md): on ONE season's Stats, once 4 of its weeks are graded, five headline awards in Jason's order (most Bozos, best hit rate, parlay killer, closest miss, luckiest cash) and a picture of them to share. Counted only from what the Stats page counts for this viewer (stats(), calc(), awards(): a week after a reveal this phone hasn't watched never counts). An award the page already shows is linked there, never said twice; the picture, which stands on its own, says all of them. Reads only: nothing is saved or sent ---- */
+const RC_WEEKS=4;   // graded weeks (Sundays and special days; a side parlay is not a week) before a season has a recap
+function rcTop(xs,v){let b=null;for(const x of xs){const y=v(x);if(y!=null&&!Number.isNaN(y)&&(b==null||y>b))b=y}return b==null?null:{v:b,all:xs.filter(x=>v(x)===b)}}   // the best value and everyone who has it, in the page's order: a tie is the same value, as the Awards' own
+function recapOf(per,A){   // the recap of the season on screen for this viewer, or null (All-time, or fewer than RC_WEEKS graded weeks): {n, thru, items:[{k, ic, name, blurb, names, tie, stat, detail, ref}]}; ref: where the page already shows it ({act:'award-rank', i} or {act:'recap-go', to}), else null
+  if(S.pmap)return null;const hid=spoilerHidden(),ws=[...S.weeks].filter(w=>!(hid&&hid.has(w.id))).sort((a,b)=>a.num-b.num),C=new Map(ws.map(w=>[w,calc(w)])),gw=ws.filter(w=>!isSide(w)&&C.get(w).graded);   // exactly the weeks stats() counts
+  if(gw.length<RC_WEEKS)return null;if(!per){per=stats().per;A=awards(per)}
+  const P=Object.values(per),nm=id=>(member(id)||{}).name||'?',same=(xs,f)=>{const s=new Set(xs.map(f));return s.size===1?[...s][0]:''},aw=n=>{const i=A.findIndex(a=>a.name===n);return i<0?null:{i,a:A[i]}},out=[];   // same: the words every holder shares (tied holders' own numbers differ: then none, as #43's record book does)
+  {const x=aw('Head Clown');if(x){const a=x.a;out.push({k:'bozo',ic:'🤡',name:'Most Bozos',blurb:'fronted the parlay the most',names:a.tied.map(nm),tie:a.tied.length>1,stat:a.stat,detail:same(a.rows.filter(r=>a.tied.includes(r.who)),r=>r.detail||''),ref:{act:'award-rank',i:x.i,say:'Head Clown in Awards'}})}}   // 1. the page's own Head Clown, there whenever someone was the Bozo
+  {const r=rcTop(P.filter(p=>p.hits+p.misses>=BDG_MIN&&p.hits>0),p=>p.rate);if(r){const ids=r.all.map(p=>p.id),sb=aw('Sharpest Bettor'),dup=!!sb&&sb.a.tied.length===ids.length&&ids.every(id=>sb.a.tied.includes(id));out.push({k:'rate',ic:'📈',name:'Best hit rate',blurb:`${BDG_MIN}+ legs hit or missed`,names:ids.map(nm),tie:ids.length>1,stat:pct(r.v),detail:same(r.all,p=>`${p.hits}-${p.misses}${p.pushes?'-'+p.pushes:''} on the season`),ref:dup?{act:'award-rank',i:sb.i,say:'Sharpest Bettor in Awards'}:null})}}   // 2. 8 or more legs hit or missed and a hit (#43's rule for a season); the very people Sharpest Bettor (2 or more) names: that award, linked
+  {const r=rcTop(P,p=>p.killer||null);if(r){const ids=r.all.map(p=>p.id);out.push({k:'killer',ic:'☠️',name:'Parlay killer',blurb:'the lone miss on a slip',names:ids.map(nm),tie:ids.length>1,stat:r.v===1?'1 solo kill':`${r.v} solo kills`,detail:same(r.all,p=>p.killed?`${fmt$0(p.killed)} that got away`:''),ref:{act:'recap-go',to:'pk',say:`${clubName()} below`}})}}   // 3. the most solo kills: the Parlay Killer Club's own count, and the Club lists everyone's
+  {const es=[];for(const w of ws){const c=C.get(w);if(!c.graded||c.misses!==1||isSide(w))continue;const l=c.legs.find(x=>x.status==='miss'),u=l.unit||'pts';if(l.margin!=null&&l.margin!==''&&Number.isFinite(+l.margin)&&CLOSE_UNITS.some(([k])=>k===u))es.push({id:l.mid,wk:wkShort(w),text:l.text,u,m:+l.margin})}   // 4. a parlay lost on one leg alone (a solo kill, as the Club counts them), by the smallest margin on record
+    const u=(CLOSE_UNITS.find(([k])=>es.some(e=>e.u===k))||[])[0];if(u){const r=rcTop(es.filter(e=>e.u===u),e=>-e.m),ids=[...new Set(r.all.map(e=>e.id))],top=closeSort(closeAll(per).filter(x=>(x.unit||'pts')===u)).slice(0,CLOSE_N),dup=top.length>0&&+top[0].margin===-r.v&&r.all.every(e=>top.some(x=>x.id===e.id&&x.wk===e.wk&&x.text===e.text&&+x.margin===e.m));   // points first, then yards, then receptions (a yardage miss is never compared to a points miss); already first on Closest misses: linked
+      out.push({k:'close',ic:'😬',name:'Closest miss',blurb:'a parlay’s only miss',names:ids.map(nm),tie:ids.length>1,stat:`by ${fmtMargin(-r.v,u)}`,detail:r.all.length>1?r.all.map(e=>e.wk).join(' & '):`${r.all[0].wk} · ${r.all[0].text}`,ref:dup?{act:'recap-go',to:'close',say:'the top of Closest misses below'}:null})}}
+  {const won=ws.filter(w=>{const c=C.get(w);return c.result==='won'&&c.priced});if(won.length){const t=amer(Math.max(...won.map(w=>C.get(w).dec))),es=won.filter(w=>amer(C.get(w).dec)===t);out.push({k:'luck',ic:'🍀',name:'Luckiest cash',blurb:'the longest odds that cashed',names:es.map(wkName),tie:es.length>1,stat:t,detail:same(es,w=>`${fmt$(C.get(w).payout)} paid`),ref:null})}}   // 5. the cashed parlay with the longest price (a side parlay too; one whose price isn't all written down can't say), a tie being the same price as shown. Nothing else on Stats shows it
+  return{n:gw.length,thru:wkName(gw[gw.length-1]),items:out}}
+function recapCard(per,A){const R=recapOf(per,A);if(!R||!R.items.length)return'';   // Stats, after the Awards: a row for each award, its words, or a link to where the page already shows it; then Share recap
+  const row=x=>x.ref?`<button type="button" class="rc-row rc-ref" data-k="${x.k}" data-act="${x.ref.act}"${x.ref.act==='award-rank'?` data-i="${x.ref.i}"`:` data-to="${x.ref.to}"`} aria-label="${h(`${x.name}: see ${x.ref.say}`)}"><span class="rc-ic" aria-hidden="true">${x.ic}</span><span class="rc-b"><small>${h(x.name)}</small><span class="rc-see">See ${h(x.ref.say)}</span></span><span class="chev" aria-hidden="true">›</span></button>`
+    :`<div class="rc-row" data-k="${x.k}"><span class="rc-ic" aria-hidden="true">${x.ic}</span><div class="rc-b"><small>${h(x.name)}${x.blurb?` <span class="rc-blurb">· ${h(x.blurb)}</span>`:''}</small><b>${x.names.map(h).join(' &amp; ')}${x.tie?' <span class="tag">tie</span>':''}</b><em>${h(x.stat)}${x.detail?' · '+h(x.detail):''}</em></div></div>`;
+  return`<section class="card rc-card"><h3>🏆 Season recap</h3><p class="muted tiny rc-sub">The season’s headline awards, ready to share.</p><div class="rc-rows">${R.items.map(row).join('')}</div><button type="button" class="btn block rc-share" data-act="share-recap">📸 Share recap</button></section>`}
 
 /* ---- crew ---- */
 function renderLeagues(){   // Settings → Me → My leagues (the commissioner app): every league on this device, a new one, a link or a code, and another device of yours
@@ -4955,17 +4977,60 @@ async function slipImage(w){
 async function shareSlip(w){
   toast('Rendering slip…');
   let cv;try{cv=await slipImage(w)}catch(e){console.error(e);toast('Couldn’t make the slip picture. The slip is unchanged. Tap Share slip again. If it still won’t open, close the app fully and reopen it.','bad');return}
+  return sharePic(cv,{file:`bozo-parlay-${wkShort(w).toLowerCase()}.png`,title:`Bozo Parlay — ${wkName(w)}`,sheet:`${wkName(w)} slip`,alt:`${wkName(w)} slip`,text:()=>recap(w)});
+}
+async function sharePic(cv,o){   // the share sheet for a picture the app drew (a week's slip, #41's season recap): the picture, then Text instead (the slip's words, when o.text), Copy image, and Share… or Download
   const blob=await new Promise(r=>cv.toBlob(r,'image/png'));
-  const file=new File([blob],`bozo-parlay-${wkShort(w).toLowerCase()}.png`,{type:'image/png'});
+  const file=new File([blob],o.file,{type:'image/png'});
   const url=URL.createObjectURL(blob);
   const canShare=!!(navigator.canShare&&navigator.canShare({files:[file]}));
   const canCopy=!!(navigator.clipboard&&navigator.clipboard.write&&window.ClipboardItem);
-  const actions=[{label:'Text instead',cls:'ghost sm',onClick:()=>{copyText(recap(w));return false}}];
-  if(canCopy)actions.push({label:'Copy image',onClick:async()=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('Image copied — paste it in the chat','good')}catch(e){toast('Copy blocked here — long-press the image to save it instead','bad')}return false}});
-  if(canShare)actions.push({label:'Share…',cls:'primary',onClick:()=>{navigator.share({files:[file],title:`Bozo Parlay — ${wkName(w)}`}).catch(()=>{})}});
+  const actions=o.text?[{label:'Text instead',cls:'ghost sm',onClick:()=>{copyText(o.text());return false}}]:[];
+  if(canCopy)actions.push({label:'Copy image',onClick:async()=>{try{await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);toast('Image copied — paste it in the chat','good')}catch(e){const t='This browser wouldn’t copy the picture. Nothing was lost. Long-press or right-click the picture to save or copy it instead.';toast(t,'bad',readMs(t))}return false}});
+  if(canShare)actions.push({label:'Share…',cls:'primary',onClick:()=>{navigator.share({files:[file],title:o.title}).catch(()=>{})}});
   else actions.push({label:'Download',cls:'primary',onClick:()=>{const a=document.createElement('a');a.href=url;a.download=file.name;document.body.appendChild(a);a.click();a.remove()}});
-  modal({title:`${wkName(w)} slip`,body:`<img src="${url}" alt="${h(wkName(w))} slip" style="width:100%;border-radius:18px;display:block;box-shadow:0 12px 40px rgba(0,0,0,.5)"><p class="tiny" style="margin-top:10px">${canShare?'Share… sends the picture straight to iMessage or the group chat.':'Long-press or right-click the picture to save or copy it.'}</p>`,actions});
+  modal({title:o.sheet,body:`<img src="${url}" alt="${h(o.alt)}" style="width:100%;border-radius:18px;display:block;box-shadow:0 12px 40px rgba(0,0,0,.5)"><p class="tiny" style="margin-top:10px">${canShare?'Share… sends the picture straight to iMessage or the group chat.':'Long-press or right-click the picture to save or copy it.'}</p>`,actions});
 }
+
+/* #41: the season recap as a picture, for the group chat (the slip's share sheet). It stands on its own, so it says every award in full; every word is measured before it is drawn, smaller to a floor and then onto more lines, never cut */
+async function recapImage(R){
+  try{await Promise.all([document.fonts.load('800 58px Inter'),document.fonts.load('800 44px Inter'),document.fonts.load('700 22px Inter'),document.fonts.load('500 28px Inter')])}catch(e){}
+  const F=(wt,sz)=>`${wt} ${sz}px -apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text",Inter,"Helvetica Neue",Arial,sans-serif`,E=sz=>`${sz}px "Apple Color Emoji","Segoe UI Emoji",sans-serif`;
+  const W=1080,pad=48,L=88,RX=W-88,X0=L+92,T='#1d1d1f',MU='#6e6e73',GR='#177c36',PILL='#e8e8ed';   // every word dark or grey on white: 4.5:1 or more
+  const sp=(c,v)=>{try{c.letterSpacing=v}catch(e){}},m=document.createElement('canvas').getContext('2d');   // m measures, with the very settings the drawing uses
+  const wd=(t,wt,sz,ls)=>{m.font=F(wt,sz);sp(m,ls||'0px');return m.measureText(t).width};
+  const wrap=(t,wt,sz,maxW,ls)=>{const out=[];let ln='';for(const word of String(t).split(' ')){const tr=ln?ln+' '+word:word;if(wd(tr,wt,sz,ls)<=maxW){ln=tr;continue}if(ln)out.push(ln);ln=word;while(ln.length>1&&wd(ln,wt,sz,ls)>maxW){let k=ln.length-1;while(k>1&&wd(ln.slice(0,k),wt,sz,ls)>maxW)k--;out.push(ln.slice(0,k));ln=ln.slice(k)}}if(ln)out.push(ln);return out};   // a word longer than the line goes on in the next one
+  const fit=(t,wt,max,min,maxW,ls)=>{for(let z=max;z>=min;z-=2)if(wd(t,wt,z,ls)<=maxW)return{z,wt,ls,lines:[t]};return{z:min,wt,ls,lines:wrap(t,wt,min,maxW,ls)}};
+  const tall=(o,lh)=>o.lines.length*o.z*lh;
+  const head=fit(`BOZO PARLAY  ·  ${String(R.head||'').toUpperCase()}`.replace(/\s+·\s+$/,''),600,24,18,RX-L,'4px'),title=fit(R.title,800,58,40,RX-L-84),sub=fit(R.sub,500,30,24,RX-L);
+  const rows=R.items.map(it=>{const st=fit(it.stat,800,40,26,(RX-X0)*.42),tw=it.tie?wd('TIE',700,20,'2px')+28:0,sw=wd(it.stat,800,st.z);
+    const lab=fit(it.name.toUpperCase()+(it.blurb?'  ·  '+it.blurb.toUpperCase():''),700,22,18,RX-X0-(tw?tw+16:0),'3px'),nm=fit(it.names.join(' & '),800,44,30,RX-X0-sw-28),dt=it.detail?fit(it.detail,500,28,24,RX-X0):null;
+    return{it,st,tw,lab,nm,dt,h:Math.ceil(28+tall(lab,1.3)+8+Math.max(tall(nm,1.2),st.z*1.2)+(dt?8+tall(dt,1.35):0)+28)}});
+  const top=pad+44,y1=top+tall(head,1.4)+14,y2=y1+Math.max(tall(title,1.2),72)+8,y3=y2+tall(sub,1.35)+24,H=Math.ceil(y3+rows.reduce((a,r)=>a+r.h,0)+24+22*1.3+pad+40);
+  const cv=document.createElement('canvas');cv.width=W;cv.height=H;const x=cv.getContext('2d');x.textBaseline='top';
+  const put=(o,col,X,Y,lh,al)=>{x.font=F(o.wt,o.z);sp(x,o.ls||'0px');x.fillStyle=col;x.textAlign=al||'left';o.lines.forEach((t,i)=>x.fillText(t,X,Y+i*o.z*lh));sp(x,'0px');return Y+tall(o,lh)};
+  const rule=Y=>{x.strokeStyle='rgba(0,0,0,.08)';x.lineWidth=2;x.beginPath();x.moveTo(pad,Y);x.lineTo(W-pad,Y);x.stroke()};
+  x.fillStyle='#f5f5f7';x.fillRect(0,0,W,H);
+  x.save();x.shadowColor='rgba(0,0,0,.14)';x.shadowBlur=40;x.shadowOffsetY=14;rr(x,pad,pad,W-pad*2,H-pad*2,44);x.fillStyle='#ffffff';x.fill();x.restore();
+  rr(x,pad,pad,W-pad*2,H-pad*2,44);x.strokeStyle='rgba(0,0,0,.08)';x.lineWidth=2;x.stroke();
+  put(head,MU,L,top,1.4);x.font=E(60);x.textAlign='left';x.fillText('🏆',L,y1+2);put(title,T,L+84,y1+Math.max(0,(72-title.z*1.2)/2),1.2);put(sub,MU,L,y2,1.35);
+  let y=y3;rule(y);
+  for(const r of rows){const it=r.it;x.font=E(52);x.textAlign='left';x.fillStyle=T;x.fillText(it.ic,L,y+30);
+    let yy=put(r.lab,MU,X0,y+28,1.3);
+    if(r.tw){x.font=F(700,20);rr(x,RX-r.tw,y+24,r.tw,34,17);x.fillStyle=PILL;x.fill();sp(x,'2px');x.fillStyle=T;x.textAlign='center';x.fillText('TIE',RX-r.tw/2+1,y+32);sp(x,'0px')}
+    yy+=8;const nh=Math.max(tall(r.nm,1.2),r.st.z*1.2);put(r.nm,T,X0,yy+(nh-tall(r.nm,1.2))/2,1.2);put(r.st,it.k==='luck'?GR:T,RX,yy+(nh-r.st.z*1.2)/2,1.2,'right');yy+=nh;
+    if(r.dt)put(r.dt,MU,X0,yy+8,1.35);
+    y+=r.h;rule(y)}
+  x.font=F(500,22);x.fillStyle=MU;x.textAlign='right';x.fillText('bozo parlay',RX,H-pad-40-22*1.3);
+  return cv}
+async function shareRecap(){   // Stats → Season recap → Share recap: the recap of the season on screen, as this viewer sees it
+  const R=statKey()==='all'?null:recapOf();
+  if(!R||!R.items.length){const t=`The recap needs ${RC_WEEKS} graded weeks of a season, and this phone doesn’t have that for the season on screen right now. Nothing was lost. Pull down on Stats to refresh it, then tap Share recap on the recap card.`;toast(t,'bad',readMs(t));return}
+  toast('Making the recap picture…');const sn=seasonName(season());
+  let cv;try{cv=await recapImage({...R,head:headOfS(),title:'Season recap',sub:`Through ${R.thru}`})}catch(e){console.error(e);const t='Couldn’t make the recap picture. Nothing was lost: the season’s stats are unchanged. Tap Share recap again. If it still won’t open, close the app fully and reopen it.';toast(t,'bad',readMs(t));return}
+  return sharePic(cv,{file:`bozo-parlay-${sn.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'season'}-recap.png`,title:`Bozo Parlay — ${sn} recap`,sheet:`${sn} recap`,alt:`${sn} season recap`})}
+function recapGo(el){const to=el.dataset.to,t=to==='pk'?document.querySelector('#view .pk-card'):to==='close'?[...document.querySelectorAll('#view section.card')].find(c=>{const x=c.querySelector('h3');return!!x&&x.textContent==='Closest misses'}):null;if(!t)return;   // a recap row that points at a card further down Stats: that card, brought up under the header, keyboard with it
+  pageTo(Math.max(0,pageY()+t.getBoundingClientRect().top-90),'smooth');if(!t.hasAttribute('tabindex'))t.setAttribute('tabindex','-1');try{t.focus({preventScroll:true})}catch(e){}}
 
 /* ============================== GRID POPOVER ============================== */
 let tipPinned=null;
@@ -5097,6 +5162,8 @@ const ACT={
   'remove-leg'(el){const wid=el.dataset.wid||(currentWeek()||{}).id;const w=week(wid);const mid=el.dataset.mid;const m=member(mid);if(!w||!m)return stale();confirm2('Remove leg?',`Drop ${h(m.name)} from the ${h(wkName(w))} slip. They sat this one out.`,'Remove',()=>{const ww=week(wid);if(!ww||!ww.picks[mid])return stale();delete ww.picks[mid];ww.votes={};commit()})},
   'copy-recap'(el){copyText(recap(week(el.dataset.wid)))},
   'share-slip'(el){shareSlip(week(el.dataset.wid))},
+  'share-recap'(){shareRecap()},
+  'recap-go'(el){recapGo(el)},
   'dk-open'(el){const w=week(el.dataset.wid);if(!w||!dkShow(w,calc(w))){toast('The slip changed while that button was on screen, so nothing opened. Nothing was lost. Take another look at the slip: the button is there while every leg has a pick and a price, until the slip is graded.','bad');render();return}dkSheet(w)},
   'dk-tick'(el){const w=dkWeekOf(el),c=w&&calc(w),x=w&&dkShow(w,c)?dkLegs(w,c).find(y=>y.mid===el.dataset.mid):null;   /* the tick is for the exact leg this box was drawn with (data-key): a leg that changed underneath is never ticked in its place */
     if(!x||x.id!==el.dataset.key){el.checked=!el.checked;const r=dkSync(true);toast(dkStale(r,'that tick wasn’t kept','tick the leg again once it’s on your bet slip'),'bad');return}dkTick(w,x.mid,x.id,!!el.checked)},
