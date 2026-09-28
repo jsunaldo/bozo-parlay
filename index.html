@@ -851,7 +851,7 @@ html.touch,html.touch body{touch-action:manipulation}
 try{const de=document.documentElement;if(navigator.maxTouchPoints>0||'ontouchstart' in window){de.classList.add('touch');if(matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)de.classList.add('shell')}}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom. Opened from the Home Screen: the page itself never scrolls (the app scrolls inside it), so iOS can't slide the tab bar and header away
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-09-28.5';
+const APP_VERSION='2026-09-28.6';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -3081,7 +3081,7 @@ function patchTicket(w){
    event ids from DraftKings' own links on ESPN), every address is checked once built and is only ever opened by the person tapping it (an <a href>): the app itself never asks DraftKings for anything.
    Plan and what's unconfirmed: docs/plans/DK-EXPORT.md ---- */
 const dkAllIn=c=>c.n>0&&c.legs.every(l=>String(l.text||'').trim()&&l.oddsN!=null);   // every leg has words and a price
-const DK_ON=false;   // Export to DraftKings / Ride It switched off (Jason 2026-09-27: Ian's tap in NJ didn't load the slip); true brings both buttons back
+const DK_ON=true;   // Export to DraftKings / Ride It on again 2026-09-28 (Jason's NJ Sportsbook test: DraftKings' own /event/ links load singles and comma-joined slips); false hides both buttons
 function dkShow(w,c){if(!DK_ON||!w||!c||c.graded||!liveSlip(w)||!dkAllIn(c)||spoilerHidden()?.has(w.id))return null;const l=league(),by=isSide(w)?payerOf(w):bozoOfW(w);return isAdmin()||(l.me&&l.me===by)?'export':'ride'}   // the league's current slip only (old weeks look as they always did), until it is graded. Export for whoever places it: the week's Bozo, or for a side parlay the one who pays for it (the commissioner's choice, else that week's Bozo)
 function dkFoot(w,c){const k=dkShow(w,c);return k?`<button class="btn block dk-go" data-act="dk-open" data-wid="${h(w.id)}">${k==='export'?'Export to DraftKings':'Ride It'}</button>`:''}
 const dkUrl=v=>{const s=typeof v==='string'?v.trim():'';if(!s||s.length>300)return null;try{const u=new URL(s);return u.protocol==='https:'&&/(^|\.)draftkings\.com$/i.test(u.hostname)&&!u.username&&!u.password?u.href:null}catch(e){return null}};   // only an https DraftKings address the feed gave is ever offered
@@ -3110,7 +3110,7 @@ function dkOut(q){   /* DraftKings' own link and outcome id for a proven outcome
     if(!hn&&ho&&nw&&Array.isArray(nw.rows)&&nw.rows.length){if(moved!=='line')moved=near(nw)?'line':'gone';continue}const hits=[hn,ho].filter(Boolean);
     if(!hits.length)continue;const got=hits.map(r=>({link:dkUrl(r[4]),sid:dkSid(r[5])}));return got.find(x=>x.link&&x.sid)||got.find(x=>x.link||x.sid)||null}
   return moved?{moved}:null}
-const DK_JOIN='+';   /* how the one DraftKings link joins its legs' outcome ids: '+' (the default), '%2B' or ','. Jason's round-2 phone test picks it (docs/plans/DK-EXPORT.md, "One slip by default").
+const DK_JOIN=',';   /* how the one DraftKings link joins its legs' outcome ids. Jason's NJ Sportsbook test (2026-09-28): commas load every leg; '+' and '%2B' don't. Other values: '+', '%2B', or null (one Add to slip per leg) (docs/plans/DK-EXPORT.md, "One slip by default").
    null: no joining works, so the sheet gives each leg its own "Add to slip" link instead (DraftKings adds them to the same slip one after another). Changing how legs go on the slip is this one constant */
 const DK_SITE='https://sportsbook.draftkings.com';
 const dkEv=v=>{const s=typeof v==='string'||typeof v==='number'?String(v):'';return/^\d{1,12}$/.test(s)?s:null};   // DraftKings' event id for a game (the league's schedule reads it from DraftKings' own link on ESPN): digits only
