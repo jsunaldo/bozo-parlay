@@ -1204,7 +1204,7 @@ async function pull(l=league(),loud=false,force=false,read=null){
   if(!l.sync||pullBusy||pushTof(l)||pendingPick)return;
   if(l.sync.role==='admin'&&l.sync.dirty&&!l.sync.stuck){if(!read){push(l);return}read.waiting=true;await push(l);read.waiting=!!l.sync.dirty;if(read.waiting||read.current&&!read.current())return false}   // this device's edits go up before anything comes down
   if(force||loud)await retryPriceEdits(l);if(outboxHas(l))await flushOutbox(l);   // so does a pick that hasn't reached the league yet
-  if(read?.current&&!read.current())return false;pullBusy=true;const was=dotWas();setSyncDot('busy');const asKey=l.meKey,dn=dotN;let gone=false;
+  if(read?.current&&!read.current())return false;pullBusy=true;flyOn(l);const was=dotWas();setSyncDot('busy');const asKey=l.meKey,dn=dotN;let gone=false;
   try{const d=await api(l,'');if(read?.current&&!read.current()){gone=true;return false}delete l.sync.stuck;const ph=takePhotos(l,d.photos,true);if(ph)save();   // #44: the league's list of photos lives beside the league, so it is taken whatever else this answer brings (it names no one's own data)
     if(l.meKey!==asKey){setSyncDot('ok');setTimeout(()=>pull(l,false,true),50)}   // this device became someone else mid-fetch: fetch again as them
     else if(pushTof(l)||pendingPick||l.sync.dirty){setSyncDot('ok')}   // an edit landed mid-fetch: it pushes first
@@ -1217,7 +1217,7 @@ async function pull(l=league(),loud=false,force=false,read=null){
     hello(l);
     setSyncDot('ok');if(loud)toast('Up to date','good');if(!upl)loadPending();const clean=!pushTof(l)&&!pendingPick&&!l.sync.dirty&&!outboxHas(l)&&l.meKey===asKey;if(read){read.checked=l.meKey===asKey;read.waiting=!clean}return clean}
   catch(e){if(read)read.error=e;if(!read?.current||read.current())setSyncDot('bad');else gone=true;if(loud)toast(failNote(e,'Couldn’t check for updates','Nothing was lost. You’re looking at what this phone had last. Pull down or tap Refresh when you have signal.','Nothing on this phone was lost. Close the app fully, open it again, and pull down.'),'bad');return false}
-  finally{pullBusy=false;if(read?.current&&!read.current()&&dotStill(dn))settleDot(was);if(gone)setTimeout(()=>pull(league(),false,true),50)}   // the league or person changed mid-read: this read's spinner is not left on the new one, and the league now on screen is read (its own request was turned away while this one was out)
+  finally{pullBusy=false;flyOff(l);if(read?.current&&!read.current()&&dotStill(dn))settleDot(was);if(gone)setTimeout(()=>pull(league(),false,true),50)}   // the league or person changed mid-read: this read's spinner is not left on the new one, and the league now on screen is read (its own request was turned away while this one was out)
 }
 function schedulePush(){const l=league();if(!l.sync||l.sync.role!=='admin')return;l.sync.dirty=true;l.sync.seq=(l.sync.seq||0)+1;clearPushT(l);pushTs[l.id]=setTimeout(()=>{delete pushTs[l.id];push(l)},700)}
 // members' own picks that reached the league after this device last synced: fold them into this device's copy
@@ -1287,7 +1287,10 @@ function mergeMemberEdits(l,st){
       for(const k of MEMBER_PICK){if(k in sp)lp[k]=sp[k];else delete lp[k]}if(kp)logoPut(lp,kp);n++}}   // the commissioner's newer logo on that same bet stays
   if(st.claims)l.claims=st.claims;return n;
 }
-async function push(l,retried,clash){
+async function push(l,retried,clash){   // change stamps: another tab saved first: take its copy (it may have sent this edit already), then this tab's request is on its way (another tab's copy waits)
+  if(!retried){const was=!!(l.sync&&l.sync.dirty);let t=null;try{t=localStorage.getItem(TOK_KEY)}catch(e){}if(t&&t!==saveTok&&adoptStored())save();if(was&&!(l.sync&&l.sync.dirty))return}
+  flyOn(l);try{return await push1(l,retried,clash)}finally{flyOff(l)}}
+async function push1(l,retried,clash){
   for(const k of [...EDIT0.keys()])if(k.startsWith(l.id+'|'))EDIT0.delete(k);   // this copy goes up: an emptied box is measured against it from here
   setSyncDot('busy');const seq=l.sync.seq||0;const sent=syncSigs(l.seasons);const t0=Date.now();const sd={...(l.setDirty||{})};   // settings only go up when this device changed them
   const fd=!!l.featDirty;   // the switches only go up when this device flipped one: a stale copy never switches the league back
@@ -1464,6 +1467,7 @@ function homeRefused(l,e){if(homeSaid||!e||(e.status!==429&&!e.full))return;home
 const sentOf=l=>JSON.stringify([l.seasons,l.name,l.clubName||'',!!l.mondayOk]);   // what a request to make a league carries that the commissioner can change while it is on its way: the seasons, and the settings a save sends when they were changed here (rename, club name, Monday games: setDirty)
 async function takeHome(l,d,sent){   // DD03: the league's answer to making it. 'mine': this phone's copy goes up over it (a commissioner save), '': the league is as this phone sent it, 'kept': the league was changed elsewhere since it was made, so it is taken as it is and this phone's copy is kept under Copies kept on this phone, null: the league was taken off this phone meanwhile (nothing here changes)
   if(!DB.leagues.includes(l))return null;   // fix round 2: deleted on this phone while the request was on its way: it never comes back (no home, no account note)
+  if(l.sync&&l.sync.key&&l.sync.id===d.id)return null;   // change stamps: this tab already took the league's link from the tab that made it (and merged any change of its own into it, which goes up as an ordinary commissioner save): nothing more to do or say
   const sy={url:SYNC_URL,id:d.id,key:d.adminKey,role:'admin',rev:d.rev};
   if(d.again&&!d.fresh){   // fix round 2: the first answer went to another tab (or a device that shares this one's create id) and the league was changed there since, so this phone's copy is never saved over it
     if(!backupLeague(l))throw Object.assign(new Error(keptFull(l.name)),{full:true});   // this phone's copy is kept first, so nothing can take it away
@@ -1730,27 +1734,81 @@ function born(id){return Math.max(Date.now(),(+((DB.gone||{})[id])||0)+1)}
 function unlist(ls){ls=ls.filter(Boolean);if(!ls.length)return;const g=DB.gone=DB.gone&&typeof DB.gone==='object'?DB.gone:{},t=Date.now();for(const l of ls)g[l.id]=Math.max(t,+g[l.id]||0);
   DB.leagues=DB.leagues.filter(x=>!ls.includes(x));const ks=Object.keys(g);if(ks.length>100)for(const k of ks.sort((a,b)=>g[a]-g[b]).slice(0,ks.length-100))delete g[k]}   // the newest 100 removals are kept (a few bytes each)
 function acctGone(ls){if(SHARE_MODE||!DB.acct)return;const q=ls.filter(l=>l&&l.sync&&!offAcct(l)&&!DB.leagues.some(y=>y.sync&&y.sync.id===l.sync.id));if(!q.length)return;DB.acctQ=DB.acctQ||{leagues:{}};DB.acctQ.leagues=DB.acctQ.leagues||{};for(const l of q)DB.acctQ.leagues[l.sync.id]={gone:true}}   // fix round 1: a league another tab took off on purpose leaves the account's list from here too, so an older tab's save (which carries its own account notes, not the other tab's) never lets the account bring it back
-const adoptFull=new Set();   // leagues whose link a full phone kept this tab from taking: the full-phone words are said once
+/* Change stamps (docs/plans/CHANGE-STAMPS.md): two tabs of the app holding the SAME league. Every league carries l.cs = {v: a version id, n: a count,
+   t: when, h: the versions it came from, newest first}; a save gives a new one to each league this tab changed and to no other. Each tab remembers the
+   version of each league it last took from the phone or wrote to it (TAB_V) and the text of the last 8 versions it has seen (TAB_H), so it can tell
+   another tab's newer copy from its own, and from an older copy an older app's tab wrote back. A league is compared without its stamp and without
+   where the tab is looking (the season and week on screen, the view). A league never stamped (every league an older app wrote) is version ''. */
+const TAB_V=new Map(),TAB_H=new Map(),DEFER=new Map(),FLY=new Map(),CS_SAID=new Set();   // DEFER: leagues this tab hasn't changed whose newer copy on the phone waits until the tab is free (it writes that copy meanwhile). FLY: leagues with a request of this tab's on its way
+function lgCanon(l){return JSON.stringify(l,function(k,v){return(this===l&&(k==='cs'||k==='activeSeason'))||((k==='currentWeekId'||k==='view')&&this&&Array.isArray(this.weeks))?undefined:v})}
+const csOf=l=>{const c=l&&l.cs;return c&&typeof c==='object'&&typeof c.v==='string'?{v:c.v,n:+c.n||0,h:Array.isArray(c.h)?c.h.filter(x=>typeof x==='string').slice(0,16):[]}:{v:'',n:0,h:[]}};
+function csSeen(id,v,text){let m=TAB_H.get(id);if(!m)TAB_H.set(id,m=new Map());m.delete(v);m.set(v,text);while(m.size>8)m.delete(m.keys().next().value)}
+function csBase(l,c,text,src,h){TAB_V.set(l.id,{v:c.v,n:c.n,h:h||c.h,text,src});csSeen(l.id,c.v,text)}   // the copy of l this tab last took from the phone or wrote to it (text: as this tab holds it; src: as the phone had it)
+function csStamp(l){const b=TAB_V.get(l.id),t=lgCanon(l);if(b&&t===b.text)return;const v=Date.now().toString(36).slice(-6)+Math.random().toString(36).slice(2,6),h=b?[b.v,...b.h.filter(x=>x!==b.v)].slice(0,16):[];l.cs={v,n:(b?b.n:0)+1,t:Date.now(),h};csBase(l,l.cs,t,t)}   // a save: a new stamp on a league this tab changed, never on one it didn't
+const flyOn=l=>FLY.set(l.id,(FLY.get(l.id)||0)+1),flyOff=l=>{const n=(FLY.get(l.id)||0)-1;if(n>0)FLY.set(l.id,n);else FLY.delete(l.id)};
+const csBusy=l=>FLY.has(l.id)||(l===league()&&(!!document.getElementById('modal-root')?._open||document.body.classList.contains('typing')||!!upl));   // a box open on it, someone typing, an upload, or this tab's own request on its way: another tab's copy waits
+function csPut(l,X){   // l becomes X in place (whatever holds l holds the new copy); its id and where this tab is looking stay its own
+  const id=l.id,as=l.activeSeason,ui={};for(const x of l.seasons||[])if(x&&x.data)ui[x.id]=[x.data.currentWeekId,x.data.view];const so=SIGNED_OUT.has(id)&&!l.me;
+  for(const k of Object.keys(l))if(!(k in X))delete l[k];Object.assign(l,X);l.id=id;
+  for(const x of l.seasons||[]){const u=ui[x.id];if(u&&x.data){if(u[0]==null||(x.data.weeks||[]).some(w=>w.id===u[0]))x.data.currentWeekId=u[0]??null;if(u[1])x.data.view=u[1]}}
+  if((l.seasons||[]).some(x=>x.id===as))l.activeSeason=as;if(so){delete l.me;delete l.meKey;delete l.keyBound}   // signed out here on purpose: that name isn't taken back from another tab
+  if(league()===l){S=season().data;ALLTIME=null}}
+const csFull=n=>`${n} was changed in this tab and in another tab at the same time, and this phone is out of room for the app’s data (or Private Browsing is blocking it), so this tab’s change isn’t saved on the phone yet. Nothing was lost: it’s still here on the screen, and the other tab’s change is saved. Free up space (a few photos or videos) or leave Private Browsing, and keep this tab open: it saves both the next time you change anything here.`;
+function csWords(l,lost){const u=[...new Set(lost)],p=u.slice(0,3).join(', ')+(u.length>3?' and more':'');toast(`${l.name}: ${p} ${u.length>1?'were':'was'} changed in this tab and in another tab at the same time. ${l.name} keeps one version, and the other is kept under Settings → League → Data → Copies kept on this phone, so nothing was lost. Open it there and enter anything that’s missing.`,'bad')}
+function csOld(l,X){if(!backupLeague(X)||CS_SAID.has('old|'+l.id))return;CS_SAID.add('old|'+l.id);toast(`${l.name}: a tab with an older version of the app saved its older copy of ${l.name}, so this tab put its newer one back. Nothing was lost: that older copy is kept under Settings → League → Data → Copies kept on this phone. Close the other tab, and enter anything from the kept copy that’s missing.`,'bad')}
+function stampSync(l,x){   // x: the phone's copy of the league this tab holds as l, after another tab saved. True when this tab's copy has to go to the phone
+  const b=TAB_V.get(l.id),xc=csOf(x);if(b&&xc.v===b.v&&b.src!=null&&lgCanon(x)===b.src)return false;   // the phone's copy is the one this tab last had
+  const X=migrateDB({leagues:[readyLeague(JSON.parse(JSON.stringify(x)))]}).leagues[0],xt=lgCanon(X),mt=lgCanon(l),H=TAB_H.get(l.id)||new Map();
+  const lin=[xc.v,...xc.h,''],av=b&&lin.includes(b.v)?b.v:lin.find(v=>H.has(v)),at=av!==undefined&&H.has(av)?H.get(av):null;   // at: the newest copy both tabs have had
+  const older=!!b&&xc.v!==b.v&&(xc.v===''||b.h.includes(xc.v));   // the phone's copy is older than this tab's (an older app's tab wrote back what it had)
+  if(at!==null&&xt===at)return mt!==at;   // nothing new on the phone: this tab's own change (if any) goes to it
+  if(at!==null&&mt===at){if(csBusy(l)){DEFER.set(l.id,x);return false}csPut(l,X);csBase(l,xc,xt,lgCanon(x));return false}   // this tab didn't change it: it takes the other tab's copy, whole
+  if(older&&at===null){if(![...H.values()].includes(xt))csOld(l,X);return true}   // an older copy this tab can't compare with: this tab's goes back, that one kept first
+  return tabMerge(l,at===null?null:JSON.parse(at),X,x,xc,xt,older)}
+function tabMerge(l,A,X,x,xc,xt,older){   // this tab and another changed the league since A (the newest copy both have had; null: none): keep what each changed, part by part
+  const sk=y=>y&&y.sync&&y.sync.key?y.sync:null,ms=sk(l),xs=sk(X),eq=(a,c)=>stable(a)===stable(c),plain=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+  const W=ms&&xs&&ms.id===xs.id?((+xs.rev||0)>(+ms.rev||0)||((+xs.rev||0)===(+ms.rev||0)&&!older)?X:l):xs?X:ms?l:older?l:X,O=W===X?l:X,os=sk(O);   // W, whose version of a part both changed is kept: the copy that read the league last (the higher version), else the one with the league's link, else the one already on the phone (this tab's, when the phone's is older)
+  const shadow=!!os&&(os.role!=='admin'||!os.dirty),wh=os&&!shadow&&os.wh?os.wh:null,sb=os?String(os.base||''):'';   // shadow: O has nothing of its own waiting to go up, so its seasons are only the league as it read it (never O's own change)
+  const typed=w=>Object.values((w&&w.picks)||{}).some(p=>p&&(String(p.at||'')>sb||String(p.eat||'')>sb));   // a leg typed on this phone since O last matched the league
+  const sOwn=o=>!shadow&&(!wh||seasonSig(o)!==wh[o.id+'|']);   // O's crew or settings in that season differ from the league as O last matched it
+  const wOwn=(sid,a,o)=>!shadow&&!eq(o,a)&&(!wh||(o===undefined?((O.dropWeeks||[]).includes(a.id)||((os&&os.known)||[]).includes(a.id)):(wh[sid+'|'+o.id]===undefined||weekSig(o)!==wh[sid+'|'+o.id]||typed(o))));   // a week O changed, added, or took off itself and hasn't got up yet
+  const lost=[];let lostO=false,lostW=false;
+  const deep=(a,o,w,what)=>{if(eq(o,w)||eq(o,a))return w;if(eq(w,a))return o;if(o===undefined||w===undefined){lost.push(what);if(o===undefined)lostW=true;else lostO=true;return undefined}   // taken off on one side and changed on the other: off (the changed version is kept)
+    if(plain(o)&&plain(w)&&(a===undefined||plain(a))){const r={};for(const k of new Set([...Object.keys(w),...Object.keys(o),...Object.keys(a||{})])){const v=deep((a||{})[k],o[k],w[k],what);if(v!==undefined)r[k]=v}return r}   // both changed it: key by key (each pick, each field)
+    lost.push(what);lostO=true;return w};   // the same field changed differently on both sides: W's, and O's version is kept
+  const pick=(a,o,w,own,what)=>!own||eq(o,w)?w:deep(a,o,w,what);   // one part (a week, a person, a season's setting): only one side changed it: that side's; both: merged key by key
+  const ids=(a,o,w,f)=>{const m=v=>new Map((v||[]).filter(y=>y&&y.id!=null).map(y=>[y.id,y])),ma=m(a),mw=m(w),out=[];for(const y of w||[])if(y&&y.id!=null){const k=f(ma.get(y.id),m(o).get(y.id),y);if(k!==undefined)out.push(k)}
+    let prev=null;for(const y of o||[]){if(!y||y.id==null)continue;if(!mw.has(y.id)){const k=f(ma.get(y.id),y,undefined);if(k!==undefined)out.splice(prev===null?0:out.findIndex(z=>z.id===prev)+1,0,k)}if(out.some(z=>z.id===y.id))prev=y.id}return out};   // a list by id: W's order, with what only O has after the part before it in O
+  const m3=(a,o,w)=>{if(eq(o,w)||eq(o,a))return w;if(eq(w,a))return o;if(plain(o)&&plain(w)&&(a===undefined||plain(a))){const r={};for(const k of new Set([...Object.keys(w),...Object.keys(o),...Object.keys(a||{})])){const v=m3((a||{})[k],o[k],w[k]);if(v!==undefined)r[k]=v}return r}
+    if(Array.isArray(o)&&Array.isArray(w)&&(a===undefined||Array.isArray(a))&&[...o,...w,...(a||[])].every(v=>v===null||typeof v!=='object')){const aa=a||[];return[...w.filter(v=>!(aa.includes(v)&&!o.includes(v))),...o.filter(v=>!aa.includes(v)&&!w.includes(v))]}return w};   // the league's other fields (what waits to go up, the outbox, settings): key by key
+  const seas=ids(A&&A.seasons,O.seasons,W.seasons,(a,o,w)=>{const nm=(o||w||a).name||'Season';if(!o||!w)return pick(a,o,w,!eq(o,a)&&(o?sOwn(o):!shadow&&(!wh||(O.dropSeasons||[]).includes(a.id))),nm);
+    const ad=(a&&a.data)||{},od=o.data||{},wd=w.data||{},own=!eq(o,a)&&sOwn(o),d={};
+    for(const k of new Set([...Object.keys(wd),...Object.keys(od),...Object.keys(ad)]))if(!['weeks','members','currentWeekId','view'].includes(k)){const v=pick(ad[k],od[k],wd[k],own&&!eq(od[k],ad[k]),nm+' settings');if(v!==undefined)d[k]=v}
+    d.members=ids(ad.members,od.members,wd.members,(am,om,wm)=>pick(am,om,wm,own&&!eq(om,am),((om||wm||am).name)||'a player'));
+    d.weeks=ids(ad.weeks,od.weeks,wd.weeks,(aw,ow,ww)=>pick(aw,ow,ww,wOwn(o.id,aw,ow),wkName(ow||ww||aw)));d.currentWeekId=wd.currentWeekId??null;if(wd.view!==undefined)d.view=wd.view;
+    const sn={};for(const k of new Set([...Object.keys(w),...Object.keys(o)]))if(k!=='data'){const v=pick((a||{})[k],o[k],w[k],own&&!eq(o[k],(a||{})[k]),nm);if(v!==undefined)sn[k]=v}sn.data=d;return sn});
+  const out={};for(const k of new Set([...Object.keys(W),...Object.keys(O)])){if(k==='seasons'||k==='sync'||k==='cs')continue;const a=A?A[k]:undefined,v=k==='name'?pick(a,O[k],W[k],!eq(O[k],a),'the league’s name'):m3(a,O[k],W[k]);if(v!==undefined)out[k]=v}
+  out.seasons=seas.length?seas:W.seasons;
+  for(const k of Object.keys(out.outbox||{})){const src=O.outbox&&(k in O.outbox)&&!eq(O.outbox[k],A&&A.outbox&&A.outbox[k])?O:W,[sid,wid,mid]=k.split('|'),wk=y=>((((y.seasons||[]).find(z=>z&&z.id===sid)||{}).data||{}).weeks||[]).find(z=>z&&z.id===wid);const sw=wk(src),mw=wk(out),sp=sw&&sw.picks&&sw.picks[mid];
+    if(sp&&mw&&mw!==sw){mw.picks={...(mw.picks||{}),[mid]:{...((mw.picks||{})[mid]||{})}};for(const f of MEMBER_PICK){if(f in sp)mw.picks[mid][f]=sp[f];else delete mw.picks[mid][f]}}}   // a pick still waiting to go up keeps the words of the tab that typed it
+  if(W.sync){out.sync={...W.sync};const ws=sk(W),st=v=>stable((v||[]).map(z=>({...z,data:{...(z.data||{}),currentWeekId:null,view:null}})));   // the link, version and baseline of the copy that read the league last
+    if(ws&&ws.role==='admin'){if(st(out.seasons)!==st(W.seasons))out.sync.dirty=true;out.sync.seq=Math.max(+((ms&&ms.seq)||0),+((xs&&xs.seq)||0))+1}}   // anything that copy doesn't have goes up as a commissioner edit; the count moves, so an answer on its way never puts an older copy over this
+  if(lost.length&&!((!lostO||backupLeague(O))&&(!lostW||backupLeague(W)))){DEFER.set(l.id,x);if(!CS_SAID.has('full|'+l.id)){CS_SAID.add('full|'+l.id);toast(csFull(l.name),'bad')}return false}   // the version not kept goes to Copies kept on this phone first; a full phone: nothing is merged (the phone keeps the other tab's copy, this tab its own), said once
+  const b=TAB_V.get(l.id);csPut(l,out);csBase(l,xc,xt,lgCanon(x),[...new Set([...xc.h,...(b?[b.v,...b.h]:[])])].slice(0,16));CS_SAID.delete('full|'+l.id);if(lost.length)csWords(l,lost);
+  if(l.sync&&l.sync.role==='admin'&&l.sync.dirty&&!pushTof(l))pushTs[l.id]=setTimeout(()=>{delete pushTs[l.id];push(l)},700);return true}   // what this tab's copy now has that the league doesn't goes up, as a commissioner edit does
 function adoptStored(){   // another tab saved in between: keep the name, key and league it knows and this tab doesn't
-  try{const r=localStorage.getItem(KEY2);if(!r)return;const o=JSON.parse(r);if(!o||!Array.isArray(o.leagues))return;
+  DEFER.clear();try{const r=localStorage.getItem(KEY2);if(!r)return;const o=JSON.parse(r);if(!o||!Array.isArray(o.leagues))return;
     let g=DB.gone;if(!SHARE_MODE&&o.gone&&typeof o.gone==='object'){g=DB.gone=g&&typeof g==='object'?g:{};for(const[k,v]of Object.entries(o.gone))if(k!=='__proto__'&&+v>(+g[k]||0))g[k]=+v}   // DD01: the leagues another tab took off on purpose...
     const off=SHARE_MODE?[]:DB.leagues.filter(l=>goneAt(g,l));if(!SHARE_MODE)DB.leagues=DB.leagues.filter(l=>!goneAt(g,l));   // ...go from this tab too (a league added again after that stays), and from the account's list (below: fix round 1)
     if(o.acct&&!DB.acct){DB.acct=o.acct;if(o.acctFrom){DB.acctFrom=o.acctFrom;for(const l of DB.leagues){const x=o.leagues.find(y=>y&&(y.id===l.id||(y.sync&&l.sync&&y.sync.id===l.sync.id)));if(!x||x.acctOff)l.acctOff=(x&&x.acctOff)||o.acct.id}}}   // another tab took a league list from a code: the leagues this tab has that it didn't know about stay off that list too
-    for(const x of o.leagues){const l=DB.leagues.find(y=>y.id===x.id||(x.sync&&y.sync&&y.sync.id===x.sync.id));if(!l||SIGNED_OUT.has(l.id))continue;
-      if(x.me&&!l.me)l.me=x.me;
-      if(x.acctOff&&!l.acctOff)l.acctOff=x.acctOff;
-      if(x.meKey&&!l.meKey){l.meKey=x.meKey;if(x.keyBound)l.keyBound=true}
-      if(x.shareKey&&!l.shareKey)l.shareKey=x.shareKey;
-      const xs=x.sync&&x.sync.key?x.sync:null;if((xs||l.linkWait)&&!(l.sync&&l.sync.key)){const own=!!l.linkWait||(!l.mk&&JSON.stringify(l.seasons)!==JSON.stringify(x.seasons));   // fix round 3 follow-up: this tab's copy differs from the one the other tab linked (a change made here, like a friend added, that the league never got): the next read takes the league whole, so this copy is kept first under Copies kept on this phone. Not while this tab's own request to make the league is out (mk): its answer keeps the copy and says so (takeHome)
-        if(own&&!backupLeague(l)){if(xs){const{url,id,key,role}=xs;l.linkWait={url,id,key,role}}if(!adoptFull.has(l.id)){adoptFull.add(l.id);toast(keptFull(l.name),'bad')}}   // a full phone: the link isn't taken yet, so nothing is read over this copy; it rides along with it (linkWait: this tab's saves never drop it from the phone) and is taken once the copy can be kept. Said once in this tab
-        else{const{url,id,key,role}=xs||l.linkWait;l.sync={url,id,key,role,rev:-1,...(role==='admin'?{wh:syncSigs(l.seasons)}:{})};delete l.linkWait;adoptFull.delete(l.id);if(own)homeKept(l.name,l,true)}}   // fix round 3 (DD01-K1): the link only, never the other tab's version number or known weeks (this tab hasn't read the league at that version): its next read takes the league whole (no version matches -1), and an edit made before that meets the league's newer copy and is merged into it, as the kept copy's link is when its read fails   // fix round 3 (DD01-K1): the link only, never the other tab's version number or known weeks (this tab hasn't read the league at that version): its next read takes the league whole (no version matches -1), and an edit made before that meets the league's newer copy and is merged into it, as the kept copy's link is when its read fails
-      if(x.mk&&!l.mk&&!l.sync)l.mk=x.mk}   // DD03: the create id another tab is using for this league, so both get the same one league
-    if(!SHARE_MODE){for(const x of o.leagues)if(x&&typeof x==='object'&&typeof x.id==='string'&&x.id&&!goneAt(g,x)&&!(placeholder(x)&&DB.leagues.some(y=>!placeholder(y)))&&!DB.leagues.some(y=>y.id===x.id||(x.sync&&y.sync&&y.sync.id===x.sync.id))){if(x.sync&&typeof x.sync==='object')delete x.sync.replay;DB.leagues.push(migrateDB({leagues:[readyLeague(x)]}).leagues[0]);}   // fix round 3 follow-up: never another tab's replay mark (its save, not this tab's). DD01: a league another tab made, joined, took from a code or reopened, that this tab doesn't have (by its id, or the league it syncs with), whole: this tab never writes it away. Not an empty "My league" beside real ones
+    let put=false;for(const x of o.leagues){if(!x||typeof x!=='object')continue;const l=DB.leagues.find(y=>y.id===x.id||(x.sync&&y.sync&&y.sync.id===x.sync.id));if(l&&stampSync(l,x))put=true}   // change stamps (CHANGE-STAMPS.md): a league both tabs hold. The copy this tab didn't change is taken from the phone whole; one both changed is merged part by part; an older copy an older app wrote back is replaced by this tab's (put)
+    if(!SHARE_MODE){for(const x of o.leagues)if(x&&typeof x==='object'&&typeof x.id==='string'&&x.id&&!goneAt(g,x)&&!(placeholder(x)&&DB.leagues.some(y=>!placeholder(y)))&&!DB.leagues.some(y=>y.id===x.id||(x.sync&&y.sync&&y.sync.id===x.sync.id))){const src=lgCanon(x);if(x.sync&&typeof x.sync==='object')delete x.sync.replay;const nl=migrateDB({leagues:[readyLeague(x)]}).leagues[0];DB.leagues.push(nl);csBase(nl,csOf(nl),lgCanon(nl),src)}   // fix round 3 follow-up: never another tab's replay mark (its save, not this tab's). DD01: a league another tab made, joined, took from a code or reopened, that this tab doesn't have (by its id, or the league it syncs with), whole: this tab never writes it away. Not an empty "My league" beside real ones
       if(DB.leagues.some(y=>!placeholder(y)))DB.leagues=DB.leagues.filter(l=>!placeholder(l)||o.leagues.some(x=>x&&x.id===l.id));   // a fresh phone's empty "My league" that the other tab dropped once a league came (nothing to lose: anything set in it keeps it)
       if(!DB.leagues.length){const gd=guestDB();DB.leagues=gd.leagues;DB.active=gd.active}if(!DB.leagues.find(x=>x.id===DB.active)){DB.active=DB.leagues[0].id;S=season().data;ALLTIME=null}
       acctGone(off.filter(l=>!(l.sync&&o.leagues.some(x=>x&&x.sync&&x.sync.id===l.sync.id&&!goneAt(g,x)))));   // once this tab holds everything it takes: never a league the phone still holds another copy of
-      return DB.leagues.some(l=>!placeholder(l)&&!o.leagues.some(x=>x&&(x.id===l.id||(x.sync&&l.sync&&x.sync.id===l.sync.id))))||o.leagues.some(x=>x&&typeof x==='object'&&goneAt(g,x))}}   // fix round 1: the phone's list lacks a league this tab holds (nobody took it off: those went above), so the storage listener saves it back; fix round 2: or it holds one the removals list says was taken off (a tab of an older app that still had it saved its list), so the same save takes it off the phone again
+      return DB.leagues.some(l=>!placeholder(l)&&!o.leagues.some(x=>x&&(x.id===l.id||(x.sync&&l.sync&&x.sync.id===l.sync.id))))||o.leagues.some(x=>x&&typeof x==='object'&&goneAt(g,x))||put}return put}   // fix round 1: the phone's list lacks a league this tab holds (nobody took it off: those went above), so the storage listener saves it back; fix round 2: or it holds one the removals list says was taken off (a tab of an older app that still had it saved its list), so the same save takes it off the phone again
   catch(e){}return false}
+{let raw=null;try{raw=JSON.parse(localStorage.getItem(KEY2)||'null')}catch(e){}for(const l of DB.leagues){const x=raw&&Array.isArray(raw.leagues)?raw.leagues.find(y=>y&&y.id===l.id):null;csBase(l,csOf(l),lgCanon(l),x?lgCanon(x):null)}}   // change stamps: each league as this tab opened it
 function pruneNfl(){   // a week's slate is only read for an hour: don't let old ones fill the phone up
   try{const cut=Date.now()-36*36e5,ks=[];
     for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.indexOf('bp-nfl:')===0)ks.push(k)}
@@ -1760,15 +1818,11 @@ function dropCaches(){   // the NFL slates and the player list: they come back o
   let n=0;try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&(k.indexOf('bp-nfl:')===0||k==='bp-players'))ks.push(k)}
     for(const k of ks){localStorage.removeItem(k);n++}}catch(e){}
   return n>0}
-function backText(){   // DD01 (fix rounds 1 and 2): a save made only to put the phone's list right (the storage listener, adoptStored's answer). It writes the phone's own copy as it is, every league as the tab that saved it last left it, with the leagues this tab holds that it lacks added and the ones taken off on purpose left out: a league both tabs hold stays last-save-wins, written only by a tab's own save (as on 2026-09-25.21)
-  let o=null;try{o=JSON.parse(localStorage.getItem(KEY2))}catch(e){}if(!o||typeof o!=='object'||!Array.isArray(o.leagues))return JSON.stringify(DB);
-  const g=DB.gone&&typeof DB.gone==='object'?DB.gone:null,held=x=>o.leagues.some(y=>y&&(y.id===x.id||(x.sync&&y.sync&&y.sync.id===x.sync.id)));
-  o.leagues=o.leagues.filter(x=>!(x&&typeof x==='object'&&goneAt(g,x)));for(const l of DB.leagues)if(!placeholder(l)&&!held(l))o.leagues.push(l);
-  if(o.leagues.some(x=>x&&typeof x==='object'&&!placeholder(x)))o.leagues=o.leagues.filter(x=>!(x&&typeof x==='object'&&placeholder(x))||DB.leagues.some(l=>l.id===x.id));   // an empty "My league" this tab dropped once real leagues came goes too, as a whole save would take it
-  if(g)o.gone=g;return JSON.stringify(o)}
-function saveNow(hush,back){
-  const write=()=>{localStorage.setItem(KEY2,back?backText():JSON.stringify(DB));saveTok=Date.now().toString(36)+Math.random().toString(36).slice(2,7);localStorage.setItem(TOK_KEY,saveTok)};
-  try{let t=null;try{t=localStorage.getItem(TOK_KEY)}catch(e){}if(t&&t!==saveTok)adoptStored();
+let SAVED='';   // what this tab's last save wrote, or tried to (refreshSaved compares it with the phone)
+function saveText(){let any=false;const ls=DB.leagues.map(l=>{const d=DEFER.get(l.id);if(d){any=true;return d}csStamp(l);return l});return JSON.stringify(any?{...DB,leagues:ls}:DB)}   // change stamps: a league this tab changed gets a new stamp; one whose newer copy waits for this tab to be free is written as the phone has it (never this tab's older copy)
+function saveNow(hush){
+  const write=()=>{const t=SAVED=saveText();localStorage.setItem(KEY2,t);saveTok=Date.now().toString(36)+Math.random().toString(36).slice(2,7);localStorage.setItem(TOK_KEY,saveTok)};
+  try{let t=null;try{t=localStorage.getItem(TOK_KEY)}catch(e){}if((t&&t!==saveTok)||DEFER.size)adoptStored();
     write()}
   catch(e){
     if(dropCaches()){try{write();return}catch(e2){}}
@@ -5740,7 +5794,7 @@ async function refreshReadOnly(l,ok){   // the phone can't save: read the league
   return{dot:'ok',note:head+(newer?' The league was checked and this screen now shows its latest.':' The league was checked and nothing is newer.')+' Nothing sent to the league is lost.'+fix}}
 function refreshIdle(){return new Promise((yes,no)=>{const start=Date.now(),check=()=>{if(!refreshBusy()||refreshInteraction())yes();else if(Date.now()-start>=10000)no(new Error('refresh busy'));else setTimeout(check,50)};check()})}
 const refreshView=()=>({league:DB.active,season:league().activeSeason,week:S.currentWeekId,view:VIEW,me:league().me||null,upcoming:UPCOMING});
-function refreshSaved(){clearTimeout(saveT);saveNow(true);try{return localStorage.getItem(KEY2)===JSON.stringify(DB)&&localStorage.getItem(TOK_KEY)===saveTok}catch(e){return false}}
+function refreshSaved(){clearTimeout(saveT);saveNow(true);try{return localStorage.getItem(KEY2)===SAVED&&localStorage.getItem(TOK_KEY)===saveTok}catch(e){return false}}
 function pullIndicator(text,height=48){const el=document.getElementById('pull-refresh');if(!el)return;el.hidden=!text;el.style.setProperty('--pull-height',height+'px');if(el.textContent!==text)el.textContent=text}
 function refreshLimit(p,ms=12000){return new Promise((yes,no)=>{const t=setTimeout(()=>no(new Error('refresh timeout')),ms);Promise.resolve(p).then(x=>{clearTimeout(t);yes(x)},e=>{clearTimeout(t);no(e)})})}
 async function prepareRefresh(){const until=Date.now()+15000,within=p=>refreshLimit(p,Math.max(1,until-Date.now()));if(!('serviceWorker'in navigator))throw new Error('refresh unavailable');const r=await within(navigator.serviceWorker.getRegistration());if(!r)throw new Error('refresh unavailable');await within(r.update());if(r.installing){const w=r.installing;await within(new Promise((yes,no)=>{const changed=()=>{if(w.state==='activated'){w.removeEventListener('statechange',changed);yes()}else if(w.state==='redundant'){w.removeEventListener('statechange',changed);no(new Error('refresh unavailable'))}};w.addEventListener('statechange',changed);changed()}))}const w=r.active;if(!w)throw new Error('refresh unavailable');const c=new MessageChannel();try{return await within(new Promise((yes,no)=>{c.port1.onmessage=e=>e.data&&e.data.ok?yes(e.data.v):no(Object.assign(new Error('refresh unavailable'),{reason:e.data?.reason==='rollback'?'rollback':null}));w.postMessage({type:'bp-refresh',v:APP_VERSION},[c.port2])}))}finally{c.port1.close();c.port2.close()}}
@@ -5768,7 +5822,7 @@ migrateRv();for(const l of DB.leagues){for(const sn of l.seasons||[]){const hw=h
 render();save();loadPending();if(!SHARE_MODE)setTimeout(()=>{tidySeasons()},6000);
 (async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined){if(refreshedIn)reopenRead();else pull()}})();
 setInterval(()=>{if(document.visibilityState==='visible'){pull();pushDirty()}},45000);
-addEventListener('storage',e=>{if(e&&e.key===KEY2){if(adoptStored())saveNow(false,true);softRender()}});   // another tab claimed a name or joined a league: take that, don't write over it
+addEventListener('storage',e=>{if(e&&e.key===KEY2){if(adoptStored())saveNow(false);softRender()}});   // another tab claimed a name or joined a league: take that, don't write over it
 if(!SHARE_MODE)setTimeout(()=>acctSync(true,true),1500);setTimeout(checkVersion,8000);
 addEventListener('load',()=>{const f=document.getElementById('webfont');if(f)f.media='all'});   // the downloaded font waits until the first screen is up; the phone's own font is used until thensetTimeout(pruneNfl,3000);
 let hiddenAt=0;
