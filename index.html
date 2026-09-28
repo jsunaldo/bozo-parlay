@@ -1288,7 +1288,7 @@ function mergeMemberEdits(l,st){
   if(st.claims)l.claims=st.claims;return n;
 }
 async function push(l,retried,clash){   // change stamps: another tab saved first: take its copy (it may have sent this edit already), then this tab's request is on its way (another tab's copy waits)
-  if(!retried){const was=!!(l.sync&&l.sync.dirty);let t=null;try{t=localStorage.getItem(TOK_KEY)}catch(e){}if(t&&t!==saveTok&&adoptStored())save();if(was&&!(l.sync&&l.sync.dirty))return}
+  if(!retried){const was=!!(l.sync&&l.sync.dirty);if(csHeld(l))return;if(was&&!(l.sync&&l.sync.dirty))return}
   flyOn(l);try{return await push1(l,retried,clash)}finally{flyOff(l)}}
 async function push1(l,retried,clash){
   for(const k of [...EDIT0.keys()])if(k.startsWith(l.id+'|'))EDIT0.delete(k);   // this copy goes up: an emptied box is measured against it from here
@@ -1335,7 +1335,7 @@ async function sendPick(l,w,mid,quietly,auto){
   finally{const again=PICKFLY.get(fk);PICKFLY.delete(fk);if(again&&w.picks[mid])sendPick(l,w,mid,again.quietly,again.auto)}}
 async function sendPick0(l,w,mid,quietly,auto){   // a member's own pick: it waits in the outbox until the league has it
   const p=w.picks[mid];if(!p)return;EDIT0.delete(guideKey(w.id,mid,false,l.id));   // what goes up now is what an emptied box is measured against next
-  if(!w.locked)oddsFix(p,nflOk(slipNfl(w)));const edit=sentPriceEdit(l,w,mid),sentPin=p.oddsPin?.id;auto=auto&&!edit;const sentText=p.text,sentOdds=p.odds;pendingPick=null;const k=obKey(l,w,mid),clr=!String(sentText||'').trim()?CLEARS.get(k)||null:null;   /* clr: this send takes a pick off (Clear pick), so its words say cleared, naming the old pick */const stamp=Date.now();l.outbox=l.outbox||{};const prev=l.outbox[k];if(prev&&!prev.auto)auto=false;const typed=auto?0:+(prev&&(prev.typed||prev.at))||stamp;const base=prev&&'base' in prev?prev.base:(p.at||'');l.outbox[k]={at:stamp,base,...(auto?{auto:1}:{typed})};save();   /* a change of the member's own still waiting to go up (typed with no signal) goes as theirs even when the automatic price fill sends it: the league answers it as a change, and a refusal is said in words, never dropped quietly. typed: when they typed it (kept through the retries) */setSyncDot('busy');const sid=seasonOfWeek(l,w).id;
+  if(!w.locked)oddsFix(p,nflOk(slipNfl(w)));const edit=sentPriceEdit(l,w,mid),sentPin=p.oddsPin?.id;auto=auto&&!edit;const sentText=p.text,sentOdds=p.odds;pendingPick=null;const k=obKey(l,w,mid),clr=!String(sentText||'').trim()?CLEARS.get(k)||null:null;   /* clr: this send takes a pick off (Clear pick), so its words say cleared, naming the old pick */const stamp=Date.now();l.outbox=l.outbox||{};const prev=l.outbox[k];if(prev&&!prev.auto)auto=false;const typed=auto?0:+(prev&&(prev.typed||prev.at))||stamp;const base=prev&&'base' in prev?prev.base:(p.at||'');l.outbox[k]={at:stamp,base,...(auto?{auto:1}:{typed}),tab:TAB_ID};save();   /* a change of the member's own still waiting to go up (typed with no signal) goes as theirs even when the automatic price fill sends it: the league answers it as a change, and a refusal is said in words, never dropped quietly. typed: when they typed it (kept through the retries) */setSyncDot('busy');const sid=seasonOfWeek(l,w).id;
   try{const d=await api(l,'/pick',{method:'POST',body:{seasonId:sid,weekId:w.id,memberId:mid,baseAt:base,...(auto?{auto:1}:{}),...(edit?{priceEdit:edit}:{}),...(sentPin?{pricePinId:sentPin}:{}),pick:{text:p.text,odds:p.odds,teams:p.teams,tm:p.tm,tmh:!!p.tmh,unit:p.unit,um:p.um,raw:p.raw||'',keep:!!p.keep,oddsBy:p.oddsBy||'',oddsTyped:p.oddsTyped??'',oddsDk:p.oddsDk||'',oddsSrc:p.oddsSrc||'',oddsAt:+p.oddsAt||0}}});
     l.sync.restoredAt=String(d.restoredAt||'');const np=(d.seasons||[]).find(x=>x.id===sid)?.data?.weeks?.find(x=>x.id===w.id)?.picks?.[mid];if(np&&np.at)p.at=np.at;priceEditReply(l,k,edit,np);const released=releasedPriceAck(l,w,mid,np,sentPin);if(released)autoTidySoon();   // the league's stamp: the next edit starts from it
     if(np&&l.outbox[k]&&l.outbox[k].at===stamp&&np.text!==p.text){p.text=np.text;if(np.raw)p.raw=np.raw;else delete p.raw;if(Array.isArray(np.teams))p.teams=np.teams;if(np.unit)p.unit=np.unit}   // the league reworded it: show the league's wording
@@ -1354,12 +1354,16 @@ async function sendPick0(l,w,mid,quietly,auto){   // a member's own pick: it wai
     else{setSyncDot('bad');if(!quietly)toast(clr?'No signal, so your pick isn’t cleared in the league yet. It clears on its own as soon as you have signal.':'No signal, so your pick is only on this device for now. It goes up on its own as soon as you have signal.','bad');softRender()}}
 }
 let obBusy=false;
-async function flushOutbox(l){if(obBusy||!outboxHas(l))return;obBusy=true;
+async function flushOutbox(l){if(obBusy||!outboxHas(l)||csHeld(l))return;obBusy=true;
   try{for(const k of Object.keys(l.outbox)){const[sid,wid,mid]=k.split('|');const sn=(l.seasons||[]).find(x=>x.id===sid);const w=sn&&sn.data.weeks.find(x=>x.id===wid);
+    if(w&&w.picks[mid]&&mid!==l.me&&String(w.picks[mid].text||'').trim()){obOther(l,k,w,mid);continue}   // fix round 1 (M2): typed as someone else on this phone (another tab switched who this phone is): kept for that person, never sent as this one, and said once
     if(!w||!w.picks[mid]||mid!==l.me){delete l.outbox[k];continue}
     if(PICKFLY.has(k)||!l.outbox[k])continue;   // already in the air, or answered while this ran
+    {const e=l.outbox[k];if(e.tab&&e.tab!==TAB_ID&&Date.now()-(+e.at||0)<12e4)continue}   // fix round 1 (M1): typed in another tab of this app in the last 2 minutes: that tab sends it (after that, this tab does: the other tab may be closed)
     await sendPick(l,w,mid,true,!!l.outbox[k].auto)}}
   finally{obBusy=false;save()}}
+const TAB_ID=Math.random().toString(36).slice(2,10);   // this tab (an outbox pick names the tab it was typed in)
+const OB_SAID=new Set();function obOther(l,k,w,mid){if(OB_SAID.has(l.id+'|'+k))return;OB_SAID.add(l.id+'|'+k);const who=(((season(l)||{}).data||{}).members||[]).find(m=>m.id===mid),nm=(who&&who.name)||'another player',now=(((season(l)||{}).data||{}).members||[]).find(m=>m.id===l.me);setTimeout(()=>toast(`${nm}’s pick for ${wkName(w)}, “${String(w.picks[mid].text).trim()}”, is still waiting on this phone: it was typed as ${nm}, and this phone is ${now?now.name:'someone else'} now, so it wasn’t sent as ${now?now.name:'them'}. Nothing was lost: it goes up by itself as soon as this phone is ${nm} again, or ${nm} can enter it on their own phone.`,'bad'),80)}
 async function sendVote(l,w,voterId,candidateId){
   setSyncDot('busy');
   try{const d=await api(l,'/vote',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,voterId,candidateId}});applyState(l,d);save();render();setSyncDot('ok');toast(candidateId?`Vote in: ${member(candidateId)?.name}`:'Vote withdrawn','good')}
@@ -1744,9 +1748,10 @@ function lgCanon(l){return JSON.stringify(l,function(k,v){return(this===l&&(k===
 const csOf=l=>{const c=l&&l.cs;return c&&typeof c==='object'&&typeof c.v==='string'?{v:c.v,n:+c.n||0,h:Array.isArray(c.h)?c.h.filter(x=>typeof x==='string').slice(0,16):[]}:{v:'',n:0,h:[]}};
 function csSeen(id,v,text){let m=TAB_H.get(id);if(!m)TAB_H.set(id,m=new Map());m.delete(v);m.set(v,text);while(m.size>8)m.delete(m.keys().next().value)}
 function csBase(l,c,text,src,h){TAB_V.set(l.id,{v:c.v,n:c.n,h:h||c.h,text,src});csSeen(l.id,c.v,text)}   // the copy of l this tab last took from the phone or wrote to it (text: as this tab holds it; src: as the phone had it)
-function csStamp(l){const b=TAB_V.get(l.id),t=lgCanon(l);if(b&&t===b.text)return;const v=Date.now().toString(36).slice(-6)+Math.random().toString(36).slice(2,6),h=b?[b.v,...b.h.filter(x=>x!==b.v)].slice(0,16):[];l.cs={v,n:(b?b.n:0)+1,t:Date.now(),h};csBase(l,l.cs,t,t)}   // a save: a new stamp on a league this tab changed, never on one it didn't
+function csStamp(l){const b=TAB_V.get(l.id),t=lgCanon(l);if(b&&t===b.text)return;const v=Date.now().toString(36).slice(-6)+Math.random().toString(36).slice(2,6),h=b?[b.v,...b.h.filter(x=>x!==b.v)].slice(0,16):[];l.cs={v,n:(b?b.n:0)+1,t:Date.now(),h};csBase(l,l.cs,t,t);TAB_V.get(l.id).own=true}   // a save: a new stamp on a league this tab changed, never on one it didn't
 const flyOn=l=>FLY.set(l.id,(FLY.get(l.id)||0)+1),flyOff=l=>{const n=(FLY.get(l.id)||0)-1;if(n>0)FLY.set(l.id,n);else FLY.delete(l.id)};
 const csBusy=l=>FLY.has(l.id)||(l===league()&&(!!document.getElementById('modal-root')?._open||document.body.classList.contains('typing')||!!upl));   // a box open on it, someone typing, an upload, or this tab's own request on its way: another tab's copy waits
+function csHeld(l){let t=null;try{t=localStorage.getItem(TOK_KEY)}catch(e){}if((t&&t!==saveTok)||DEFER.has(l.id)){if(adoptStored())save()}return DEFER.has(l.id)}   // fix round 1 (H1, M1): a league whose newer copy on the phone waits for this tab to be free is never sent or read from this tab meanwhile: what waits to go up in this tab's copy came from the other tab, which may have sent it and changed it since (the other tab sends; this tab takes the newer copy once it is free)
 function csPut(l,X){   // l becomes X in place (whatever holds l holds the new copy); its id and where this tab is looking stay its own
   const id=l.id,as=l.activeSeason,ui={};for(const x of l.seasons||[])if(x&&x.data)ui[x.id]=[x.data.currentWeekId,x.data.view];const so=SIGNED_OUT.has(id)&&!l.me;
   for(const k of Object.keys(l))if(!(k in X))delete l[k];Object.assign(l,X);l.id=id;
@@ -1762,6 +1767,7 @@ function stampSync(l,x){   // x: the phone's copy of the league this tab holds a
   const lin=[xc.v,...xc.h,''],av=b&&lin.includes(b.v)?b.v:lin.find(v=>H.has(v)),at=av!==undefined&&H.has(av)?H.get(av):null;   // at: the newest copy both tabs have had
   const older=!!b&&xc.v!==b.v&&(xc.v===''||b.h.includes(xc.v));   // the phone's copy is older than this tab's (an older app's tab wrote back what it had)
   if(at!==null&&xt===at)return mt!==at;   // nothing new on the phone: this tab's own change (if any) goes to it
+  if(b&&!b.own&&av!==b.v&&mt===b.text&&!older){if(csBusy(l)){DEFER.set(l.id,x);return false}csPut(l,X);csBase(l,xc,xt,lgCanon(x));return false}   // fix round 1 (M3): this tab changed nothing since the copy it last took from the phone, and the phone's copy is newer but doesn't name that copy (more saves in another tab than a stamp names): take it whole. Not when this tab's last copy is its own write (the phone's copy may be a sibling that lost it: merged below)
   if(at!==null&&mt===at){if(csBusy(l)){DEFER.set(l.id,x);return false}csPut(l,X);csBase(l,xc,xt,lgCanon(x));return false}   // this tab didn't change it: it takes the other tab's copy, whole
   if(older&&at===null){if(![...H.values()].includes(xt))csOld(l,X);return true}   // an older copy this tab can't compare with: this tab's goes back, that one kept first
   return tabMerge(l,at===null?null:JSON.parse(at),X,x,xc,xt,older)}
@@ -1797,7 +1803,7 @@ function tabMerge(l,A,X,x,xc,xt,older){   // this tab and another changed the le
   const b=TAB_V.get(l.id);csPut(l,out);csBase(l,xc,xt,lgCanon(x),[...new Set([...xc.h,...(b?[b.v,...b.h]:[])])].slice(0,16));CS_SAID.delete('full|'+l.id);if(lost.length)csWords(l,lost);
   if(l.sync&&l.sync.role==='admin'&&l.sync.dirty&&!pushTof(l))pushTs[l.id]=setTimeout(()=>{delete pushTs[l.id];push(l)},700);return true}   // what this tab's copy now has that the league doesn't goes up, as a commissioner edit does
 function adoptStored(){   // another tab saved in between: keep the name, key and league it knows and this tab doesn't
-  DEFER.clear();try{const r=localStorage.getItem(KEY2);if(!r)return;const o=JSON.parse(r);if(!o||!Array.isArray(o.leagues))return;
+  try{const r=localStorage.getItem(KEY2);if(!r)return;const o=JSON.parse(r);if(!o||!Array.isArray(o.leagues))return;DEFER.clear();   // fix round 1: a missing or unreadable list keeps what waits (a save never writes this tab's older copy for it)
     let g=DB.gone;if(!SHARE_MODE&&o.gone&&typeof o.gone==='object'){g=DB.gone=g&&typeof g==='object'?g:{};for(const[k,v]of Object.entries(o.gone))if(k!=='__proto__'&&+v>(+g[k]||0))g[k]=+v}   // DD01: the leagues another tab took off on purpose...
     const off=SHARE_MODE?[]:DB.leagues.filter(l=>goneAt(g,l));if(!SHARE_MODE)DB.leagues=DB.leagues.filter(l=>!goneAt(g,l));   // ...go from this tab too (a league added again after that stays), and from the account's list (below: fix round 1)
     if(o.acct&&!DB.acct){DB.acct=o.acct;if(o.acctFrom){DB.acctFrom=o.acctFrom;for(const l of DB.leagues){const x=o.leagues.find(y=>y&&(y.id===l.id||(y.sync&&l.sync&&y.sync.id===l.sync.id)));if(!x||x.acctOff)l.acctOff=(x&&x.acctOff)||o.acct.id}}}   // another tab took a league list from a code: the leagues this tab has that it didn't know about stay off that list too
