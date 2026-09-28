@@ -1938,15 +1938,15 @@ function stats(){
   const g={weeks:weeks.length,graded:0,won:0,lost:0,staked:0,paid:0,bestLegs:0,legsTotal:0,legsHit:0,bestOdds:null,byType:{},byTeam:{},bySub:{},closestWeek:null,legs:[]};
   for(const w of weeks){
     const c=calc(w);
-    const chg=c.graded&&c.result!=='void';   // every leg pushed: the stake comes back, so nobody paid for it
+    const chg=c.result==='lost'||(c.graded&&c.result!=='void');   // the stake is spent once the parlay is settled: lost the moment a leg misses (Jason 09-27: the money moves with the record, the other legs still to play), won only when every leg is in; every leg pushed (void): the stake comes back, so nobody paid for it
     if(per[w.bozoId]){const pb=per[w.bozoId];pb.bozo++;if(chg)pb.spent+=c.stake;pb.bozoWeeks.push(wkShort(w));if(c.graded){pb.bozoLegs+=c.hits+c.misses;pb.bozoLegsHit+=c.hits;if(c.result==='won')pb.bozoCashed++}}
     if(c.graded&&c.n&&(!g.closestWeek||c.hits/(c.n-c.pushes||1)>g.closestWeek.rate))g.closestWeek={wk:wkShort(w),hits:c.hits,n:c.n-c.pushes,rate:c.hits/(c.n-c.pushes||1)};
     const fr=isSide(w)?frontedBy(w,per):null;if(fr&&chg)per[fr].spent+=c.stake;   // a side parlay is not a Bozo week, but somebody still paid for it
     if(chg&&!per[w.bozoId]&&!fr){g.unpaid=(g.unpaid||0)+c.stake;(g.unpaidWks??=[]).push(wkShort(w))}
-    if(chg)g.staked+=c.stake;else if(!c.graded)g.liveStake=(g.liveStake||0)+c.stake;   // money counts once the week is settled
+    if(chg){g.staked+=c.stake;g.stakedWks=(g.stakedWks||0)+1}else if(!c.graded)g.liveStake=(g.liveStake||0)+c.stake;   // money counts once the week is settled (a lost week at once); live: stake on a parlay that can still cash
     if(c.result==='won'){g.won++;g.paid+=c.payout;if(g.bestOdds==null||c.dec>g.bestOdds)g.bestOdds=c.dec}
     if(c.result==='lost')g.lost++;
-    if(c.graded)g.graded++;if(c.graded&&!chg)g.voided=(g.voided||0)+1;
+    if(c.graded)g.graded++;if(c.graded&&!chg)g.voided=(g.voided||0)+1;if(c.result!=='pending')g.decided=(g.decided||0)+1;   // decided: won, lost (a missed leg is enough) or void
     g.legsTotal+=c.hits+c.misses;g.legsHit+=c.hits;g.bestLegs=Math.max(g.bestLegs,c.hits);
     for(const l of c.legs){
       const p=per[l.mid];if(!p)continue;
@@ -4344,8 +4344,8 @@ function renderHistoryInner(){
   if(!S.weeks.length)return empty('No weeks yet','Start Week 1 from the This Week tab.');
   const{g}=stats();const net=g.paid-g.staked;
   return`<div class="tiles">
-    <div class="tile"><small>Record</small><b>${g.won}–${g.lost}</b><em>${g.weeks-g.graded?`${g.weeks-g.graded} live`:'all graded'}</em></div>
-    <div class="tile"><small>Staked</small><b>${fmt$0(g.staked)}</b><em>${g.graded-(g.voided||0)} wk${g.liveStake?` · ${fmt$0(g.liveStake)} live`:''}</em></div>
+    <div class="tile"><small>Record</small><b>${g.won}–${g.lost}</b><em>${g.weeks-(g.decided||0)?`${g.weeks-(g.decided||0)} live`:g.weeks-g.graded?'all decided':'all graded'}</em></div>
+    <div class="tile"><small>Staked</small><b>${fmt$0(g.staked)}</b><em>${g.stakedWks||0} wk${g.liveStake?` · ${fmt$0(g.liveStake)} live`:''}</em></div>
     <div class="tile"><small>Paid</small><b class="${g.paid>0?'good':''}">${fmt$0(g.paid)}</b><em>${g.bestOdds?amer(g.bestOdds)+' best':'—'}</em></div>
     <div class="tile"><small>Net</small><b class="${net>=0?'good':'bad'}">${fmt$0(net)}</b><em>group</em></div>
   </div>
@@ -4426,7 +4426,7 @@ function renderStatsInner(){
   const legRate=g.legsTotal?g.legsHit/g.legsTotal:null;const net=g.paid-g.staked;
   const A=awards(per);
   return scopeBar()+`<div class="tiles">
-    <div class="tile"><small>Cashed</small><b>${g.won}<span class="muted" style="font-size:12px">/${g.graded}</span></b><em>parlays</em></div>
+    <div class="tile"><small>Cashed</small><b>${g.won}<span class="muted" style="font-size:12px">/${g.decided||0}</span></b><em>parlays</em></div>
     <div class="tile"><small>Legs hit</small><b>${pct(legRate)}</b><em>${g.legsHit}/${g.legsTotal}${(u=>u!=null?` · <span class="${uCls(u)}">${fmtU(u)}</span>`:'')(uOf(recOf(g.legs)))}</em></div>
     <div class="tile"><small>Closest</small><b>${g.closestWeek?g.closestWeek.hits+'<span class="muted" style="font-size:12px">/'+g.closestWeek.n+'</span>':'—'}</b><em>${g.closestWeek?h(g.closestWeek.wk)+' · legs hit':'legs'}</em></div>
     <div class="tile"><small>Net</small><b class="${net>=0?'good':'bad'}">${fmt$0(net)}</b><em>${fmt$0(g.paid)} in</em></div>
