@@ -1295,7 +1295,7 @@ function ownChange(l,st){   // a copy with no record of the league it last read:
   const ss=(st.seasons||[]).filter(x=>x&&SAFE_ID.test(x.id)).map(x=>({...x,data:migrate(JSON.parse(JSON.stringify(x.data||fresh())))})),a=syncSigs(l.seasons),b=syncSigs(ss);if(Object.keys(a).some(k=>a[k]!==b[k]))return true;
   const mark=p=>{const x=String(p.at||''),y=String(p.eat||'');return y>x?y:x};
   for(const x of l.seasons||[]){const sx=ss.find(y=>y.id===x.id);for(const w of x.data.weeks||[]){const sw=sx.data.weeks.find(y=>y.id===w.id);if(Object.keys(w.picks||{}).sort().join()!==Object.keys(sw.picks||{}).sort().join())return true;   // a leg removed here, or a player put back on the slip
-    for(const[mid,p]of Object.entries(w.picks||{})){const q=(sw.picks||{})[mid]||{};if(p&&(String(p.text||'')!==String(q.text||'')||String(p.odds||'')!==String(q.odds||''))&&mark(p)>mark(q))return true;if(p&&String(p.text||'').trim()===String(q.text||'').trim()&&logoSig(p)!==logoSig(q))return true}}}   // the same bet with another team logo
+    for(const[mid,p]of Object.entries(w.picks||{})){const q=(sw.picks||{})[mid]||{};if(p&&(String(p.text||'')!==String(q.text||'')||String(p.odds||'')!==String(q.odds||''))&&(mark(p)>mark(q)||String(p.text||'').trim()))return true;if(p&&String(p.text||'').trim()===String(q.text||'').trim()&&logoSig(p)!==logoSig(q))return true}}}   // a leg that differs from the league's: typed here after the league's own, or holding words at all (Codex TC-01: an older or equal time can't tell a leg typed here offline from one read earlier, so it's kept); a blank one older than the league's is only the league's pick arriving. The same bet with another team logo
   return false}
 async function push(l,retried,clash){
   if(NOFIT.has(l.id))return;
