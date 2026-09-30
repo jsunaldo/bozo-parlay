@@ -450,6 +450,9 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .ss-card .crumbs+.x-head{justify-content:flex-start}.ss-card .crumbs+.x-head b{display:none}   /* drilled in, the crumbs already say where (no fact twice) */
 .ss-card .crumb{min-height:44px;display:inline-flex;align-items:center}.ss-card .crumb.cur{background:var(--text);color:var(--bg)}.ss-card .bl-res.push{color:var(--amber-tx)}
 .ss-card .bad,.ss-card .tuc.bad,.ss-card .x-u.bad{color:var(--pace-red)}.ss-card .bl-res.miss{color:var(--pace-red)}@media(prefers-color-scheme:dark){.ss-card .bad,.ss-card .tuc.bad,.ss-card .x-u.bad,.ss-card .bl-res.miss{color:#ff6961}}
+/* Fix round 1 (UX-STATS R4): at 360 px and under the inline explorer gives the NAME the width. The bar (the hit % says it again) is dropped, the figures and the padding tighten, the tabs size to their words, and the Wins | Rate | Units line sits under its caption. Scoped to .ss-card; the popup is unchanged */
+@media (max-width:360px){.ss-card{padding:14px}.ss-card .typerow,.ss-card .typerow.nav{grid-template-columns:minmax(0,1fr) 44px 34px 46px;gap:4px}.ss-card .typerow.nav{grid-template-columns:minmax(0,1fr) 44px 34px 46px 10px}.ss-card .typerow .tbar{display:none}.ss-card .typerow .tname{gap:4px}.ss-card .typerow .tname .rank{width:12px}.ss-card .px-seg button{flex:1 1 auto;padding-left:6px;padding-right:6px}.ss-card .x-sub{flex-wrap:wrap;row-gap:6px}.ss-card .x-sub .pd-sub{flex:1 1 100%}}
+#ssIn:placeholder-shown{padding-right:10px}   /* no clear button while the box is empty, so the hint gets that room and is not cut mid-word at 320 */
 
 /* stats */
 .scope{display:flex;background:var(--surface2);border-radius:980px;padding:4px;margin-bottom:14px;gap:2px}
