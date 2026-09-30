@@ -456,16 +456,19 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .pop-scope{flex:none;margin:0 22px 12px}.pop-scope button{min-height:44px}.pop-scope button:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}.modal-body .pop-none{color:var(--text);font-size:15px;margin:4px 0 8px}   /* a Stats popup's season / All-time switch: the page's bar, 44 px tall, in balanced rows (popFit) */
 .heat th.season-h{text-align:left;font-family:var(--font);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);padding-left:4px;border-bottom:1px solid var(--line)}
 .lb-wrap{overflow-x:auto;margin:0 -18px;padding:0 18px;-webkit-overflow-scrolling:touch}
-table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
-.lb th{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 8px;cursor:pointer;white-space:nowrap;user-select:none;-webkit-user-select:none}
+table.lb{width:max-content;min-width:100%;border-collapse:collapse;font-size:13px}   /* the browser measures: the card scrolls sideways only when the columns really are wider than it (UX-STATS §1) */
+.lb th{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 5px;cursor:pointer;white-space:nowrap;user-select:none;-webkit-user-select:none}
 .lb th:first-child{text-align:left;cursor:default}
 .lb th.on{color:var(--blue)}
-.lb th.on::after{content:' ▾'}
-.lb td{padding:10px 8px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.lb th.on::after{content:' ▾';font-size:8px;letter-spacing:0}
+.lb td{padding:10px 5px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
 .lb td:first-child{text-align:left}
-.lb .who{display:flex;align-items:center;gap:8px;font-weight:600}
+.lb td:first-child,.lb th:first-child{width:100%;min-width:136px;max-width:0;position:sticky;left:0;z-index:1;background:var(--surface)}   /* Player: takes what the numbers leave and shortens a long name with … (never under 136 px, about 64 px of name); sticky, so on a phone that must scroll the names stay in view */
+.lb td:first-child::before,.lb th:first-child::before{content:'';position:absolute;top:0;bottom:0;left:-18px;width:18px;background:inherit}   /* the card's own gutter beside the names: what has scrolled under them is hidden there too */
+.lb-wrap.sc .lb td:first-child::after,.lb-wrap.sc .lb th:first-child::after{content:'';position:absolute;top:0;bottom:0;right:0;width:1px;background:var(--line2)}   /* the hairline shows only once something has scrolled under the names */
+.lb .who{display:flex;align-items:center;gap:6px;font-weight:600}.lb .who .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb .who .avatar,.lb .who .rank,.lb .who .chev{flex:none}
 .lb-row{cursor:pointer}
-.lb-row:hover td{background:var(--surface2)}
+.lb-row:hover td,.lb-row:hover td:first-child{background:var(--surface2)}
 .lb .chev{color:var(--dim);font-weight:600;transition:transform .2s;margin-left:2px}
 .lb-row:active td{opacity:.7}
 .pd-wrap{margin-top:12px;animation:fadeUp .2s}
@@ -504,6 +507,7 @@ table.lb{width:100%;border-collapse:collapse;font-size:13px;min-width:460px}
 .pd-bet small:last-child{grid-column:3;color:var(--dim);text-transform:none;letter-spacing:0;font-size:11px}
 .lb .rank{color:var(--dim);font-family:var(--mono);font-size:11px;width:14px}
 .bar{display:inline-block;height:6px;border-radius:4px;background:var(--blue);vertical-align:middle;margin-right:6px;min-width:2px}
+.lb .bar{margin-right:4px}
 .awards{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:520px){.awards{grid-template-columns:repeat(2,1fr)}}
 .award{background:var(--surface2);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
@@ -653,19 +657,23 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .legend{display:flex;gap:12px;margin-top:10px;font-size:11px;color:var(--muted);font-weight:500;flex-wrap:wrap}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .legend i{width:11px;height:11px;border-radius:3px;display:inline-block}
-.calls{display:flex;flex-direction:column;gap:8px}
-.call{display:flex;align-items:center;gap:10px}
-.call-body{flex:1;min-width:0;display:flex;flex-direction:column}
-.call-body b{font-weight:600;font-size:14px}
-.call-body small{color:var(--muted);font-size:12px;line-height:1.3}
+.cm-rows{display:flex;flex-direction:column}
+.cm-row{display:flex;align-items:center;gap:10px;min-height:44px;padding:10px 0;border-top:1px solid var(--line);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.cm-row:first-child{border-top:0}.cm-row:active{opacity:.7}.cm-row:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
+.cm-rank{flex:none;width:18px;text-align:center;font-family:var(--mono);font-size:12px;color:var(--dim)}
+.cm-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cm-bet{font-size:14px;font-weight:600;line-height:1.3;min-width:0}.cm-bet .betchip{max-width:100%}
+.cm-mid small{display:flex;align-items:center;gap:5px;font-size:12px;line-height:1.3;color:var(--muted);min-width:0}.cm-mid small .avatar{flex:none}
+.cm-switch{margin:0 0 6px}.cm-switch button{flex:1 1 auto;min-height:44px;padding:9px 6px}   /* each label as wide as it is, the spare room shared (equal thirds cut 'Receptions' at 320) */
+.cm-intro{margin:-4px 0 12px}
+.cm-foot{margin:8px 0 0;min-height:44px}   /* Closest misses (UX-STATS §6): one measure at a time, rows of rank | the bet | the margin; the biggest chokes a tap away */
 .betchip{display:inline-flex;align-items:center;gap:5px;min-width:0;vertical-align:middle}
 .betchip img{width:18px;height:18px;object-fit:contain;flex:none}
 .betchip .bt{white-space:normal;line-height:1.3}
 .betchip.lg img{width:22px;height:22px}
 .margin-pill{font-family:var(--mono);font-weight:600;font-size:12px;padding:5px 10px;border-radius:980px;background:var(--surface2);color:var(--muted);flex:none}
-.margin-pill.close{background:var(--amber-bg);color:#b25e00}
-@media(prefers-color-scheme:dark){.margin-pill.close{color:var(--amber)}}
-.margin-pill.ouch{background:var(--red-bg);color:var(--red)}
+.margin-pill.close{background:var(--amber-bg);color:var(--amber-tx)}
+.margin-pill.ouch{background:var(--red-bg);color:var(--red-tx)}   /* the text tokens, not the fill colours: 4.5:1 or more on the tints, light and dark (the old #b25e00, --amber and --red were 3.0 to 4.2) */
 
 /* settings (was crew) */
 .setctx{font-size:13px;line-height:1.4;color:var(--muted);margin:2px 2px 10px;overflow-wrap:anywhere}.setctx b{color:var(--text);font-weight:600}
@@ -4668,6 +4676,7 @@ function popDraw(st){const l=league(),where=statKey(l)==='all'?'any season':seas
   else if(st.award){const i=withStats(()=>awards(stats().per).findIndex(a=>a.name===st.award.name));if(i<0)return say(`${st.award.icon} ${st.award.name}`,REC_ALL.includes(st.award.name)&&statKey(l)!=='all'?`${st.award.name} compares whole seasons, so it is on All-time only. Tap All-time above to see it.`:`Nobody has earned ${st.award.name} in ${where}.`);d.i=String(i)}
   else if(mid)d.mid=mid;
   if(st.act==='teams-all'&&!Object.keys(mid?all().per[mid].byTeam:all().g.byTeam).length)return say(mid?`${st.name}: every team`:'Every team',mid?`${st.name} has no bets on a team in ${where}.`:`No bets on a team in ${where}.`);
+  if(st.act==='choke-show'&&!withStats(()=>chokeAny(closeAll(stats().per))))return say('Biggest chokes',`Not enough misses in ${where} yet to rank the biggest chokes.`);
   if(st.act==='pk-show'&&!all().per[mid].killer)return say(`☠️ ${st.name}`,`${st.name} has no solo kills in ${where}.`);
   POP_CAP={};let o;try{POP_RAW[st.act]({dataset:d})}finally{o=POP_CAP.o;POP_CAP=null}
   return o||say(st.act==='grudge-show'?`📒 ${st.name}`:st.name||'',st.act==='grudge-show'?`${st.name} has no ballots or votes on record in ${where}.`:`Nothing to show here in ${where}.`)}
@@ -4696,8 +4705,8 @@ function renderStatsInner(){
   ${RV_GATE?`<p class="muted tiny" style="margin:6px 0 0">These numbers only count the ${S.weeks.length} week${S.weeks.length===1?'':'s'} you have caught up on, so they look smaller than you remember. Nothing is missing: watch the ${h(wkName(RV_GATE))} reveal over on the This Week tab, or skip the show, and the weeks after it join back in, one reveal at a time.</p>`:''}
   ${g.unpaid?`<p class="muted tiny" style="margin:6px 0 0">${fmt$0(g.unpaid)} of the stakes is not on anyone’s Net: no Bozo is on record for ${h(g.unpaidWks.join(', '))}. Nothing is missing from the totals. To fix it in the commissioner app: open ${g.unpaidWks.length===1?'that week':'each of those weeks'} and set the Bozo.</p>`:''}
   <section class="card"><h3>Leaderboard</h3><div class="lb-wrap"><table class="lb"><thead><tr><th>Player</th>${COLS.map(([k,l])=>`<th class="${sortKey===k?'on':''}" tabindex="0" aria-sort="${sortKey===k?'descending':'none'}" data-act="sort" data-key="${k}">${l}</th>`).join('')}</tr></thead><tbody>
-    ${(pl=>rows.map((r,i)=>`<tr class="lb-row" tabindex="0" data-act="player-detail" data-mid="${r.m.id}"><td><div class="who"><span class="rank">${pl[i]}</span><span class="avatar sm" style="--c:${r.m.color}">${avIn(r.m)}</span>${h(r.m.name)}<span class="chev">›</span></div></td>
-      <td><span class="bar" style="width:${Math.round((r.rate||0)*36)}px"></span>${pct(r.rate)}</td>
+    ${(pl=>rows.map((r,i)=>`<tr class="lb-row" tabindex="0" data-act="player-detail" data-mid="${r.m.id}"><td><div class="who"><span class="rank">${pl[i]}</span><span class="avatar sm" style="--c:${r.m.color}">${avIn(r.m)}</span><span class="nm">${h(r.m.name)}</span><span class="chev">›</span></div></td>
+      <td><span class="bar" style="width:${Math.round((r.rate||0)*28)}px"></span>${pct(r.rate)}</td>
       <td>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</td>
       <td class="mono ${uCls(r.units||0)}">${r.units!=null?fmtU(r.units)+(r.all&&r.all.uq?'*':''):'—'}</td>
       <td class="mono">${r.avgDec?amer(r.avgDec):'—'}</td>
@@ -4803,19 +4812,19 @@ function voteAwards(G){   // fun ones from the votes themselves (one vote per pe
   const one=ids.filter(id=>{const p=P[id];return p.cast>=3&&!p.self&&Object.keys(p.to).length===1});
   if(one.length)out.push({icon:'🧲',name:'One-track mind',blurb:'every vote on the same person',who:one,stat:one.length===1?`all ${P[one[0]].cast} on ${nm(Object.keys(P[one[0]].to)[0])}`:`${one.length} of them`});
   // a tie for the record names every holder (tieDetail: the words every holder shares once, or each holder's own, a line each, with the count last; the count alone when there are too many or a line is too long)
-  const holders=(recs,say,part,shared)=>{const by=new Map();for(const r of recs)by.set(r.who,[...(by.get(r.who)||[]),r.to]);const who=[...by.keys()].sort((x,y)=>S.members.findIndex(m=>m.id===x)-S.members.findIndex(m=>m.id===y)),to=id=>by.get(id).map(nm).join(' & ');
-    const d=tieDetail(who,id=>say(to(id)),nm,id=>part(to(id)));return{who,stat:d.includes('\n')?d+'\n'+shared:(d||shared)}};
+  const holders=(recs,say,part,shared,one)=>{const by=new Map();for(const r of recs)by.set(r.who,[...(by.get(r.who)||[]),r.to]);const who=[...by.keys()].sort((x,y)=>S.members.findIndex(m=>m.id===x)-S.members.findIndex(m=>m.id===y)),to=id=>by.get(id).map(nm).join(' & ');
+    const d=tieDetail(who,id=>say(to(id)),nm,id=>part(to(id)));return{who,stat:who.length===1&&one?one(by.get(who[0]).map(nm),nm(who[0])):d.includes('\n')?d+'\n'+shared:(d||shared)}};   // one: what a lone holder's card says, with the names in it (Jason 2026-09-29: "never once" did not make sense)
   const runs=[];const run={};G.weeksV.forEach((wv,k)=>{const pw=G.weeksV[k-1];for(const[v,c]of Object.entries(wv.fin)){if(v===c||!member(v)||!member(c))continue;const key=v+'|'+c;const r=run[key];const n=r&&pw&&pw.sid===wv.sid&&r.last===k-1?r.n+1:1;run[key]={n,last:k};if(n>=2)runs.push({who:v,to:c,n})}});   // reveals in a row
   if(runs.length){const top=Math.max(...runs.map(r=>r.n)),hs=[...new Map(runs.filter(r=>r.n===top).map(r=>[r.who+'|'+r.to,r])).values()],hd=holders(hs,t=>`voted ${t} ${top} reveals in a row`,t=>`→ ${t}`,`${top} reveals in a row`);
     out.push({icon:'🔥',name:'Longest grudge',blurb:'same target, reveals in a row',...hd})}
   const nvs=[];for(const x of ids)for(const[v,n]of Object.entries(P[x].chance)){if(P[x].from[v]||!member(v)||v===x)continue;if(n>=2)nvs.push({who:v,to:x,n})}
-  if(nvs.length){const top=Math.max(...nvs.map(r=>r.n)),hd=holders(nvs.filter(r=>r.n===top),t=>`0 votes for ${t} in ${top} chances`,t=>`0 for ${t}`,`${top} chances each`);
-    out.push({icon:'🛡️',name:'Never once',blurb:'most chances, never voted for them',...hd})}
+  if(nvs.length){const top=Math.max(...nvs.map(r=>r.n)),hd=holders(nvs.filter(r=>r.n===top),t=>`0 votes for ${t} in ${top} chances`,t=>`0 for ${t}`,`${top} chances each`,(ts,v)=>{const t=ts.join(' & ');return`${t} ${ts.length===1?'was':'were each'} on ${top} of ${v}’s ballots · 0 votes for ${t}`});   // the voter is the holder: "Genes was on 5 of Jason’s ballots · 0 votes for Genes" (a tie keeps its lines: "Casey 0 for Blake")
+    out.push({icon:'🛡️',name:'Never once',blurb:'had the most chances to vote for one person and never took one',...hd})}
   const T=G.weeksV.map(wv=>{const tl={};for(const c of Object.values(wv.fin))tl[c]=(tl[c]||0)+1;const s=Object.entries(tl).sort((a,b)=>b[1]-a[1]);const tops=s.filter(e=>e[1]===s[0][1]).map(e=>e[0]);return{wv,top:s[0],tops,second:tops.length>1?s[0]:s[1]||[null,0],n:Object.keys(wv.fin).length}}).filter(x=>x.top&&x.n>=2&&x.tops.every(id=>member(id)));   // a week's top is every candidate on the top count: a 2-2 week is tied, not one person's
-  if(T.length){const gap=x=>x.top[1]-x.second[1],alone=T.filter(x=>x.tops.length===1);const land=alone.length?[...alone].sort((a,b)=>gap(b)-gap(a))[0]:null;   // a tied week is not one-sided
-    if(land)out.push({icon:'🌊',name:'Landslide',blurb:'the most one-sided vote',who:land.tops,stat:`${land.wv.label}: ${land.top[1]}–${land.second[1]}`});
+  if(T.length){const gap=x=>x.top[1]-x.second[1],un=T.filter(x=>{const w0=x.top[0];const others=Object.entries(x.wv.fin).filter(([v])=>v!==w0);return others.length>=2&&others.every(([,c])=>c===w0)});   // un: everyone but the Bozo-to-be picked the same person
+    const alone=T.filter(x=>x.tops.length===1&&!un.includes(x));const land=alone.length?[...alone].sort((a,b)=>gap(b)-gap(a))[0]:null;   // a tied week is not one-sided, and a unanimous week is Unanimous's (it is always the widest gap for its head count: Landslide would only say it again)
+    if(land)out.push({icon:'🌊',name:'Landslide',blurb:'the most one-sided vote short of unanimous',who:land.tops,stat:`${land.wv.label}: ${land.top[1]}–${land.second[1]}`});
     if(T.length>1){const close=[...T].sort((a,b)=>gap(a)-gap(b))[0];if(close!==land)out.push({icon:'🤏',name:'Closest vote',blurb:'the tightest one',who:close.tops,stat:`${close.wv.label}: ${close.top[1]}–${close.second[1]}`})}
-    const un=T.filter(x=>{const w0=x.top[0];const others=Object.entries(x.wv.fin).filter(([v])=>v!==w0);return others.length>=2&&others.every(([,c])=>c===w0)});   // everyone but the Bozo-to-be picked the same person
     if(un.length)out.push({icon:'🤝',name:'Unanimous',blurb:'everyone agreed on the Bozo',who:un.length===1?[un[0].top[0]]:[],stat:un.length===1?un[0].wv.label:`${un.length} votes`})}
   return out}
 function voteGridHtml(G){   // every voter (rows) against everyone they could vote for (columns), across the scope
@@ -4875,7 +4884,7 @@ function grudgeSheet(G,id){
       cell('With the room',p.roomN?`${p.room}/${p.roomN}`:'—','voted for the Bozo'),cell('Revenge votes',p.revenge,p.lastRevenge?`latest ${h(p.lastRevenge.label)}, ${h(nm(p.lastRevenge.on))}`:'the week after')])}
     <div class="pd-sub">Who ${me} votes for</div>${list(p.to,p.cast?`Only for ${me} so far.`:'No votes on the record yet.')}
     <div class="pd-sub">Who votes for ${me}</div>${list(p.from,`Nobody has voted for ${me} yet.`)}
-    ${never.length?`<div class="pd-sub">Never voted for ${me}</div><div class="gb-list">${never.map(([v,n])=>`<div class="gb-li">${av(v)}<span class="gb-nm">${h(nm(v))}</span><span class="muted tiny">${n} chance${n===1?'':'s'}</span></div>`).join('')}</div>`:''}
+    ${never.length?`<div class="pd-sub">Never voted for ${me}</div><div class="gb-list">${never.map(([v,n])=>`<div class="gb-li">${av(v)}<span class="gb-nm">${me} was on ${n} of ${h(nm(v))}’s ballots</span></div>`).join('')}</div>`:''}
     ${evs.length?`<div class="pd-sub">Week by week</div><div class="gb-evs">${evs.map(evRow).join('')}</div>`:''}`;
 }
 /* ---- survival by kickoff window: how often the parlay got out of each TV window alive ---- */
@@ -4937,17 +4946,21 @@ function heatmap(){
 const closeAll=per=>{const all=[];Object.values(per).forEach(p=>p.history.forEach(x=>{if(x.status==='miss'&&x.margin!=null)all.push({...x,id:p.id})}));return all};   // every missed leg with a margin on record, as Closest misses reads them (#41's recap reads the same list)
 const closeSort=l=>[...l].sort((a,b)=>a.margin-b.margin),CLOSE_N=5,CLOSE_UNITS=[['pts','Points'],['yds','Yards'],['rec','Receptions']];   // Closest misses' order (the smallest margin first), how many it shows for each measure, and its measures in their order
 const chokeSort=l=>[...l].sort((a,b)=>b.margin-a.margin),CHOKE_N=3,CHOKE_MIN=4;   // Biggest chokes' order (the biggest margin first), how many it shows for each measure, and how many misses a measure needs before it shows
-const closeDrawn=all=>CLOSE_UNITS.flatMap(([u])=>{const l=all.filter(x=>(x.unit||'pts')===u);return[...closeSort(l).slice(0,CLOSE_N),...(l.length>=CHOKE_MIN?chokeSort(l).slice(0,CHOKE_N):[])]});   // every row the Closest misses card draws, in both its lists (#41's recap links there rather than say one of them again)
-function closeCalls(per){
+const closeDrawn=all=>CLOSE_UNITS.flatMap(([u])=>{const l=all.filter(x=>(x.unit||'pts')===u);return[...closeSort(l).slice(0,CLOSE_N),...(l.length>=CHOKE_MIN?chokeSort(l).slice(0,CHOKE_N):[])]});   // every row the Closest misses card and its Biggest chokes popup draw (#41's recap links there rather than say one of them again)
+let closeU=null;   // the measure Closest misses is showing (Points, Yards or Receptions): kept while you look around, Points first otherwise
+const chokeAny=all=>CLOSE_UNITS.some(([u])=>all.filter(x=>(x.unit||'pts')===u).length>=CHOKE_MIN);
+function cmRow(x,place,stack){const m=member(x.id);if(!m)return'';return`<div class="cm-row" role="button" tabindex="0" data-act="player-detail" data-mid="${x.id}"${stack?' data-stack="1"':''}><span class="cm-rank">${place}</span><div class="cm-mid"><span class="cm-bet">${betChip(x.text,x.teams)}</span><small><span class="avatar xs" style="--c:${m.color}">${avIn(m)}</span><span>${h(m.name)} · ${h(x.wk||'W'+x.num)}</span></small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`}   // rank (ties share it), the bet, who and which week, the margin; a tap opens that person's sheet (stack: on top of the Biggest chokes sheet, which is still there when it closes)
+function closeCalls(per){   // UX-STATS §6: the closest misses of one measure at a time (a switch when there is more than one), a row each; Biggest chokes is a popup (chokeBody)
   const all=closeAll(per);
   if(!all.length)return'';
-  const row=x=>{const m=member(x.id);return`<div class="call"><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><div class="call-body"><b>${h(m.name)} <span class="muted" style="font-weight:500">· ${h(x.wk||'W'+x.num)}</span></b><small>${betChip(x.text,x.teams)}</small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`};
-  const UNITS_ORDER=CLOSE_UNITS;
-  const section=(title,pickFn,n,minCount)=>{const blocks=UNITS_ORDER.map(([u,label])=>{const list=all.filter(x=>(x.unit||'pts')===u);if(list.length<minCount)return'';return`<div class="pd-sub" style="margin:10px 0 6px">${label}</div><div class="calls">${pickFn(list).slice(0,n).map(row).join('')}</div>`}).join('');return blocks?`<h3>${title}</h3>${blocks}`:''};
-  const closest=section('Closest misses',closeSort,CLOSE_N,1);
-  const chokes=section('Biggest chokes',chokeSort,CHOKE_N,CHOKE_MIN);
-  return`<section class="card">${closest}${chokes?`<div style="height:8px"></div>${chokes}`:''}<p class="muted tiny" style="margin-top:12px">Ranked within each measure — a yardage miss is never compared to a points miss.</p></section>`;
+  const us=CLOSE_UNITS.filter(([u])=>all.some(x=>(x.unit||'pts')===u)),u=(us.find(([k])=>k===closeU)||us[0])[0];
+  const list=closeSort(all.filter(x=>(x.unit||'pts')===u)).filter(x=>member(x.id)).slice(0,CLOSE_N),pl=places(list,(a,b)=>a.margin===b.margin);
+  const sw=us.length>1?`<div class="scope cm-switch" role="group" aria-label="Closest misses in">${us.map(([k,label])=>`<button type="button" class="${k===u?'on':''}" aria-pressed="${k===u}" data-act="close-u" data-u="${k}">${label}</button>`).join('')}</div>`:'';
+  return`<section class="card cm-card"><h3>Closest misses</h3><p class="muted tiny cm-intro">Smallest margin first. Tap a row for that person’s sheet.${us.length>1?' Ranked within each measure: a yardage miss is never compared to a points miss.':''}</p>${sw}<div class="cm-rows">${list.map((x,i)=>cmRow(x,pl[i])).join('')}</div>${chokeAny(all)?'<button type="button" class="btn ghost block sm cm-foot" data-act="choke-show">Biggest chokes ›</button>':''}</section>`;
 }
+function chokeBody(all){   // the Biggest chokes popup: the same rows, the biggest margin first, for every measure with enough misses (a name for each measure when there is more than one)
+  const bs=CLOSE_UNITS.map(([u,label])=>({label,l:all.filter(x=>(x.unit||'pts')===u&&member(x.id))})).filter(b=>b.l.length>=CHOKE_MIN);
+  return`<p class="muted tiny" style="margin:0 0 10px">The bets that missed by the most.${bs.length>1?' Ranked within each measure: a yardage miss is never compared to a points miss.':''}</p>${bs.map(b=>{const l=chokeSort(b.l).slice(0,CHOKE_N),pl=places(l,(x,y)=>x.margin===y.margin);return`${bs.length>1?`<div class="pd-sub" style="margin:10px 0 2px">${b.label}</div>`:''}<div class="cm-rows">${l.map((x,i)=>cmRow(x,pl[i],1)).join('')}</div>`}).join('')}`}
 /* ---- #41 Season recap (Jason, approved 2026-09-22; docs/plans/SEASON-RECAP.md): on ONE season's Stats, once 4 of its weeks are graded, five headline awards in Jason's order (most Bozos, best hit rate, parlay killer, closest miss, luckiest cash) and a picture of them to share. Counted exactly as the Stats page counts for this viewer, with its own functions on its own weeks (stats(), calc(), awards(): every week on record that this phone may see, graded or not; a week after a reveal it hasn't watched never counts), so the recap never disagrees with the page: Most Bozos IS Head Clown, the best hit rate IS Sharpest Bettor. The card shows only what the Awards don't (the parlay killer, the closest miss, the luckiest cash), each said once: a link where the page shows it further down. The picture stands on its own, so it says all five. Reads only: nothing is saved or sent ---- */
 const RC_WEEKS=4;   // graded weeks (Sundays and special days; a side parlay is not a week) before a season has a recap
 function rcTop(xs,v){let b=null;for(const x of xs){const y=v(x);if(y!=null&&!Number.isNaN(y)&&(b==null||y>b))b=y}return b==null?null:{v:b,all:xs.filter(x=>v(x)===b)}}   // the best value and everyone who has it, in the page's order: a tie is the same value, as the Awards' own
@@ -4961,12 +4974,12 @@ function recapOf(per,A){   // the recap of the season on screen for this viewer,
   award('rate','📈','Best hit rate','2+ legs hit or missed',A.find(a=>a.name==='Sharpest Bettor'),d=>full?d:d.replace(/ on the season$/,' through '+thru));   // 2. the page's own Sharpest Bettor (2 or more legs hit or missed; every graded leg): "on the season" only when every week of it counts
   {const r=rcTop(P,p=>p.killer||null);if(r){const ids=r.all.map(p=>p.id);out.push({k:'killer',ic:'☠️',name:'Parlay killer',blurb:'the lone miss on a slip',names:ids.map(nm),tie:ids.length>1,stat:r.v===1?'1 solo kill':`${r.v} solo kills`,detail:tieDetail(r.all.map(p=>p.id),id=>{const p=per[id];return p.killed?`${fmt$0(p.killed)} that got away`:''},nm),card:true,ref:{to:'pk',say:`${clubName()} below`}})}}   // 3. the most solo kills: the Parlay Killer Club's own count (graded Sunday slips), and the Club lists everyone's
   {const es=[];for(const w of gw){const c=C.get(w);if(c.misses!==1)continue;const l=c.legs.find(x=>x.status==='miss'),u=l.unit||'pts';if(l.margin!=null&&l.margin!==''&&Number.isFinite(+l.margin)&&CLOSE_UNITS.some(([k])=>k===u))es.push({id:l.mid,wk:wkShort(w),text:l.text,u,m:+l.margin})}   // 4. a parlay lost on one leg alone (a solo kill, as the Club counts them), by the smallest margin on record
-    const u=(CLOSE_UNITS.find(([k])=>es.some(e=>e.u===k))||[])[0];if(u){const r=rcTop(es.filter(e=>e.u===u),e=>-e.m),ids=[...new Set(r.all.map(e=>e.id))],drawn=closeDrawn(closeAll(per)),on=r.all.some(e=>drawn.some(x=>x.id===e.id&&x.wk===e.wk&&x.text===e.text&&(x.unit||'pts')===e.u&&+x.margin===e.m));   // points first, then yards, then receptions (a yardage miss is never compared to a points miss). Any of them a row of Closest misses further down (either of its lists): a link there, so it is never said twice
-      out.push({k:'close',ic:'😬',name:'Closest miss',blurb:'a parlay’s only miss',names:ids.map(nm),tie:ids.length>1,stat:`by ${fmtMargin(-r.v,u)}`,detail:ids.length>1?tieDetail(ids,id=>r.all.filter(e=>e.id===id).map(e=>e.wk).join(' & '),nm):r.all.length>1?r.all.map(e=>e.wk).join(' & '):`${r.all[0].wk} · ${r.all[0].text}`,card:true,ref:on?{to:'close',say:'Closest misses below'}:null})}}
+    const u=(CLOSE_UNITS.find(([k])=>es.some(e=>e.u===k))||[])[0];if(u){const r=rcTop(es.filter(e=>e.u===u),e=>-e.m),ids=[...new Set(r.all.map(e=>e.id))],ca=closeAll(per),drawn=closeDrawn(ca),same=e=>x=>x.id===e.id&&x.wk===e.wk&&x.text===e.text&&(x.unit||'pts')===e.u&&+x.margin===e.m,on=r.all.some(e=>drawn.some(same(e))),onCard=r.all.some(e=>closeSort(ca.filter(x=>(x.unit||'pts')===e.u)).slice(0,CLOSE_N).some(same(e)));   // points first, then yards, then receptions (a yardage miss is never compared to a points miss). Any of them a row of Closest misses further down (either of its lists): a link there, so it is never said twice
+      out.push({k:'close',ic:'😬',name:'Closest miss',blurb:'a parlay’s only miss',names:ids.map(nm),tie:ids.length>1,stat:`by ${fmtMargin(-r.v,u)}`,detail:ids.length>1?tieDetail(ids,id=>r.all.filter(e=>e.id===id).map(e=>e.wk).join(' & '),nm):r.all.length>1?r.all.map(e=>e.wk).join(' & '):`${r.all[0].wk} · ${r.all[0].text}`,card:true,ref:on?{to:'close',say:'Closest misses below',u,sheet:!onCard}:null})}}
   {const won=ws.filter(w=>{const c=C.get(w);return c.result==='won'&&c.priced});if(won.length){const t=amer(Math.max(...won.map(w=>C.get(w).dec))),es=won.filter(w=>amer(C.get(w).dec)===t);out.push({k:'luck',ic:'🍀',name:'Luckiest cash',blurb:'the longest odds that cashed',names:es.map(wkName),tie:es.length>1,stat:t,detail:tieDetail(es,w=>`${fmt$(C.get(w).payout)} paid`,wkName),card:true,ref:null})}}   // 5. the cashed parlay with the longest price (a side parlay too, as Stats counts its cash; one whose price isn't all written down can't say), a tie being the same price as shown. Nothing else on Stats shows it
   return{n:gw.length,thru,items:out}}
 function recapCard(per,A){const R=recapOf(per,A);if(!R||!R.items.length)return'';const xs=R.items.filter(x=>x.card);   // Stats, after the Awards: "Through Week N", a row for each award the Awards don't show (its words, or a link to where the page shows it further down), then Share recap
-  const row=x=>x.ref?`<button type="button" class="rc-row rc-ref" data-k="${x.k}" data-act="recap-go" data-to="${x.ref.to}" aria-label="${h(`${x.name}: see ${x.ref.say}`)}"><span class="rc-ic" aria-hidden="true">${x.ic}</span><span class="rc-b"><small>${h(x.name)}</small><span class="rc-see">See ${h(x.ref.say)}</span></span><span class="chev" aria-hidden="true">›</span></button>`
+  const row=x=>x.ref?`<button type="button" class="rc-row rc-ref" data-k="${x.k}" data-act="recap-go" data-to="${x.ref.to}"${x.ref.u?` data-u="${x.ref.u}"`:''}${x.ref.sheet?' data-sheet="1"':''} aria-label="${h(`${x.name}: see ${x.ref.say}`)}"><span class="rc-ic" aria-hidden="true">${x.ic}</span><span class="rc-b"><small>${h(x.name)}</small><span class="rc-see">See ${h(x.ref.say)}</span></span><span class="chev" aria-hidden="true">›</span></button>`
     :`<div class="rc-row" data-k="${x.k}"><span class="rc-ic" aria-hidden="true">${x.ic}</span><div class="rc-b"><small>${h(x.name)}${x.blurb?` <span class="rc-blurb">· ${h(x.blurb)}</span>`:''}</small><b>${x.names.map(n=>h(x.k==='luck'?nbNum(n):n)).join(' &amp; ')}${x.tie?' <span class="tag">tie</span>':''}</b><em>${h(x.stat)}${x.detail?x.detail.includes('\n')?' '+tieHtml(x.detail):' · '+h(x.detail):''}</em></div></div>`;
   return`<section class="card rc-card"><h3>🏆 Season recap</h3><p class="muted tiny rc-sub">Through ${h(R.thru)}</p>${xs.length?`<div class="rc-rows">${xs.map(row).join('')}</div>`:''}<button type="button" class="btn block rc-share" data-act="share-recap">📸 Share recap</button></section>`}
 
@@ -5377,8 +5390,9 @@ async function shareRecap(){   // Stats → Season recap → Share recap: the re
   toast('Making the recap picture…');const sn=seasonName(season());
   let cv;try{cv=await recapImage({...R,head:headOfS(),title:'Season recap',sub:`Through ${R.thru}`})}catch(e){console.error(e);const t='Couldn’t make the recap picture. Nothing was lost: the season’s stats are unchanged. Tap Share recap again. If it still won’t open, close the app fully and reopen it.';toast(t,'bad',readMs(t));return}
   return sharePic(cv,{file:`bozo-parlay-${sn.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'')||'season'}-recap.png`,title:`Bozo Parlay — ${sn} recap`,sheet:`${sn} recap`,alt:`${sn} season recap`})}
-function recapGo(el){const to=el.dataset.to,t=to==='pk'?document.querySelector('#view .pk-card'):to==='close'?[...document.querySelectorAll('#view section.card')].find(c=>{const x=c.querySelector('h3');return!!x&&x.textContent==='Closest misses'}):null;if(!t)return;   // a recap row that points at a card further down Stats: that card, brought up under the header, keyboard with it
-  pageTo(Math.max(0,pageY()+t.getBoundingClientRect().top-90),'smooth');if(!t.hasAttribute('tabindex'))t.setAttribute('tabindex','-1');try{t.focus({preventScroll:true})}catch(e){}}
+function recapGo(el){const to=el.dataset.to;if(to==='close'&&CLOSE_UNITS.some(([k])=>k===el.dataset.u)&&closeU!==el.dataset.u){closeU=el.dataset.u;render()}   // Closest misses shows one measure at a time: the one that miss is in
+  const t=to==='pk'?document.querySelector('#view .pk-card'):to==='close'?[...document.querySelectorAll('#view section.card')].find(c=>{const x=c.querySelector('h3');return!!x&&x.textContent==='Closest misses'}):null;if(!t)return;   // a recap row that points at a card further down Stats: that card, brought up under the header, keyboard with it
+  pageTo(Math.max(0,pageY()+t.getBoundingClientRect().top-90),'smooth');if(!t.hasAttribute('tabindex'))t.setAttribute('tabindex','-1');try{t.focus({preventScroll:true})}catch(e){}if(to==='close'&&el.dataset.sheet)ACT['choke-show']({dataset:{}})}   // a miss that is only among the Biggest chokes: that popup opens over the card
 
 /* ============================== GRID POPOVER ============================== */
 let tipPinned=null;
@@ -5648,6 +5662,8 @@ const ACT={
   'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
   'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${r.place||i+1}</span><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   'screen-check'(){screenCheck()},
+  'choke-show'(){withStats(()=>{const all=closeAll(stats().per);if(!chokeAny(all))return;modal({title:'Biggest chokes',body:chokeBody(all),actions:[{label:'Done',cls:'ghost'}]})})},   // the Biggest chokes popup of the Closest misses card
+  'close-u'(el){const u=el.dataset.u;if(!CLOSE_UNITS.some(([k])=>k===u))return;closeU=u;render();const b=document.querySelector(`.cm-switch button[data-u="${u}"]`);if(b)try{b.focus({preventScroll:true})}catch(e){}},   // Points | Yards | Receptions on Closest misses
   'vote-grid'(){withStats(()=>{const G=grudgeData();modal({title:'🗳️ Who voted for who',body:voteGridHtml(G),actions:[{label:'Done',cls:'ghost'}]})})},
   'grudge-show'(el){withStats(()=>{const G=grudgeData();const id=el.dataset.mid;const m=member(id);if(!m||!G.P[id])return;modal({title:`📒 ${m.name}`,body:grudgeSheet(G,id),actions:[{label:'Done',cls:'ghost'}]})})},
   'pk-show'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;
@@ -5800,7 +5816,7 @@ const ACT={
   'toggle-lock'(el){const w=week(el.dataset.wid);w.locked=!w.locked;commit();toast(w.locked?'Picks locked — nobody can change their pick':'Picks unlocked')},
   'verify-pick'(el){const w=el.dataset.wid?week(el.dataset.wid):currentWeek();const p=w&&w.picks[el.dataset.mid];if(!p)return stale();delete p.unsure;commit();toast('Marked verified')},
   'player-detail'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;const r={m,...p};
-    modal({title:m.name,body:`<div class="pd-title"><span class="avatar md" style="--c:${m.color}">${avIn(m,1)}</span><div class="pd-who"><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${`<span class="nw">${pct(r.rate)}</span>&nbsp;· <span class="nw">${r.picks} pick${r.picks===1?'':'s'}</span><span class="sep">&nbsp;· </span><span class="nw pd-scope">${statScope==='all'?'all-time':h(seasonName(season()))}</span>`}</span></div><button class="pillbtn" data-act="show-bets" data-node="${encNode({mid:m.id})}">Explore ›</button></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
+    modal({stack:!!el.dataset.stack,title:m.name,body:`<div class="pd-title"><span class="avatar md" style="--c:${m.color}">${avIn(m,1)}</span><div class="pd-who"><b>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</b><span class="muted">${`<span class="nw">${pct(r.rate)}</span>&nbsp;· <span class="nw">${r.picks} pick${r.picks===1?'':'s'}</span><span class="sep">&nbsp;· </span><span class="nw pd-scope">${statScope==='all'?'all-time':h(seasonName(season()))}</span>`}</span></div><button class="pillbtn" data-act="show-bets" data-node="${encNode({mid:m.id})}">Explore ›</button></div>${playerDetail(r)}`,actions:[{label:'Done',cls:'ghost'}]})})},
   'stat-scope'(el){statScope=el.dataset.scope;ALLTIME=null;render()},
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=pageY();showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
@@ -5808,7 +5824,7 @@ const ACT={
   'modal-action'(el){const root=document.getElementById('modal-root');if(!root._open)return;   // it is already closing: a second tap does nothing
     const a=root._actions?.[el.dataset.i];const r=a?.onClick?.();if(r!==false)closeModal()},
 };
-for(const a of ['player-detail','show-bets','x-go','win-open','show-streak','award-rank','teams-all','grudge-show','pk-show','vote-grid']){const f=POP_RAW[a]=ACT[a];ACT[a]=(el,e)=>{if(VIEW!=='stats')return f(el,e);POP_NEW=popRec(a,{...el.dataset});try{return f(el,e)}finally{POP_NEW=null;popFit()}}}   // every popup the Stats page opens carries the page's scope switch (the openers themselves are unchanged)
+for(const a of ['player-detail','show-bets','x-go','win-open','show-streak','award-rank','teams-all','grudge-show','pk-show','vote-grid','choke-show']){const f=POP_RAW[a]=ACT[a];ACT[a]=(el,e)=>{if(VIEW!=='stats')return f(el,e);POP_NEW=popRec(a,{...el.dataset});try{return f(el,e)}finally{POP_NEW=null;popFit()}}}   // every popup the Stats page opens carries the page's scope switch (the openers themselves are unchanged)
 ACT['pop-scope']=el=>{const root=document.getElementById('modal-root');if(!root._open||!root._stat)return;const k=el.dataset.scope==='all'?'all':el.dataset.sid;if(k===statKey())return;if(k==='all')ACT['stat-scope']({dataset:{scope:'all'}});else ACT['pick-season']({dataset:{sid:k}});popRedraw()};   // exactly what the page's own bar does (the page behind follows, remembered as the bar remembers it), then the same popup again
 document.addEventListener('input',e=>{if(e.target&&e.target.id==='plBoost')boostFill()});
 document.addEventListener('input',e=>{if(e.target?.id!=='hsIn')return;HS.q=String(e.target.value||'').slice(0,80);HS.n=HS_PAGE;hsPaint()});   // the pick search answers every letter
@@ -5817,6 +5833,7 @@ document.addEventListener('keydown',e=>{if(e.target?.id!=='hsIn')return;if(e.key
 document.addEventListener('change',e=>{const t=e.target;if(t&&t.id==='plShotIn'){const fs=[...(t.files||[])];const room=2-SHOTS_PICK.length;SHOTS_PICK.push(...fs.slice(0,Math.max(0,room)));if(fs.length>room)toast(room<=0?'Two screenshots at most. Tap × on one to swap it.':'Two screenshots at most. The first '+(room===1?'one was':room+' were')+' added.','bad');t.value='';shotsPreview()}
   else if(t&&t.dataset&&t.dataset.shotadd){const l=league();const w=week(t.dataset.shotadd);const f=t.files&&t.files[0];t.value='';if(!w||!f)return;const used=(w.shots||[]).map(x=>x.n);const n=used.includes(0)?1:0;toast('Adding the screenshot…');
     sendShot(l,w,n,f).then(d=>{takeState(l,d);save();render();toast('Screenshot added','good')}).catch(err=>toast('The screenshot didn’t upload: '+friendly(err)+'. Nothing else changed. Tap “+ Screenshot” to try again.','bad'))}});
+document.addEventListener('scroll',e=>{const t=e.target;if(t&&t.classList&&t.classList.contains('lb-wrap'))t.classList.toggle('sc',t.scrollLeft>0)},true);   // the Leaderboard's hairline beside the names shows only once the numbers have scrolled under them
 document.addEventListener('click',e=>{const el=e.target.closest('[data-act]');if(!el)return;const fn=ACT[el.dataset.act];if(fn)fn(el,e)});
 document.addEventListener('change',e=>{const t=e.target;if(!t||!t.dataset||!t.dataset.photo)return;const f=t.files&&t.files[0];t.value='';if(f)photoSet(league(),f)});   // #44: Camera / Photos in Settings → Me
 function ballotArrow(e){if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)||e.altKey||e.ctrlKey||e.metaKey||e.shiftKey)return;const el=e.target.closest?.('[role="radio"]'),group=el?.closest('[role="radiogroup"]');if(!group||group.closest('[hidden]'))return;const rows=[...group.querySelectorAll('[role="radio"]')].filter(x=>x.getClientRects().length&&x.getAttribute('aria-disabled')!=='true');const i=rows.indexOf(el);if(i<0||!rows.length)return;const j=e.key==='Home'?0:e.key==='End'?rows.length-1:(i+(e.key==='ArrowLeft'||e.key==='ArrowUp'?-1:1)+rows.length)%rows.length;e.preventDefault();rows[j].focus()}
