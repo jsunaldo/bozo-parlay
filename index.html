@@ -4824,7 +4824,8 @@ function voteAwards(G){   // fun ones from the votes themselves (one vote per pe
   if(T.length){const gap=x=>x.top[1]-x.second[1],un=T.filter(x=>{const w0=x.top[0];const others=Object.entries(x.wv.fin).filter(([v])=>v!==w0);return others.length>=2&&others.every(([,c])=>c===w0)});   // un: everyone but the Bozo-to-be picked the same person
     const alone=T.filter(x=>x.tops.length===1&&!un.includes(x));const land=alone.length?[...alone].sort((a,b)=>gap(b)-gap(a))[0]:null;   // a tied week is not one-sided, and a unanimous week is Unanimous's (it is always the widest gap for its head count: Landslide would only say it again)
     if(land)out.push({icon:'🌊',name:'Landslide',blurb:'the most one-sided vote short of unanimous',who:land.tops,stat:`${land.wv.label}: ${land.top[1]}–${land.second[1]}`});
-    if(T.length>1){const close=[...T].sort((a,b)=>gap(a)-gap(b))[0];if(close!==land)out.push({icon:'🤏',name:'Closest vote',blurb:'the tightest one',who:close.tops,stat:`${close.wv.label}: ${close.top[1]}–${close.second[1]}`})}
+    const NU=T.filter(x=>!un.includes(x));   // Closest vote is never a unanimous week either (a 6–0 is not "the tightest"; Unanimous names it): no week left, no tile
+    if(T.length>1&&NU.length){const close=[...NU].sort((a,b)=>gap(a)-gap(b))[0];if(close!==land)out.push({icon:'🤏',name:'Closest vote',blurb:'the tightest one',who:close.tops,stat:`${close.wv.label}: ${close.top[1]}–${close.second[1]}`})}
     if(un.length)out.push({icon:'🤝',name:'Unanimous',blurb:'everyone agreed on the Bozo',who:un.length===1?[un[0].top[0]]:[],stat:un.length===1?un[0].wv.label:`${un.length} votes`})}
   return out}
 function voteGridHtml(G){   // every voter (rows) against everyone they could vote for (columns), across the scope
@@ -4884,7 +4885,7 @@ function grudgeSheet(G,id){
       cell('With the room',p.roomN?`${p.room}/${p.roomN}`:'—','voted for the Bozo'),cell('Revenge votes',p.revenge,p.lastRevenge?`latest ${h(p.lastRevenge.label)}, ${h(nm(p.lastRevenge.on))}`:'the week after')])}
     <div class="pd-sub">Who ${me} votes for</div>${list(p.to,p.cast?`Only for ${me} so far.`:'No votes on the record yet.')}
     <div class="pd-sub">Who votes for ${me}</div>${list(p.from,`Nobody has voted for ${me} yet.`)}
-    ${never.length?`<div class="pd-sub">Never voted for ${me}</div><div class="gb-list">${never.map(([v,n])=>`<div class="gb-li">${av(v)}<span class="gb-nm">${me} was on ${n} of ${h(nm(v))}’s ballots</span></div>`).join('')}</div>`:''}
+    ${never.length?`<div class="pd-sub">Never voted for ${me}</div><div class="gb-list">${never.map(([v,n])=>`<div class="gb-li"><span class="gb-nm">${me} was on ${n} of ${h(nm(v))}’s ballots</span></div>`).join('')}</div>`:''}
     ${evs.length?`<div class="pd-sub">Week by week</div><div class="gb-evs">${evs.map(evRow).join('')}</div>`:''}`;
 }
 /* ---- survival by kickoff window: how often the parlay got out of each TV window alive ---- */
