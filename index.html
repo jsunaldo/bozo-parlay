@@ -295,7 +295,7 @@ div.gm-head{cursor:default;min-height:36px}.gm-head:focus-visible{outline:2px so
 .gm .side-h{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8e3dbf;margin:4px 0 0;padding-top:9px;border-top:1px dashed var(--line2)}
 @media(prefers-color-scheme:dark){.gm .side-h{color:#d39bf8}}
 @media(max-width:359px){.gl .val small.drop{display:none}}
-.gv-sheet{padding:0 0 4px}.gv-sheet-sub{margin:0 0 10px}.gv-sheet .slip-group .slip-sg{color:#8e3dbf}@media(prefers-color-scheme:dark){.gv-sheet .slip-group .slip-sg{color:#d39bf8}}
+.gv-sheet{padding:0 0 4px}.gv-sheet-sub{margin:0 0 10px}.gv-sheet .slip-group .slip-sg{color:#8e3dbf}@media(prefers-color-scheme:dark){.gv-sheet .slip-group .slip-sg{color:#d39bf8}}@media(prefers-color-scheme:dark){.btn.gv-done{background:#0071e3}}   /* the game's sheet: white on this blue in dark is 4.9:1 (on #0a84ff it is 3.65:1), as the Crew Add button */
 .upnext{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;font:inherit;color:inherit;background:var(--surface);border-radius:var(--r);padding:14px 16px;margin:0 0 14px;cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--blue),var(--shadow)}
 .upnext .ic{font-size:24px}.upnext .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.upnext .t b{font-size:15px}.upnext .t small{color:var(--muted);font-size:12px}.upnext .go{font-weight:800;color:var(--blue);font-size:18px}
 .nq-off{cursor:default}.nq-off b{color:var(--muted)}.nq-off .toggle{opacity:.55}   /* the switch and its name look off; the line that says why stays full strength (4.5:1) */.nq input{min-height:44px;padding:10px 6px 10px 10px}.nq-sel{width:100%;min-height:44px;padding:10px 32px 10px 12px;color:var(--text);font-weight:500;background-color:var(--surface2);background-position:right 12px center}.seg.nq-mode{margin-bottom:6px;background:var(--surface3)}.seg.leg-views.nq-mode button{position:relative;font-weight:500;color:var(--text)}.seg.nq-mode button.on{font-weight:700;box-shadow:var(--shadow)}.seg.nq-mode button.on::after{content:'';position:absolute;left:50%;bottom:5px;width:24px;height:3px;margin-left:-12px;border-radius:2px;background:var(--blue)}.seg.nq-mode button:focus-visible{outline:2px solid var(--blue);outline-offset:2px}.nq-offer{margin:4px 0 0}.nq-offer .btn{min-height:44px}.featrow.nq-when{display:block;cursor:default}.nq-when>div:first-child{margin-bottom:10px}.nq-when .seg.leg-views{margin-bottom:0}.seg.leg-views.nq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.nq-when small{display:block}   /* Settings → Me: quiet hours (44 px targets; the chosen choice bold with a blue bar, as the Settings tabs) */
@@ -549,7 +549,7 @@ table.lb{width:max-content;min-width:100%;border-collapse:collapse;font-size:13p
 .aw .ic{font-size:22px;line-height:1.2;flex:none;width:28px;text-align:center}
 .aw-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .aw-name{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
-.aw-name .chev{margin-left:auto;color:var(--dim);font-size:18px;line-height:1;font-weight:600}
+.aw-name .chev{margin-left:auto;color:var(--muted);font-size:18px;line-height:1;font-weight:600}   /* the › is text on the tile: --muted (4.66:1 on the tile, 4.5:1 is the floor), not --dim (4.21:1) */
 .aw-blurb{font-size:12px;font-weight:400;color:var(--muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .aw-who{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:14px;font-weight:600;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums;min-width:0}
 .aw-who .nm{display:inline-flex;align-items:center;gap:5px;min-width:0}
@@ -615,7 +615,7 @@ button.rank-row{cursor:pointer}button.rank-row:active{opacity:.7}.rank-row:focus
 .rank-mid b{font-size:15px;font-weight:600;color:var(--text);overflow-wrap:anywhere}
 .rank-mid small{color:var(--muted);font-size:12px;font-weight:500;line-height:1.3}
 .rank-val{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;flex:none;color:var(--text);text-align:right}
-.rank-row .chev{color:var(--dim);font-size:18px;line-height:1;flex:none;margin-left:2px}
+.rank-row .chev{color:var(--muted);font-size:18px;line-height:1;flex:none;margin-left:2px}
 .rank-rest{border-top:1px solid var(--line);margin-top:8px;padding-top:10px}.rank-rest .rank-row{min-height:44px;border-top:0}.rank-rest .rank-val{color:var(--muted);font-weight:500}
 .rank-note{font-size:12px;color:var(--muted);margin:12px 0 0;line-height:1.45}
 .rank-mid .aw-bet{margin-top:2px;align-self:flex-start;max-width:100%}
@@ -2878,7 +2878,7 @@ function gvSheetBody(gr){   // a game's bets in full: the slip's own rows (read 
 function gvOpen(wid,key){
   const r=guarded(()=>{const w=week(wid);if(!w)return null;const gr=gvGroups(gvAll(w)).games.find(x=>x.key===key);return gr?{title:gvHead(gr).title,body:gvSheetBody(gr)}:null});
   if(!r)return stale();
-  modal({title:r.title,body:r.body,actions:[{label:'Done',cls:'primary'}]});
+  modal({title:r.title,body:r.body,actions:[{label:'Done',cls:'primary gv-done'}]});
   {const root=document.getElementById('modal-root');if(root._back&&root._back.matches&&root._back.matches('.gm-head'))root._backSel=`.gm-head[data-wid="${wid}"][data-gid="${encodeURIComponent(key)}"]`}}   // a keyboard user comes back to the game's head, even if the board was drawn again meanwhile
 /* ---- guided entry: Build a pick, one question per screen, then the existing text-edit/save path ---- */
 const GUIDE_MARKETS=[['ml','Moneyline','team'],['spread','Spread','team'],['total','Game total','game'],['teamTotal','Team total','team'],['attd','Anytime TD','player'],['passYds','Passing Yds','player'],['passTD','Passing TDs','player'],['passAtt','Pass Attempts','player'],['passCmp','Completions','player'],['passInt','Interceptions','player'],['rushYds','Rushing Yds','player'],['rushAtt','Rush Attempts','player'],['recYds','Receiving Yds','player'],['rec','Receptions','player'],['rushRec','Rush + Rec Yds','player'],['passRush','Pass + Rush Yds','player'],['recLong','Longest Reception','player'],['rushLong','Longest Rush','player'],['fgm','Field Goals Made','player'],['kPts','Kicking Points','player']];   /* no Longest Field Goal: no book price ever arrives for it, so the slip could not be locked without a hand-typed price */
