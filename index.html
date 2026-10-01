@@ -734,7 +734,9 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .cm-mid small{display:flex;align-items:center;gap:5px;font-size:12px;line-height:1.3;color:var(--muted);min-width:0}.cm-mid small .avatar{flex:none}
 .cm-switch{margin:0 0 6px}.cm-switch button{flex:1 1 auto;min-height:44px;padding:9px 6px}   /* each label as wide as it is, the spare room shared (equal thirds cut 'Receptions' at 320) */
 .cm-intro{margin:-4px 0 12px}
-.cm-foot{margin:8px 0 0;min-height:44px}   /* Closest misses (UX-STATS §6): one measure at a time, rows of rank | the bet | the margin; the biggest chokes a tap away */
+.more-row{display:flex;align-items:center;justify-content:space-between;width:100%;min-height:44px;margin:4px 0 -8px;padding:10px 0;border:0;border-top:1px solid var(--line);border-radius:0;background:none;color:var(--blue);font:inherit;font-size:15px;font-weight:600;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;box-sizing:border-box}.more-row .chev{color:var(--muted);font-size:18px;line-height:1}.more-row:focus-visible{outline:2px solid var(--blue);outline-offset:-2px;border-radius:8px}.modal-body .more-row{margin-bottom:0}   /* the one "there is more" row on Stats (Show all N …): a list longer than LIST_FOLD shows LIST_N rows and this; the card's 18px padding takes the -8px, as .cm-foot did */
+.gb-votes .gb-pair{min-height:44px}.gb-votes .more-row{margin-top:0}
+.cm-foot{min-height:44px}   /* Closest misses (UX-STATS §6): one measure at a time, rows of rank | the bet | the margin; the biggest chokes a tap away */
 .betchip{display:inline-flex;align-items:center;gap:5px;min-width:0;vertical-align:middle}
 .betchip img{width:18px;height:18px;object-fit:contain;flex:none}
 .betchip .bt{white-space:normal;line-height:1.3}
@@ -1040,7 +1042,7 @@ const STAGS24_MARGINS={"s24w6":{"s1":6.5,"s2":7,"s6":6.5,"s8":24,"s10":4.0,"s9":
 const STAGS24_BOZOS={6:'s9',7:'s6',8:'s2',9:'s1',10:'s10',11:'s8',12:'s7',13:'s10',14:'s1',15:'s3',16:'s2'};
 /*@@SEEDS-END@@*/
 DB=loadDB();{const qs=new URLSearchParams(location.search);const q=qs.get('league');if(q&&DB.leagues.find(l=>l.id===q))DB.active=q;const sq=qs.get('season');if(sq&&league().seasons.find(x=>x.id===sq))league().activeSeason=sq;for(const l of DB.leagues)if(!(sq&&l===league()))l.activeSeason=newestOf(l).id}
-let S=season().data;let VIEW='week';
+let S=season().data;let VIEW='week';const MORE_OPEN=new Set();   // Stats lists opened with Show all, for this visit: kept across a scope or section change, cleared once VIEW leaves Stats (render0)
 let PANE='me';   // the Settings pane on screen: remembered on this device only, like VIEW; Me the first time
 /* ============================== CLOUD SYNC ============================== */
 const SYNC_URL=(()=>{try{return localStorage.getItem('bp-sync-url')}catch(e){}return null})()||'https://bozo-sync.jsunaldo.workers.dev';
@@ -2307,7 +2309,7 @@ const guarded=fn=>{const hid=spoilerHidden(),sn=hid&&season(league());return hid
 const needWho=(l=league())=>!!(l&&l.sync&&l.sync.rev&&!l.me&&!l.guest&&S.members.some(m=>m.active));
 function render0(){
   if(needWho())setTimeout(()=>{if(needWho()&&!document.getElementById('modal-root')._open)pickMe(league(),false,true)},250);   // who are you? a crew name, or Guest
-  const v=VIEW;
+  const v=VIEW;if(v!=='stats'&&MORE_OPEN.size)MORE_OPEN.clear();
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.view===v));
   const main=document.getElementById('view');
   const keepDone=(a=>!(a&&a.matches&&main.contains(a))?'':a.matches('[data-act="leg-done"],.bap-way[data-act="guide-open"],.srow[data-act="leg-open"],.srow[data-act="leg-info"]')?`${a.matches('.bap-way')?'.bap-way':a.matches('.srow')?'.srow':''}[data-act="${a.dataset.act}"][data-wid="${a.dataset.wid}"][data-mid="${a.dataset.mid}"]`:a.matches('.srow.mine:not([data-leg])')?'.srow.mine:not([data-leg])':a.matches('.settabs [role="tab"]')&&a.id?'#'+a.id:a.matches('.setpane [role="switch"][data-act]')?`.setpane [role="switch"][data-act="${a.dataset.act}"]${a.dataset.f?`[data-f="${a.dataset.f}"]`:''}`:a.matches('.setpane [data-act="np-mode"]')?`.setpane [data-act="np-mode"][data-f="${a.dataset.f}"]`:a.matches('.setpane select[aria-labelledby]')?'#'+a.getAttribute('aria-labelledby'):a.matches('.setpane dt[tabindex][id]')?'#'+a.id:'')(document.activeElement);   // the keyboard on a leg's Done, on a saved or settled leg's row or your row on next week's slip (where Use this pick leaves it after saving), on its Build your pick (where a clear leaves it), on a Settings tab just chosen, or on a Settings switch just changed, stays there through a repaint. A Settings list just changed hands it to its rule's heading instead (the next Tab is the list again), which keeps it through later repaints: a list given focus back would put the app in typing mode, hiding the tab bar and holding the league's news until focus left it
@@ -5109,7 +5111,7 @@ function playerDetail(r){
       cell('Avg cover',`<b class="good">${r.avgHitMargin!=null?'+'+r.avgHitMargin.toFixed(1):'—'}</b><em class="pd-ex">pts when hitting</em>`),cell('Avg miss',`<b class="bad">${r.avgMiss!=null?'-'+r.avgMiss.toFixed(1):'—'}</b><em class="pd-ex">pts when missing</em>`),
       cell('Best at'+atType(r.bestType),r.bestType?`<b>${h(r.bestType[0])}</b><em>${r.bestType[1].w}-${r.bestType[1].l}</em>`:'<b>—</b>'),cell('Worst at'+atType(r.worstType),r.worstType?`<b>${h(r.worstType[0])}</b><em>${r.worstType[1].w}-${r.worstType[1].l}</em>`:'<b>—</b>')],'pd-compact')}
     ${Object.keys(r.byType).length?`<div class="pd-sub">By bet type <span class="muted">· tap to dig in</span></div><div class="typerows">${typeRows(r.byType,r.m.id)}</div>`:''}
-    ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most <span class="muted">· tap to dig in</span></div><div class="typerows">${mostBet(r.byTeam).slice(0,5).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'show-bets',data:`data-node="${encNode({team:a,mid:r.m.id})}"`})).join('')}</div>${Object.keys(r.byTeam).length>5?`<button class="btn ghost block sm" style="margin-top:8px" data-act="teams-all" data-mid="${r.m.id}">See all ${Object.keys(r.byTeam).length} teams</button>`:''}`:''}
+    ${Object.keys(r.byTeam).length?`<div class="pd-sub">Teams bet most <span class="muted">· tap to dig in</span></div><div class="typerows">${mostBet(r.byTeam).slice(0,5).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'show-bets',data:`data-node="${encNode({team:a,mid:r.m.id})}"`})).join('')}</div>${Object.keys(r.byTeam).length>5?moreRow('pteams',Object.keys(r.byTeam).length,'teams',{act:'teams-all',data:` data-mid="${r.m.id}"`}):''}`:''}
     <div class="pd-bets">
       <div class="pd-bet good-l"><small>Best hit</small>${bet(r.longestHit)}</div>
       <div class="pd-bet"><small>Easiest hit</small>${bet(r.easiestHit)}</div>
@@ -5121,7 +5123,7 @@ function playerDetail(r){
 const mostBet=src=>Object.entries(src||{}).sort((a,b)=>(b[1].w+b[1].l+b[1].p)-(a[1].w+a[1].l+a[1].p));
 function teamsCard(g){
   const all=mostBet(g.byTeam);if(!all.length)return'';
-  return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team. Tap a team to see everyone's record on it.</p><div class="typerows">${all.slice(0,10).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'x-go',data:`data-node="${encNode({team:a})}"`,nav:true})).join('')}</div>${all.length>10?`<button class="btn ghost block sm" style="margin-top:10px" data-act="teams-all">See all ${all.length} teams</button>`:''}</section>`;
+  return`<section class="card"><h3>Most-bet teams</h3><p class="muted tiny" style="margin:-4px 0 10px">How the group does when a slip touches each team. Tap a team to see everyone's record on it.</p><div class="typerows">${(all.length>LIST_FOLD?all.slice(0,TEAMS_N):all).map(([a,o])=>statRow({label:NICK[a]||a,logo:a,rec:o,act:'x-go',data:`data-node="${encNode({team:a})}"`,nav:true})).join('')}</div>${all.length>LIST_FOLD?moreRow('teams',all.length,'teams',{act:'teams-all'}):''}</section>`;
 }
 const clubName=(l=league())=>String(l.clubName||'').trim()||'Parlay Killer Club';
 const pkLine=p=>`${p.killer===1?'1 solo kill':p.killer+' solo kills'}${p.killed?` · ${fmt$0(p.killed)} that got away`:''}`;
@@ -5258,18 +5260,22 @@ function grudgeCard(){
     const l2=[p.got?`${p.got} vote${p.got===1?'':'s'} against`:'',p.self?`voted for ${p.self===1?'themself':`themself ${p.self}×`}`:''].filter(Boolean).join(' · ');
     return`<div class="pk-row gb-row" data-act="grudge-show" data-mid="${m.id}"><span class="rank">${place??''}</span><span class="avatar" style="--c:${m.color}">${avIn(m)}</span><div class="pk-who"><b>${h(m.name)}${tag(m)}</b><small>${l1}</small>${l2?`<small>${l2}</small>`:''}</div>${e!=null?`<div class="gb-rate"><b>${Math.round(e*100)}%</b><small>escaped</small></div>`:''}<span class="chev">›</span></div>`};
   const hot=G.pairs.filter(x=>x.n>=2&&member(x.v)&&member(x.c));const cut=hot.length>3?hot[2].n:0;const shown=hot.filter(x=>x.n>=cut).slice(0,6);const more=hot.filter(x=>x.n>=cut).length-shown.length;   // ties share places
-  const grudges=shown.length?`<div class="pd-sub">Biggest grudges</div><div class="gb-pairs">${shown.map(x=>{const v=member(x.v),c=member(x.c);return`<div class="gb-pair" data-act="grudge-show" data-mid="${x.v}">${av(v)}<b>${h(v.name)}</b><span class="muted">voted</span>${av(c)}<b>${h(c.name)}</b><span class="pk-badge">×${x.n}</span></div>`}).join('')}${more>0?`<p class="muted tiny" style="margin:0">+${more} more at ×${cut}</p>`:''}</div>`:'';
-  const s1=[G.nBallots?`Ballots from ${G.nBallots} week${G.nBallots===1?'':'s'}`:'',G.nVotes?`${G.nVotes} vote${G.nVotes===1?'':'s'} from ${G.nReveals} reveal${G.nReveals===1?'':'s'}`:G.live&&!G.unseen.length?'Votes show up here after each reveal':''].filter(Boolean).join(' · ');
-  const foot=[s1,people.length?gbUnseenLine(G):''].filter(Boolean).map(x=>x+'.').join(' ');   // with nobody listed yet, the intro already says to watch it
-  const intro=people.length?'Who votes for who, and who keeps slipping off the Bozo ballot. Tap an award for the whole league, a name for the receipts.':G.unseen.length===1?`Watch the ${h(G.unseen[0].label)} reveal to see who voted for who.`:'Watch the reveals to see who voted for who.';
+  const sec=(cls,title,cap,body)=>`<section class="card ${cls}"><h3>${title}</h3><p class="muted tiny" style="margin:-4px 0 10px">${cap}</p>${body}</section>`;   // each topic is its own card (UX-LISTS §1)
   const AW=G.nVotes?voteAwards(G):[];
-  const awards=AW.length?`<div class="pd-sub">Vote awards</div><div class="gb-awards">${AW.map(x=>awardTile(x,'vote')).join('')}</div>`:'';
-  const gridBtn=G.nVotes?`<button class="btn ghost block sm" style="margin:10px 0 2px" data-act="vote-grid">🗳️ Who voted for who</button>`:'';
-  return`<section class="card gb-card"><h3>📒 The Grudge Book</h3><p class="muted tiny" style="margin:-4px 0 10px">${intro}</p>
-    ${awards}${gridBtn}${grudges}${ranked.length?`<div class="pd-sub">Ballot escapes</div><div class="pk-rows">${ranked.map((m,k)=>row(m,pl[k])).join('')}</div>`:''}
-    ${few.length?`<div class="pd-sub">${ranked.length?`Fewer than ${GB_MIN} ballots`:'Ballot escapes'}</div>${ranked.length?'':`<p class="muted tiny" style="margin:-2px 0 6px">Ranked once someone’s been on ${GB_MIN} ballots.</p>`}<div class="pk-rows">${few.map(m=>row(m,null)).join('')}</div>`:''}
-    ${never.length?`<div class="pd-sub">Never on the ballot</div><div class="gb-chips">${never.map(m=>`<button class="gb-who" data-act="grudge-show" data-mid="${m.id}">${av(m)}${h(m.name)}</button>`).join('')}</div>`:''}
-    ${foot?`<p class="muted tiny" style="margin:10px 0 0">${h(foot)}</p>`:''}</section>`;
+  let c1;
+  if(!G.nVotes){   // nothing on the record yet: one line says what to watch for; the ballot card below is still drawn for anyone who has been on a ballot
+    const none=G.unseen.length===1?`Watch the ${h(G.unseen[0].label)} reveal to see who voted for who.`:G.unseen.length?'Watch the reveals to see who voted for who.':G.live?'Votes show up here after each reveal.':'';
+    c1=none?sec('gb-awards-card','📒 Vote awards',none,''):'';
+  }else{
+    const f=foldList('awards',AW,'awards',6),unseen=gbUnseenLine(G);
+    c1=sec('gb-awards-card','📒 Vote awards',h(`${G.nVotes} vote${G.nVotes===1?'':'s'} from ${G.nReveals} reveal${G.nReveals===1?'':'s'}.${AW.length?' Tap an award for the whole league.':''}${unseen?' '+unseen+'.':''}`),AW.length?`<div class="gb-awards">${f.shown.map(x=>awardTile(x,'vote')).join('')}</div>${f.more}`:'');
+  }
+  const c2=G.nVotes?sec('gb-votes','🗳️ Who voted for who','Every vote on the record, voter by voter.',`${shown.length?`<div class="gb-pairs">${shown.map(x=>{const v=member(x.v),c=member(x.c);return`<div class="gb-pair" data-act="grudge-show" data-mid="${x.v}">${av(v)}<b>${h(v.name)}</b><span class="muted">voted</span>${av(c)}<b>${h(c.name)}</b><span class="pk-badge">×${x.n}</span><span class="chev" aria-hidden="true">›</span></div>`}).join('')}${more>0?`<p class="muted tiny" style="margin:0">+${more} more at ×${cut}</p>`:''}</div>`:''}${moreRow('grid',0,'',{act:'vote-grid',label:'See the full grid'})}`):'';
+  const items=[...ranked.map((m,k)=>({m,place:pl[k],few:false})),...few.map(m=>({m,place:null,few:true}))],f2=foldList('esc',items,'people');
+  const rk=f2.shown.filter(x=>!x.few),fw=f2.shown.filter(x=>x.few);
+  const capE=`Who keeps slipping off the Bozo ballot. ${G.nBallots?`Ballots from ${G.nBallots} week${G.nBallots===1?'':'s'}; ranked`:'Ranked'} once someone’s been on ${GB_MIN}.`;
+  const c3=people.length?sec('gb-escapes','Ballot escapes',h(capE),`${rk.length?`<div class="pk-rows">${rk.map(x=>row(x.m,x.place)).join('')}</div>`:''}${fw.length?`${rk.length?`<div class="pd-sub" style="margin-top:10px">Fewer than ${GB_MIN} ballots</div>`:''}<div class="pk-rows">${fw.map(x=>row(x.m,null)).join('')}</div>`:''}${f2.more}${never.length?`<div class="pd-sub" style="margin-top:10px">Never on the ballot</div><div class="gb-chips">${never.map(m=>`<button class="gb-who" data-act="grudge-show" data-mid="${m.id}">${av(m)}${h(m.name)}</button>`).join('')}</div>`:''}`):'';
+  return c1+c2+c3;
 }
 function grudgeSheet(G,id){
   const p=G.P[id];const nm=x=>member(x)?.name||'?',me=h(nm(id));const av=x=>{const m=member(x);return`<span class="avatar xs" style="--c:${m?.color||'#888'}">${avIn(m)}</span>`};   // me: the person's own name wherever the sheet would say they/them (Jason 2026-09-25: "Never voted for Genes")
@@ -5329,10 +5335,11 @@ function svWeeksHtml(name){   // the window's story week by week: got out or die
     <div class="svw">${[...r.list].reverse().map(it=>`<div class="svw-wk"><div class="svw-top"><b>${h(it.w.label||wkName(it.w))}</b><span class="svw-res ${it.died?'dead':'ok'}">${it.died?'💀 Died here':'✓ Got out'}</span></div>${[...it.legs].sort((a,b)=>(a.status==='miss'?0:1)-(b.status==='miss'?0:1)).map(leg).join('')}</div>`).join('')}</div>`}
 function killerClubCard(per){
   const rows=S.members.filter(m=>per[m.id]&&per[m.id].killer>0).sort((a,b)=>per[b.id].killer-per[a.id].killer||per[b.id].killed-per[a.id].killed);
-  const body=rows.length?rows.map(m=>{const p=per[m.id];
+  const f=foldList('pk',rows,'people');   // the holder is first, so the recap's link to this card never lands on a hidden row
+  const body=rows.length?f.shown.map(m=>{const p=per[m.id];
     return`<div class="pk-row" data-act="pk-show" data-mid="${m.id}"><span class="avatar" style="--c:${m.color}">${avIn(m)}</span><div class="pk-who"><b>${h(m.name)}</b><small>${pkLine(p)}</small></div><span class="pk-badge">☠️ ×${p.killer}</span><span class="chev">›</span></div>`}).join('')
   :`<p class="muted" style="margin:0">No members yet. Every miss so far has had company.</p>`;
-  return`<section class="card pk-card"><h3>☠️ ${h(clubName())}</h3><p class="muted tiny" style="margin:-4px 0 10px">The lone miss on a slip everyone else hit. Membership is for life. Tap a name to relive the pain.</p><div class="pk-rows">${body}</div></section>`;
+  return`<section class="card pk-card"><h3>☠️ ${h(clubName())}</h3><p class="muted tiny" style="margin:-4px 0 10px">The lone miss on a slip everyone else hit. Membership is for life. Tap a name to relive the pain.</p><div class="pk-rows">${body}</div>${f.more}</section>`;
 }
 function kingsCard(per){
   const people=S.members.filter(m=>per[m.id]&&per[m.id].picks>0);if(!people.length)return'';
@@ -5354,6 +5361,10 @@ const closeAll=per=>{const all=[];Object.values(per).forEach(p=>p.history.forEac
 const closeSort=l=>[...l].sort((a,b)=>a.margin-b.margin),CLOSE_N=5,CLOSE_UNITS=[['pts','Points'],['yds','Yards'],['rec','Receptions']];   // Closest misses' order (the smallest margin first), how many it shows for each measure, and its measures in their order
 const chokeSort=l=>[...l].sort((a,b)=>b.margin-a.margin),CHOKE_N=3,CHOKE_MIN=4;   // Biggest chokes' order (the biggest margin first), how many it shows for each measure, and how many misses a measure needs before it shows
 const closeDrawn=all=>CLOSE_UNITS.flatMap(([u])=>{const l=all.filter(x=>(x.unit||'pts')===u);return[...closeSort(l).slice(0,CLOSE_N),...(l.length>=CHOKE_MIN?chokeSort(l).slice(0,CHOKE_N):[])]});   // every row the Closest misses card and its Biggest chokes popup draw (#41's recap links there rather than say one of them again)
+const LIST_N=5,LIST_FOLD=7,TEAMS_N=5;   // a row list longer than LIST_FOLD shows its first LIST_N and one Show all row under it (Stats' one way of saying there is more)
+function moreRow(key,n,what,o={}){   // the "there is more" row: it opens in place (a toggle, o.act unset) or a sheet (o.act, with the chevron); o.label names a row that is not a "Show all"
+  const open=!o.act&&MORE_OPEN.has(key);return`<button type="button" class="more-row" data-act="${o.act||'more-open'}" data-key="${h(key)}"${o.data||''}>${o.label||(open?'Show fewer':`Show all ${n} ${what}`)}${o.act?'<span class="chev" aria-hidden="true">›</span>':''}</button>`}
+function foldList(key,items,what,n=LIST_N){const open=MORE_OPEN.has(key),long=items.length>LIST_FOLD;return{shown:long&&!open?items.slice(0,n):items,more:long?moreRow(key,items.length,what):''}}   // hidden rows are not drawn at all
 let closeU=null;   // the measure Closest misses is showing (Points, Yards or Receptions): kept while you look around, Points first otherwise
 const chokeAny=all=>CLOSE_UNITS.some(([u])=>all.filter(x=>(x.unit||'pts')===u).length>=CHOKE_MIN);
 function cmRow(x,place,stack){const m=member(x.id);if(!m)return'';return`<div class="cm-row" role="button" tabindex="0" data-act="player-detail" data-mid="${x.id}"${stack?' data-stack="1"':''}><span class="cm-rank">${place}</span><div class="cm-mid"><span class="cm-bet">${betChip(x.text,x.teams)}</span><small><span class="avatar xs" style="--c:${m.color}">${avIn(m)}</span><span>${h(m.name)} · ${h(x.wk||'W'+x.num)}</span></small></div><span class="margin-pill ${x.margin<=1?'ouch':x.margin<=3?'close':''}">by ${fmtMargin(x.margin,x.unit)}</span></div>`}   // rank (ties share it), the bet, who and which week, the margin; a tap opens that person's sheet (stack: on top of the Biggest chokes sheet, which is still there when it closes)
@@ -5363,7 +5374,7 @@ function closeCalls(per){   // UX-STATS §6: the closest misses of one measure a
   const us=CLOSE_UNITS.filter(([u])=>all.some(x=>(x.unit||'pts')===u)),u=(us.find(([k])=>k===closeU)||us[0])[0];
   const list=closeSort(all.filter(x=>(x.unit||'pts')===u)).filter(x=>member(x.id)).slice(0,CLOSE_N),pl=places(list,(a,b)=>a.margin===b.margin);
   const sw=us.length>1?`<div class="scope cm-switch" role="group" aria-label="Closest misses in">${us.map(([k,label])=>`<button type="button" class="${k===u?'on':''}" aria-pressed="${k===u}" data-act="close-u" data-u="${k}">${label}</button>`).join('')}</div>`:'';
-  return`<section class="card cm-card"><h3>Closest misses</h3><p class="muted tiny cm-intro">Smallest margin first. Tap a row for that person’s sheet.${us.length>1?' Ranked within each measure: a yardage miss is never compared to a points miss.':''}</p>${sw}<div class="cm-rows">${list.map((x,i)=>cmRow(x,pl[i])).join('')}</div>${chokeAny(all)?'<button type="button" class="btn ghost block sm cm-foot" data-act="choke-show">Biggest chokes ›</button>':''}</section>`;
+  return`<section class="card cm-card"><h3>Closest misses</h3><p class="muted tiny cm-intro">Smallest margin first. Tap a row for that person’s sheet.${us.length>1?' Ranked within each measure: a yardage miss is never compared to a points miss.':''}</p>${sw}<div class="cm-rows">${list.map((x,i)=>cmRow(x,pl[i])).join('')}</div>${chokeAny(all)?'<button type="button" class="more-row cm-foot" data-act="choke-show">Biggest chokes ›</button>':''}</section>`;
 }
 function chokeBody(all){   // the Biggest chokes popup: the same rows, the biggest margin first, for every measure with enough misses (a name for each measure when there is more than one)
   const bs=CLOSE_UNITS.map(([u,label])=>({label,l:all.filter(x=>(x.unit||'pts')===u&&member(x.id))})).filter(b=>b.l.length>=CHOKE_MIN);
@@ -6125,6 +6136,7 @@ const ACT={
   'award-rank'(el){const o=awardSheet(el.dataset.kind==='vote'?'vote':'season',el.dataset.k);if(o)modal({stack:true,title:o.title,body:o.body,actions:[{label:'Done',cls:'ghost'}]})},   // the league against that stat (a tap on a row opens the person, stacked)
   'screen-check'(){screenCheck()},
   'choke-show'(){withStats(()=>{const all=closeAll(stats().per);if(!chokeAny(all))return;modal({title:'Biggest chokes',body:chokeBody(all),actions:[{label:'Done',cls:'ghost'}]})})},   // the Biggest chokes popup of the Closest misses card
+  'more-open'(el){const k=el.dataset.key;if(!k)return;MORE_OPEN.has(k)?MORE_OPEN.delete(k):MORE_OPEN.add(k);render();const b=[...document.querySelectorAll('.more-row')].find(x=>x.getAttribute('data-key')===k);if(b)try{b.focus({preventScroll:true})}catch(e){}},
   'close-u'(el){const u=el.dataset.u;if(!CLOSE_UNITS.some(([k])=>k===u))return;closeU=u;render();const b=document.querySelector(`.cm-switch button[data-u="${u}"]`);if(b)try{b.focus({preventScroll:true})}catch(e){}},   // Points | Yards | Receptions on Closest misses
   'vote-grid'(){withStats(()=>{const G=grudgeData();modal({title:'🗳️ Who voted for who',body:voteGridHtml(G),actions:[{label:'Done',cls:'ghost'}]})})},
   'grudge-show'(el){withStats(()=>{const G=grudgeData();const id=el.dataset.mid;const m=member(id);if(!m||!G.P[id])return;modal({stack:!!el.dataset.stack,title:`📒 ${m.name}`,body:grudgeSheet(G,id),actions:[{label:'Done',cls:'ghost'}]})})},
