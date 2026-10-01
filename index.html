@@ -302,7 +302,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .hw-act{margin-top:12px}.hw-act .btn{min-height:48px;width:100%;white-space:normal}
 .sk-pg .hero-wk .sk{margin:8px auto 0}
 /* the league's status card: a green, amber or red row for each thing the app knows, with the fix in words */
-.lgstat{display:flex;flex-direction:column;gap:6px;margin-top:12px}.lgstat.red{margin:0 0 14px}
+.lgstat{display:flex;flex-direction:column;gap:6px;margin-top:12px}.lgstat.red{margin:0 0 14px}.lgstat.red .st{box-shadow:inset 0 0 0 1px var(--line2)}   /* under the hero the rows sit on the page's own grey: a hairline gives them an edge in light mode */
 .st{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:9px 10px;border-radius:12px;background:var(--surface2)}
 .st>i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:var(--dim)}.st.ok>i{background:var(--green)}.st.warn>i{background:var(--amber)}.st.bad>i{background:var(--red)}
 .st>span{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}.st>span small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}.st.bad>span small{color:var(--text)}
@@ -1182,8 +1182,9 @@ async function pushCheck(){if(!PUSH.ok)return;let reg=null;try{reg=await navigat
     else if(l.me&&l.person&&!(l.person.push||[]).some(x=>x.dev===DEV_ID&&x.fp)&&!devTagged.has(l.id)){devTagged.add(l.id);const d=await api(l,'/push/subscribe',{method:'POST',body:{subscription:PUSH.sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName(),dev:DEV_ID,fp:HW_FP}});if(mergePerson(l,d.person))save()}}catch(e){}}   // turned on before devices were tracked: tag it as this one
   softRender()}
 function pushPitch(l){const p=pingsOf(l);const bits=[p.reveal?'a ping the moment the votes are in':'',p.pick.on||p.vote.on?'a reminder when you still owe a pick or vote':''].filter(Boolean);return bits.length?'Get '+bits.join(', and ')+'.':'Get the league’s pings on this device.'}
-function pushCard(){
+function pushCard(o){   // o.week: This Week draws a blocked-notifications red row under the hero already, so it is said once there
   const l=league();if(!pushWanted(l)||pushOnHere(l)||l.guest||pushWait())return'';
+  if(o&&o.week&&pushDenied()&&l.sync)return'';
   if(l.me&&(l.pushWho||{})[l.me]>0)return'';   // pings already reach one of their devices: Settings → Me offers this one too
   let later=(l.person&&l.person.pushLater)||0;try{later=Math.max(later,+localStorage.getItem('bp-push-later:'+l.sync.id)||0)}catch(e){}if(Date.now()-later<3*86400e3)return'';
   const help=pushHelp();
@@ -1379,7 +1380,7 @@ function applyState(l,d,ro){   // ro: a read-only look (Refresh on a phone that 
   if(league()===l){S=season().data;ALLTIME=null;if(quiet()){hsLand();try{dkSync()}catch(e){}}}   // the page waits (someone is typing): the pick search's results, and an open Export to DraftKings sheet (a tick box focused on it counts as typing), follow the league at once all the same
   if(v0){const v1=JSON.stringify(refreshView());if(v1!==v0){leagueMoves++;leagueView=v1}}
 }
-function setSyncDot(state){dotN++;const d=document.getElementById('syncDot');if(!d)return;const l=league();d.className='syncdot '+(l.sync?state:'off');d.title={ok:'Up to date',bad:'Couldn’t update. Your changes are safe on this phone',busy:'Updating…',waiting:'Changes are waiting to be saved. They are safe on this phone'}[state]||'';if(state==='ok'&&l.sync)SYNC_AT.set(l.id,Date.now());try{lgPaint()}catch(e){}}   // the status card's sync row follows the dot
+function setSyncDot(state,why){dotN++;const d=document.getElementById('syncDot');if(!d)return;const l=league();try{if(state==='bad'&&why)SYNC_WHY.set(l.id,why);else if(state!=='busy')SYNC_WHY.delete(l.id)}catch(e){}d.className='syncdot '+(l.sync?state:'off');d.title={ok:'Up to date',bad:'Couldn’t update. Your changes are safe on this phone',busy:'Updating…',waiting:'Changes are waiting to be saved. They are safe on this phone'}[state]||'';if(state==='ok'&&l.sync)SYNC_AT.set(l.id,Date.now());try{lgPaint()}catch(e){}}   // the status card's sync row follows the dot
 const pushTs={};const pushTof=l=>l&&pushTs[l.id]||null;const clearPushT=l=>{if(l&&pushTs[l.id]){clearTimeout(pushTs[l.id]);delete pushTs[l.id]}};const anyPushT=()=>!!Object.keys(pushTs).length;
 let pendingPick=null,pullBusy=false;
 const videoPlaying=()=>[...document.querySelectorAll('video')].some(v=>!v.paused&&!v.ended);
@@ -1519,7 +1520,7 @@ async function push1(l,retried,clash){
       if(!retried){const st=e.data.state;const dd=l.setDirty||{};if(!dd.name&&st.name)l.name=st.name;if(!dd.clubName&&st.clubName!==undefined)l.clubName=st.clubName||'';if(!dd.mondayOk&&st.mondayOk!==undefined)l.mondayOk=!!st.mondayOk;if(!l.featDirty&&st.features)l.features=st.features;   // settings this device didn't touch: the league's
         const c=mergeLeague(l,e.data.state);mergeMemberEdits(l,e.data.state);l.sync.rev=e.data.state.rev;if(e.data.state.updatedAt)l.sync.base=e.data.state.updatedAt;l.sync.wh=syncSigs((e.data.state.seasons||[]).filter(x=>x&&SAFE_ID.test(x.id)).map(x=>({...x,data:migrate(JSON.parse(JSON.stringify(x.data||fresh())))})));save();return push(l,true,c)}   // someone else acted meanwhile: keep both
       applyState(l,e.data.state);delete l.sync.dirty;delete l.logoAt;save();render();toast('Someone else changed the league at the same moment — reloaded it. Redo your last edit.','bad')}
-    else if(e.status===403||e.status===404){setSyncDot('bad');const first=!l.sync.stuck;l.sync.stuck=Date.now();save();
+    else if(e.status===403||e.status===404){const first=!l.sync.stuck;l.sync.stuck=Date.now();save();setSyncDot('bad');   // the status card reads the cause when the dot goes red, so it is set first
       if(first)toast(`${l.name} can’t be reached from this phone any more, so your last change stayed here. Nothing on this phone was lost. Open Settings → Me → My leagues: take it off the list if it was deleted on purpose, or add it again with a code from one of your other phones.`,'bad')}
     else{setSyncDot('bad');toast(e.status?'The league didn’t take that change, so it is only on this phone for now. Nothing was lost. Try again in a moment, and if it keeps happening close the app and open it again.':'No signal, so your change is only on this phone for now. Nothing was lost: it goes up on its own as soon as you are back online.','bad')}}
 }
@@ -1559,7 +1560,7 @@ async function sendPick0(l,w,mid,quietly,auto){   // a member's own pick: it wai
       modal({title:'Picks lock at kickoff',body:`<p style="margin:0 0 10px">${h(friendly(e))}.</p>${late?`<p style="margin:0 0 10px">${e.data.unsure?'You typed it before this week’s first kickoff, but it only reached the league after that game had kicked off':'You typed it before kickoff, but it only reached the league after the game had kicked off'} (this phone couldn’t reach the league until then), so it can’t count: the league goes by when it gets a change.</p>`:''}${rj?`<p class="tiny muted" style="margin:0 0 4px">What you typed, so you can send it to the commissioner:</p><div class="mono code" style="padding:10px;border-radius:10px;background:var(--surface2);user-select:all">${h(rj)}</div>`:''}`,actions:[...(rj?[{label:'Copy it',cls:'ghost',onClick:()=>{copyText(rj);return false}}]:[]),{label:'OK',cls:'primary'}]});pull(l,false,true)}
     else if(e.status===423&&e.data&&e.data.placed){delete l.outbox[k];save();setSyncDot('ok');const rj=String(e.data.rejected||'').trim();
       modal({title:'Picks are locked',body:`<p style="margin:0 0 10px">${h(friendly(e))}.</p>${rj?`<p class="tiny muted" style="margin:0 0 4px">What you typed, so you can send it:</p><div class="mono code" style="padding:10px;border-radius:10px;background:var(--surface2);user-select:all">${h(rj)}</div>`:''}`,actions:[...(rj?[{label:'Copy it',cls:'ghost',onClick:()=>{copyText(rj);return false}}]:[]),{label:'OK',cls:'primary'}]});pull(l,false,true)}
-    else if(e.status>=400&&e.status<500&&e.status!==408&&e.status!==429){delete l.outbox[k];save();setSyncDot('bad');toast((e.status===423?'Too late: ':'')+friendly(e)+'. Your pick was NOT '+(clr?'cleared':'saved')+'. '+(e.status===423?'Picks are closed for this week. If the recorded pick needs correcting, ask the commissioner.':e.status===403?'Check your name at the top, then ask the commissioner to help with this pick.':'Pull down to refresh, or tap Refresh in Settings → League, then open the pick and try again.'),'bad');pull(l,false,true)}   // the league said no: show the league's copy
+    else if(e.status>=400&&e.status<500&&e.status!==408&&e.status!==429){delete l.outbox[k];save();setSyncDot('bad','rejected');toast((e.status===423?'Too late: ':'')+friendly(e)+'. Your pick was NOT '+(clr?'cleared':'saved')+'. '+(e.status===423?'Picks are closed for this week. If the recorded pick needs correcting, ask the commissioner.':e.status===403?'Check your name at the top, then ask the commissioner to help with this pick.':'Pull down to refresh, or tap Refresh in Settings → League, then open the pick and try again.'),'bad');pull(l,false,true)}   // the league said no: show the league's copy
     else if(e.badReply){setSyncDot('bad');if(!quietly)toast(clr?'Your pick isn’t cleared in the league yet: the league didn’t answer properly. Nothing was lost: the clear is still waiting on this phone and goes up on its own in a moment. Do this: if it is still there after a minute, pull down to refresh, then open the pick and tap Clear pick again.':'Your pick isn’t confirmed in the league yet: the league didn’t answer properly. Nothing was lost: it is still on this phone and goes up on its own in a moment. Do this: if the group can’t see it after a minute, pull down to refresh, then open the pick and save it again.','bad');softRender()}
     else{setSyncDot('bad');if(!quietly)toast(clr?'No signal, so your pick isn’t cleared in the league yet. It clears on its own as soon as you have signal.':'No signal, so your pick is only on this device for now. It goes up on its own as soon as you have signal.','bad');softRender()}}
 }
@@ -2520,7 +2521,8 @@ function heroInner(w,c,cl0){   // cl0: the slip's claims, when the caller alread
   else if(key==='ready'){const P=heroPicks(w,c);num=String(P.inN);unit=`of ${P.tot} picks in`;const bz=member(side?(payerOf(w)||bozoOfW(w)):bozoOfW(w));
     let flagged=false,wait=false;try{const cl=cl0!==undefined?cl0:slipClaims(w,c)||histClaims(w,c);flagged=!!(cl&&hasFlags(cl)&&!cl.quiet&&(cl.pairs.length||Object.keys(cl.off||{}).length||Object.values(cl.notd||{}).some(v=>v!=='soon')));wait=!!cl&&clWait(w,cl)}catch(e){}   // wait: this week's games are still on their way, so whether a pick needs a look is not known yet
     if(canPlace&&!isAdmin()&&needsPayer(w))line='All in. Before this side parlay can be marked placed, the commissioner has to say who pays for it. Text the commissioner to choose. Every pick stays on the slip.';
-    else if(wait)line='<span class="sk-txt">All in. Waiting for this week’s games to load to check a pick.</span>';   // grey, its words still there for a screen reader: never words that turn into "Ready"
+    else if(wait){line='<span class="sk-txt">All in. Waiting for this week’s games to load to check a pick.</span>';
+      if(canPlace&&sync)btn=`<button class="btn primary block" disabled aria-describedby="hw-sub-${h(w.id)}">I placed it</button>`}   // the button's place is kept (greyed, its words above) so it never pops in and moves the page   // grey, its words still there for a screen reader: never words that turn into "Ready"
     else if(!sync)line='All picks are in.';
     else if(canPlace){line=flagged?'All in. Sort out the flagged picks, then place it on DraftKings and say so here.':'All in. Place it on DraftKings, then say so here.';btn=`<button class="btn primary block" data-act="placed-open" data-wid="${h(w.id)}" aria-describedby="hw-sub-${h(w.id)}">I placed it</button>`}
     else line=`${flagged?'All in. Sort out the flagged picks first. ':''}Ready for <b>${h(bz?bz.name:'the Bozo')}</b> to place it on DraftKings.`}
@@ -2544,23 +2546,31 @@ function heroInner(w,c,cl0){   // cl0: the slip's claims, when the caller alread
   const b=member(w.bozoId),word={placed:'placed',live:'placed',dead:'placed',cashed:'cashed',busted:'busted',void:'void'}[key]||'';
   const eye=side?`<span class="clown">\u{1F3AF}</span><span>Side parlay${(py=>needsPayer(w)&&!c.graded?` \xB7 ${isAdmin()?'who pays? tap ✎ to choose':'the commissioner still has to say who pays'}`:py?` \xB7 ${h(member(py)?.name||'')} pays`:'')(payerOf(w))}${word?` \xB7 ${word}`:''}</span>${isAdmin()?`<button class="mini" data-act="change-payer" data-wid="${h(w.id)}" title="Who pays" aria-label="Who pays for the side parlay">✎</button>`:''}`
     :`<span class="clown">\u{1F921}</span>${b?`<span class="bozo-name">${h(b.name)}</span><span>is the Bozo${word?` \xB7 ${word}`:''}</span>`:`<span>${isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown'}</span>`}${isAdmin()?`<button class="mini" data-act="change-bozo" data-wid="${h(w.id)}" title="Change bozo" aria-label="Change the Bozo">✎</button>`:''}`;
-  const sk=(key==='placed'||key==='live')&&!!w.placed&&lvLoading(w);   // the scores are still coming: the number has its ink taken away (its words still read) instead of a count made up in the meantime
+  const sk=(key==='placed'||key==='live')&&!!w.placed&&sweatable(w)&&lvLoading(w);   // the scores are still coming: the number has its ink taken away (its words still read) instead of a count made up in the meantime
   return`<div class="hero-wk${tone?' '+tone:''}"><div class="hw-eye">${eye}</div><div class="hw-num">${sk?`<span class="sk-txt">${h(num)}</span>`:h(num)} <small>${h(unit)}</small></div><div class="hw-sub" id="hw-sub-${h(w.id)}">${line}</div>${btn?`<div class="hw-act">${btn}</div>`:''}</div>`}
 function weekHero(w,c){const html=heroInner(w,c);HERO_LAST.set(w.id,html);return`<div class="hero-host" id="hero-${h(w.id)}">${html}</div>`}
 function heroPaint(w,c){   // the live repaint (livePaint, and the slip's price and stake boxes as they are typed): the same words leave the page alone, a changed number gets the 600 ms tint
   const el=document.getElementById('hero-'+w.id);if(!el)return;const html=guarded(()=>heroInner(w,c||calc(w)));if(el._lv==null&&HERO_LAST.has(w.id))el._lv=HERO_LAST.get(w.id);lvSwap(el,html);HERO_LAST.set(w.id,html)}
 /* ---- The Sweat: when exactly one leg is left and nothing has missed, a sheet with that leg's number large, the bar with the line on it, the clock, and what everyone collects if it hits ---- */
 let SW_SHEET=null;   // the Sweat sheet that is open: {wid, mid, lid, html}. It follows the scores for as long as it is the one on top; closing it, or another sheet taking its place, lets it go
+function bustWords(w,killers,mid){   // who really killed the slip (the Bozo vote reads this): the legs that missed, never just the sheet's own leg
+  const names=killers.map(x=>member(x.mid)).filter(Boolean).map(x=>`${h(x.name)}’s`),own=killers.some(x=>x.mid===mid);
+  if(!names.length)return'Busted. The slip missed.';
+  if(own&&names.length===1)return`Busted. ${names[0]} leg was the one.`;
+  const list=`${andList(names)} ${names.length===1?'leg':'legs'} missed`;
+  return own?`Busted. ${list}.`:`Busted on another leg. ${list}.`}
 function sweatBody(w,c,mid){
   const p=w.picks[mid],m=member(mid);
   if(!p||!m)return`<div class="sweatv"><p class="sw-ck">That leg is no longer on the slip, so there is nothing to watch here. Nothing was lost. Tap Back to slip.</p></div>`;
   const cl0={nfl:weekNfl(w),live:{}},legs=sweatLegs(w,cl0),me=legs.find(x=>x.mid===mid)||{},L=cl0.live[mid]||legLive(w,{mid,...p},cl0),v=L.v;
-  const killer=legs.find(x=>x.s==='miss'),open=legs.filter(x=>x.s==='open').length;
+  const killers=legs.filter(x=>x.s==='miss'),killer=killers[0],open=legs.filter(x=>x.s==='open').length;
   const lc=liveCounts(w,cl0),hit=lc?lc.k.hit:c.hits,it=sweatOffer(w,c,cl0);
   const phase=it&&it.mid===mid?'live':killer?'lost':(me.s==='hit'||me.s==='push')&&!open?'won':'gone';
   const lgw=wkName(w);
-  if(phase==='gone')return`<div class="sweatv"><div class="sw-eye">${h(lgw)}</div><div class="sw-leg">${h(p.text)}</div><p class="sw-ck">This slip is no longer down to one leg, so there is no single sweat to watch. Nothing was lost. Tap Back to slip to see every leg.</p></div>`;
-  const n=v?lvNum(v):{big:'',of:'',head:'',rest:[]},tone=phase==='won'?'hit':phase==='lost'?'miss':v?lvTone(v):'';
+  if(phase==='gone'){const last=me.s==='open'&&open===1,cd=v&&v.code;   // the leg is still the only one left: its game just ended and the numbers are still coming in (or there is nothing live to show), which is not "no longer one leg"
+    const say=last&&(cd==='GRADING'||cd==='WAITSTATS')?'That game just ended and its final numbers are still coming in, so this leg is not graded yet. Nothing was lost. This sheet fills in on its own when it is. Tap Back to slip to see the slip.':last?'This is still the only leg left, but there is no live number to show for it right now. Nothing was lost. Tap Back to slip to see the slip.':'This slip is no longer down to one leg, so there is no single sweat to watch. Nothing was lost. Tap Back to slip to see every leg.';
+    return`<div class="sweatv"><div class="sw-eye">${h(lgw)}</div><div class="sw-leg">${h(p.text)}</div><p class="sw-ck">${say}</p></div>`}
+  const n=v?lvNum(v):{big:'',of:'',head:'',rest:[]},tone=phase==='won'||(phase==='lost'&&me.s==='hit')?'hit':phase==='lost'&&me.s==='miss'?'miss':v?lvTone(v):'';   // a busted slip whose own leg is fine shows that leg as it is, never as the miss
   const num=v&&n.big?`<div class="sw-num ${tone}">${h(n.big)}${n.of?`<small>${h(n.of)}</small>`:''}</div>`:v&&v.main?`<div class="sw-num words ${tone}">${h(v.main)}</div>`:'';
   const bar=v&&v.bar?lvBarHtml(v,tone):'';
   const score=v&&v.score?` \xB7 <span class="lv-score">${h(v.score)}</span>`:'';
@@ -2568,7 +2578,7 @@ function sweatBody(w,c,mid){
   const eye=phase==='won'?`${lgw} \xB7 cashed`:phase==='lost'?`${lgw} \xB7 busted`:`${lgw} \xB7 ${hit} of ${c.n} hit \xB7 one to go`;
   const ck=phase==='lost'?(me.s==='miss'&&p.margin!=null?`Missed by ${h(fmtMargin(p.margin,p.unit||unitFor(p.text)))}`:v&&v.clock?`<b>${h(v.clock)}</b>${under?` \xB7 ${h(under)}`:''}`:''):`${fresh&&v&&v.clock?`<b>${h(v.clock)}</b>`:''}${under?`${fresh&&v&&v.clock?' \xB7 ':''}${h(under)}`:''}`;
   const each=eachTxt(c),faces=c.legs.filter(x=>member(x.mid)&&!(pushOutOn()&&x.status==='push')).map(x=>member(x.mid));
-  const money=phase==='won'?`Cashed. Everyone collects <b>${h(each)}</b>`:phase==='lost'?`Busted. ${h(m.name)}’s leg was the one.`:`If this hits, everyone collects <b>${h(each)}</b>`;
+  const money=phase==='won'?`Cashed. Everyone collects <b>${h(each)}</b>`:phase==='lost'?bustWords(w,killers,mid):`If this hits, everyone collects <b>${h(each)}</b>`;
   const at=L.R&&L.R.at?new Date(L.R.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'';
   const foot=phase!=='live'?'':fresh?(at?`Scores as of ${h(at)} \xB7 checked every minute`:'Checked every minute'):`Last checked ${h(lvAgo(age))}`;
   return`<div class="sweatv"><div class="sw-eye">${h(eye)}</div><div class="sw-leg">${h(p.text)}</div><div class="sw-who"><span>${h(m.name)}’s leg</span>${score}</div>${num}${bar}${ck?`<div class="sw-ck">${ck}</div>`:''}<div class="sw-money"><div class="ln">${money}</div>${phase==='lost'?'':`<div class="faces" role="img" aria-label="${h(faces.map(x=>x.name).join(', '))}">${faces.map(m=>`<span class="avatar" style="--c:${m.color}" aria-hidden="true">${avIn(m)}</span>`).join('')}</div>`}</div>${foot?`<div class="sw-foot">${foot}</div>`:''}</div>`}
@@ -2584,16 +2594,23 @@ function sweatPaint(w){   // live scores: the open sheet is drawn again when its
   let html;try{html=sweatBody(w,calc(w),g.mid)}catch(e){return}
   if(html===g.html)return;g.html=html;const top=mb.scrollTop;lvSwap(mb,html);mb.scrollTop=top;try{balance()}catch(e){}}
 /* ---- the league's status card: what is fine, what waits on a person, and what is broken, each with its fix in words ---- */
+const SYNC_WHY=new Map();   // why the dot last went red, when it was not just the network: 'rejected' (the league turned a pick down)
 const SYNC_AT=new Map();   // when this phone last heard the league answer (in memory only: nothing is saved or sent)
 const lgDevice=()=>isIOS()?(isIPad()?'iPad':'iPhone'):/Android/.test(navigator.userAgent||'')?'phone':'device';
 const lgAgo=ms=>{const m=Math.round(ms/6e4);return m<1?'just now':m===1?'1 minute ago':m<60?`${m} minutes ago`:m<120?'1 hour ago':`${Math.round(m/60)} hours ago`};
-function lgDotState(){const c=String(document.getElementById('syncDot')?.className||'');return/\bbad\b/.test(c)?'bad':/\bwaiting\b/.test(c)?'waiting':/\bbusy\b/.test(c)?'busy':'ok'}
+function lgDotState(){const c=String(document.getElementById('syncDot')?.className||'');return/\bbad\b/.test(c)?'bad':/\bwaiting\b/.test(c)?'waiting':/\bbusy\b/.test(c)?'busy':/\bok\b/.test(c)?'ok':'idle'}   // idle: the league has not answered yet, so nothing is claimed
+function lgBad(l){   // the red sync row says what really went wrong (what happened, whether anything was lost, the exact steps), not "check your signal" for every cause
+  const row={id:'sync',tone:'bad'};
+  if(NOFIT.has(l.id))return{...row,title:'This phone is full',small:'The league changed before this phone read it, and there is no room here to keep your change, so nothing is sent from this phone until the app opens again. Your change is saved here if it fit, or only on this screen. Do this: Settings → Me → My leagues, take off a league you don’t need, then reopen the app.'};
+  if(l.sync&&l.sync.stuck)return{...row,title:'The league can’t be found',small:'This league can’t be reached from this phone any more, so your last change stayed here. Nothing on this phone was lost. Do this: Settings → Me → My leagues, take it off the list if it was deleted on purpose, or add it again with a code from one of your other phones.',act:'sync-now',go:'Retry ›'};
+  if(SYNC_WHY.get(l.id)==='rejected')return{...row,title:'The league turned a pick down',small:'That pick is not in the league, and it is not kept on this phone either. Everything else is safe. Do this: open the leg and enter the pick again. If it keeps happening, ask the commissioner.'};
+  return{...row,title:'Couldn’t reach the league',small:'Your changes are safe on this phone and go in when it answers. Do this: check your signal or Wi-Fi, then pull down to refresh.',act:'sync-now',go:'Retry ›'}}
 function lgRows(l,w){   // [{id, tone: ok|warn|bad, title, small, act, go, data}]; a row that cannot apply here (no league to sync, a browser without notifications) is left out, not greyed
   const R=[];if(!l||!l.sync)return R;
   {const s=lgDotState(),at=SYNC_AT.get(l.id);
-    R.push(s==='bad'?{id:'sync',tone:'bad',title:'Couldn’t reach the league',small:'Your changes are safe on this phone and go in when it answers. Do this: check your signal or Wi-Fi, then pull down to refresh.',act:'sync-now',go:'Retry ›'}
+    R.push(s==='bad'?lgBad(l)
       :s==='waiting'?{id:'sync',tone:'warn',title:'Changes waiting to go in',small:'Safe on this phone. They go in when the league answers.'}
-      :s==='busy'?{id:'sync',tone:'ok',title:'Checking the league',small:'Looking for anything new.'}
+      :s==='busy'||s==='idle'?{id:'sync',tone:s==='idle'?'idle':'ok',title:'Checking the league',small:s==='idle'?'Waiting for the league to answer.':'Looking for anything new.'}
       :{id:'sync',tone:'ok',title:'Up to date',small:at?`Checked ${lgAgo(Date.now()-at)} on this ${lgDevice()}`:'Nothing is waiting on this phone'})}
   if(pushWanted(l)&&!l.guest&&!pushWait()&&(PUSH.ok||isIOS())){
     const gd=pingsOf(l).gameday?` \xB7 game-day pings ${l.person&&l.person.gameday?'on':'off'}`:'';
@@ -2610,12 +2627,12 @@ function lgRows(l,w){   // [{id, tone: ok|warn|bad, title, small, act, go, data}
     if(hits.length){const[x,mid,p]=hits[0],nm=member(mid)?.name||'Someone',mine=l.me===mid,ad=isAdmin(l);
       R.push({id:'price',tone:'warn',title:hits.length>1?`${hits.length} prices are waiting`:ad?'A price needs your decision':'A price is waiting on the commissioner',small:ad?`${mine?'Your':h(nm)+'’s'} ${h(p.text)} was saved, and its held price is waiting. Open the leg to keep the price or take the new one.`:`${mine?'Your':h(nm)+'’s'} ${h(p.text)} was saved. Its price change is waiting. Open the leg to see where it stands.`,act:'leg-info',data:`data-wid="${h(x.id)}" data-mid="${h(mid)}"`,go:'Open ›'})}}
   return R}
-const lgRow=r=>`<div class="st ${r.tone} ${r.id}"><i aria-hidden="true"></i><span><span class="vh">${r.tone==='ok'?'Fine. ':r.tone==='warn'?'Needs a step. ':'Broken. '}</span>${r.title}<small>${r.small}</small></span>${r.act?`<button class="go" data-act="${r.act}" ${r.data||''}>${r.go}</button>`:''}</div>`;
+const lgRow=r=>`<div class="st ${r.tone} ${r.id}"><i aria-hidden="true"></i><span><span class="vh">${r.tone==='ok'?'Fine. ':r.tone==='idle'?'':r.tone==='warn'?'Needs a step. ':'Broken. '}</span>${r.title}<small>${r.small}</small></span>${r.act?`<button class="go" data-act="${r.act}" ${r.data||''}>${r.go}</button>`:''}</div>`;
 function lgStatus(w,o={}){   // the card in Settings → League (every row), or under the hero on This Week (broken rows only: a broken thing is seen where people look on Sunday)
   const l=league(),rows=lgRows(l,w),bad=rows.filter(r=>r.tone==='bad'),warn=rows.filter(r=>r.tone==='warn');
   if(o.redOnly)return bad.length?`<div class="lgstat red" role="group" aria-label="Needs fixing">${bad.map(lgRow).join('')}</div>`:'';
   if(!rows.length)return'';
-  const chip=bad.length?`<span class="stag broke">${bad.length} broken</span>`:warn.length?`<span class="stag todo">${warn.length} to do</span>`:'<span class="stag set">All set</span>';
+  const chip=bad.length?`<span class="stag broke">${bad.length} broken</span>`:warn.length?`<span class="stag todo">${warn.length} to do</span>`:rows.some(r=>r.tone==='idle')?'<span class="stag none">Checking…</span>':'<span class="stag set">All set</span>';
   return`<section class="card lgcard"><div class="row between"><h3 style="margin:0">League status</h3>${chip}</div><div class="lgstat">${rows.map(lgRow).join('')}</div></section>`}
 function lgPaint(){   // the sync row follows the dot: the status card is drawn again in place when its words change (the page's own draw does the rest)
   for(const[id,red]of[['lgred',true],['lgcard',false]]){const el=document.getElementById(id);if(!el)continue;let html;try{html=guarded(()=>lgStatus(lastWeek(),{redOnly:red}))}catch(e){continue}
@@ -2669,7 +2686,7 @@ function renderWeekInner(){
   if(UPCOMING&&(UPCOMING!==w.id||w.final||nx||!c.graded||(w.reveal&&!revealSeen(w))||!(isAdmin()||league().features?.votes)))UPCOMING=null;
   if(UPCOMING)return(pushCard()||gdCard())+renderUpcoming(w,c);
   const vote=renderVote(w,c,isLast);const upnext=vote.includes('data-act="next-go"')?'':upcomingBtn(w,c);   /* the vote card already offers the next-week pick: one way to that slip, not two */
-  return`${pushCard()||gdCard()}<div class="week-nav">
+  return`${pushCard({week:1})||gdCard()}<div class="week-nav">
     <button class="icon-btn" data-act="week-prev" aria-label="Previous week" ${idx===0?'disabled':''}>‹</button>
     <div class="week-title"><strong>${h(wkName(w))}</strong>${isAdmin()?`<input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date">`:w.date?`<small class="muted tiny">${h(new Date(w.date+'T12:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}))}</small>`:''}</div>
     <button class="icon-btn" data-act="week-next" aria-label="Next week" ${idx===S.weeks.length-1?'disabled':''}>›</button>
@@ -3745,13 +3762,13 @@ function ticketFoot(w,c){   // an open slip's foot: so-far price, stake, what it
 }
 function slimFoot(w,c){   // placed or graded: the money is the hero's, so the foot keeps only Export to DraftKings, the commissioner's stake box and the actions
   const stake=isAdmin()?`<label class="foot-stake"><span>Stake $</span><input type="number" class="inline-num" value="${c.stake}" min="0" step="1" data-bind="week|${w.id}|stake" inputmode="numeric" aria-label="Stake in dollars"></label>`:'';
-  return`<div class="ticket-foot slim" id="tfoot"><div id="f-dk">${dkFoot(w,c)}</div>${stake}${footActions(w,c)}</div>`}
+  return`<div class="ticket-foot slim" id="tfoot"><div class="hint" id="f-hint" ${c.missingOdds&&c.n&&!c.slip?'':'hidden'}>Enter odds on every leg to price the parlay.</div><div id="f-dk">${dkFoot(w,c)}</div>${stake}${footActions(w,c)}</div>`}
 const pushedOut=c=>pushOutOn()&&c.result==='won'?c.legs.filter(l=>l.status==='push').map(l=>member(l.mid)?.name).filter(Boolean):[];   // who collects nothing on a slip that cashed
 function patchTicket(w){
   const c=calc(w);const priced=c.priced;const $=id=>document.getElementById(id);
   try{heroPaint(w,c)}catch(e){}   // the hero's price and payout follow the boxes too
   if(!$('tfoot'))return;
-  {const set=(id,t)=>{const e=$(id);if(e)e.textContent=t};set('f-odds',c.n?amer(c.dec):'—');set('f-win',winTxt(c));set('f-each',eachTxt(c));const hi=$('f-hint');if(hi)hi.hidden=!(c.missingOdds&&c.n)}
+  {const set=(id,t)=>{const e=$(id);if(e)e.textContent=t};set('f-odds',c.n?amer(c.dec):'—');set('f-win',winTxt(c));set('f-each',eachTxt(c));const hi=$('f-hint');if(hi)hi.hidden=!(c.missingOdds&&c.n&&!c.slip)}
   {const f=$('f-dk');if(f)f.innerHTML=dkFoot(w,c)}try{dkSync()}catch(e){}   // Export to DraftKings follows the prices as they are typed
   for(const l of c.legs){
     const bad=l.odds!==''&&l.odds!=null&&!legal(l.oddsN);
