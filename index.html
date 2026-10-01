@@ -314,6 +314,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .gm-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0 12px;width:100%;min-height:44px;padding:4px 0;border:0;background:none;font:inherit;font-size:13px;font-weight:600;color:var(--text);text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent}
 div.gm-head{cursor:default;min-height:36px}.gm-head:focus-visible{outline:2px solid var(--blue);outline-offset:2px;border-radius:8px}
 .gm-head .teams{display:flex;align-items:baseline;gap:5px;min-width:0;white-space:nowrap}.gm-head .teams b{font-variant-numeric:tabular-nums;font-size:15px;font-weight:700}
+.gm-head .teams small{font-size:11px;font-weight:500;color:var(--muted);font-variant-numeric:tabular-nums}.gm-head .teams .pos{flex:none;align-self:center;width:7px;height:7px;border-radius:50%;background:var(--text)}   /* a record: small and muted after its team; a solid dot (the text colour: 4.5:1 light and dark) beside the team with the ball */
 .gm-head .ck{display:flex;align-items:center;gap:4px;font-size:12px;font-weight:600;color:var(--muted);min-width:0;text-align:right}.gm-head .ck.live,.gm-head .ck.fin{color:var(--text);font-weight:700}.gm-head .ck i{font-style:normal;font-size:15px;line-height:1}
 .gl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:0 8px;min-height:32px;padding:6px 0;border-top:1px solid var(--line)}
 .gl .avatar{width:20px;height:20px;font-size:8px}.gl .txt{min-width:0;font-size:13px;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;text-wrap:balance;overflow-wrap:anywhere}
@@ -2963,13 +2964,16 @@ function gvGroups(items){   // the games with legs on them, worst first, then th
     const t=startMs(gr.g.at);return{...gr,rg,fin,live,rank,at:Number.isFinite(t)?t:Infinity,cls:['down','even','up','pre','final'][rank]}});
   games.sort((a,b)=>a.rank-b.rank||(a.at<b.at?-1:a.at>b.at?1:0)||(a.key<b.key?-1:a.key>b.key?1:0));
   return{games,wait,lost}}
-function gvHead(gr){   // a game's head: its teams (with the score once it has started), the clock, kickoff or Final, and how a screen reader says it
+const gvRec=r=>{const m=/^(\d{1,2})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(String(r==null?'':r).trim());return m?{t:m[0],say:m[3]&&+m[3]?`record ${m[1]} and ${m[2]} with ${m[3]} ${+m[3]===1?'tie':'ties'}`:`record ${m[1]} and ${m[2]}`}:null};   // a record as the league server sends it going into the game ("3-1", "3-1-1"); anything else is no record, so nothing is shown rather than a wrong one
+function gvHead(gr){   // a game's head: its teams (the record each brings in, the score once it has started, a dot on who has the ball while it is live), the clock, kickoff or Final, and how a screen reader says it
   const g=gr.rg,sc=(gr.live||gr.fin)&&g.as!=null&&g.hs!=null&&Number.isFinite(+g.as)&&Number.isFinite(+g.hs),d=String(g.detail||'');
   const ck=gr.fin?(/ot/i.test(d)?'Final/OT':'Final'):/postpon|delay|cancel|suspend/i.test(d)?d:gr.live?(d||'Live'):Number.isFinite(startMs(gr.g.at))?ETK.format(new Date(startMs(gr.g.at))):'Time not set yet';
-  const away=gr.g.away||'?',home=gr.g.home||'?';
+  const away=gr.g.away||'?',home=gr.g.home||'?',ra=gvRec(g.ar),rh=gvRec(g.hr),ball=gr.live&&!/half|delay|end of/i.test(d)&&g.pos&&gr.g.away&&gr.g.home?(g.pos===gr.g.away?'a':g.pos===gr.g.home?'h':''):'';   // the ball is only ever named for a live game and one of its own two teams
+  const side=(ab,rec,sco,has)=>`<span>${h(ab)}</span>${has?'<i class="pos" role="img" aria-label="has the ball"></i>':''}${sco?`<b>${h(sco)}</b>`:''}${rec?`<small>${h(rec.t)}</small>`:''}`;
+  const say=(ab,rec,sco,has)=>{const nm=TEAM_NM(ab),x=[rec?rec.say:'',has?'has the ball':'',sco?String(sco):''].filter(Boolean);return x.length&&(rec||has)?[nm,...x].join(', '):`${nm}${sco?' '+sco:''}`};
   return{ck,ckCls:gr.fin?'fin':gr.live?'live':'',title:sc?`${away} ${g.as} \xB7 ${home} ${g.hs}`:`${away} \xB7 ${home}`,
-    teams:`<span>${h(away)}</span>${sc?`<b>${h(g.as)}</b>`:''}<span aria-hidden="true">\xB7</span><span>${h(home)}</span>${sc?`<b>${h(g.hs)}</b>`:''}`,
-    say:`${TEAM_NM(away)}${sc?' '+g.as:''} at ${TEAM_NM(home)}${sc?' '+g.hs:''}`}}
+    teams:`${side(away,ra,sc?g.as:'',ball==='a')}<span aria-hidden="true">\xB7</span>${side(home,rh,sc?g.hs:'',ball==='h')}`,
+    say:`${say(away,ra,sc?g.as:'',ball==='a')} at ${say(home,rh,sc?g.hs:'',ball==='h')}`}}
 function gvAlso(it){   // "⇄ also under KC · LV": the other game(s) a leg is on; the mark has a name for a screen reader
   const own=gvKey(it.g),all=[it.shadow?it.via:it.g,...it.also].filter(x=>gvKey(x)!==own);
   return all.length?`<span class="gx" role="img" aria-label="This bet is on ${all.length+1} games.">⇄</span> also under ${all.map(x=>`${h(x.away||'?')} \xB7 ${h(x.home||'?')}`).join(' and ')}`:''}
