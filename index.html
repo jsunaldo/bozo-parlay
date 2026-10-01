@@ -1246,7 +1246,7 @@ function psetHtml(){const ls=adminLeagues();const l=psetL();if(!l)return'';const
 function psetSave(l){PSET_N[l.id]=(PSET_N[l.id]||0)+1;PSET_PEND.add(l.id);psetRe();clearTimeout(psetT[l.id]);psetT[l.id]=setTimeout(async()=>{const n=PSET_N[l.id];
   try{const d=await api(l,'/pings',{method:'POST',body:{pings:l.pings}});if(d.pings)l.pingsSrv=d.pings;if(PSET_N[l.id]===n){PSET_PEND.delete(l.id);if(d.pings)l.pings=d.pings}save();psetRe();if(l===league())softRender()}   // a newer tap since: its own save carries it
   catch(e){if(PSET_N[l.id]===n){PSET_PEND.delete(l.id);if(l.pingsSrv)l.pings=JSON.parse(JSON.stringify(l.pingsSrv));else delete l.pings;save();psetRe()}
-    toast(`Couldn’t save the ${l.name} notification settings: ${friendly(e)}. Nothing changed for the league, and the screen is back to what it has. Try again when you have signal.`,'bad')}},500)}
+    toast(e&&e.badReply?SAYBAD(`The ${l.name} notification settings`):`Couldn’t save the ${l.name} notification settings: ${friendly(e)}. Nothing changed for the league, and the screen is back to what it has. Try again when you have signal.`,'bad')}},500)}
 async function psetFresh(l){if(!l||PSET_LOAD.has(l.id))return;PSET_LOAD.add(l.id);psetRe();try{const d=await api(l,'');takeState(l,d);save()}catch(e){}finally{PSET_LOAD.delete(l.id);psetRe()}}   // the league's own copy first (another device may have changed it)
 function pushBlock(l){   // Settings → Me → Notifications: this person's pings, on this device and their others
   if(!pushWanted(l))return'';const help=pushHelp();
@@ -5886,8 +5886,8 @@ function mActs(actions){   // idea 6, one sheet pattern: handle, title, body, ON
 const mRows=actions=>{const r=actions.map((a,i)=>a.row&&!a.hide?`<button type="button" class="m-row${/\bdanger\b/.test(a.cls||'')?' danger':''}" data-act="modal-action" data-i="${i}">${mn(h(a.label))}<i aria-hidden="true">›</i></button>`:'').join('');return r?`<div class="m-rows">${r}</div>`:''}
 /* idea 6: a swipe down on a sheet (from its handle and title, or from the top of its body) closes it, the way the × does; a sheet that must be answered ignores it, and a box someone is typing in is never dragged */
 let SW=null;
-function swStart(t,x,y,now){const root=document.getElementById('modal-root'),m=t&&t.closest&&t.closest('#modal-root .modal');if(!m||!root||!root._open||root._required||(t.closest('input,textarea,select,[contenteditable]'))){SW=null;return}SW={m,x,y,t:now,dy:0,live:false,body:t.closest('.modal-body')?m.querySelector('.modal-body'):null}}
-function swMove(x,y){if(!SW)return false;const dy=y-SW.y,dx=x-SW.x;if(!SW.live){if(dy>8&&dy>Math.abs(dx)*1.5&&(!SW.body||SW.body.scrollTop<=0)){SW.live=true;SW.m.style.transition='none'}else{if(Math.abs(dx)>10||dy<-6)SW=null;return false}}SW.dy=Math.max(0,dy);SW.m.style.transform=`translateY(${SW.dy}px)`;return true}
+function swStart(t,x,y,now){const root=document.getElementById('modal-root'),m=t&&t.closest&&t.closest('#modal-root .modal');if(!m||!root||!root._open||root._required||(t.closest('input,textarea,select,[contenteditable]'))){SW=null;return}SW={m,x,y,t:now,dy:0,live:false,body:t.closest('.modal-body')?m.querySelector('.modal-body'):null};SW.top=!SW.body||SW.body.scrollTop<=0}
+function swMove(x,y){if(!SW)return false;const dy=y-SW.y,dx=x-SW.x;if(!SW.live){if(SW.top&&dy>8&&dy>Math.abs(dx)*1.5&&(!SW.body||SW.body.scrollTop<=0)){SW.live=true;SW.m.style.transition='none'}else{if(Math.abs(dx)>10||dy<-6)SW=null;return false}}SW.dy=Math.max(0,dy);SW.m.style.transform=`translateY(${SW.dy}px)`;return true}
 function swEnd(now){const s=SW;SW=null;if(!s||!s.live)return false;const v=s.dy/Math.max(1,now-s.t),m=s.m;m.style.transition='transform var(--sheet-out) var(--ease)';
   if(s.dy>96||(s.dy>32&&v>.5)){m.style.transform=`translateY(${(typeof innerHeight==='number'?innerHeight:800)}px)`;closeModal();return true}
   m.style.transform='';setTimeout(()=>{m.style.transition=''},250);return false}
