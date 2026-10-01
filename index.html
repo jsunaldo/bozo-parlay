@@ -28,7 +28,7 @@
   --font:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,"Helvetica Neue",Helvetica,Arial,sans-serif;
   --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,monospace;
   --num:ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;   /* ONE number voice (UX-LESSONS idea 7): every price, stake and total is rounded and tabular; --mono is for the boxes people type in (and the link code) only */
-  --n1:14px;--n2:19px;--n3:22px;--n4:40px;   /* the four number sizes: rows, tiles, the live stat and the ticket's foot, a hero (kept for the one that needs it) */
+  --n1:14px;--n2:19px;--n3:22px;--n4:40px;--n5:64px;   /* the number sizes: rows, tiles, the live stat and the ticket's foot, This Week's hero, and (the Sweat sheet alone) 64 px */
   --ease:cubic-bezier(.2,.8,.2,1);--sheet-in:.3s;--sheet-out:.2s;   /* one easing curve and one sheet timing everywhere (idea 11) */
 }
 @media(prefers-color-scheme:dark){:root{--bg:#000;--surface:#1c1c1e;--surface2:#2c2c2e;--surface3:#3a3a3c;--line:rgba(255,255,255,.1);--line2:rgba(255,255,255,.18);--text:#f5f5f7;--muted:#98989d;--dim:#8e8e93;--on-green:#06230f;--amber-tx:var(--amber);--glass:rgba(28,28,30,.78);--green:#30d158;--red:#ff453a;--red-fill:#d70015;--pace-red:#ff453a;--red-tx:#ff8a80;--amber:#ffd60a;--blue:#0a84ff;--pink:#ff375f;--purple:#bf5af2;--green-bg:rgba(48,209,88,.16);--red-bg:rgba(255,69,58,.16);--amber-bg:rgba(255,214,10,.14);--blue-bg:rgba(10,132,255,.16);--shadow:0 1px 2px rgba(0,0,0,.4),0 4px 16px rgba(0,0,0,.35);--shadow-lg:0 16px 48px rgba(0,0,0,.6)}}
@@ -292,7 +292,36 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .lv-skel{display:block}.lv-sk-tag{width:30%;height:16px;margin:2px 0}.lv-sk-row{align-items:flex-start;padding-top:2px}.lv-sk-bar{height:8px;margin:18px 0 4px;border-radius:980px}.lv-sk-sub{display:block;margin-top:2px;height:15px}.lv-sk-sub .sk{margin-top:2px}
 @media(prefers-reduced-motion:reduce){.sk,.sk-txt,.bap-wait .bap-row:not(.bap-ko):not(.bap-side) .bap-cell:disabled,.bap-wait .bap-num>.bap-p:empty,.stag.none.sk-chip{animation:none;background:var(--surface3)}.lv.num.chg{animation:none;background:var(--amber-bg)}}   /* reduced motion: a flat grey bar; the changed number stays tinted */
 .stag.k-dash{background:transparent;color:var(--muted);border:1px dashed currentColor;padding:3px 8px}.stag.k-dash.pace-up,.lv-tag.k-dash.pace-up{color:var(--green)}.stag.k-dash.pace-down,.lv-tag.k-dash.pace-down{color:var(--pace-red)}.srow .stag.even,.srow .stag.sweat{color:var(--amber-tx)}.lvline .lv{margin-top:0}
-.lvbanner{margin:0 16px 10px;padding:9px 12px;border-radius:12px;background:rgba(48,209,88,.12);display:flex;flex-direction:column;gap:2px;font-size:13px}.lvbanner.dead{background:rgba(255,69,58,.12)}.lvbanner span{color:var(--muted);font-size:12px}
+/* This Week's hero: one number and the one thing you owe the week (centred; the number never animates, a changed one gets the 600 ms tint). The tone is on the number only, always beside its words */
+.hero-wk{text-align:center;padding:2px 0 16px}
+.hw-eye{font-size:13px;font-weight:600;color:var(--muted);display:flex;justify-content:center;align-items:center;gap:6px;flex-wrap:wrap}.hw-eye .bozo-name{color:var(--text)}.hw-eye .mini{min-width:44px;min-height:44px}
+.hw-num{font-family:var(--num);font-size:var(--n4);font-weight:800;letter-spacing:-.04em;line-height:1.05;font-variant-numeric:tabular-nums;margin:8px 0 4px;display:flex;align-items:baseline;justify-content:center;gap:8px;flex-wrap:wrap;color:var(--text)}
+.hw-num small{font-family:var(--font);font-size:15px;font-weight:600;letter-spacing:-.01em;color:var(--muted)}.hw-num .sk-txt{display:inline-block}
+.hero-wk.won .hw-num{color:var(--green)}.hero-wk.lost .hw-num{color:var(--red-tx)}.hero-wk.sweat .hw-num{color:var(--amber-tx)}.hw-num.chg{border-radius:8px;animation:chg .6s var(--ease)}
+.hw-sub{font-size:14px;color:var(--muted);line-height:1.45;text-wrap:balance;max-width:340px;margin:0 auto;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}.hw-sub b{color:var(--text);font-weight:600}
+.hw-act{margin-top:12px}.hw-act .btn{min-height:48px;width:100%;white-space:normal}
+.sk-pg .hero-wk .sk{margin:8px auto 0}
+/* the league's status card: a green, amber or red row for each thing the app knows, with the fix in words */
+.lgstat{display:flex;flex-direction:column;gap:6px;margin-top:12px}.lgstat.red{margin:0 0 14px}.lgstat.red .st{box-shadow:inset 0 0 0 1px var(--line2)}   /* under the hero the rows sit on the page's own grey: a hairline gives them an edge in light mode */
+.st{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:9px 10px;border-radius:12px;background:var(--surface2)}
+.st>i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:var(--dim)}.st.ok>i{background:var(--green)}.st.warn>i{background:var(--amber)}.st.bad>i{background:var(--red)}
+.st>span{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}.st>span small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}.st.bad>span small{color:var(--text)}
+.st .go{flex:none;align-self:center;font:inherit;font-size:13px;font-weight:600;color:#0066cc;min-height:44px;min-width:44px;display:grid;place-items:center;padding:0 2px 0 8px;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}.st .go:active{opacity:.6}@media(prefers-color-scheme:dark){.st .go{color:#5aa9ff}}   /* --blue is 4.3:1 on a row's grey (3.8:1 in dark): these two read 5.1:1 and 5.7:1 */
+.stag.todo{background:var(--amber-bg);color:var(--amber-tx)}.stag.set{background:var(--green-bg);color:var(--green)}.stag.broke{background:var(--red-bg);color:var(--red-tx)}
+/* The Sweat: a sheet (the one sheet pattern), the last leg's number at 64 px, the bar with the line on it, the clock, and what everyone collects if it hits. No motion of its own */
+.sweatv{text-align:center;padding:10px 0 4px}
+.sw-eye{font-size:13px;font-weight:600;color:var(--muted)}
+.sw-leg{font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.25;color:var(--text);margin:8px 0 4px;text-wrap:balance;overflow-wrap:anywhere}
+.sw-who{font-size:13px;color:var(--muted);display:flex;justify-content:center;gap:6px;flex-wrap:wrap}.sw-who .lv-score{order:0;font-size:13px}
+.sw-num{font-family:var(--num);font-size:var(--n5);font-weight:800;letter-spacing:-.05em;line-height:1;font-variant-numeric:tabular-nums;margin:22px 0 0;display:flex;align-items:baseline;justify-content:center;gap:8px;flex-wrap:wrap;color:var(--text)}
+.sw-num small{font-family:var(--font);font-size:17px;font-weight:600;letter-spacing:-.01em;color:var(--muted)}.sw-num.words{font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1.2;text-wrap:balance}
+.sw-num.up,.sw-num.hit{color:var(--green)}.sw-num.down,.sw-num.miss{color:var(--red-tx)}.sw-num.even,.sw-num.push{color:var(--amber-tx)}.sw-num.chg{border-radius:8px;animation:chg .6s var(--ease)}
+.sweatv .lv-bar{height:12px;margin:26px 0 6px}.sweatv .lv-bar .lv-tick{top:-5px;height:22px}.sweatv .lv-bar .lv-tick[data-l]::after{font-size:12px}
+.sw-ck{font-size:14px;color:var(--muted);margin-top:8px;text-wrap:balance;font-variant-numeric:tabular-nums}.sw-ck b{color:var(--text);font-weight:700}
+.sw-money{margin:20px 0 0;padding:14px 12px 12px;border-radius:16px;background:var(--surface2)}.sw-money .ln{font-size:15px;color:var(--text);text-wrap:balance}.sw-money .ln b{font-family:var(--num);font-size:var(--n2);font-weight:700;font-variant-numeric:tabular-nums;margin-left:6px}
+.faces{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:10px}.faces .avatar{width:32px;height:32px;font-size:11px}
+.sw-foot{font-size:12px;color:var(--muted);margin-top:14px}
+@media(prefers-reduced-motion:reduce){.hw-num.chg,.sw-num.chg{animation:none;background:var(--amber-bg)}}
 .chk-list{display:flex;flex-direction:column;gap:8px}
 .chk-row{background:var(--surface2);border-radius:10px;padding:9px 11px;display:flex;flex-direction:column;gap:3px}
 .chk-top{display:flex;align-items:center;gap:8px}.chk-top b{flex:1;min-width:0}
@@ -420,7 +449,7 @@ button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.
 .ticket-foot{padding:18px 18px 16px;border-top:1px dashed var(--line2);position:relative;background:var(--surface2)}
 .ticket-foot::before,.ticket-foot::after{content:'';position:absolute;top:-11px;width:22px;height:22px;border-radius:50%;background:var(--bg);border:1px solid var(--line)}
 .ticket-foot::before{left:-11px}.ticket-foot::after{right:-11px}
-.ticket-foot.placed-top{border-top:0;border-bottom:1px dashed var(--line2);margin-top:6px}.ticket-foot.placed-top::before,.ticket-foot.placed-top::after{top:auto;bottom:-11px}   /* not .top: that's the app header's sticky row */
+.ticket-foot.slim{padding:14px 18px 14px}.ticket-foot.slim:not(:has(*)){display:none}.ticket-foot.slim #f-dk:empty+.foot-actions{margin-top:0}.foot-stake{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--muted)}.foot-stake .inline-num{width:72px}.dk-go+.foot-stake,#f-dk:empty+.foot-stake{margin-top:0}.placed-slim .placed-sum{margin-top:0;border-top:0;padding-top:2px}.ticket-foot.placed-top{border-top:0;border-bottom:1px dashed var(--line2);margin-top:6px}.ticket-foot.placed-top::before,.ticket-foot.placed-top::after{top:auto;bottom:-11px}   /* not .top: that's the app header's sticky row */
 .placed-top .foot-grid{cursor:pointer}
 .placed-sum{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;border:0;border-top:1px solid var(--line);background:none;margin-top:12px;padding:10px 0 2px;color:var(--text);font:inherit;font-size:14px;text-align:left;cursor:pointer}.ps-main{display:flex;flex-direction:column;gap:2px;min-width:0}.ps-main b{font-weight:600}.ps-main small{font-size:12px;color:var(--muted)}.placed-sum .ps-more{color:var(--blue);font-size:12px;flex:none}
 .placed-top .placed-bar{margin:6px 0 4px}
@@ -1153,8 +1182,9 @@ async function pushCheck(){if(!PUSH.ok)return;let reg=null;try{reg=await navigat
     else if(l.me&&l.person&&!(l.person.push||[]).some(x=>x.dev===DEV_ID&&x.fp)&&!devTagged.has(l.id)){devTagged.add(l.id);const d=await api(l,'/push/subscribe',{method:'POST',body:{subscription:PUSH.sub.toJSON(),memberId:l.me,app:appUrl(l),device:deviceName(),dev:DEV_ID,fp:HW_FP}});if(mergePerson(l,d.person))save()}}catch(e){}}   // turned on before devices were tracked: tag it as this one
   softRender()}
 function pushPitch(l){const p=pingsOf(l);const bits=[p.reveal?'a ping the moment the votes are in':'',p.pick.on||p.vote.on?'a reminder when you still owe a pick or vote':''].filter(Boolean);return bits.length?'Get '+bits.join(', and ')+'.':'Get the league’s pings on this device.'}
-function pushCard(){
+function pushCard(o){   // o.week: This Week draws a blocked-notifications red row under the hero already, so it is said once there
   const l=league();if(!pushWanted(l)||pushOnHere(l)||l.guest||pushWait())return'';
+  if(o&&o.week&&pushDenied()&&l.sync)return'';
   if(l.me&&(l.pushWho||{})[l.me]>0)return'';   // pings already reach one of their devices: Settings → Me offers this one too
   let later=(l.person&&l.person.pushLater)||0;try{later=Math.max(later,+localStorage.getItem('bp-push-later:'+l.sync.id)||0)}catch(e){}if(Date.now()-later<3*86400e3)return'';
   const help=pushHelp();
@@ -1350,7 +1380,7 @@ function applyState(l,d,ro){   // ro: a read-only look (Refresh on a phone that 
   if(league()===l){S=season().data;ALLTIME=null;if(quiet()){hsLand();try{dkSync()}catch(e){}}}   // the page waits (someone is typing): the pick search's results, and an open Export to DraftKings sheet (a tick box focused on it counts as typing), follow the league at once all the same
   if(v0){const v1=JSON.stringify(refreshView());if(v1!==v0){leagueMoves++;leagueView=v1}}
 }
-function setSyncDot(state){dotN++;const d=document.getElementById('syncDot');if(!d)return;const l=league();d.className='syncdot '+(l.sync?state:'off');d.title={ok:'Up to date',bad:'Couldn’t update. Your changes are safe on this phone',busy:'Updating…',waiting:'Changes are waiting to be saved. They are safe on this phone'}[state]||''}
+function setSyncDot(state,why){dotN++;const d=document.getElementById('syncDot');if(!d)return;const l=league();try{if(state==='bad'&&why)SYNC_WHY.set(l.id,why);else if(state!=='busy')SYNC_WHY.delete(l.id)}catch(e){}d.className='syncdot '+(l.sync?state:'off');d.title={ok:'Up to date',bad:'Couldn’t update. Your changes are safe on this phone',busy:'Updating…',waiting:'Changes are waiting to be saved. They are safe on this phone'}[state]||'';if(state==='ok'&&l.sync)SYNC_AT.set(l.id,Date.now());try{lgPaint()}catch(e){}}   // the status card's sync row follows the dot
 const pushTs={};const pushTof=l=>l&&pushTs[l.id]||null;const clearPushT=l=>{if(l&&pushTs[l.id]){clearTimeout(pushTs[l.id]);delete pushTs[l.id]}};const anyPushT=()=>!!Object.keys(pushTs).length;
 let pendingPick=null,pullBusy=false;
 const videoPlaying=()=>[...document.querySelectorAll('video')].some(v=>!v.paused&&!v.ended);
@@ -1490,7 +1520,7 @@ async function push1(l,retried,clash){
       if(!retried){const st=e.data.state;const dd=l.setDirty||{};if(!dd.name&&st.name)l.name=st.name;if(!dd.clubName&&st.clubName!==undefined)l.clubName=st.clubName||'';if(!dd.mondayOk&&st.mondayOk!==undefined)l.mondayOk=!!st.mondayOk;if(!l.featDirty&&st.features)l.features=st.features;   // settings this device didn't touch: the league's
         const c=mergeLeague(l,e.data.state);mergeMemberEdits(l,e.data.state);l.sync.rev=e.data.state.rev;if(e.data.state.updatedAt)l.sync.base=e.data.state.updatedAt;l.sync.wh=syncSigs((e.data.state.seasons||[]).filter(x=>x&&SAFE_ID.test(x.id)).map(x=>({...x,data:migrate(JSON.parse(JSON.stringify(x.data||fresh())))})));save();return push(l,true,c)}   // someone else acted meanwhile: keep both
       applyState(l,e.data.state);delete l.sync.dirty;delete l.logoAt;save();render();toast('Someone else changed the league at the same moment — reloaded it. Redo your last edit.','bad')}
-    else if(e.status===403||e.status===404){setSyncDot('bad');const first=!l.sync.stuck;l.sync.stuck=Date.now();save();
+    else if(e.status===403||e.status===404){const first=!l.sync.stuck;l.sync.stuck=Date.now();save();setSyncDot('bad');   // the status card reads the cause when the dot goes red, so it is set first
       if(first)toast(`${l.name} can’t be reached from this phone any more, so your last change stayed here. Nothing on this phone was lost. Open Settings → Me → My leagues: take it off the list if it was deleted on purpose, or add it again with a code from one of your other phones.`,'bad')}
     else{setSyncDot('bad');toast(e.status?'The league didn’t take that change, so it is only on this phone for now. Nothing was lost. Try again in a moment, and if it keeps happening close the app and open it again.':'No signal, so your change is only on this phone for now. Nothing was lost: it goes up on its own as soon as you are back online.','bad')}}
 }
@@ -1530,7 +1560,7 @@ async function sendPick0(l,w,mid,quietly,auto){   // a member's own pick: it wai
       modal({title:'Picks lock at kickoff',body:`<p style="margin:0 0 10px">${h(friendly(e))}.</p>${late?`<p style="margin:0 0 10px">${e.data.unsure?'You typed it before this week’s first kickoff, but it only reached the league after that game had kicked off':'You typed it before kickoff, but it only reached the league after the game had kicked off'} (this phone couldn’t reach the league until then), so it can’t count: the league goes by when it gets a change.</p>`:''}${rj?`<p class="tiny muted" style="margin:0 0 4px">What you typed, so you can send it to the commissioner:</p><div class="mono code" style="padding:10px;border-radius:10px;background:var(--surface2);user-select:all">${h(rj)}</div>`:''}`,actions:[...(rj?[{label:'Copy it',cls:'ghost',onClick:()=>{copyText(rj);return false}}]:[]),{label:'OK',cls:'primary'}]});pull(l,false,true)}
     else if(e.status===423&&e.data&&e.data.placed){delete l.outbox[k];save();setSyncDot('ok');const rj=String(e.data.rejected||'').trim();
       modal({title:'Picks are locked',body:`<p style="margin:0 0 10px">${h(friendly(e))}.</p>${rj?`<p class="tiny muted" style="margin:0 0 4px">What you typed, so you can send it:</p><div class="mono code" style="padding:10px;border-radius:10px;background:var(--surface2);user-select:all">${h(rj)}</div>`:''}`,actions:[...(rj?[{label:'Copy it',cls:'ghost',onClick:()=>{copyText(rj);return false}}]:[]),{label:'OK',cls:'primary'}]});pull(l,false,true)}
-    else if(e.status>=400&&e.status<500&&e.status!==408&&e.status!==429){delete l.outbox[k];save();setSyncDot('bad');toast((e.status===423?'Too late: ':'')+friendly(e)+'. Your pick was NOT '+(clr?'cleared':'saved')+'. '+(e.status===423?'Picks are closed for this week. If the recorded pick needs correcting, ask the commissioner.':e.status===403?'Check your name at the top, then ask the commissioner to help with this pick.':'Pull down to refresh, or tap Refresh in Settings → League, then open the pick and try again.'),'bad');pull(l,false,true)}   // the league said no: show the league's copy
+    else if(e.status>=400&&e.status<500&&e.status!==408&&e.status!==429){delete l.outbox[k];save();setSyncDot('bad','rejected');toast((e.status===423?'Too late: ':'')+friendly(e)+'. Your pick was NOT '+(clr?'cleared':'saved')+'. '+(e.status===423?'Picks are closed for this week. If the recorded pick needs correcting, ask the commissioner.':e.status===403?'Check your name at the top, then ask the commissioner to help with this pick.':'Pull down to refresh, or tap Refresh in Settings → League, then open the pick and try again.'),'bad');pull(l,false,true)}   // the league said no: show the league's copy
     else if(e.badReply){setSyncDot('bad');if(!quietly)toast(clr?'Your pick isn’t cleared in the league yet: the league didn’t answer properly. Nothing was lost: the clear is still waiting on this phone and goes up on its own in a moment. Do this: if it is still there after a minute, pull down to refresh, then open the pick and tap Clear pick again.':'Your pick isn’t confirmed in the league yet: the league didn’t answer properly. Nothing was lost: it is still on this phone and goes up on its own in a moment. Do this: if the group can’t see it after a minute, pull down to refresh, then open the pick and save it again.','bad');softRender()}
     else{setSyncDot('bad');if(!quietly)toast(clr?'No signal, so your pick isn’t cleared in the league yet. It clears on its own as soon as you have signal.':'No signal, so your pick is only on this device for now. It goes up on its own as soon as you have signal.','bad');softRender()}}
 }
@@ -2377,7 +2407,7 @@ function paintHead(){document.getElementById('seasonLabel').textContent=withStat
   const bl=document.getElementById('brandLogo');if(bl){const u=leagueLogo();if(bl.dataset.src!==u){bl.dataset.src=u;bl.style.backgroundImage=`url("${u}")`}}
   const st=withStats(()=>S.weeks.length?stats().g:null);   // the league's record and money for what's on screen: All-time on Stats and History when All-time is chosen (Jason 09-25: it stayed on the last season), else the season shown
   document.getElementById('topRight').innerHTML=st?`<span class="badge ${st.paid-st.staked>=0?'won':'lost'}" style="font-size:11px">${st.won}–${st.lost} · ${fmt$0(st.paid-st.staked)}</span>`:''}
-const BAL_SETS=[['flow','.subavs,.pw-chips,.hs-chips,.bap-bubs,.gb-chips,.legend,.swatches,.chiprow,.rbdg'],['fill','.foot-actions,.srow .edit>.erow:last-child,.fitchips,.skiprow'],['grid','.fb-grid,.bap-players,.awards,.gb-awards,.teamgrid,.bdgs']],BAL_ALL=BAL_SETS.map(x=>x[1]).join(','),BAL_NAMES='.fb-grid',BAL_ANY='.skiprow';   // Jason's balanced rows (2026-09-25, AGENTS.md): every set of equal items that wraps into rows. flow: chips, avatars and buttons at their own width, left to right; fill: buttons and chips whose rows fill the width (a lone last one spans it); grid: card grids, as many to a row as their CSS columns allow
+const BAL_SETS=[['flow','.subavs,.faces,.pw-chips,.hs-chips,.bap-bubs,.gb-chips,.legend,.swatches,.chiprow,.rbdg'],['fill','.foot-actions,.srow .edit>.erow:last-child,.fitchips,.skiprow'],['grid','.fb-grid,.bap-players,.awards,.gb-awards,.teamgrid,.bdgs']],BAL_ALL=BAL_SETS.map(x=>x[1]).join(','),BAL_NAMES='.fb-grid',BAL_ANY='.skiprow';   // Jason's balanced rows (2026-09-25, AGENTS.md): every set of equal items that wraps into rows. flow: chips, avatars and buttons at their own width, left to right; fill: buttons and chips whose rows fill the width (a lone last one spans it); grid: card grids, as many to a row as their CSS columns allow
 function balWrap(ws,W,G){const out=[];for(let i=0,n=ws.length;i<n;){let k=1,x=ws[i];while(i+k<n&&x+G+ws[i+k]<=W+.01)x+=G+ws[i+k++];out.push(k);i+=k}return out}   // rows as the page wraps them on its own: as many to a row as fit, in order
 function balRows(ws,W,G){const n=ws.length,R=balWrap(ws,W,G).length;if(R<2)return n?[n]:[];const fits=(i,k)=>{let x=(k-1)*G;for(let j=i;j<i+k;j++)x+=ws[j];return k<2||x<=W+.01},lex=(a,b)=>{for(let j=0;j<a.length;j++)if(a[j]!==b[j])return b[j]-a[j];return 0},best=(lo,hi,ff)=>{const c=k=>(k<2&&hi>1?1e6:0)+k*k,m=new Map(),f=(i,r,cap)=>{if(!r)return i===n?0:1/0;const key=(i*(n+1)+r)*(n+1)+cap;if(!m.has(key)){let v=1/0;for(let k=Math.min(cap,n-i);k>=lo;k--)if(fits(i,k))v=Math.min(v,c(k)+f(i+k,r-1,ff?k:hi));m.set(key,v)}return m.get(key)},v=f(0,R,hi);if(v===1/0)return null;const rows=[];for(let i=0,r=R,cap=hi,t=v;r;r--)for(let k=Math.min(cap,n-i);k>=lo;k--)if(fits(i,k)&&c(k)+f(i+k,r-1,ff?k:hi)===t){rows.push(k);t-=c(k);i+=k;cap=ff?k:hi;break}return{v,rows,ff}};   /* best(lo,hi): the split into R rows of lo to hi items that fit, with the fewest rows of one item alone (when some row holds more), then the most even sizes (the least sum of squares), then (ff) fuller rows first, then the fuller rows earliest: an exact search over every split in order, remembered as it goes */for(let d=0;d<n;d++){let w=null;for(let lo=Math.max(1,Math.ceil(n/R)-d);lo*R<=n;lo++){const A=best(lo,lo+d,0);if(!A)continue;const B=best(lo,lo+d,1),p=B&&B.v===A.v?B:A;if(!w||p.v<w.v||p.v===w.v&&(p.ff>w.ff||p.ff===w.ff&&lex(p.rows,w.rows)<0))w=p}if(w)return w.rows}return balWrap(ws,W,G)}   // the same number of rows as the page's own wrapping (the fewest that fit), chosen exactly: rows that differ by as few items as the widths allow (by one at most when they can), then no row with one item alone where that can be avoided, then fuller rows first. 11 with room for 10 → 6+5, 7 with room for 4 → 4+3, 13 with room for 5 → 5+4+4; Skip buttons of different widths 3+2+2+1, never 3+3+1+1
 function balAny(ws,W,G){const n=ws.length;if(n<3||n>10)return null;const N=1<<n,sm=new Float64Array(N),ct=new Uint8Array(N),ok=new Uint8Array(N),fw=new Uint8Array(N).fill(255),subs=(m,cb)=>{const b=m&-m,rest=m^b;for(let s=rest;;s=(s-1)&rest){cb(s|b);if(!s)break}};for(let m=1;m<N;m++){const b=31-Math.clz32(m&-m),p=m&(m-1);sm[m]=sm[p]+ws[b];ct[m]=ct[p]+1;ok[m]=ct[m]<2||sm[m]+(ct[m]-1)*G<=W+.01?1:0}fw[0]=0;for(let m=1;m<N;m++)subs(m,t=>{if(ok[t]&&fw[m^t]+1<fw[m])fw[m]=fw[m^t]+1});const R=fw[N-1];if(R<2)return null;let w=null;for(let d=0;d<n&&!w;d++)for(let lo=Math.max(1,Math.ceil(n/R)-d);lo*R<=n;lo++){const hi=lo+d,c=k=>(k<2&&hi>1?1e6:0)+k*k,F=new Float64Array(N*(R+1)).fill(-1),f=(m,r)=>{if(!r)return m?1/0:0;const x=m*(R+1)+r;if(F[x]<0){let v=1/0;subs(m,t=>{const k=ct[t];if(ok[t]&&k>=lo&&k<=hi){const u=c(k)+f(m^t,r-1);if(u<v)v=u}});F[x]=v}return F[x]},v=f(N-1,R);if(v<1/0&&(!w||v<w.v))w={v,lo,hi,c,f}}if(!w)return null;const key=rs=>{const mx=Math.max(...rs);return[rs.length,mx-Math.min(...rs),mx>1?rs.filter(k=>k<2).length:0,rs.reduce((a,k)=>a+k*k,0),rs.every((k,j)=>!j||k<=rs[j-1])?0:1]},lt=(a,b)=>{for(let j=0;j<a.length;j++)if(a[j]!==b[j])return a[j]<b[j];return false};if(!lt([R,w.hi-w.lo,Math.floor(w.v/1e6),w.v%1e6,0],key(balRows(ws,W,G))))return null;let bo=null,br=null,cnt=0;const acc=[],walk=(m,r)=>{if(cnt>5000)return;if(!r){cnt++;const bl=acc.map(t=>{const ix=[];for(let j=0;j<n;j++)if(t>>j&1)ix.push(j);return ix}).sort((a,b)=>b.length-a.length||a[0]-b[0]),o=bl.flat();if(!bo||lt(o,bo)){bo=o;br=bl.map(x=>x.length)}return}subs(m,t=>{const k=ct[t];if(ok[t]&&k>=w.lo&&k<=w.hi&&w.c(k)+w.f(m^t,r-1)===w.f(m,r)){acc.push(t);walk(m^t,r-1);acc.pop()}})};walk(N-1,R);return br?{order:bo,rows:br}:null}   // a set in no set order (BAL_ANY: the commissioner's Skip buttons): when its buttons pair better out of the order they came in, the order that pairs them. Every way to group them (up to ten) is weighed: the fewest rows any grouping needs, then rows that differ least, then the fewest rows of one button alone (a button is left alone only when it fits beside no other one that is free), then the most even; fuller rows first. Of the groupings that do best, the one that reads closest to the order they came in (the earliest in that order, button by button). null: their own order does as well (balRows splits them in it). 320 px: "Skip Christopher · Skip Bartholomew · Skip Casey · Skip Eli" are Christopher and Casey, Bartholomew and Eli (2+2), not 1+1+2
@@ -2421,13 +2451,192 @@ function skPage(v){   // the page that is coming, at its usual shape: This Week'
   const card=n=>`<section class="sk-card">${skB('35%',12)}${Array.from({length:n},()=>`<div class="sk-line">${skB('36px',36,1)}${skB('60%',16)}</div>`).join('')}</section>`;
   const inner=v==='history'?skTiles()+[0,1,2,3,4,5].map(()=>`<div class="wk"><div class="wk-l">${skB('46px',34)}<div>${skB('130px',16)}<div style="height:5px"></div>${skB('90px',12)}</div></div><div class="wk-r">${skB('64px',14)}${skB('48px',12)}</div></div>`).join('')
     :v==='stats'?skTiles()+card(5)
-    :v==='week'?`<div class="week-nav">${skB('38px',38,1)}<div class="week-title">${skB('150px',30)}</div>${skB('38px',38,1)}</div><section class="ticket"><div class="ticket-head">${skB('110px',11)}${skB('55%',22)}</div><div class="legs slip">${[0,1,2,3,4].map(skLeg).join('')}</div></section>`
+    :v==='week'?`<div class="week-nav">${skB('38px',38,1)}<div class="week-title">${skB('150px',30)}</div>${skB('38px',38,1)}</div><div class="hero-wk">${skB('40%',13)}${skB('56%',40)}${skB('80%',14)}${skB('100%',48)}</div><section class="ticket"><div class="ticket-head">${skB('110px',11)}${skB('55%',22)}</div><div class="legs slip">${[0,1,2,3,4].map(skLeg).join('')}</div></section>`
     :card(3);
   return`<div class="sk-pg">${skRegion('Loading the league…',inner)}</div>`}
 function lgFail(){return`<div class="empty sk-fail" role="alert"><div class="empty-ic">🤡</div><b>Couldn’t load the league</b><p class="muted">Nothing was lost, and nothing here has changed. Do this: check your signal or Wi-Fi, then tap Try again (or pull down). This page fills in by itself as soon as the league answers.</p><button class="btn primary" data-act="sync-now">Try again</button></div>`}
 function skArm(){if(!lgT)lgT=setTimeout(()=>{lgT=null;const x=league();if(unread(x)){LEAGUE_FAIL.add(x.id);softRender()}},20e3)}   // no answer in 20 s counts as none, on every page that waits (Settings too; reviewer 10-01)
 function lgPending(v){const l=league();if(LEAGUE_FAIL.has(l.id))return lgFail();skArm();return skPage(v)}   // no answer in 20 s counts as none: the placeholders turn into the plain words and the way to get going (and fill in by themselves if the league answers late)
 
+/* ---- This Week opens on one number and the one thing you owe the week (the hero), the league's status card, and The Sweat (docs: ux-specs/thisweek-hero.md, Jason 2026-10-01 "Mock up approved"). Presentation only: every button keeps its own action, nothing is saved or sent. ---- */
+const mnyC=n=>Math.abs(n-Math.round(n))<.005?fmt$0(n):fmt$(n);   // $10, $340, $56.67: whole dollars say no cents
+const HERO_LAST=new Map();   // the hero's words as render() last drew them, so a repaint of the same words leaves the page (and a focused button) alone
+function liveCounts(w,prepared){   // where every leg stands in the games, the way the slip's live rows read them: {k: counts, killed: who missed, live: anything to read}, or null with no scores to read
+  if(!sweatable(w))return null;const R=RESULTS[checkDate(w)];if(!R)return null;
+  const k={hit:0,hitting:0,onpace:0,sweat:0,pushing:0,early:0,offpace:0,missing:0,miss:0,push:0,play:0,hand:0};const killed=[];const cl0=prepared||{nfl:weekNfl(w),live:{}};
+  const CODE={HIT:'hit',MISS:'miss',PUSH:'push',HITTING:'hitting',ONPACE:'onpace',SWEAT:'sweat',PUSHING:'pushing',EARLY:'early',OFFPACE:'offpace',MISSING:'missing'};
+  for(const[mid,p]of Object.entries(w.picks)){if(!member(mid)||!String(p.text||'').trim())continue;
+    if(p.status!=='pending'){if(p.status==='miss')killed.push(mid);k[p.status==='miss'?'miss':p.status==='push'?'push':'hit']++;continue}
+    const v=(cl0.live[mid]||legLive(w,{mid,...p},cl0)).v;if(!v){k.play++;continue}
+    if(v.code==='MISS')killed.push(mid);
+    if(v.code==='HAND'){k.play++;if(v.over)k.hand++;continue}
+    if(v.code==='PRE'||v.code==='GRADING'||v.code==='WAITSTATS'){k.play++;continue}
+    k[CODE[v.code]]++}
+  return{k,killed,R,live:!!(k.hit||k.miss||k.push||(k.hitting+k.onpace+k.sweat+k.pushing+k.early+k.offpace+k.missing))}}
+const lcBits=k=>[k.hitting&&`${k.hitting} hitting`,k.onpace&&`${k.onpace} on pace`,k.sweat&&`${k.sweat} sweating`,k.pushing&&`${k.pushing} pushing`,k.early&&`${k.early} not there yet`,k.offpace&&`${k.offpace} off pace`,k.missing&&`${k.missing} missing`,k.push&&`${k.push} push`,k.play&&`${k.play} to play`,k.hand&&`${k.hand} to grade by hand`].filter(Boolean).join(' \xB7 ');   // the live counts in the order the banner said them, less "hit" (the number is that) and "missed" (the line names who)
+function heroPicks(w,c){   // pickStatus's own count: a benched player's blank leg is nobody's job
+  const ben=c.legs.filter(x=>!String(x.text||'').trim()&&x.mid!==w.bozoId&&member(x.mid)?.active===false);
+  const missing=c.legs.filter(x=>!String(x.text||'').trim()&&!ben.includes(x));const tot=c.n-ben.length;return{missing,tot,inN:tot-missing.length}}
+function heroState(w,c,lc){   // which of the nine states this slip is in (first match wins), or null for a slip with nothing on it
+  if(!w||!c||!c.n)return null;
+  if(c.graded)return{won:'cashed',lost:'busted',void:'void'}[c.result]||null;
+  if(c.result==='lost')return'dead';
+  if(w.placed){if(lc===undefined)lc=liveCounts(w);if(lc&&lc.k.miss)return'dead';return lc&&lc.live?'live':'placed'}
+  if(w.locked)return'locked';const P=heroPicks(w,c);if(!P.tot)return null;return P.missing.length?'picks':'ready'}
+function heroKick(w){   // the first kickoff of the slip's day that is still to come ("Sun 1:00 PM"), or '' while the schedule is not here
+  try{const nfl=nflOk(slipNfl(w))||weekNflPeek(w);if(!nfl)return'';const rule=dayRule(isSide(w)?(parentOf(w)||w):w);const ts=(nfl.games||[]).filter(g=>guidedGameOk(g,rule)).map(g=>Date.parse(g.at)).filter(Number.isFinite);return ts.length?ETK.format(new Date(Math.min(...ts))):''}catch(e){return''}}
+function heroKillers(w,c,lc){   // who killed the slip: graded misses, and (while the games are on) legs whose miss is already locked
+  const ids=lc?lc.killed:c.legs.filter(x=>x.status==='miss').map(x=>x.mid);return ids.filter(mid=>member(mid)&&w.picks[mid])}
+const heroWho=(w,mid)=>`<b>${h(member(mid).name)}’s ${h(w.picks[mid].text)}</b>`;
+function heroVote(w,c){   // the vote and the reveal, from the same facts the vote card reads: {btn: the one button this person owes, count: "2 of 6 in" once they have nothing left to do}
+  const none={btn:null,count:''};if(isSide(w)||!c.graded)return none;const l=league();
+  if(w.reveal&&!revealSeen(w))return{btn:{t:'Watch the reveal',act:'rv-start',data:''},count:''};   // never a name: revealSeen gates every word
+  if(w!==lastWeek()||w.final||w.reveal||seasonOver()||nextMain(w)||!(l.sync||SHARE_MODE)||!(l.features&&l.features.votes))return none;
+  try{if(eligible(w).reason==='autopush')return none}catch(e){}
+  const me=l.me,exp=expectedVoters(w,c),st=subStatus(w),done=exp.filter(mid=>{const x=st(mid);return x.voted&&x.video}).length,count=exp.length?`${done} of ${exp.length} in`:'';
+  if(me&&exp.includes(me)){const m=st(me);if(!m.voted)return{btn:{t:'Cast your vote',act:'hero-vote',data:''},count:''};if(!m.video)return{btn:{t:'Add your video',act:'hero-video',data:''},count:''}}
+  return{btn:null,count}}
+function sweatLegs(w,cl0){   // every leg with words: its grade, or (a pending one) what its live card says. s: hit | push | miss | open
+  const out=[];for(const[mid,p]of Object.entries(w.picks||{})){if(!member(mid)||!String(p.text||'').trim())continue;
+    if(p.status==='hit'||p.status==='push'||p.status==='miss'){out.push({mid,s:p.status});continue}
+    const L=cl0.live[mid]=legLive(w,{mid,...p},cl0),v=L.v,cd=v&&v.code;out.push({mid,s:cd==='HIT'?'hit':cd==='PUSH'?'push':cd==='MISS'?'miss':'open',L,v})}
+  return out}
+function sweatOffer(w,c,prepared){   // the one leg left, or null: placed, scores to read, nothing missed, exactly one leg unsettled, and that one readable and running (the league's own "one leg left" rule)
+  if(!w||!c||!w.placed||c.n<2||c.result!=='pending'||!sweatable(w)||!RESULTS[checkDate(w)])return null;
+  const cl0=prepared||{nfl:weekNfl(w),live:{}},legs=sweatLegs(w,cl0);if(legs.some(x=>x.s==='miss'))return null;
+  const open=legs.filter(x=>x.s==='open');if(open.length!==1)return null;const o=open[0],v=o.v;
+  if(!v||['HAND','PRE','GRADING','WAITSTATS'].includes(v.code)||!(v.main||v.bar)||!(o.L.g&&o.L.g.state==='in'))return null;
+  return{mid:o.mid,L:o.L,v}}
+function heroInner(w,c,cl0){   // cl0: the slip's claims, when the caller already has them (a test hands in its own)
+  const lc=w&&c&&w.placed&&!c.graded?liveCounts(w):null,key=heroState(w,c,lc);if(!key)return'';
+  const l=league(),me=l.me,sync=!!l.sync,side=isSide(w),canPlace=sync&&(isAdmin()||(!!me&&me===bozoOfW(w))),live=liveSlip(w);let num='',unit='',line='',btn='',tone='';
+  const each=c.priced?eachTxt(c):'';
+  if(key==='picks'||key==='locked'){const P=heroPicks(w,c);num=String(P.inN);unit=`of ${P.tot} picks in`;
+    if(key==='locked')line='Picks are locked.';
+    else{const wait=meFirst(P.missing.filter(x=>member(x.mid)),x=>x.mid),names=wait.map(x=>x.mid===me?'<b>you</b>':`<b>${h(member(x.mid).name)}</b>`),ko=heroKick(w);line=`Waiting on ${andList(names)}${ko?` \xB7 first kickoff ${h(ko)}`:''}`;
+      const mine=me&&P.missing.some(x=>x.mid===me)&&live&&!w.locked&&canEdit(me)&&(isAdmin()||(memberCan('picks')&&!kickLocked(w,me,w.picks[me])));
+      const others=wait.filter(x=>x.mid!==me);
+      if(mine)btn=`<button class="btn primary block" data-act="leg-open" data-wid="${h(w.id)}" data-mid="${h(me)}" data-hero="1" aria-describedby="hw-sub-${h(w.id)}">Enter your pick</button>`;
+      else if(me&&live&&c.legs.some(x=>x.mid===me&&String(x.text||'').trim())&&others.length){const nm=others.map(x=>h(member(x.mid).name));btn=`<button class="btn primary block" data-act="nudge" data-wid="${h(w.id)}" aria-describedby="hw-sub-${h(w.id)}">${nm.length<=3?`Nudge ${andList(nm)}`:`Nudge the ${nm.length} waiting`}</button>`}}}
+  else if(key==='ready'){const P=heroPicks(w,c);num=String(P.inN);unit=`of ${P.tot} picks in`;const bz=member(side?(payerOf(w)||bozoOfW(w)):bozoOfW(w));
+    let flagged=false,wait=false;try{const cl=cl0!==undefined?cl0:slipClaims(w,c)||histClaims(w,c);flagged=!!(cl&&hasFlags(cl)&&!cl.quiet&&(cl.pairs.length||Object.keys(cl.off||{}).length||Object.values(cl.notd||{}).some(v=>v!=='soon')));wait=!!cl&&clWait(w,cl)}catch(e){}   // wait: this week's games are still on their way, so whether a pick needs a look is not known yet
+    if(canPlace&&!isAdmin()&&needsPayer(w))line='All in. Before this side parlay can be marked placed, the commissioner has to say who pays for it. Text the commissioner to choose. Every pick stays on the slip.';
+    else if(wait){line='<span class="sk-txt">All in. Waiting for this week’s games to load to check a pick.</span>';
+      if(canPlace&&sync)btn=`<button class="btn primary block" disabled aria-describedby="hw-sub-${h(w.id)}">I placed it</button>`}   // the button's place is kept (greyed, its words above) so it never pops in and moves the page   // grey, its words still there for a screen reader: never words that turn into "Ready"
+    else if(!sync)line='All picks are in.';
+    else if(canPlace){line=flagged?'All in. Sort out the flagged picks, then place it on DraftKings and say so here.':'All in. Place it on DraftKings, then say so here.';btn=`<button class="btn primary block" data-act="placed-open" data-wid="${h(w.id)}" aria-describedby="hw-sub-${h(w.id)}">I placed it</button>`}
+    else line=`${flagged?'All in. Sort out the flagged picks first. ':''}Ready for <b>${h(bz?bz.name:'the Bozo')}</b> to place it on DraftKings.`}
+  else if(key==='placed'){num=c.missingOdds&&!c.slip?'—':amer(c.dec);unit='parlay';const P=w.placed||{},ko=heroKick(w);
+    line=[c.priced?`${mnyC(c.stake)} to win ${mnyC(c.potential)}`:'',+P.boost>0?`\u{1F680} ${h(String(P.boost))}% boost`:'',each?`${each} each`:'',ko?`first kickoff ${h(ko)}`:''].filter(Boolean).join(' \xB7 ')}
+  else if(key==='live'){num=String(lc.k.hit);unit=`of ${c.n} hit`;const so=sweatOffer(w,c);
+    if(so){tone='sweat';line=`${heroWho(w,so.mid)} is the last one${each?` \xB7 ${each} each if it hits`:''}`;btn=`<button class="btn primary block" data-act="sweat-open" data-wid="${h(w.id)}" aria-describedby="hw-sub-${h(w.id)}">Watch the sweat</button>`}
+    else line=[lcBits(lc.k),each?`${each} each if it all hits`:''].filter(Boolean).join(' \xB7 ')}
+  else if(key==='dead'||key==='busted'){const K=heroKillers(w,c,lc),nm=heroWho,live2=key==='dead';tone='lost';
+    num=String(live2&&lc?lc.k.hit:c.hits);unit=`of ${live2?c.n:c.n-c.pushes} hit`;
+    const still=live2?Math.max(0,c.pending-K.filter(mid=>w.picks[mid].status==='pending').length):0;
+    if(live2)line=`Killed by ${K.slice(0,2).map(mid=>nm(w,mid)).join(' and ')}${K.length>2?` and ${K.length-2} more`:''}${still?` \xB7 ${still} still to play`:''}`;
+    else{const one=K.length===1&&w.picks[K[0]]&&w.picks[K[0]].margin!=null?` by ${h(fmtMargin(w.picks[K[0]].margin,w.picks[K[0]].unit||unitFor(w.picks[K[0]].text)))}`:'';
+      line=K.length?`${K.slice(0,2).map(mid=>nm(w,mid)).join(' and ')}${K.length>2?` and ${K.length-2} more`:''} missed${one}`:'The slip missed.'}}
+  else if(key==='cashed'){tone='won';num=fmt$(c.share);unit='each';const b=member(w.bozoId),out=pushedOut(c),bOut=!!out.length&&c.legs.some(x=>x.mid===w.bozoId&&x.status==='push');
+    line=[`Cashed${c.priced?` at <b>${h(amer(c.dec))}</b>`:''}`,`${mnyC(c.payout)} on ${mnyC(c.stake)}`,isSide(w)||!b?'':`${h(b.name)} nets ${fmt$(bOut?-c.stake:c.share-c.stake)} after fronting it`,out.length?`${h(out.join(', '))} pushed and ${out.length===1?'is':'are'} left out`:''].filter(Boolean).join(' \xB7 ')}
+  else if(key==='void'){num=mnyC(c.stake);unit='back';line='Every leg pushed.'}
+  if(key==='cashed'||key==='busted'||key==='void'){const V=heroVote(w,c);
+    if(V.btn)btn=`<button class="btn primary block" data-act="${V.btn.act}" data-wid="${h(w.id)}" aria-describedby="hw-sub-${h(w.id)}">${V.btn.t}</button>`;
+    else if(V.count)line+=` \xB7 vote ${V.count}`}
+  const b=member(w.bozoId),word={placed:'placed',live:'placed',dead:'placed',cashed:'cashed',busted:'busted',void:'void'}[key]||'';
+  const eye=side?`<span class="clown">\u{1F3AF}</span><span>Side parlay${(py=>needsPayer(w)&&!c.graded?` \xB7 ${isAdmin()?'who pays? tap ✎ to choose':'the commissioner still has to say who pays'}`:py?` \xB7 ${h(member(py)?.name||'')} pays`:'')(payerOf(w))}${word?` \xB7 ${word}`:''}</span>${isAdmin()?`<button class="mini" data-act="change-payer" data-wid="${h(w.id)}" title="Who pays" aria-label="Who pays for the side parlay">✎</button>`:''}`
+    :`<span class="clown">\u{1F921}</span>${b?`<span class="bozo-name">${h(b.name)}</span><span>is the Bozo${word?` \xB7 ${word}`:''}</span>`:`<span>${isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown'}</span>`}${isAdmin()?`<button class="mini" data-act="change-bozo" data-wid="${h(w.id)}" title="Change bozo" aria-label="Change the Bozo">✎</button>`:''}`;
+  const sk=(key==='placed'||key==='live')&&!!w.placed&&sweatable(w)&&lvLoading(w);   // the scores are still coming: the number has its ink taken away (its words still read) instead of a count made up in the meantime
+  return`<div class="hero-wk${tone?' '+tone:''}"><div class="hw-eye">${eye}</div><div class="hw-num">${sk?`<span class="sk-txt">${h(num)}</span>`:h(num)} <small>${h(unit)}</small></div><div class="hw-sub" id="hw-sub-${h(w.id)}">${line}</div>${btn?`<div class="hw-act">${btn}</div>`:''}</div>`}
+function weekHero(w,c){const html=heroInner(w,c);HERO_LAST.set(w.id,html);return`<div class="hero-host" id="hero-${h(w.id)}">${html}</div>`}
+function heroPaint(w,c){   // the live repaint (livePaint, and the slip's price and stake boxes as they are typed): the same words leave the page alone, a changed number gets the 600 ms tint
+  const el=document.getElementById('hero-'+w.id);if(!el)return;const html=guarded(()=>heroInner(w,c||calc(w)));if(el._lv==null&&HERO_LAST.has(w.id))el._lv=HERO_LAST.get(w.id);lvSwap(el,html);HERO_LAST.set(w.id,html)}
+/* ---- The Sweat: when exactly one leg is left and nothing has missed, a sheet with that leg's number large, the bar with the line on it, the clock, and what everyone collects if it hits ---- */
+let SW_SHEET=null;   // the Sweat sheet that is open: {wid, mid, lid, html}. It follows the scores for as long as it is the one on top; closing it, or another sheet taking its place, lets it go
+function bustWords(w,killers,mid){   // who really killed the slip (the Bozo vote reads this): the legs that missed, never just the sheet's own leg
+  const names=killers.map(x=>member(x.mid)).filter(Boolean).map(x=>`${h(x.name)}’s`),own=killers.some(x=>x.mid===mid);
+  if(!names.length)return'Busted. The slip missed.';
+  if(own&&names.length===1)return`Busted. ${names[0]} leg was the one.`;
+  const list=`${andList(names)} ${names.length===1?'leg':'legs'} missed`;
+  return own?`Busted. ${list}.`:`Busted on another leg. ${list}.`}
+function sweatBody(w,c,mid){
+  const p=w.picks[mid],m=member(mid);
+  if(!p||!m)return`<div class="sweatv"><p class="sw-ck">That leg is no longer on the slip, so there is nothing to watch here. Nothing was lost. Tap Back to slip.</p></div>`;
+  const cl0={nfl:weekNfl(w),live:{}},legs=sweatLegs(w,cl0),me=legs.find(x=>x.mid===mid)||{},L=cl0.live[mid]||legLive(w,{mid,...p},cl0),v=L.v;
+  const killers=legs.filter(x=>x.s==='miss'),killer=killers[0],open=legs.filter(x=>x.s==='open').length;
+  const lc=liveCounts(w,cl0),hit=lc?lc.k.hit:c.hits,it=sweatOffer(w,c,cl0);
+  const phase=it&&it.mid===mid?'live':killer?'lost':(me.s==='hit'||me.s==='push')&&!open?'won':'gone';
+  const lgw=wkName(w);
+  if(phase==='gone'){const last=me.s==='open'&&open===1,cd=v&&v.code;   // the leg is still the only one left: its game just ended and the numbers are still coming in (or there is nothing live to show), which is not "no longer one leg"
+    const say=last&&(cd==='GRADING'||cd==='WAITSTATS')?'That game just ended and its final numbers are still coming in, so this leg is not graded yet. Nothing was lost. This sheet fills in on its own when it is. Tap Back to slip to see the slip.':last?'This is still the only leg left, but there is no live number to show for it right now. Nothing was lost. Tap Back to slip to see the slip.':'This slip is no longer down to one leg, so there is no single sweat to watch. Nothing was lost. Tap Back to slip to see every leg.';
+    return`<div class="sweatv"><div class="sw-eye">${h(lgw)}</div><div class="sw-leg">${h(p.text)}</div><p class="sw-ck">${say}</p></div>`}
+  const n=v?lvNum(v):{big:'',of:'',head:'',rest:[]},tone=phase==='won'||(phase==='lost'&&me.s==='hit')?'hit':phase==='lost'&&me.s==='miss'?'miss':v?lvTone(v):'';   // a busted slip whose own leg is fine shows that leg as it is, never as the miss
+  const num=v&&n.big?`<div class="sw-num ${tone}">${h(n.big)}${n.of?`<small>${h(n.of)}</small>`:''}</div>`:v&&v.main?`<div class="sw-num words ${tone}">${h(v.main)}</div>`:'';
+  const bar=v&&v.bar?lvBarHtml(v,tone):'';
+  const score=v&&v.score?` \xB7 <span class="lv-score">${h(v.score)}</span>`:'';
+  const under=v?(n.big?lvUnder(v,n):[v.sub].filter(Boolean).join('')):'',fresh=!!L.fresh,age=L.R?Math.max(0,Date.now()-(L.R.at||0)):0;
+  const eye=phase==='won'?`${lgw} \xB7 cashed`:phase==='lost'?`${lgw} \xB7 busted`:`${lgw} \xB7 ${hit} of ${c.n} hit \xB7 one to go`;
+  const ck=phase==='lost'?(me.s==='miss'&&p.margin!=null?`Missed by ${h(fmtMargin(p.margin,p.unit||unitFor(p.text)))}`:v&&v.clock?`<b>${h(v.clock)}</b>${under?` \xB7 ${h(under)}`:''}`:''):`${fresh&&v&&v.clock?`<b>${h(v.clock)}</b>`:''}${under?`${fresh&&v&&v.clock?' \xB7 ':''}${h(under)}`:''}`;
+  const each=eachTxt(c),faces=c.legs.filter(x=>member(x.mid)&&!(pushOutOn()&&x.status==='push')).map(x=>member(x.mid));
+  const money=phase==='won'?`Cashed. Everyone collects <b>${h(each)}</b>`:phase==='lost'?bustWords(w,killers,mid):`If this hits, everyone collects <b>${h(each)}</b>`;
+  const at=L.R&&L.R.at?new Date(L.R.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'';
+  const foot=phase!=='live'?'':fresh?(at?`Scores as of ${h(at)} \xB7 checked every minute`:'Checked every minute'):`Last checked ${h(lvAgo(age))}`;
+  return`<div class="sweatv"><div class="sw-eye">${h(eye)}</div><div class="sw-leg">${h(p.text)}</div><div class="sw-who"><span>${h(m.name)}’s leg</span>${score}</div>${num}${bar}${ck?`<div class="sw-ck">${ck}</div>`:''}<div class="sw-money"><div class="ln">${money}</div>${phase==='lost'?'':`<div class="faces" role="img" aria-label="${h(faces.map(x=>x.name).join(', '))}">${faces.map(m=>`<span class="avatar" style="--c:${m.color}" aria-hidden="true">${avIn(m)}</span>`).join('')}</div>`}</div>${foot?`<div class="sw-foot">${foot}</div>`:''}</div>`}
+function sweatSheet(w){
+  const c=w&&calc(w),it=w&&sweatOffer(w,c);
+  if(!it){toast('The scores moved on while that button was on screen, so there is no one-leg sweat to show now. Nothing was lost. Look at the legs on the slip.','bad');render();return}
+  const html=sweatBody(w,c,it.mid),me={wid:w.id,mid:it.mid,lid:league().id,html};SW_SHEET=me;
+  modal({title:'The sweat',body:html,actions:[{label:'Back to slip',cls:'primary'}],onClose:()=>{if(SW_SHEET===me)SW_SHEET=null}});
+  {const root=document.getElementById('modal-root'),m=root.querySelector('.modal'),mb=root.querySelector('.modal-body');if(m)m.classList.add('sweat');if(mb)mb._lv=html;if(root._back&&root._back.matches&&root._back.matches('[data-act="sweat-open"]'))root._backSel=`#hero-${w.id} [data-act="sweat-open"]`}}   // focus comes back to the button that opened it, even if the hero was repainted meanwhile
+function sweatPaint(w){   // live scores: the open sheet is drawn again when its words change (never a sheet of another week or league; scroll and focus stay). A sheet on top of it leaves it alone: it is drawn again as it comes back (closeModal)
+  const g=SW_SHEET;if(!g||!w||g.wid!==w.id||g.lid!==league().id)return;const root=document.getElementById('modal-root');if(!root||!root._open)return;
+  const mb=root.querySelector('.modal-body'),sw=mb&&mb.querySelector('.sweatv');if(!sw)return;
+  let html;try{html=sweatBody(w,calc(w),g.mid)}catch(e){return}
+  if(html===g.html)return;g.html=html;const top=mb.scrollTop;lvSwap(mb,html);mb.scrollTop=top;try{balance()}catch(e){}}
+/* ---- the league's status card: what is fine, what waits on a person, and what is broken, each with its fix in words ---- */
+const SYNC_WHY=new Map();   // why the dot last went red, when it was not just the network: 'rejected' (the league turned a pick down)
+const SYNC_AT=new Map();   // when this phone last heard the league answer (in memory only: nothing is saved or sent)
+const lgDevice=()=>isIOS()?(isIPad()?'iPad':'iPhone'):/Android/.test(navigator.userAgent||'')?'phone':'device';
+const lgAgo=ms=>{const m=Math.round(ms/6e4);return m<1?'just now':m===1?'1 minute ago':m<60?`${m} minutes ago`:m<120?'1 hour ago':`${Math.round(m/60)} hours ago`};
+function lgDotState(){const c=String(document.getElementById('syncDot')?.className||'');return/\bbad\b/.test(c)?'bad':/\bwaiting\b/.test(c)?'waiting':/\bbusy\b/.test(c)?'busy':/\bok\b/.test(c)?'ok':'idle'}   // idle: the league has not answered yet, so nothing is claimed
+function lgBad(l){   // the red sync row says what really went wrong (what happened, whether anything was lost, the exact steps), not "check your signal" for every cause
+  const row={id:'sync',tone:'bad'};
+  if(NOFIT.has(l.id))return{...row,title:'This phone is full',small:'The league changed before this phone read it, and there is no room here to keep your change, so nothing is sent from this phone until the app opens again. Your change is saved here if it fit, or only on this screen. Do this: Settings → Me → My leagues, take off a league you don’t need, then reopen the app.'};
+  if(l.sync&&l.sync.stuck)return{...row,title:'The league can’t be found',small:'This league can’t be reached from this phone any more, so your last change stayed here. Nothing on this phone was lost. Do this: Settings → Me → My leagues, take it off the list if it was deleted on purpose, or add it again with a code from one of your other phones.',act:'sync-now',go:'Retry ›'};
+  if(SYNC_WHY.get(l.id)==='rejected')return{...row,title:'The league turned a pick down',small:'That pick is not in the league, and it is not kept on this phone either. Everything else is safe. Do this: open the leg and enter the pick again. If it keeps happening, ask the commissioner.'};
+  return{...row,title:'Couldn’t reach the league',small:'Your changes are safe on this phone and go in when it answers. Do this: check your signal or Wi-Fi, then pull down to refresh.',act:'sync-now',go:'Retry ›'}}
+function lgRows(l,w){   // [{id, tone: ok|warn|bad, title, small, act, go, data}]; a row that cannot apply here (no league to sync, a browser without notifications) is left out, not greyed
+  const R=[];if(!l||!l.sync)return R;
+  {const s=lgDotState(),at=SYNC_AT.get(l.id);
+    R.push(s==='bad'?lgBad(l)
+      :s==='waiting'?{id:'sync',tone:'warn',title:'Changes waiting to go in',small:'Safe on this phone. They go in when the league answers.'}
+      :s==='busy'||s==='idle'?{id:'sync',tone:s==='idle'?'idle':'ok',title:'Checking the league',small:s==='idle'?'Waiting for the league to answer.':'Looking for anything new.'}
+      :{id:'sync',tone:'ok',title:'Up to date',small:at?`Checked ${lgAgo(Date.now()-at)} on this ${lgDevice()}`:'Nothing is waiting on this phone'})}
+  if(pushWanted(l)&&!l.guest&&!pushWait()&&(PUSH.ok||isIOS())){
+    const gd=pingsOf(l).gameday?` \xB7 game-day pings ${l.person&&l.person.gameday?'on':'off'}`:'';
+    if(pushDenied())R.push({id:'push',tone:'bad',title:'Notifications are blocked',small:`Your picks and votes are safe. Do this: ${isIOS()?'open Settings → Notifications, find this app and turn on Allow Notifications':/Android/.test(navigator.userAgent||'')?'press and hold the app icon, tap App info → Notifications and turn them on':'click the icon left of the web address and set Notifications to Allow'}, then come back here.`,act:'push-help',go:'How ›'});
+    else if(pushOnHere(l))R.push({id:'push',tone:'ok',title:'Notifications on',small:`This ${lgDevice()}${gd}`});
+    else{const help=pushHelp(),other=l.me&&(l.pushWho||{})[l.me]>0;
+      R.push({id:'push',tone:'warn',title:'Not on for this phone',small:help?help:other?`Pings go to your other ${lgDevice()}. Turn them on here too if you want them on this one.`:'Turn them on to get the reveal and game-day pings.',...(help?{}:{act:'push-on',go:'Turn on ›'})})}}
+  if(l.me){const m=member(l.me);R.push({id:'name',tone:'ok',title:m?`You’re ${h(m.name)} here`:'Your name is set',small:'Your picks and votes go in as you'})}
+  else if(l.guest)R.push({id:'name',tone:'ok',title:'You’re watching as a guest',small:'You can see everything. To enter a pick or vote, choose your name.',act:'pick-me',go:'Choose ›'});
+  else R.push({id:'name',tone:'warn',title:'Tap your name',small:'Until then this phone can’t enter a pick or vote.',act:'pick-me',go:'Choose ›'});
+  if(isAdmin(l)){const act=S.members.filter(m=>m.active),un=act.filter(m=>!(l.claims&&l.claims[m.id]));
+    if(act.length)R.push(un.length?{id:'crew',tone:'warn',title:`Crew \xB7 ${act.length-un.length} of ${act.length} claimed their name`,small:`${andList(un.map(m=>h(m.name)))} ${un.length===1?'hasn’t':'haven’t'} yet. Send ${un.length===1?'them':'them'} the league link.`,act:'settings-pane',data:'data-pane="crew"',go:'Crew ›'}:{id:'crew',tone:'ok',title:`Crew \xB7 ${act.length} of ${act.length} claimed their name`,small:'Everyone is signed in on their own phone'})}
+  if(w){const hits=[];for(const x of [w,sideOf(w)].filter(Boolean))for(const[mid,p]of Object.entries(x.picks||{}))try{if(p&&member(mid)&&priceEditWaiting(x,p))hits.push([x,mid,p])}catch(e){}
+    if(hits.length){const[x,mid,p]=hits[0],nm=member(mid)?.name||'Someone',mine=l.me===mid,ad=isAdmin(l);
+      R.push({id:'price',tone:'warn',title:hits.length>1?`${hits.length} prices are waiting`:ad?'A price needs your decision':'A price is waiting on the commissioner',small:ad?`${mine?'Your':h(nm)+'’s'} ${h(p.text)} was saved, and its held price is waiting. Open the leg to keep the price or take the new one.`:`${mine?'Your':h(nm)+'’s'} ${h(p.text)} was saved. Its price change is waiting. Open the leg to see where it stands.`,act:'leg-info',data:`data-wid="${h(x.id)}" data-mid="${h(mid)}"`,go:'Open ›'})}}
+  return R}
+const lgRow=r=>`<div class="st ${r.tone} ${r.id}"><i aria-hidden="true"></i><span><span class="vh">${r.tone==='ok'?'Fine. ':r.tone==='idle'?'':r.tone==='warn'?'Needs a step. ':'Broken. '}</span>${r.title}<small>${r.small}</small></span>${r.act?`<button class="go" data-act="${r.act}" ${r.data||''}>${r.go}</button>`:''}</div>`;
+function lgStatus(w,o={}){   // the card in Settings → League (every row), or under the hero on This Week (broken rows only: a broken thing is seen where people look on Sunday)
+  const l=league(),rows=lgRows(l,w),bad=rows.filter(r=>r.tone==='bad'),warn=rows.filter(r=>r.tone==='warn');
+  if(o.redOnly)return bad.length?`<div class="lgstat red" role="group" aria-label="Needs fixing">${bad.map(lgRow).join('')}</div>`:'';
+  if(!rows.length)return'';
+  const chip=bad.length?`<span class="stag broke">${bad.length} broken</span>`:warn.length?`<span class="stag todo">${warn.length} to do</span>`:rows.some(r=>r.tone==='idle')?'<span class="stag none">Checking…</span>':'<span class="stag set">All set</span>';
+  return`<section class="card lgcard"><div class="row between"><h3 style="margin:0">League status</h3>${chip}</div><div class="lgstat">${rows.map(lgRow).join('')}</div></section>`}
+function lgPaint(){   // the sync row follows the dot: the status card is drawn again in place when its words change (the page's own draw does the rest)
+  for(const[id,red]of[['lgred',true],['lgcard',false]]){const el=document.getElementById(id);if(!el)continue;let html;try{html=guarded(()=>lgStatus(lastWeek(),{redOnly:red}))}catch(e){continue}
+    if(el._lg===html)continue;const a=document.activeElement,kept=a&&el.contains(a)&&a.getAttribute&&a.getAttribute('data-act');el._lg=html;el.innerHTML=html;if(kept){const b=el.querySelector(`[data-act="${kept}"]`);if(b)try{b.focus({preventScroll:true})}catch(e){}}}}
 /* ---- week ---- */
 function renderWeek(){return oldBanner()+renderWeekInner()}
 let UPCOMING=null;   // showing the next week's slip as it fills up (before its Bozo is crowned)
@@ -2477,11 +2686,11 @@ function renderWeekInner(){
   if(UPCOMING&&(UPCOMING!==w.id||w.final||nx||!c.graded||(w.reveal&&!revealSeen(w))||!(isAdmin()||league().features?.votes)))UPCOMING=null;
   if(UPCOMING)return(pushCard()||gdCard())+renderUpcoming(w,c);
   const vote=renderVote(w,c,isLast);const upnext=vote.includes('data-act="next-go"')?'':upcomingBtn(w,c);   /* the vote card already offers the next-week pick: one way to that slip, not two */
-  return`${pushCard()||gdCard()}<div class="week-nav">
+  return`${pushCard({week:1})||gdCard()}<div class="week-nav">
     <button class="icon-btn" data-act="week-prev" aria-label="Previous week" ${idx===0?'disabled':''}>‹</button>
     <div class="week-title"><strong>${h(wkName(w))}</strong>${isAdmin()?`<input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date">`:w.date?`<small class="muted tiny">${h(new Date(w.date+'T12:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}))}</small>`:''}</div>
     <button class="icon-btn" data-act="week-next" aria-label="Next week" ${idx===S.weeks.length-1?'disabled':''}>›</button>
-  </div>${kindBar(w)}${vote}${upnext}${renderTicket(w,c)}${renderExtras(w)}`;   // the Bozo part leads, the slip below
+  </div>${weekHero(w,c)}<div id="lgred">${lgStatus(w,{redOnly:true})}</div>${kindBar(w)}${vote}${upnext}${renderTicket(w,c)}${renderExtras(w)}`;   // the Bozo part leads, the slip below
 }
 function kindBar(w){   // what kind of parlay this is, and the side parlay riding along with it
   if(isSide(w)){const p=parentOf(w);return`<div class="kindbar"><span class="kb-ic">🎯</span><span class="kb-t"><b>Anytime TD side parlay</b>ATTD bets only · ${gameDays()} games · no Bozo, no vote${p?` · runs alongside <a href="#" data-act="open-week" data-wid="${p.id}">${h(wkName(p))}</a>`:''}</span></div>`}
@@ -2534,16 +2743,11 @@ async function photoDrop(l,mid){if(!l||!l.sync||!mid)return;const own=mid===l.me
 function meBlock(l,me){const can=!!(l.sync&&(isAdmin(l)||l.meKey)),has=can&&!!photoOf(me.id,l);   // Settings → Me: you, once (Jason 09-25, "Yes merge them"): your avatar (your photo, else your initials) large and your name on one row with Change name (who you are on this phone, not a photo button: sw4 fix round 1), one line on your photo under them, then your own photo's buttons (yours only). A phone that hasn't tapped its name can't set a photo: no line, no buttons
   return`<div class="me-photo me-card"><span class="avatar lg" style="--c:${me.color}">${avIn(me)}</span><div class="mbody"><b>${h(me.name)}</b><button class="btn sm" data-act="pick-me">Change name</button></div>${can?`<small>${PHOTO_BUSY?'Sending your photo…':has?'Everyone in the league sees your photo beside your name.':'Add a photo if you like: it shows beside your name on picks, the ballot and stats. Everyone in the league can see it.'}</small>`:''}</div>${can?`<div class="grid2 photo-btns"><label class="btn" tabindex="0">📷 Camera<input type="file" accept="image/*" capture="user" hidden data-photo="take"></label><label class="btn" tabindex="0">🖼️ Photos<input type="file" accept="image/*" hidden data-photo="pick"></label>${has?'<button class="btn ghost danger photo-go" data-act="photo-drop-me">Remove my photo</button>':''}</div>`:''}`}
 const amOf=d=>d==null||!(d>1)?'':d>=2?'+'+Math.round((d-1)*100):'-'+Math.round(100/(d-1));
-function placedBar(w,c){   // where the bet stands: waiting on picks, waiting on the Bozo, or placed (picks locked)
-  const l=league();if(!l.sync||!c.n)return'';const bz=bozoOfW(w);const nb=member(bz);const canPlace=isAdmin()||(l.me&&l.me===bz);
-  if(w.placed){const P=w.placed;const by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo';const sh=w.shots||[];
-    const tools=canPlace&&(!c.graded||c.pushes)?`<div class="placed-tools"><a href="#" data-act="placed-edit" data-wid="${w.id}">${c.pushes?'Enter the payout after the push':'Fix odds or pot'}</a>${isAdmin()||c.graded?'':`<a href="#" data-act="placed-undo" data-wid="${w.id}">Undo placed</a>`}</div>`:'';
-    return`<div class="placed-bar on">🔒 <b>Placed</b> by ${h(by)}, ${h(fmtET(P.at))}${P.total?` · ${h(P.total)}`:''}${+P.boost>0?` <span class="tag boost">🚀 ${h(String(P.boost))}% boost</span>`:''}${+P.pot>0?` · prize pot ${fmt$(+P.pot)}`:+P.toWin>0?` · $${c.stake} to win ${fmt$(+P.toWin)}`:''}. Picks are locked.${tools}${sh.length||canPlace?`<div class="shots">${sh.map(x=>`<button class="shot" data-act="shot-view" data-wid="${w.id}" data-n="${x.n}" aria-label="Bet slip screenshot"><img src="${shotUrl(l,w,x)}" alt="Bet slip screenshot" loading="lazy"></button>`).join('')}${canPlace&&sh.length<2?`<label class="shot add">+ Screenshot<input type="file" accept="image/*" hidden data-shotadd="${w.id}"></label>`:''}</div>`:''}</div>`}
-  if(c.graded)return'';if(w.locked)return`<div class="placed-bar on">🔒 Picks are locked.</div>`;
-  if(canPlace&&!isAdmin()&&needsPayer(w))return`<div class="placed-bar">⏳ Before this side parlay can be marked placed, the commissioner has to say who pays for it. Text the commissioner to choose. Every pick stays on the slip.</div>`;
-  const missing=c.legs.filter(x=>x.status==='pending'&&!String(x.text||'').trim()).length;
-  if(!missing)return canPlace?`<div class="placed-bar ready"><p>✅ All ${c.n} picks are in. Place the parlay on DraftKings, then tap below.</p><button class="btn primary block" data-act="placed-open" data-wid="${w.id}">✅ I placed it</button></div>`:`<div class="placed-bar">⏳ All picks are in. Waiting on ${h(nb?.name||'the Bozo')} to place it on DraftKings.</div>`;
-  return canPlace?`<div class="placed-bar"><span class="muted">Waiting on ${missing} pick${missing===1?'':'s'} before you place it.</span> <a href="#" data-act="placed-open" data-wid="${w.id}">Placed it already?</a></div>`:''}
+function placedBar(w,c){   // the placed details under Details ▾ (who, when, the price, the boost, the pot, the tools and the screenshots). The state sentences (waiting on picks, waiting on the Bozo, locked) and the big I placed it button are the hero's now
+  const l=league();if(!l.sync||!c.n||!w.placed)return'';const bz=bozoOfW(w);const canPlace=isAdmin()||(l.me&&l.me===bz);
+  const P=w.placed;const by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo';const sh=w.shots||[];
+  const tools=canPlace&&(!c.graded||c.pushes)?`<div class="placed-tools"><a href="#" data-act="placed-edit" data-wid="${w.id}">${c.pushes?'Enter the payout after the push':'Fix odds or pot'}</a>${isAdmin()||c.graded?'':`<a href="#" data-act="placed-undo" data-wid="${w.id}">Undo placed</a>`}</div>`:'';
+  return`<div class="placed-bar on">🔒 <b>Placed</b> by ${h(by)}, ${h(fmtET(P.at))}${P.total?` · ${h(P.total)}`:''}${+P.boost>0?` <span class="tag boost">🚀 ${h(String(P.boost))}% boost</span>`:''}${+P.pot>0?` · prize pot ${fmt$(+P.pot)}`:+P.toWin>0?` · $${c.stake} to win ${fmt$(+P.toWin)}`:''}.${tools}${sh.length||canPlace?`<div class="shots">${sh.map(x=>`<button class="shot" data-act="shot-view" data-wid="${w.id}" data-n="${x.n}" aria-label="Bet slip screenshot"><img src="${shotUrl(l,w,x)}" alt="Bet slip screenshot" loading="lazy"></button>`).join('')}${canPlace&&sh.length<2?`<label class="shot add">+ Screenshot<input type="file" accept="image/*" hidden data-shotadd="${w.id}"></label>`:''}</div>`:''}</div>`}
 const slipOdds=v=>normPrice(v);   // the league's rule for a price: American, or decimal turned into American
 const slipMoney=v=>{const x=Number(String(v??'').replace(/[$,\s]/g,''));return Number.isFinite(x)&&x>0&&x<1e8?Math.round(x*100)/100:null};
 function placedSheet(w,o={}){const c=calc(w);const edit=!!(o.edit&&w.placed);const P=w.placed||{};const missing=edit?0:c.legs.filter(x=>x.status==='pending'&&!String(x.text||'').trim()).length;
@@ -2625,27 +2829,26 @@ function pickStatus(w,c,cl){
   const offCrew=isAdmin()&&here0&&!isSide(w)&&!w.placed&&!w.locked&&w===lastWeek()?S.members.filter(m=>(m.active||m.id===w.bozoId)&&!w.picks[m.id]):[];   // in the crew but never put on this slip (a slip an older app built)
   const offLine=offCrew.length?`<div class="pickstat-who"><span>In the crew, not on this slip </span><span class="pw-chips">${offCrew.map(m=>`<span class="waitchip">${h(m.name)}</span>`).join('')}</span><span> ＋ Add a leg for… below puts them on.</span></div>`:'';
   if(!tot)return offTxt+offLine;
-  if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}<div class="pickstat all"><b>All ${tot} picks are in</b><span class="muted tiny${clWait(w,cl)?' sk-txt':''}">${w.locked?'Locked.':hasFlags(cl)&&!cl.quiet?(cl.pairs.length||Object.keys(cl.off||{}).length||Object.values(cl.notd||{}).some(v=>v!=='soon')?'Sort out the flagged picks first.':'Waiting for this week’s games to load to check a pick.'):isSide(w)?'Ready to place it.':'Ready for the Bozo to place it.'}</span></div>${offTxt}${offLine}${hasFlags(cl)?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
-  const names=missing.map(l=>member(l.mid)?.name).filter(Boolean);
-  return`<div class="pickstat"><div class="row between"><b>${inCount} of ${tot} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div><div class="pickstat-who"><span>Waiting on </span><span class="pw-chips">${meFirst(missing.filter(l=>member(l.mid)),l=>l.mid).map(l=>`<span class="waitchip">${h(member(l.mid).name)}</span>`).join('')}</span></div>${offTxt}${offLine}${clashLines(cl)}${tidyBtn}${note}</div>`;
+  if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}${offTxt}${offLine}${hasFlags(cl)?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;   // "All 6 picks are in" and who is waiting are the hero's; what stays here is what needs a look
+  const rest=`${offTxt}${offLine}${clashLines(cl)}${tidyBtn}${note}`;
+  return rest?`<div class="pickstat">${rest}</div>`:'';
 }
 function renderTicket(w,c){
-  const b=member(w.bozoId);const cl=slipClaims(w,c)||histClaims(w,c);
+  const cl=slipClaims(w,c)||histClaims(w,c);
   const gvIt=(()=>{try{const it=gvAllOf(w,c,cl);return gvOffer(it)?it:null}catch(e){return null}})(),byGame=!!gvIt&&slipView==='game';   // By game is offered when the legs sit on 2+ games; By person is the slip as it was
   const missing=S.members.filter(m=>(m.active||m.id===w.bozoId)&&!w.picks[m.id]);
+  const sync=!!league().sync;   // the hero above says the state, the number and the one button (the Bozo, the badge, the waiting names, the live banner and the money grid left the ticket with it: no fact twice); the slip keeps the rows
   return`<section class="ticket ${c.result}" id="ticket">
     <div class="ticket-head">
-      <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c)}</div></div>
-      ${isSide(w)?`<div class="bozo-line"><span class="clown">🎯</span><span class="bozo-name">Side parlay</span><span class="is-bozo">${(py=>needsPayer(w)&&!c.graded?(isAdmin()?'who pays? tap ✎ to choose':'the commissioner still has to say who pays'):py?`no Bozo, no vote · ${h(member(py).name)} pays`:'no Bozo, no vote')(payerOf(w))}</span>${isAdmin()?`<button class="mini" data-act="change-payer" data-wid="${w.id}" title="Who pays" aria-label="Who pays for the side parlay">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked">🔒 locked</span>':''}</div>`:`<div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':(isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown')}</span>${isAdmin()?`<button class="mini" data-act="change-bozo" data-wid="${w.id}" title="Change bozo">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked for this week">🔒 locked</span>':''}</div>`}
+      <div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div>
     </div>
-    ${w.placed&&league().sync?placedTop(w,c):c.graded?`<div class="ticket-foot placed-top" id="tfoot">${ticketFoot(w,c)}</div>`:placedBar(w,c)}
+    ${w.placed&&sync?placedSlim(w,c):''}
     ${pickStatus(w,c,cl)}
-    ${sweatable(w)?`<div id="lvb-${w.id}">${liveBanner(w)}</div>`:''}
     ${checkable(w,c)?`<div class="checkrow"><button class="btn block" data-act="check-results" data-wid="${w.id}">🔎 Check results · ${c.legs.filter(x=>x.status==='pending'&&String(x.text||'').trim()).length} to grade</button></div>`:''}
     ${gvIt?gvSwitch():''}
     <div class="legs slip${byGame?' gv':''}"${byGame?` id="gvBoard" data-wid="${w.id}"`:''}>${byGame?gvBoard(w,gvIt):renderLegs(w,c,cl)}</div>
     ${missing.length&&isAdmin()&&!w.placed?`<div class="addleg"><select data-bind="add-leg|${w.id}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${m.id}">${h(m.name)}</option>`).join('')}</select></div>`:''}
-    ${(w.placed&&league().sync)||c.graded?'':`<div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>`}
+    ${(w.placed&&sync)||c.graded?slimFoot(w,c):`<div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>`}
   </section>`;
 }
 const segOpen=new Set();
@@ -3535,36 +3738,39 @@ function resultBadge(c){
   const[cls,txt]=map[c.result];return`<span class="badge ${cls}">${txt}</span>`;
 }
 const placedOpen=new Set();   // slips whose placed details are open (this screen only)
-function placedTop(w,c){   // the parlay is in: the numbers up top; tap for who placed it and when, the boost, the prize pot and the slip screenshots
+function placedSlim(w,c){   // the parlay is in: who placed it (tap for when, the boost, the prize pot and the slip screenshots). The money is the hero's; the price and the payout are said here only where the hero does not say them
   const P=w.placed;const by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo';const open=placedOpen.has(w.id);const n=(w.shots||[]).length;
-  const sum=`<button class="placed-sum" data-act="placed-toggle" data-wid="${w.id}" aria-expanded="${open}"><span class="ps-main"><b>🔒 Placed by ${h(by)}</b>${+P.boost>0||n?`<small>${[+P.boost>0?`🚀 ${h(String(P.boost))}% boost`:'',n?`📷 ${n} screenshot${n===1?'':'s'}`:''].filter(Boolean).join(' · ')}</small>`:''}</span><span class="ps-more">${open?'Hide ▴':'Details ▾'}</span></button>`;
-    const can=!c.graded&&(isAdmin()||(league().me&&league().me===bozoOfW(w)));
+  const hs=heroState(w,c),said=hs==='placed'||hs==='cashed';
+  const bits=[!said&&c.priced&&!(c.missingOdds&&!c.slip)?h(amer(c.dec)):'',!said&&c.priced?`${mnyC(c.stake)} to win ${mnyC(c.potential)}`:'',hs!=='placed'&&+P.boost>0?`🚀 ${h(String(P.boost))}% boost`:'',n?`📷 ${n} screenshot${n===1?'':'s'}`:''].filter(Boolean);
+  const sum=`<button class="placed-sum" data-act="placed-toggle" data-wid="${w.id}" aria-expanded="${open}"><span class="ps-main"><b>🔒 Placed by ${h(by)}</b>${bits.length?`<small>${bits.join(' · ')}</small>`:''}</span><span class="ps-more">${open?'Hide ▴':'Details ▾'}</span></button>`;
+  const can=!c.graded&&(isAdmin()||(league().me&&league().me===bozoOfW(w)));
   const link=P.link&&/^https:\/\//i.test(P.link)?`<a class="ps-link" href="${h(P.link)}" target="_blank" rel="noopener noreferrer">🔗 Open the slip on ${h(bookOfUrl(P.link))} <span aria-hidden="true">↗</span></a>${can?` <button class="ps-edit" data-act="placed-link" data-wid="${w.id}">Change</button>`:''}`:can?`<button class="ps-addlink" data-act="placed-link" data-wid="${w.id}">🔗 Add the DraftKings share link so everyone can see the slip</button>`:'';
-  return`<div class="ticket-foot placed-top" id="tfoot" data-act="placed-toggle" data-wid="${w.id}">${ticketFoot(w,c,sum+(link?`<div class="ps-links">${link}</div>`:'')+(open?placedBar(w,c):''))}</div>`}
-function ticketFoot(w,c,mid=''){
-  const priced=c.priced;const b=member(w.bozoId);
+  return`<div class="ticket-foot placed-top placed-slim" id="pslim" data-act="placed-toggle" data-wid="${w.id}">${sum}${link?`<div class="ps-links">${link}</div>`:''}${open?placedBar(w,c):''}</div>`}
+function footActions(w,c){   // Share slip, and the commissioner's Undo placed / Lock / I placed it / Delete; the Bozo, who is not the commissioner, gets Placed it already? while picks are still missing
+  const sync=!!league().sync,miss=c.legs.filter(x=>x.status==='pending'&&!String(x.text||'').trim()).length,me=league().me,bz=bozoOfW(w);
+  const early=sync&&!isAdmin()&&!!me&&me===bz&&!w.placed&&!w.locked&&!c.graded&&miss>0&&!needsPayer(w);
+  return`<div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${early?`<button class="btn sm ghost" data-act="placed-open" data-wid="${w.id}">Placed it already?</button>`:''}${isAdmin()&&sync&&!c.graded?(w.placed?`<button class="btn sm ghost" data-act="placed-undo" data-wid="${w.id}">🔓 Undo placed</button>`:w.locked?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">🔓 Unlock picks</button>`:`<button class="btn sm ghost" data-act="placed-open" data-wid="${w.id}">✅ I placed it</button>`):isAdmin()&&!sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastMain(realWeeks())===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`}
+function ticketFoot(w,c){   // an open slip's foot: so-far price, stake, what it pays, what each collects (the hero's number before placing is a count, so the price is said once, here)
   return`<div class="foot-grid">
     <div><small>Parlay</small><b class="mono" id="f-odds">${c.n?amer(c.dec):'—'}</b></div>
     <div><small>Stake</small><b class="mono">$${isAdmin()?`<input type="number" class="inline-num" value="${c.stake}" min="0" step="1" data-bind="week|${w.id}|stake" inputmode="numeric">`:c.stake}</b></div>
-    <div><small>${c.result==='won'?'Paid':'To win'}</small><b class="mono ${c.result==='won'?'good':''}" id="f-win">${winTxt(c)}</b></div>
+    <div><small>To win</small><b class="mono" id="f-win">${winTxt(c)}</b></div>
     <div><small>Each</small><b class="mono" id="f-each">${eachTxt(c)}</b></div>
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
-  <div id="f-won">${wonLine(w,c)}</div><div id="f-dk">${dkFoot(w,c)}</div>${mid}
-  <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${isAdmin()&&league().sync&&!c.graded?(w.placed?`<button class="btn sm ghost" data-act="placed-undo" data-wid="${w.id}">🔓 Undo placed</button>`:w.locked?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">🔓 Unlock picks</button>`:`<button class="btn sm ghost" data-act="placed-open" data-wid="${w.id}">✅ I placed it</button>`):isAdmin()&&!league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastMain(realWeeks())===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`;
+  <div id="f-dk">${dkFoot(w,c)}</div>
+  ${footActions(w,c)}`;
 }
+function slimFoot(w,c){   // placed or graded: the money is the hero's, so the foot keeps only Export to DraftKings, the commissioner's stake box and the actions
+  const stake=isAdmin()?`<label class="foot-stake"><span>Stake $</span><input type="number" class="inline-num" value="${c.stake}" min="0" step="1" data-bind="week|${w.id}|stake" inputmode="numeric" aria-label="Stake in dollars"></label>`:'';
+  return`<div class="ticket-foot slim" id="tfoot"><div class="hint" id="f-hint" ${c.missingOdds&&c.n&&!c.slip?'':'hidden'}>Enter odds on every leg to price the parlay.</div><div id="f-dk">${dkFoot(w,c)}</div>${stake}${footActions(w,c)}</div>`}
 const pushedOut=c=>pushOutOn()&&c.result==='won'?c.legs.filter(l=>l.status==='push').map(l=>member(l.mid)?.name).filter(Boolean):[];   // who collects nothing on a slip that cashed
-function wonLine(w,c){if(c.result!=='won')return'';const b=member(w.bozoId);const out=pushedOut(c);const bOut=!!out.length&&c.legs.some(l=>l.mid===w.bozoId&&l.status==='push');return`<div class="won-line">🎉 ${out.length?'Everyone who hit':'Everyone'} collects ${fmt$(c.share)}.${out.length?` ${h(out.join(', '))} pushed and ${out.length===1?'is':'are'} left out.`:''}${isSide(w)||!b?'':` ${h(b.name)} nets ${fmt$(bOut?-c.stake:c.share-c.stake)} after fronting the stake.`}</div>`}
 function patchTicket(w){
   const c=calc(w);const priced=c.priced;const $=id=>document.getElementById(id);
+  try{heroPaint(w,c)}catch(e){}   // the hero's price and payout follow the boxes too
   if(!$('tfoot'))return;
-  $('f-odds').textContent=c.n?amer(c.dec):'—';
-  $('f-win').textContent=winTxt(c);
-  $('f-each').textContent=eachTxt(c);
-  $('f-hint').hidden=!(c.missingOdds&&c.n);
-  $('tbadge').innerHTML=resultBadge(c);
-  const b=member(w.bozoId);
-  $('f-won').innerHTML=wonLine(w,c);{const f=$('f-dk');if(f)f.innerHTML=dkFoot(w,c)}try{dkSync()}catch(e){}   // Export to DraftKings follows the prices as they are typed
+  {const set=(id,t)=>{const e=$(id);if(e)e.textContent=t};set('f-odds',c.n?amer(c.dec):'—');set('f-win',winTxt(c));set('f-each',eachTxt(c));const hi=$('f-hint');if(hi)hi.hidden=!(c.missingOdds&&c.n&&!c.slip)}
+  {const f=$('f-dk');if(f)f.innerHTML=dkFoot(w,c)}try{dkSync()}catch(e){}   // Export to DraftKings follows the prices as they are typed
   for(const l of c.legs){
     const bad=l.odds!==''&&l.odds!=null&&!legal(l.oddsN);
     const inp=document.querySelector(`[data-odds="${l.mid}"]`);if(inp)inp.classList.toggle('bad',bad);
@@ -4632,9 +4838,9 @@ function liveLine(w,mid,prepared,showChip){const p=w.picks[mid];if(!p||p.status!
   const side=v.clock||v.score?`<span class="lv-side">${v.clock?`<span class="lv-clock">${h(v.clock)}</span>`:''}${v.score?`<span class="lv-score">${h(v.score)}</span>`:''}</span>`:'';
   return`${!visible?`<span class="lv-tag ${v.cls}">${h(chipWords(v.chip))}</span>`:''}${v.main||side?`<span class="lv-row"><span class="lv lv-main ${tone}${n.big?' num':''}">${n.big?`${h(n.big)}${n.of?`<small>${h(n.of)}</small>`:''}`:h(v.main)}</span>${side}</span>`:''}${lvBarHtml(v,tone)}${under?`<span class="lv-sub">${h(under)}</span>`:''}`}
 function lvSwap(el,html){   // a poll's new line goes into a row: a number that changed gets the 600 ms tint, and the bar eases to its new width over 300 ms (a count never ticks up). The same line again is left alone, so nothing churns.
-  if(el._lv===html)return;const first=el._lv==null,old=!first&&typeof el.querySelector==='function'?{t:(el.querySelector('.lv-main')||{}).textContent,w:[...el.querySelectorAll('.lv-bar i')].map(i=>i.style.width||i.style.left)}:null;
+  if(el._lv===html)return;const first=el._lv==null,old=!first&&typeof el.querySelector==='function'?{t:(el.querySelector('.lv-main,.hw-num,.sw-num')||{}).textContent,w:[...el.querySelectorAll('.lv-bar i')].map(i=>i.style.width||i.style.left)}:null;
   el._lv=html;el.innerHTML=html;
-  try{if(!old||typeof el.querySelector!=='function')return;const m=el.querySelector('.lv-main');if(m&&old.t!=null&&m.textContent!==old.t&&m.classList.contains('num'))m.classList.add('chg');
+  try{if(!old||typeof el.querySelector!=='function')return;const m=el.querySelector('.lv-main,.hw-num,.sw-num');if(m&&old.t!=null&&m.textContent!==old.t&&(m.classList.contains('num')||m.classList.contains('hw-num')||m.classList.contains('sw-num')))m.classList.add('chg');
     [...el.querySelectorAll('.lv-bar i:not(.lv-tick)')].forEach((i,k)=>{const to=i.style.width,was=old.w[k];if(was&&was!==to&&typeof requestAnimationFrame==='function'){i.style.width=was;requestAnimationFrame(()=>requestAnimationFrame(()=>{i.style.width=to}))}})}catch(e){}}
 function pregameText(g,label){return g&&TEAMS[g.away]&&TEAMS[g.home]?g.away+' @ '+g.home+'\n'+label:label}
 function pregameChip(g){return g&&Number.isFinite(Date.parse(g.at))&&Date.parse(g.at)>Date.now()&&(!g.state||g.state==='pre')?pregameText(g,ETK.format(new Date(g.at))):''}
@@ -4720,20 +4926,6 @@ function legChip(w,l,cl,prepared){   // once the bet is in, a leg shows where it
   if(G&&G.state==='post')return['live','Final \xB7 grading'];
   if(pregameChip(g))return['pre',pregameChip(g)];
   return['none','On the slip']}
-function liveBanner(w,prepared){if(!sweatable(w))return'';const R=RESULTS[checkDate(w)];if(!R)return'';
-  const k={hit:0,hitting:0,onpace:0,sweat:0,pushing:0,early:0,offpace:0,missing:0,miss:0,push:0,play:0,hand:0};const killed=[];const cl0=prepared||{nfl:weekNfl(w),live:{}};
-  const CODE={HIT:'hit',MISS:'miss',PUSH:'push',HITTING:'hitting',ONPACE:'onpace',SWEAT:'sweat',PUSHING:'pushing',EARLY:'early',OFFPACE:'offpace',MISSING:'missing'};
-  for(const[mid,p]of Object.entries(w.picks)){if(!member(mid)||!String(p.text||'').trim())continue;
-    if(p.status!=='pending'){if(p.status==='miss')killed.push(mid);k[p.status==='miss'?'miss':p.status==='push'?'push':'hit']++;continue}
-    const v=(cl0.live[mid]||legLive(w,{mid,...p},cl0)).v;if(!v){k.play++;continue}
-    if(v.code==='MISS')killed.push(mid);
-    if(v.code==='HAND'){k.play++;if(v.over)k.hand++;continue}
-    if(v.code==='PRE'||v.code==='GRADING'||v.code==='WAITSTATS'){k.play++;continue}
-    k[CODE[v.code]]++}
-  if(!k.hit&&!k.miss&&!k.push&&!(k.hitting+k.onpace+k.sweat+k.pushing+k.early+k.offpace+k.missing))return'';
-  const bits=[k.hit&&`${k.hit} hit`,k.hitting&&`${k.hitting} hitting`,k.onpace&&`${k.onpace} on pace`,k.sweat&&`${k.sweat} sweating`,k.pushing&&`${k.pushing} pushing`,k.early&&`${k.early} not there yet`,k.offpace&&`${k.offpace} off pace`,k.missing&&`${k.missing} missing`,k.miss&&`${k.miss} missed`,k.push&&`${k.push} push`,k.play&&`${k.play} to play`,k.hand&&`${k.hand} to grade by hand`].filter(Boolean).join(' \xB7 ');
-  const who=killed.length?`Killed by ${killed.slice(0,2).map(mid=>`${h(member(mid)?.name||'?')}\u2019s ${h(w.picks[mid].text)}`).join(' and ')}${killed.length>2?` and ${killed.length-2} more`:''}`:'';
-  return`<div class="lvbanner ${k.miss?'dead':''}"><b>${k.miss?'\u{1F480} Parlay\'s dead':(k.missing||k.offpace||k.sweat||k.pushing)?'\u{1F62C} Parlay alive':'\u{1F525} Parlay alive'}</b>${who?`<span>${who}</span>`:''}<span>${bits}</span></div>`}
 const LIVE_FAILED=new WeakSet();
 let liveT=null,liveBusy=false;
 function livePaint(w){const cw=currentWeek();if(VIEW!=='week'||cw!==w)return;const cl0={nfl:weekNfl(w),live:{}};
@@ -4741,7 +4933,7 @@ function livePaint(w){const cw=currentWeek();if(VIEW!=='week'||cw!==w)return;con
     let c=ct?legChip(w,{mid,...p},cl0,L):null;
     if(ct){if(!w.placed&&c[0]!=='pre')c=['in','✓ pick in'];c=[c[0],chipWords(c[1])];if(ct.textContent!==c[1])ct.textContent=c[1];if(ct.className!=='stag '+c[0])ct.className='stag '+c[0];if(ct.removeAttribute)ct.removeAttribute('aria-hidden');ct.parentElement?.classList.toggle('pre-info',c[0]==='pre')}
     if(!el)continue;const html=liveLine(w,mid,L,!!ct&&(w.placed||c[0]==='pre'));lvSwap(el,html)}   /* the kickoff chip on screen already says the matchup and the time: the line underneath must not say them again */
-  const bn=document.getElementById(`lvb-${w.id}`);if(bn){const html=liveBanner(w,cl0);if(bn.innerHTML!==html)bn.innerHTML=html}
+  try{heroPaint(w,calc(w))}catch(e){}try{sweatPaint(w)}catch(e){}   // the hero (and an open Sweat sheet) follow the scores with the rows
   {const bd=slipView==='game'?document.getElementById('gvBoard'):null;if(bd&&bd.dataset.wid===w.id)try{const html=gvBoard(w,gvAll(w));if(bd.innerHTML!==html){const a=document.activeElement,kept=a&&bd.contains(a)&&a.dataset&&a.dataset.gid;bd.innerHTML=html;if(kept){const b=bd.querySelector(`.gm-head[data-gid="${kept}"]`);if(b)b.focus({preventScroll:true})}}}catch(e){}}try{gvSheetPaint(w)}catch(e){}}   // By game follows the games too: drawn again only when its words change, and a game's head that had the keyboard keeps it; so does a game's open sheet
 function liveWatch(delay){clearTimeout(liveT);liveT=setTimeout(liveTick,delay==null?1500:delay)}
 async function liveTick(){liveT=null;if(liveBusy||document.visibilityState!=='visible'||VIEW!=='week')return;const w=S.weeks.length?currentWeek():null;if(!sweatable(w))return;liveBusy=true;const date=checkDate(w),owner=league(),sn=season();let delay=2*60e3;
@@ -5707,9 +5899,10 @@ function badgeTap(el){const g=el.closest('.bdgs'),d=document.getElementById(el.g
   for(const b of g.querySelectorAll('.bdg'))b.setAttribute('aria-expanded','false');if(on)el.setAttribute('aria-expanded','true');d.textContent=on?el.dataset.def||'':''}
 function settingsLeague(){   // Settings → League: running the league (its health, link, seasons, videos, data and activity), then the app itself (Refresh, updates, version). How it runs is the Rules pane's alone: a member reads it there, and the commissioner changes it there
   const l=league();
-  if(!isAdmin(l))return renderShare()+sboxCard(l)+(SHARE_MODE?'':seasonsCard())+`<section class="card"><h3>Data</h3><button class="btn block" data-act="export">Export copy</button><p class="muted tiny">Downloads every season of ${h(l.name)}, as this phone has it, to a file you keep.</p></section>`+appCard(l);
+  const lgc=`<div id="lgcard">${lgStatus(lastWeek(),{})}</div>`;   // the league's status card, first
+  if(!isAdmin(l))return lgc+renderShare()+sboxCard(l)+(SHARE_MODE?'':seasonsCard())+`<section class="card"><h3>Data</h3><button class="btn block" data-act="export">Export copy</button><p class="muted tiny">Downloads every season of ${h(l.name)}, as this phone has it, to a file you keep.</p></section>`+appCard(l);
   const act=l.sync?activityHtml(l):'';
-  return healthCard()+sboxCard(l)+renderShare()+siteCard()+faceSwitchCard(l)+`${seasonsCard()}${videoCard()}<section class="card"><h3>Data</h3>
+  return lgc+healthCard()+sboxCard(l)+renderShare()+siteCard()+faceSwitchCard(l)+`${seasonsCard()}${videoCard()}<section class="card"><h3>Data</h3>
     ${l.sync?`<div class="grid1"><button class="btn" data-act="export">Export backup</button><button class="btn" data-act="restore-open">Restore an earlier copy</button><button class="btn" data-act="import-shared">Load a backup file</button></div>
     <p class="muted tiny">This league is shared with the group, so every change made here changes it for everyone. The league keeps safety copies on its own: the newest few, plus one from each of the last 14 days it was changed. Export a backup now and then as well: it is your own copy to keep, and Load a backup file puts one back for the whole group when the saved copies don’t reach far enough.</p>`
     :`<div class="grid2"><button class="btn" data-act="export">Export backup</button><button class="btn" data-act="import">Import backup</button><button class="btn" data-act="sample">Load sample</button><button class="btn danger" data-act="reset">Reset season</button></div>
@@ -5991,7 +6184,7 @@ function modal({title,body,actions=[],onOpen,stack,px,required,onClose}){
   root.innerHTML=`<div class="scrim" ${required?'':'data-act="modal-close"'}><div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1"><div class="modal-head">${required?'<span class="mhandle" aria-hidden="true"></span>':'<span class="mhandle" data-act="modal-handle" aria-hidden="true"></span>'}<h2 id="modalTitle">${h(title)}</h2>${required?'':'<button class="mclose" data-act="modal-close-btn" aria-label="Close">×</button>'}</div>${POP_NEW?popScope():''}<div class="modal-body">${body}${mRows(actions)}</div>${mActs(actions)}</div></div>`;
   root._actions=actions;root._open=true;balance();lockScroll();backHold();requestAnimationFrame(()=>{root.firstElementChild?.classList.add('in');const mb=root.querySelector('.modal');if(mb&&!root.contains(document.activeElement)){try{mb.focus({preventScroll:true})}catch(e){}}});onOpen&&onOpen(root);
 }
-function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;{const ae=document.activeElement;if(ae&&ae!==document.body&&root.contains(ae)&&ae.blur)ae.blur()}   /* a box still focused: let it go first, or the keyboard closes with no focusout and the tab bar stays hidden */const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root.firstElementChild&&root.firstElementChild.classList.add('in');root._actions=prev.actions;root._required=!!prev.required;root._onClose=prev.onClose||null;root._stat=prev.stat||null;if(prev.px){pxNode=prev.px.node;pxMode=prev.px.mode}const m=root.querySelector('.modal-body');if(m)m.scrollTop=prev.scroll;modalFocusBack(root,prev.focus);if(root.querySelector('#dkSheet'))try{dkSync()}catch(e){}/* an Export to DraftKings sheet back from under another box follows the slip at once */if(root._stat&&root._stat.sk!==statKey())popRedraw();/* a Stats popup back from under one whose scope was changed: drawn again in that scope */if(GV_SHEET&&root.querySelector('.gv-sheet')){const w=week(GV_SHEET.wid);if(w)setTimeout(()=>gvSheetPaint(w),0)}/* By game's sheet back from under a leg's Details: it follows the games again at once */return}root._open=false;root._stat=null;root._required=false;root._actions=[];{const oc=root._onClose;root._onClose=null;if(oc)setTimeout(oc,0)}
+function closeModal(){const root=document.getElementById('modal-root');const s=root.firstElementChild;if(!s)return;{const ae=document.activeElement;if(ae&&ae!==document.body&&root.contains(ae)&&ae.blur)ae.blur()}   /* a box still focused: let it go first, or the keyboard closes with no focusout and the tab bar stays hidden */const prev=modalStack.pop();if(prev){root.innerHTML=prev.html;root.firstElementChild&&root.firstElementChild.classList.add('in');root._actions=prev.actions;root._required=!!prev.required;root._onClose=prev.onClose||null;root._stat=prev.stat||null;if(prev.px){pxNode=prev.px.node;pxMode=prev.px.mode}const m=root.querySelector('.modal-body');if(m)m.scrollTop=prev.scroll;modalFocusBack(root,prev.focus);if(root.querySelector('#dkSheet'))try{dkSync()}catch(e){}/* an Export to DraftKings sheet back from under another box follows the slip at once */if(root._stat&&root._stat.sk!==statKey())popRedraw();/* a Stats popup back from under one whose scope was changed: drawn again in that scope */if(GV_SHEET&&root.querySelector('.gv-sheet')){const w=week(GV_SHEET.wid);if(w)setTimeout(()=>gvSheetPaint(w),0)}if(SW_SHEET&&root.querySelector('.sweatv')){const w=week(SW_SHEET.wid);if(w)setTimeout(()=>sweatPaint(w),0)}/* By game's sheet back from under a leg's Details: it follows the games again at once */return}root._open=false;root._stat=null;root._required=false;root._actions=[];{const oc=root._onClose;root._onClose=null;if(oc)setTimeout(oc,0)}
   {const pf=root._back,bs=root._backSel;root._back=root._backSel=null;if(pf&&(pf.isConnected||bs))setTimeout(()=>{try{const t=pf.isConnected?pf:!root._open&&document.querySelector(bs);if(t)t.focus({preventScroll:true})}catch(e){}},0)}   /* focus goes back where it came from (a leg's row drawn again while its sheet was open: the new row) */
   unlockScroll();backDrop();if(DEFER.size)setTimeout(csFree,0);s.classList.remove('in');setTimeout(()=>{if(root.firstElementChild===s)root.innerHTML=''},250);setTimeout(()=>{if(needWho()&&!root._open)pickMe(league(),false,true)},400)}   // still nobody picked (e.g. a code that didn't work): ask again
 const stale=()=>{toast('The league changed while that was open, so nothing was changed here. Take another look and do it again.','bad');render()};   // the week, leg or player a dialog was pointing at is gone: say so instead of writing into thin air
@@ -6194,7 +6387,7 @@ const ACT={
     function done(){const L=league();const ww=week(wid);if(!ww)return stale();const q=ww.picks[mid],moved=!!q&&logoSig(q)!==logoSig(was);if(L.sync&&L.sync.role!=='admin'){const old=q&&{...q,...was},bare=!!q&&L.me===mid&&moved&&!String(q.text||'').trim()&&handKicked(ww,q).length>0;if(q&&L.me===mid&&(legKick(ww,q)===true||legKick(ww,old)===true||bare)){const t=String(q.text||'').trim(),m=legKick(ww,old)===true?KICK_LOCKED(t,kickWhy(ww,old)):bare?'The team logo you chose is on a game that has kicked off, so the logo wasn’t set. Nothing was lost: you don’t have a pick on this slip yet. Choose a team whose game hasn’t kicked off, or text the commissioner.':kickUns(ww,q)?`Some of this week’s games have kicked off, and the app can’t be sure which game “${t}” is on with the team logo you chose, so the logo wasn’t changed. Nothing was lost: your pick is still “${t}”. Choose the team your pick is on, or text the commissioner: they can still change it.`:`The team logo you chose is on a game that has kicked off, so “${t}” can’t go on that game and the logo wasn’t changed. Nothing was lost: your pick is still “${t}”. Choose a team whose game hasn’t kicked off, or text the commissioner.`;q.teams=was.teams;if(was.tm===undefined)delete q.tm;else q.tm=was.tm;if(was.tmh)q.tmh=was.tmh;else delete q.tmh;save();toast(m,'bad',readMs(m));render();return}save();render();if(L.me===mid)sendPick(L,ww,mid)}else{if(L.sync&&moved)(L.logoAt??={})[obKey(L,ww,mid)]=adminStamp(L,q,mid);commit()}}},   /* a member's logo that would put their pick on a game that has kicked off (or on a pick whose own game kicked off while the list was open, its logo's game included: a logo can't be taken off a game under way either), or a logo set on a game under way on a leg with no pick yet (no new pick goes on a game under way), isn't changed or sent, and the words say so (the league turns it down too). The commissioner's logo change is stamped like a change of the words, and when it was made is noted as a logo change (l.logoAt), so a save the league turns down as out of date keeps it (and a change of only the price never carries an older logo back) */
   'tp-toggle'(el){const on=[...document.querySelectorAll('.tp.on')];if(el.classList.contains('on'))el.classList.remove('on');else{if(on.length>=2)on[0].classList.remove('on');el.classList.add('on')}},
   'seg-open'(el){segOpen.add(el.dataset.mid);render()},
-  'leg-open'(el,e){if(e&&e.target&&e.target.closest&&e.target.closest('input,select,textarea,label'))return;slipOpen.add(el.dataset.wid+'|'+el.dataset.mid);render();const b=document.querySelector(`.bap-way[data-act="guide-open"][data-wid="${el.dataset.wid}"][data-mid="${el.dataset.mid}"]`);if(b){b.focus();return}const t=document.querySelector(`[data-bind="pick|${el.dataset.wid}|${el.dataset.mid}|text"]`);if(t&&!t.value)t.focus()},   // an empty leg shows Build your pick, and it gets the focus; otherwise the empty pick box does
+  'leg-open'(el,e){if(e&&e.target&&e.target.closest&&e.target.closest('input,select,textarea,label'))return;if(el.dataset.hero&&slipView==='game')slipView='person';slipOpen.add(el.dataset.wid+'|'+el.dataset.mid);render();const b=document.querySelector(`.bap-way[data-act="guide-open"][data-wid="${el.dataset.wid}"][data-mid="${el.dataset.mid}"]`);if(b){b.focus();return}const t=document.querySelector(`[data-bind="pick|${el.dataset.wid}|${el.dataset.mid}|text"]`);if(t&&!t.value)t.focus()},   // an empty leg shows Build your pick, and it gets the focus; otherwise the empty pick box does
   'leg-story-retry'(){document.getElementById('modal-root')._storyReload?.()},
   'leg-story-tab'(el){const root=document.getElementById('modal-root'),story=el.dataset.pane==='story';root.querySelector('#leg-story-pane').hidden=!story;root.querySelector('#leg-details-pane').hidden=story;for(const b of root.querySelectorAll('[data-act=leg-story-tab]')){const on=b===el;b.classList.toggle('on',on);b.setAttribute('aria-pressed',String(on))}root.querySelector('.modal-body').scrollTop=0},
   'leg-info'(el,e){if(e&&e.target&&e.target.closest&&e.target.closest('input,select,textarea,label'))return;const w=week(el.dataset.wid);if(w)legInfo(w,el.dataset.mid,!!(el.closest&&el.closest('#modal-root')))},
@@ -6253,6 +6446,10 @@ const ACT={
   'unreveal'(){const w=currentWeek();const nx=nextMain(w);const rm=nx&&w.crowned&&w.crowned.weekId===nx.id?nx:null;const vs=Object.values(w.sub||{}).filter(x=>x&&x.video&&typeof x.video==='object'),gone=vs.filter(x=>x.video.deleted&&x.video.removed).length,one=gone===1;   // videos the commissioner removed to make room can't come back: say so, and that the vote goes ahead without them
     const vids=!gone?'Videos already uploaded stay.':`${gone===vs.length?`This week’s vote video${one?' was':'s were'}`:`${gone} of this week’s ${vs.length} vote videos ${one?'was':'were'}`} removed to make room, so ${one?'it':'they'} can’t be played again. ${one?'That vote still counts':'Those votes still count'} without ${one?'it':'them'} and nobody is asked to record again: when you’re ready, reveal the vote again with Reveal now.${gone<vs.length?' The other videos stay.':''}`;
     confirm2('Reopen the vote?',`The reveal disappears for everyone and voting reopens. ${vids}${rm?` ${h(wkName(rm))} is removed with it, and whatever each person has on that slip right now comes back as their pick for next week.`:''}`,'Reopen',()=>adminCall('/unreveal',{},'Voting is open again'))},
+  'sweat-open'(el){const w=week(el.dataset.wid);if(w)sweatSheet(w)},   // the hero's button when exactly one leg is left: never opens by itself
+  'hero-vote'(){const t=document.querySelector('#view .card.vote .cand');if(t){try{t.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'})}catch(e){}try{t.focus({preventScroll:true})}catch(e){}}},   // the owed vote: to the ballot's first name
+  'hero-video'(){const t=document.querySelector('#view .card.vote .vidbox .btn');if(t){try{t.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth',block:'center'})}catch(e){}try{t.focus({preventScroll:true})}catch(e){}}},   // the owed video: to its button
+  'push-help'(){modal({title:'Turn notifications back on',body:`<p>${blockedFix()}</p>`,actions:[{label:'OK',cls:'primary'}]})},   // the status card's How: the same steps the Turn on button gives
   'rv-start'(el){const R=+(el&&el.dataset.r)||1;rvSet(currentWeek(),{i:0,f:false},R);render();pageTo(0,'smooth')},
   'rv-flip'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const st=rvGet(w,undefined,R);rvSet(w,{i:st.i,f:true},R);render()},
   'rv-play'(){const l=league();const w=currentWeek();const st=rvGet(w);const o=w.reveal&&w.reveal.order[st.i];if(!o)return;   // videos are round 1 only
