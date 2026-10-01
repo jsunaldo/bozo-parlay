@@ -2964,11 +2964,11 @@ function gvGroups(items){   // the games with legs on them, worst first, then th
     const t=startMs(gr.g.at);return{...gr,rg,fin,live,rank,at:Number.isFinite(t)?t:Infinity,cls:['down','even','up','pre','final'][rank]}});
   games.sort((a,b)=>a.rank-b.rank||(a.at<b.at?-1:a.at>b.at?1:0)||(a.key<b.key?-1:a.key>b.key?1:0));
   return{games,wait,lost}}
-const gvRec=r=>{const m=/^(\d{1,2})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(String(r==null?'':r).trim());return m?{t:m[0],say:m[3]&&+m[3]?`${m[1]} and ${m[2]} with ${m[3]} ${+m[3]===1?'tie':'ties'}`:`${m[1]} and ${m[2]}`}:null};   // a record as the league server sends it going into the game ("3-1", "3-1-1"); anything else is no record, so nothing is shown rather than a wrong one
+const gvRec=r=>{const m=/^(\d{1,2})-(\d{1,2})(?:-(\d{1,2}))?$/.exec(String(r==null?'':r).trim());return m?{t:m[0],say:m[3]&&+m[3]?`record ${m[1]} and ${m[2]} with ${m[3]} ${+m[3]===1?'tie':'ties'}`:`record ${m[1]} and ${m[2]}`}:null};   // a record as the league server sends it going into the game ("3-1", "3-1-1"); anything else is no record, so nothing is shown rather than a wrong one
 function gvHead(gr){   // a game's head: its teams (the record each brings in, the score once it has started, a dot on who has the ball while it is live), the clock, kickoff or Final, and how a screen reader says it
   const g=gr.rg,sc=(gr.live||gr.fin)&&g.as!=null&&g.hs!=null&&Number.isFinite(+g.as)&&Number.isFinite(+g.hs),d=String(g.detail||'');
   const ck=gr.fin?(/ot/i.test(d)?'Final/OT':'Final'):/postpon|delay|cancel|suspend/i.test(d)?d:gr.live?(d||'Live'):Number.isFinite(startMs(gr.g.at))?ETK.format(new Date(startMs(gr.g.at))):'Time not set yet';
-  const away=gr.g.away||'?',home=gr.g.home||'?',ra=gvRec(g.ar),rh=gvRec(g.hr),ball=gr.live&&g.pos&&gr.g.away&&gr.g.home?(g.pos===gr.g.away?'a':g.pos===gr.g.home?'h':''):'';   // the ball is only ever named for a live game and one of its own two teams
+  const away=gr.g.away||'?',home=gr.g.home||'?',ra=gvRec(g.ar),rh=gvRec(g.hr),ball=gr.live&&!/half|delay|end of/i.test(d)&&g.pos&&gr.g.away&&gr.g.home?(g.pos===gr.g.away?'a':g.pos===gr.g.home?'h':''):'';   // the ball is only ever named for a live game and one of its own two teams
   const side=(ab,rec,sco,has)=>`<span>${h(ab)}</span>${has?'<i class="pos" role="img" aria-label="has the ball"></i>':''}${sco?`<b>${h(sco)}</b>`:''}${rec?`<small>${h(rec.t)}</small>`:''}`;
   const say=(ab,rec,sco,has)=>{const nm=TEAM_NM(ab),x=[rec?rec.say:'',has?'has the ball':'',sco?String(sco):''].filter(Boolean);return x.length&&(rec||has)?[nm,...x].join(', '):`${nm}${sco?' '+sco:''}`};
   return{ck,ckCls:gr.fin?'fin':gr.live?'live':'',title:sc?`${away} ${g.as} \xB7 ${home} ${g.hs}`:`${away} \xB7 ${home}`,
