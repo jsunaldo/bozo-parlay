@@ -519,18 +519,21 @@ table.lb{width:max-content;min-width:100%;border-collapse:collapse;font-size:13p
 .lb .bar{margin-right:4px}
 .awards{display:grid;grid-template-columns:1fr;gap:8px}
 @media(min-width:520px){.awards{grid-template-columns:repeat(2,1fr)}}
-.award{background:var(--surface2);border-radius:16px;padding:12px;display:flex;flex-direction:column;gap:6px;min-width:0}
-.aw-head{display:flex;gap:10px;align-items:center}
-.aw-blurb{text-transform:none;letter-spacing:0;font-weight:500;color:var(--dim)}
-.aw-stat{font-size:15px;font-weight:700;letter-spacing:-.01em}
+.aw{display:flex;gap:10px;align-items:flex-start;background:var(--surface2);border-radius:14px;padding:10px 12px;min-height:44px;min-width:0;cursor:pointer;-webkit-tap-highlight-color:transparent}   /* an award tile (the Awards section and the Grudge Book's vote awards): the award is the headline, its words a muted caption under it, then who and how much, then the detail */
+.aw:active{opacity:.7}.aw:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.aw .ic{font-size:22px;line-height:1.2;flex:none;width:28px;text-align:center}
+.aw-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.aw-name{display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;letter-spacing:-.01em;color:var(--text)}
+.aw-name .chev{margin-left:auto;color:var(--dim);font-size:18px;line-height:1;font-weight:600}
+.aw-blurb{font-size:12px;font-weight:400;color:var(--muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.aw-who{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:14px;font-weight:600;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums;min-width:0}
+.aw-who .nm{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.aw-who .dot{color:var(--muted);font-weight:400}
+.aw-who .tag{background:var(--surface3);color:var(--text)}
+.aw-detail{font-size:12px;font-weight:500;color:var(--muted);line-height:1.3}
 .aw-bet{display:flex;align-items:center;gap:8px;background:var(--surface);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:500}
 .aw-bet .mono{font-size:12px;flex:none}
-.award .ic{font-size:26px;flex:none}
-.award .ab{display:flex;flex-direction:column;min-width:0}
-.award small{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.award b{font-size:14px;font-weight:700}
 .tdl{display:block}
-.award em{font-style:normal;font-size:12px;color:var(--muted);font-weight:500;line-height:1.3}
 .typerows,.teamrows{display:flex;flex-direction:column;gap:8px}
 .typerow,.teamrow{display:grid;grid-template-columns:1fr 90px 52px 40px;align-items:center;gap:10px;font-size:13px}
 .teamrow{grid-template-columns:24px 1fr 90px 52px 40px}
@@ -540,7 +543,7 @@ table.lb{width:max-content;min-width:100%;border-collapse:collapse;font-size:13p
 .teamrow.sub{font-size:12px}
 .teamrow.sub .tname{font-weight:500;color:var(--muted)}
 .tname{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.typerow.tap,.kingrow.tap,.pd-cell.tap,.award.tap{cursor:pointer}
+.typerow.tap,.kingrow.tap,.pd-cell.tap{cursor:pointer}
 .typerow.tap,.kingrow.tap{min-height:36px}
 .typerow.tap:active,.kingrow.tap:active{opacity:.7}
 .typerow .tname{display:flex;align-items:center;gap:6px;min-width:0}
@@ -577,13 +580,20 @@ table.lb{width:max-content;min-width:100%;border-collapse:collapse;font-size:13p
 .bl-res.hit{background:rgba(52,199,89,.15);color:var(--green)}
 .bl-res.miss{background:rgba(255,59,48,.15);color:var(--red)}
 .bl-res.push{background:rgba(255,184,77,.2);color:var(--amber)}
-.aw-more{font-size:11px;font-weight:600;color:var(--blue);margin-top:2px}
-.rank-list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
-.rank-row{display:flex;align-items:center;gap:8px;color:var(--text)}
-.rank-row .rank{color:var(--dim);font-size:11px;width:16px;text-align:right;flex:none}
-.rank-mid{min-width:0;flex:1;display:flex;flex-direction:column;gap:3px}
-.rank-mid small{color:var(--muted);font-size:11px}
-
+.rank-list{display:flex;flex-direction:column;margin-top:4px}   /* the award leaderboard sheet (awardSheet): a row each, a button when it opens the person */
+.rank-row{display:flex;align-items:center;gap:8px;min-height:44px;width:100%;margin:0;padding:8px 6px;border:0;border-top:1px solid var(--line);border-radius:0;background:none;color:var(--text);font:inherit;text-align:left;-webkit-tap-highlight-color:transparent}
+button.rank-row{cursor:pointer}button.rank-row:active{opacity:.7}.rank-row:focus-visible{outline:2px solid var(--blue);outline-offset:-2px;border-radius:12px}
+.rank-row:first-child{border-top:0}
+.rank-row.holder{background:var(--surface2);border-radius:12px;border-top-color:transparent}.rank-row.holder+.rank-row{border-top-color:transparent}
+.rank-row .rank{color:var(--muted);font-size:12px;font-weight:700;width:28px;text-align:right;flex:none;font-variant-numeric:tabular-nums}
+.rank-mid{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px}
+.rank-mid b{font-size:15px;font-weight:600;color:var(--text);overflow-wrap:anywhere}
+.rank-mid small{color:var(--muted);font-size:12px;font-weight:500;line-height:1.3}
+.rank-val{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;flex:none;color:var(--text);text-align:right}
+.rank-row .chev{color:var(--dim);font-size:18px;line-height:1;flex:none;margin-left:2px}
+.rank-rest{border-top:1px solid var(--line);margin-top:8px;padding-top:10px}.rank-rest .rank-row{min-height:44px;border-top:0}.rank-rest .rank-val{color:var(--muted);font-weight:500}
+.rank-note{font-size:12px;color:var(--muted);margin:12px 0 0;line-height:1.45}
+.rank-mid .aw-bet{margin-top:2px;align-self:flex-start;max-width:100%}
 .typerow.expandable:hover .tname{color:var(--blue)}
 .tname .chev{display:inline-block;color:var(--dim);margin-right:4px;transition:transform .2s}
 .tname .chev.open{transform:rotate(90deg);color:var(--blue)}
@@ -616,9 +626,7 @@ table.lb{width:max-content;min-width:100%;border-collapse:collapse;font-size:13p
 .sv-row.tap{cursor:pointer;-webkit-tap-highlight-color:transparent}.sv-row.tap:active{opacity:.7}.sv-row .chev{color:var(--dim);font-size:16px;line-height:1}
 .sv-gap{margin:10px 0 0;font-size:12px;color:var(--muted);line-height:1.5}.linkish{border:0;background:none;padding:0;font:inherit;color:var(--blue);font-weight:600;cursor:pointer}
 .sv-sum{margin:0 0 4px;font-size:14px;color:var(--text)}.svw{display:flex;flex-direction:column;gap:10px}.svw-wk{background:var(--surface2);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:8px}.svw-top{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;color:var(--text)}.svw-res{font-size:11px;font-weight:700;border-radius:999px;padding:3px 9px;white-space:nowrap}.svw-res.ok{background:rgba(52,199,89,.15);color:var(--green)}.svw-res.dead{background:rgba(255,59,48,.15);color:var(--red)}.svw-leg{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;color:var(--text)}
-.gb-awards{display:grid;grid-template-columns:1fr;gap:6px}@media(min-width:520px){.gb-awards{grid-template-columns:1fr 1fr}}
-.gb-aw{display:flex;gap:10px;align-items:flex-start;background:var(--surface2);border-radius:12px;padding:8px 10px}.gb-aw.tap{cursor:pointer}.gb-aw .ic{font-size:20px;line-height:1.2;flex:none}
-.gb-awb{display:flex;flex-direction:column;min-width:0}.gb-awb small{font-size:11px;color:var(--muted)}.gb-awb b{font-size:14px}.gb-awb em{font-style:normal;font-size:12px;color:var(--muted)}
+.gb-awards{display:grid;grid-template-columns:1fr;gap:8px}@media(min-width:520px){.gb-awards{grid-template-columns:1fr 1fr}}
 .gb-grid-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px}.gb-grid{border-collapse:separate;border-spacing:2px;font-size:12px;font-variant-numeric:tabular-nums}
 .gb-grid th{font-weight:600;padding:2px}.gb-grid td{min-width:26px;height:26px;text-align:center;border-radius:6px;background:var(--surface2);color:var(--dim)}.gb-grid td.on{color:var(--text);font-weight:700;background:rgba(255,69,58,.14)}
 .gb-grid td.self{background:rgba(255,159,10,.14)}.gb-grid td.self.on{color:var(--amber)}.gb-grid td.tot{background:none;color:var(--muted);font-weight:700}
@@ -2173,21 +2181,23 @@ function tieDetail(ids,full,nm,part){   // the ONE rule for the words under a ti
   if(f.some(x=>!x)||ids.length>TIE_MAX)return'';
   const ls=ids.map((id,i)=>`${nm(id)} ${String((part&&part(id))||f[i]).trim()}`);return ls.some(x=>x.length>TIE_FIT)?'':ls.join('\n')}
 const tieHtml=t=>{t=String(t||'');return t.includes('\n')?t.split('\n').map(x=>`<span class="tdl">${h(x)}</span>`).join(' '):h(t)};   // a tie's lines, a line each on the card (one holder's words, or all holders', as they are)
-function awards(per){
-  const list=Object.values(per);
-  const pick=f=>{const all=list.map(p=>({p,v:f(p)})).filter(x=>x.v!=null&&!Number.isNaN(x.v)).sort((a,b)=>b.v-a.v);return all.length?{...all[0],all}:null};
-  const A=[];const add=(icon,name,blurb,r,fn)=>{if(!r)return;const o=fn(r.p,r.v)||{};const pl=places(r.all,(a,b)=>a.v===b.v);const rows=r.all.map((x,i)=>({who:x.p.id,place:pl[i],...(fn(x.p,x.v)||{})})),tied=r.all.filter(x=>x.v===r.v).map(x=>x.p.id),a={icon,name,blurb,who:r.p.id,tied,...o,rows};
+const placeLabel=(pl,i)=>pl.filter(x=>x===pl[i]).length>1?`T-${pl[i]}`:String(pl[i]);   // a place two people share reads "T-1", a place one holds "1" (places(): 1, 1, 3 -> T-1, T-1, 3)
+function awards(per){   // the Awards section's tiles, and the sheet each one opens: rows = everyone ranked (place, label), rest = the people the award's own minimum leaves unranked (restSay says the minimum); a tile's holder is the place-1 rows, by construction
+  const list=Object.values(per);const rec=p=>p.picks>0||p.bozo>0;   // on this scope's board at all: a leg graded, or a Bozo week
+  const pick=(f,o={})=>{const all=list.map(p=>({p,v:f(p)})).filter(x=>x.v!=null&&!Number.isNaN(x.v)).sort((a,b)=>b.v-a.v);if(!all.length||(o.pos&&!(all[0].v>0)))return null;const rs=o.rest?list.map(p=>({p,x:rec(p)&&!all.some(y=>y.p===p)?o.rest(p):false})).filter(y=>y.x!==false).map(y=>({who:y.p.id,...(y.x||{})})):[];return{...all[0],all,rest:rs,restSay:o.restSay||''}};   // rest: those on the board with no number for this award (rest(p) false: not even that)
+  const A=[];const add=(k,icon,name,blurb,r,fn)=>{if(!r)return;const o=fn(r.p,r.v)||{};const pl=places(r.all,(a,b)=>a.v===b.v);const rows=r.all.map((x,i)=>({who:x.p.id,place:pl[i],label:placeLabel(pl,i),...(fn(x.p,x.v)||{})})),tied=r.all.filter(x=>x.v===r.v).map(x=>x.p.id),a={k,icon,name,blurb,who:r.p.id,tied,...o,rows,rest:r.rest,restSay:r.restSay};
     if(tied.length>1){const row=id=>rows.find(x=>x.who===id)||{};a.detail=tieDetail(tied,id=>row(id).detail,id=>(member(id)||{}).name||'?',id=>row(id).part);if(a.bet&&!tied.every(id=>{const b=row(id).bet;return b&&b.text===a.bet.text&&b.odds===a.bet.odds}))delete a.bet}   // a tie: the tile's words are what every holder shares, or each holder's own with the name, and one holder's bet is never shown beside several names
     A.push(a)};
   const span=sp=>sp?(sp[0]===sp[1]?sp[0]:`${sp[0]}–${sp[1]}`):'';
-  add('🤡','Head Clown','Fronted the parlay the most',pick(p=>p.bozo||null),(p,v)=>({stat:`${v}× Bozo`,detail:`${fmt$0(p.spent)} burned · ${p.bozoWeeks.join(', ')}`}));
-  add('💎','Best Win','Longest odds that actually hit',pick(p=>p.longestHit?p.longestHit.odds:null),(p)=>({stat:`${fmtOdds(p.longestHit.odds)} cashed`,detail:p.longestHit.wk,bet:p.longestHit}));
-  add('🎯','Sharpest Bettor','Best hit rate',pick(p=>p.graded>=2?p.rate:null),(p,v)=>({stat:`${pct(v)}`,detail:`${p.hits}-${p.misses}${p.pushes?'-'+p.pushes:''} ${S.pmap?'all-time':'on the season'}`,part:`${p.hits}-${p.misses}${p.pushes?'-'+p.pushes:''}`}));   // sw5: All-time's record is not one season's
-  add('🔥','Hot Streak','Most hits in a row',pick(p=>p.bestHit>1?p.bestHit:null),(p,v)=>({stat:`${v} straight hits`,detail:span(p.bestHitSpan)}));
-  add('🧊','Cold Streak','Most misses in a row',pick(p=>p.worstMiss>1?p.worstMiss:null),(p,v)=>({stat:`${v} straight misses`,detail:span(p.worstMissSpan)}));
+  add('headclown','🤡','Head Clown','Fronted the parlay the most',pick(p=>rec(p)?p.bozo:null,{pos:1}),(p,v)=>({stat:`${v}× Bozo`,detail:v?`${fmt$0(p.spent)} burned · ${p.bozoWeeks.join(', ')}`:''}));   // 0× Bozo is a place too
+  add('bestwin','💎','Best Win','Longest odds that actually hit',pick(p=>p.longestHit?p.longestHit.odds:null,{rest:()=>null,restSay:'No parlay cashed yet'}),(p)=>({stat:`${fmtOdds(p.longestHit.odds)} cashed`,detail:p.longestHit.wk,bet:p.longestHit}));
+  add('sharpest','🎯','Sharpest Bettor','Best hit rate',pick(p=>p.graded>=2?p.rate:null,{rest:p=>p.graded?{stat:`${p.hits}-${p.misses}${p.pushes?'-'+p.pushes:''}`}:false,restSay:'Fewer than 2 graded legs'}),(p,v)=>({stat:`${pct(v)}`,detail:`${p.hits}-${p.misses}${p.pushes?'-'+p.pushes:''} ${S.pmap?'all-time':'on the season'}`,part:`${p.hits}-${p.misses}${p.pushes?'-'+p.pushes:''}`}));   // sw5: All-time's record is not one season's
+  add('hot','🔥','Hot Streak','Most hits in a row',pick(p=>p.bestHit>1?p.bestHit:null,{rest:p=>({stat:p.bestHit?'1 hit':'no hits'}),restSay:'No two in a row yet'}),(p,v)=>({stat:`${v} straight hits`,detail:span(p.bestHitSpan)}));
+  add('cold','🧊','Cold Streak','Most misses in a row',pick(p=>p.worstMiss>1?p.worstMiss:null,{rest:p=>({stat:p.worstMiss?'1 miss':'no misses'}),restSay:'No two in a row yet'}),(p,v)=>({stat:`${v} straight misses`,detail:span(p.worstMissSpan)}));
   if(S.pmap){const T=seasonTops(S),B=id=>seasonBest(T[id]);   // #43, the record book's missing pieces, on All-time only (one season's best rate is its Sharpest Bettor): each person's best season, counted by stats() on that season's weeks for this viewer, 8 or more legs hit or missed. The longest hit streak is Hot Streak above (on All-time it runs across seasons)
-    add('📈','Season Best',`Best hit rate in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).rate.rate:null),p=>{const x=B(p.id).rate;return{stat:pct(x.rate),detail:`${x.name} · ${x.hits}-${x.misses}`}});   // a tie of people from different seasons: each holder's own season, by name (tieDetail)
-    add('🏅','Season Hits',`Most legs hit in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).hits.hits:null),p=>{const x=B(p.id).hits;return{stat:`${x.hits} hit${x.hits===1?'':'s'}`,detail:`${x.name} · ${pct(x.rate)}`}})}
+    const rs=`No season of ${BDG_MIN}+ legs with a hit yet`;
+    add('seasonbest','📈','Season Best',`Best hit rate in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).rate.rate:null,{rest:()=>null,restSay:rs}),p=>{const x=B(p.id).rate;return{stat:pct(x.rate),detail:`${x.name} · ${x.hits}-${x.misses}`}});   // a tie of people from different seasons: each holder's own season, by name (tieDetail)
+    add('seasonhits','🏅','Season Hits',`Most legs hit in one season (${BDG_MIN}+ legs hit or missed)`,pick(p=>B(p.id)?B(p.id).hits.hits:null,{rest:()=>null,restSay:rs}),p=>{const x=B(p.id).hits;return{stat:`${x.hits} hit${x.hits===1?'':'s'}`,detail:`${x.name} · ${pct(x.rate)}`}})}
   return A;
 }
 
@@ -4800,7 +4810,7 @@ let POP_NEW=null,POP_CAP=null;const POP_RAW={};   // the popup the Stats page is
 function popRec(act,d){const n=d.node?decNode(d.node):null,mid=(n&&n.mid)||d.mid||null,r={act,d,sk:statKey(),who:popWho(mid),p:!!mid};   // what a popup is about, kept in words that outlast a change of scope
   if(mid)r.name=withStats(()=>(member(mid)||{}).name||'');
   if(act==='show-bets'||act==='x-go'||act==='win-open')r.k='px';else if(act==='show-streak')r.streak=n&&n.streak;
-  else if(act==='award-rank'){const a=withStats(()=>awards(stats().per)[+d.i]);if(a)r.award={name:a.name,icon:a.icon}}   // an award by its name, never its place in the list
+  else if(act==='award-rank'){const kd=d.kind==='vote'?'vote':'season',a=withStats(()=>kd==='vote'?voteAwards(grudgeData()).find(x=>x.k===d.k):awards(stats().per).find(x=>x.k===d.k));if(a)r.award={name:a.name,icon:a.icon,kind:kd,k:a.k}}   // an award by its key, never its place in the list
   return r}
 const bdgNb=x=>String(x).replace(' ','\u00a0');   // a week name ("'26 W12") never splits across lines on a badge (a side parlay's "TD" may still go to the next line)
 const REC_ALL=['Season Best','Season Hits'];   // #43: the awards kept on All-time only
@@ -4809,7 +4819,7 @@ function popDraw(st){const l=league(),where=statKey(l)==='all'?'any season':seas
   if(st.k==='px'){pxNode={...(pxNode||{})};if(mid)pxNode.mid=mid;return withStats(()=>({title:mid?st.name:'Bet explorer',body:sheetBody()}))}   // the same filter, team, bet type and tab
   const d={...st.d},all=()=>withStats(()=>stats());
   if(st.streak){if(!(all().per[mid][st.streak==='hit'?'bestHitLegs':'worstMissLegs']||[]).length)return say(st.name,`${st.name} has no ${st.streak==='hit'?'hits':'misses'} in ${where}.`);d.node=encNode({streak:st.streak,mid})}
-  else if(st.award){const i=withStats(()=>awards(stats().per).findIndex(a=>a.name===st.award.name));if(i<0)return say(`${st.award.icon} ${st.award.name}`,REC_ALL.includes(st.award.name)&&statKey(l)!=='all'?`${st.award.name} compares whole seasons, so it is on All-time only. Tap All-time above to see it.`:`Nobody has earned ${st.award.name} in ${where}.`);d.i=String(i)}
+  else if(st.award){const here=withStats(()=>st.award.kind==='vote'?voteAwards(grudgeData()).some(x=>x.k===st.award.k):awards(stats().per).some(x=>x.k===st.award.k));if(!here)return say(`${st.award.icon} ${st.award.name}`,REC_ALL.includes(st.award.name)&&statKey(l)!=='all'?`${st.award.name} compares whole seasons, so it is on All-time only. Tap All-time above to see it.`:`Nobody has earned ${st.award.name} in ${where}.`);d.kind=st.award.kind;d.k=st.award.k}
   else if(mid)d.mid=mid;
   if(st.act==='teams-all'&&!Object.keys(mid?all().per[mid].byTeam:all().g.byTeam).length)return say(mid?`${st.name}: every team`:'Every team',mid?`${st.name} has no bets on a team in ${where}.`:`No bets on a team in ${where}.`);
   if(st.act==='choke-show'&&!withStats(()=>chokeAny(closeAll(stats().per))))return say('Biggest chokes',`Not enough misses in ${where} yet to rank the biggest chokes.`);
@@ -4848,7 +4858,7 @@ function renderStatsInner(){
       <td class="${r.net>0?'good':r.net<0?'bad':''}">${fmt$0(r.net)}</td>
       <td class="${r.cur>0?'good':r.cur<0?'bad':''}">${r.cur>0?'W'+r.cur:r.cur<0?'L'+(-r.cur):'—'}</td></tr>`).join(''))(places(rows,(a,b)=>a[sortKey]===b[sortKey]&&a.hits===b.hits&&(sortKey!=='hits'||a.misses===b.misses)))}
   </tbody></table></div><p class="muted tiny" style="margin:8px 0 0">Tap a name for the full breakdown.${rows.some(r=>r.all&&r.all.uq)?' * Units leave out hits with no odds written down.':''}</p></section>`;
-  const awd=A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map((a,i)=>{const m=member(a.who);return`<div class="award tap" data-act="award-rank" data-i="${i}"><div class="aw-head"><span class="ic">${a.icon}</span><div class="ab"><small>${a.name} <span class="aw-blurb">· ${h(a.blurb)}</span></small>${a.tied&&a.tied.length>1?`<b>${a.tied.map(id=>h(member(id)?.name||'?')).join(' & ')} <span class="tag">tie</span></b>`:`<b style="color:${m.color}">${h(m.name)}</b>`}</div></div><div class="aw-stat">${h(a.stat||'')}</div>${a.bet&&a.bet.text?`<div class="aw-bet">${betChip(a.bet.text,a.bet.teams)}${a.bet.odds!=null&&a.bet.odds!==''?`<span class="mono muted">${fmtOdds(a.bet.odds)}</span>`:''}</div>`:''}${a.detail?`<em>${tieHtml(a.detail)}</em>`:''}<span class="aw-more">Full ranking ›</span></div>`}).join('')}</div></section>`:'';
+  const awd=A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map(a=>awardTile(a,'season')).join('')}</div></section>`:'';
   const grid=`<section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--purple);background:transparent"></i>bozo</span></div></section>`;
   const SEC={board,awards:awd+recapCard(per,A)+killerClubCard(per)+closeCalls(per),grudge:grudgeCard(),bets:explorerCard(g)+kingsCard(per)+teamsCard(g)+survivalCard(),grid};   // the page's cards, by section (the order inside a section is the spec's)
   return scopeBar()+statSecBar(SEC)+SEC[statSecNow(SEC)];
@@ -4934,37 +4944,69 @@ const GB_MIN=3;   // ranked once someone's been on this many ballots with a choi
 const gbEsc=p=>p.on?(p.on-p.picked)/p.on:null;
 function gbUnseenLine(G){const u=G.unseen;if(!u.length)return'';const n=u.reduce((s,x)=>s+x.n,0);
   return u.length===1?`${n} vote${n===1?'':'s'} from the ${u[0].label} reveal count once you’ve watched it`:`${n} votes from ${u.length} reveals you haven’t watched yet count once you watch them`}
-function voteAwards(G){   // fun ones from the votes themselves (one vote per person per week; ties share)
+function voteAwards(G){   // fun ones from the votes themselves (one vote per person per week; ties share). Each carries the whole league against its stat for the sheet it opens: rows (ranked, place + "T-n" label) and rest (people the award's own minimum leaves unranked, restSay says it); the tile's holders are the place-1 rows
   const P=G.P;const ids=Object.keys(P).filter(id=>member(id));const nm=id=>member(id)?.name||'?';const out=[];
-  const top=(val,min=1)=>{const xs=ids.map(id=>({id,v:val(P[id])})).filter(x=>x.v!=null&&x.v>=min);if(!xs.length)return null;const b=Math.max(...xs.map(x=>x.v));return{who:xs.filter(x=>x.v===b).map(x=>x.id),v:b}};
-  let t=top(p=>p.got);if(t)out.push({icon:'🎯',name:'Most wanted',blurb:'most votes against',who:t.who,stat:`${t.v} vote${t.v===1?'':'s'}`});
+  const ord=id=>{const i=S.members.findIndex(m=>m.id===id);return i<0?1e9:i};   // a tie reads in the league's own order
+  const n1=(n,w)=>`${n} ${w}${n===1?'':'s'}`;
+  const rank=(xs,asc)=>{const r=[...xs].sort((a,b)=>(asc?a.v-b.v:b.v-a.v)||(a.o??ord(a.who))-(b.o??ord(b.who)));const pl=places(r,(a,b)=>a.v===b.v);return r.map((x,i)=>({...x,place:pl[i],label:placeLabel(pl,i)}))};
+  const mk=(k,icon,name,blurb,rows,o={})=>{const top=rows.filter(r=>r.place===1);out.push({k,icon,name,blurb,who:[...new Set(top.flatMap(r=>r.ids||[r.who]))],...o,rows,rest:o.rest||[]})};
+  const few=f=>ids.map(id=>({who:id,x:f({id,...P[id]})})).filter(r=>r.x).sort((a,b)=>ord(a.who)-ord(b.who)).map(r=>({who:r.who,stat:r.x}));   // the unranked: whoever f gives words for
+  let rows=rank(ids.map(id=>({who:id,v:P[id].got,stat:n1(P[id].got,'vote')})));
+  if(rows.length&&rows[0].v>=1)mk('mostwanted','🎯','Most wanted','most votes against',rows,{stat:rows[0].stat});
   const dodge={};for(const wv of G.weeksV){if(!wv.bz)continue;for(const[v,c]of Object.entries(wv.fin))if(v!==c&&c!==wv.bz)dodge[c]=(dodge[c]||0)+1}   // votes in weeks someone else ended up the Bozo
-  const dk=Object.entries(dodge).filter(([id])=>member(id));if(dk.length){const b=Math.max(...dk.map(x=>x[1]));out.push({icon:'🫣',name:'Dodged it',blurb:'most votes without becoming the Bozo',who:dk.filter(x=>x[1]===b).map(x=>x[0]),stat:`${b} vote${b===1?'':'s'}`})}
-  const rs=ids.map(id=>({id,p:P[id]})).filter(x=>x.p.roomN>=2).map(x=>({...x,r:x.p.room/x.p.roomN}));
-  if(rs.length>1){const hi=Math.max(...rs.map(x=>x.r)),lo=Math.min(...rs.map(x=>x.r));if(hi>lo){const k=rs.filter(x=>x.r===hi),c=rs.filter(x=>x.r===lo);
-    out.push({icon:'👑',name:'Kingmaker',blurb:'votes for whoever ends up Bozo',who:k.map(x=>x.id),stat:k.length===1?`${k[0].p.room} of ${k[0].p.roomN}`:`${Math.round(hi*100)}% each`});
-    out.push({icon:'🙃',name:'Contrarian',blurb:'votes against the room',who:c.map(x=>x.id),stat:c.length===1?`${c[0].p.room} of ${c[0].p.roomN} with the room`:`${Math.round(lo*100)}% each`})}}
-  t=top(p=>p.self);if(t)out.push({icon:'🪞',name:'Self-own',blurb:'votes for themself',who:t.who,stat:`${t.v}×`});
-  t=top(p=>p.revenge);if(t)out.push({icon:'🔁',name:'Revenge seeker',blurb:'votes back at whoever voted for them',who:t.who,stat:`${t.v}×`});
-  const one=ids.filter(id=>{const p=P[id];return p.cast>=3&&!p.self&&Object.keys(p.to).length===1});
-  if(one.length)out.push({icon:'🧲',name:'One-track mind',blurb:'every vote on the same person',who:one,stat:one.length===1?`all ${P[one[0]].cast} on ${nm(Object.keys(P[one[0]].to)[0])}`:`${one.length} of them`});
+  rows=rank(ids.map(id=>({who:id,v:dodge[id]||0,stat:n1(dodge[id]||0,'vote')})));
+  if(rows.length&&rows[0].v>=1)mk('dodged','🫣','Dodged it','most votes without becoming the Bozo',rows,{stat:rows[0].stat});
+  const rs=ids.filter(id=>P[id].roomN>=2).map(id=>({who:id,v:P[id].room/P[id].roomN}));   // one rate, two orders: the room's own voters first (Kingmaker), the room's opposite first (Contrarian)
+  if(rs.length>1){const hi=Math.max(...rs.map(x=>x.v)),lo=Math.min(...rs.map(x=>x.v));if(hi>lo){const of=id=>`${P[id].room} of ${P[id].roomN}`,rest=few(p=>p.roomN===1?`${p.room} of 1`:'');
+    const kr=rank(rs.map(x=>({...x,stat:pct(x.v),detail:of(x.who)}))),k=kr.filter(r=>r.place===1),cr=rank(rs.map(x=>({...x,stat:pct(x.v),detail:`${of(x.who)} with the room`})),true),c=cr.filter(r=>r.place===1);
+    mk('kingmaker','👑','Kingmaker','votes for whoever ends up Bozo',kr,{stat:k.length===1?of(k[0].who):`${Math.round(hi*100)}% each`,detail:k.length>1?tieDetail(k.map(r=>r.who),of,nm):'',rest,restSay:'Fewer than 2 reveals',say:'Votes for whoever ends up Bozo'});
+    mk('contrarian','🙃','Contrarian','votes against the room',cr,{stat:c.length===1?`${of(c[0].who)} with the room`:`${Math.round(lo*100)}% each`,detail:c.length>1?tieDetail(c.map(r=>r.who),id=>`${of(id)} with the room`,nm):'',rest,restSay:'Fewer than 2 reveals',say:'Fewest votes with the room'})}}
+  rows=rank(ids.map(id=>({who:id,v:P[id].self,stat:`${P[id].self}×`})));
+  if(rows.length&&rows[0].v>=1)mk('selfown','🪞','Self-own','votes for themself',rows,{stat:rows[0].stat});
+  rows=rank(ids.map(id=>({who:id,v:P[id].revenge,stat:`${P[id].revenge}×`,detail:P[id].lastRevenge?`last ${P[id].lastRevenge.label}, on ${nm(P[id].lastRevenge.on)}`:''})));
+  if(rows.length&&rows[0].v>=1)mk('revenge','🔁','Revenge seeker','votes back at whoever voted for them',rows,{stat:rows[0].stat});
+  {const tosOf=p=>{const mx=Math.max(0,...Object.values(p.to));return{mx,tos:Object.entries(p.to).filter(([,n])=>n===mx&&mx>0).map(([t])=>t).sort((x,y)=>ord(x)-ord(y))}};   // one-track mind: the share of a voter's votes on one person (3 votes cast or more; a vote for themself is never on a target); the award is every voter at 100%
+    const orows=rank(ids.filter(id=>P[id].cast>=3).map(id=>{const p=P[id],{mx,tos}=tosOf(p);return{who:id,v:mx/p.cast,stat:pct(mx/p.cast),detail:mx?`${mx===p.cast?'all '+p.cast:mx+' of '+p.cast} on ${tos.map(nm).join(' & ')}`:`all ${p.cast} on themself`}})),one=orows.filter(r=>r.v===1);
+    if(one.length)mk('onetrack','🧲','One-track mind','every vote on the same person',orows,{stat:one.length===1?`all ${P[one[0].who].cast} on ${nm(tosOf(P[one[0].who]).tos[0])}`:`${one.length} of them`,rest:few(p=>p.cast>=1&&p.cast<3?n1(p.cast,'vote'):''),restSay:'Fewer than 3 votes cast'})}
   // a tie for the record names every holder (tieDetail: the words every holder shares once, or each holder's own, a line each, with the count last; the count alone when there are too many or a line is too long)
   const holders=(recs,say,part,shared,one)=>{const by=new Map();for(const r of recs)by.set(r.who,[...(by.get(r.who)||[]),r.to]);const who=[...by.keys()].sort((x,y)=>S.members.findIndex(m=>m.id===x)-S.members.findIndex(m=>m.id===y)),to=id=>by.get(id).map(nm).join(' & ');
     const d=tieDetail(who,id=>say(to(id)),nm,id=>part(to(id)));return{who,stat:who.length===1&&one?one(by.get(who[0]).map(nm),nm(who[0])):d.includes('\n')?d+'\n'+shared:(d||shared)}};   // one: what a lone holder's card says, with the names in it (Jason 2026-09-29: "never once" did not make sense)
-  const runs=[];const run={};G.weeksV.forEach((wv,k)=>{const pw=G.weeksV[k-1];for(const[v,c]of Object.entries(wv.fin)){if(v===c||!member(v)||!member(c))continue;const key=v+'|'+c;const r=run[key];const n=r&&pw&&pw.sid===wv.sid&&r.last===k-1?r.n+1:1;run[key]={n,last:k};if(n>=2)runs.push({who:v,to:c,n})}});   // reveals in a row
+  const best=(m,v,c,n)=>{const b=m[v]||(m[v]={n:0,tos:[]});if(n>b.n){b.n=n;b.tos=[c]}else if(n===b.n&&!b.tos.includes(c))b.tos.push(c)};   // a voter's longest count, and who it was on
+  const runs=[],bestRun={};const run={};G.weeksV.forEach((wv,k)=>{const pw=G.weeksV[k-1];for(const[v,c]of Object.entries(wv.fin)){if(v===c||!member(v)||!member(c))continue;const key=v+'|'+c;const r=run[key];const n=r&&pw&&pw.sid===wv.sid&&r.last===k-1?r.n+1:1;run[key]={n,last:k};best(bestRun,v,c,n);if(n>=2)runs.push({who:v,to:c,n})}});   // reveals in a row
   if(runs.length){const top=Math.max(...runs.map(r=>r.n)),hs=[...new Map(runs.filter(r=>r.n===top).map(r=>[r.who+'|'+r.to,r])).values()],hd=holders(hs,t=>`voted ${t} ${top} reveals in a row`,t=>`→ ${t}`,`${top} reveals in a row`);
-    out.push({icon:'🔥',name:'Longest grudge',blurb:'same target, reveals in a row',...hd})}
-  const nvs=[];for(const x of ids)for(const[v,n]of Object.entries(P[x].chance)){if(P[x].from[v]||!member(v)||v===x)continue;if(n>=2)nvs.push({who:v,to:x,n})}
+    out.push({k:'grudge',icon:'🔥',name:'Longest grudge',blurb:'same target, reveals in a row',...hd,rows:rank(Object.entries(bestRun).map(([v,b])=>({who:v,v:b.n,stat:b.n>1?`${b.n} in a row`:'never twice',detail:b.n>1?`→ ${b.tos.sort((x,y)=>ord(x)-ord(y)).map(nm).join(' & ')}`:''}))),rest:[]})}
+  const nvs=[],nvBest={};for(const x of ids)for(const[v,n]of Object.entries(P[x].chance)){if(P[x].from[v]||!member(v)||v===x)continue;if(n>=2){nvs.push({who:v,to:x,n});best(nvBest,v,x,n)}}
   if(nvs.length){const top=Math.max(...nvs.map(r=>r.n)),hd=holders(nvs.filter(r=>r.n===top),t=>`0 votes for ${t} in ${top} chances`,t=>`0 for ${t}`,`${top} chances each`,(ts,v)=>{const t=ts.join(' & ');return`${t} ${ts.length===1?'was':'were each'} on ${top} of ${v}’s ballots · 0 votes for ${t}`});   // the voter is the holder: "Genes was on 5 of Jason’s ballots · 0 votes for Genes" (a tie keeps its lines: "Casey 0 for Blake")
-    out.push({icon:'🛡️',name:'Never once',blurb:'had the most chances to vote for one person and never took one',...hd})}
+    out.push({k:'neveronce',icon:'🛡️',name:'Never once',blurb:'had the most chances to vote for one person and never took one',...hd,rows:rank(Object.entries(nvBest).filter(([v])=>member(v)).map(([v,b])=>({who:v,v:b.n,stat:`${b.n} chances`,detail:`0 for ${b.tos.sort((x,y)=>ord(x)-ord(y)).map(nm).join(' & ')}`}))),rest:few(p=>p.cast>=1&&!nvBest[p.id]?n1(p.cast,'vote'):''),restSay:'Never passed on anyone twice',say:'Most chances to vote for one person, and never once took one'})}
   const T=G.weeksV.map(wv=>{const tl={};for(const c of Object.values(wv.fin))tl[c]=(tl[c]||0)+1;const s=Object.entries(tl).sort((a,b)=>b[1]-a[1]);const tops=s.filter(e=>e[1]===s[0][1]).map(e=>e[0]);return{wv,top:s[0],tops,second:tops.length>1?s[0]:s[1]||[null,0],n:Object.keys(wv.fin).length}}).filter(x=>x.top&&x.n>=2&&x.tops.every(id=>member(id)));   // a week's top is every candidate on the top count: a 2-2 week is tied, not one person's
   if(T.length){const gap=x=>x.top[1]-x.second[1],un=T.filter(x=>{const w0=x.top[0];const others=Object.entries(x.wv.fin).filter(([v])=>v!==w0);return others.length>=2&&others.every(([,c])=>c===w0)});   // un: everyone but the Bozo-to-be picked the same person
-    const alone=T.filter(x=>x.tops.length===1&&!un.includes(x));const land=alone.length?[...alone].sort((a,b)=>gap(b)-gap(a))[0]:null;   // a tied week is not one-sided, and a unanimous week is Unanimous's (it is always the widest gap for its head count: Landslide would only say it again)
-    if(land)out.push({icon:'🌊',name:'Landslide',blurb:'the most one-sided vote short of unanimous',who:land.tops,stat:`${land.wv.label}: ${land.top[1]}–${land.second[1]}`});
+    const alone=T.filter(x=>x.tops.length===1&&!un.includes(x));   // a tied week is not one-sided, and a unanimous week is Unanimous's (it is always the widest gap for its head count: Landslide would only say it again)
+    const wrow=(x,i)=>{const t=[...x.tops].sort((p,q)=>ord(p)-ord(q));return{o:i,v:gap(x),ids:t,title:x.wv.label,stat:`${x.top[1]}–${x.second[1]}`,detail:t.map(nm).join(' & '),tie:t.length>1}};   // a week is a row: its label, the count, and the head(s) of it
+    const wk=(W,what)=>{const ls=W.map(r=>`${r.title}: ${r.stat}${W.some(x=>x.detail!==W[0].detail)?` (${r.detail})`:''}`);return W.length===1?`${W[0].title}: ${W[0].stat}`:(W.length<=TIE_MAX&&ls.every(l=>l.length<=TIE_FIT+10)?ls.join('\n')+'\n':'')+`${W.length} weeks ${what}`};   // one week: "W3: 5–1"; weeks that share the record: each one's words, then the count
+    let lw=null;if(alone.length){const lr=rank(alone.map(wrow),false),L1=lr.filter(r=>r.place===1);lw=L1;mk('landslide','🌊','Landslide','the most one-sided vote short of unanimous',lr,{stat:wk(L1,'tied'),say:'The most one-sided votes short of unanimous',note:un.length?'Unanimous weeks are on Unanimous.':''})}
     const NU=T.filter(x=>!un.includes(x));   // Closest vote is never a unanimous week either (a 6–0 is not "the tightest"; Unanimous names it): no week left, no tile
-    if(T.length>1&&NU.length){const close=[...NU].sort((a,b)=>gap(a)-gap(b))[0];if(close!==land)out.push({icon:'🤏',name:'Closest vote',blurb:'the tightest one',who:close.tops,stat:`${close.wv.label}: ${close.top[1]}–${close.second[1]}`})}
-    if(un.length)out.push({icon:'🤝',name:'Unanimous',blurb:'everyone agreed on the Bozo',who:un.length===1?[un[0].top[0]]:[],stat:un.length===1?un[0].wv.label:`${un.length} votes`})}
+    if(T.length>1&&NU.length){const cr=rank(NU.map(wrow),true),C1=cr.filter(r=>r.place===1);if(!(lw&&C1.length===lw.length&&C1.every(r=>lw.some(l=>l.title===r.title))))mk('closest','🤏','Closest vote','the tightest one',cr,{stat:wk(C1,'tied'),say:'The tightest votes'})}
+    if(un.length){const by={};for(const x of un)(by[x.top[0]]??=[]).push(x.wv.label);const ur=rank(Object.entries(by).map(([id,ls])=>({who:id,v:ls.length,stat:n1(ls.length,'week'),detail:ls.join(', ')}))),U1=ur.filter(r=>r.place===1),v=U1[0].v;
+      mk('unanimous','🤝','Unanimous','everyone agreed on the Bozo',ur,{stat:U1.length===1?(v===1?by[U1[0].who][0]:n1(v,'week')):`${n1(v,'week')} each`,detail:U1.length>1?tieDetail(U1.map(r=>r.who),id=>by[id].join(', '),nm):U1.length===1&&v>1?by[U1[0].who].join(', '):'',note:ur.length===1?'No one else yet.':''})}}
   return out}
+const awardOwners=a=>Array.isArray(a.who)?a.who:(a.tied&&a.tied.length?a.tied:[a.who]);   // an award's holders (vote awards: who is a list; the Awards section's: who, and everyone tied with them)
+const awardWho=ids=>{const nm=id=>{const m=member(id);return`<span class="nm"><span class="avatar xs" style="--c:${m?m.color:'#888'}">${avIn(m)}</span>${h(m?m.name:'?')}</span>`};return ids.slice(0,3).map(nm).join('<span class="dot">&amp;</span>')+(ids.length>3?`<span class="dot">+${ids.length-3}</span>`:'')+(ids.length>1?'<span class="tag">tie</span>':'')};
+function awardTile(a,kind){   // ONE tile for the Awards section and the Grudge Book's vote awards: the award's name is the headline, what it means a muted line under it, then who holds it and how much, then the detail; a tap opens the league against that stat (awardSheet). A tie's own words go a line each under the holders (tieHtml)
+  const ids=awardOwners(a).filter(id=>member(id));let val=String(a.stat||''),det=a.detail||'';
+  if(val.includes('\n')){const l=val.split('\n');val=l.pop();det=l.join('\n')+(det?'\n'+det:'')}   // a tie's lines end with what every holder shares: that is the value, the holders' own words go under
+  const bet=a.bet&&a.bet.text?`<div class="aw-bet">${betChip(a.bet.text,a.bet.teams)}${a.bet.odds!=null&&a.bet.odds!==''?`<span class="mono muted">${fmtOdds(a.bet.odds)}</span>`:''}</div>`:'';
+  return`<div class="aw" role="button" tabindex="0" data-act="award-rank" data-kind="${kind}" data-k="${h(a.k)}"><span class="ic" aria-hidden="true">${a.icon}</span><div class="aw-b"><div class="aw-name">${h(a.name)}<span class="chev" aria-hidden="true">›</span></div><div class="aw-blurb">${h(capFirst(a.blurb))}</div>${ids.length||val?`<div class="aw-who">${awardWho(ids)}${ids.length&&val?'<span class="dot">·</span>':''}${val?`<span class="v">${h(val)}</span>`:''}</div>`:''}${bet}${det?`<div class="aw-detail">${tieHtml(det)}</div>`:''}</div></div>`}
+function awardSheet(kind,k){   // the league against an award's stat: {title, body} or null (nobody holds it in this scope). Drawn inside withStats, so it is the season on screen or All-time, from the very rows the tile came from (held-back reveals and weeks are already out of grudgeData / stats)
+  return withStats(()=>{let G=null,a;if(kind==='vote'){G=grudgeData();a=voteAwards(G).find(x=>x.k===k)}else a=awards(stats().per).find(x=>x.k===k);if(!a)return null;
+    const person=a.rows.some(r=>r.who),open=r=>kind==='vote'?`data-act="grudge-show" data-mid="${r.who}" data-stack="1"`:`data-act="player-detail" data-mid="${r.who}" data-stack="1"`;
+    const av=m=>`<span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span>`;
+    const row=(r,rank,cls)=>{const m=r.who?member(r.who):null;if(r.who&&!m)return'';
+      const mid=m?`<b>${h(m.name)}</b>`:`<b>${h(r.title)}</b>`,sub=r.who?(r.detail?h(r.detail):''):`${h(r.detail)}${r.tie?' <span class="tag">tie</span>':''}`,bet=r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null&&r.bet.odds!==''?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:'';
+      const inner=`<span class="rank">${rank}</span>${m?av(m):''}<div class="rank-mid">${mid}${sub?`<small>${sub}</small>`:''}${bet}</div>${r.stat?`<span class="rank-val">${h(r.stat)}</span>`:''}${m?'<span class="chev" aria-hidden="true">›</span>':''}`;
+      return m?`<button type="button" class="rank-row${cls}" ${open(r)}>${inner}</button>`:`<div class="rank-row${cls}">${inner}</div>`};
+    const rows=a.rows.map(r=>row(r,h(r.label),r.place===1?' holder':'')).join(''),rest=(a.rest||[]).map(r=>row(r,'',' ')).join('');
+    const unseen=G?gbUnseenLine(G):'',foot=[a.note,unseen?unseen+'.':''].filter(Boolean).join(' ');
+    return{title:`${a.icon} ${a.name}`,body:`<p style="margin:0 0 6px">${h(capFirst(a.say||a.blurb))}</p><div class="rank-list">${rows}</div>${rest?`<div class="rank-rest"><div class="pd-sub">${h(a.restSay)}</div>${rest}</div>`:''}${foot?`<p class="rank-note">${h(foot)}</p>`:''}`}})}
 function voteGridHtml(G){   // every voter (rows) against everyone they could vote for (columns), across the scope
   const P=G.P;const ppl=S.members.filter(m=>{const p=P[m.id];return p&&(p.cast||p.got)});if(!ppl.length)return'<p class="muted">No votes on the record yet.</p>';
   const av=m=>`<span class="avatar xs" style="--c:${m.color}">${avIn(m)}</span>`;
@@ -4992,9 +5034,9 @@ function grudgeCard(){
   const grudges=shown.length?`<div class="pd-sub">Biggest grudges</div><div class="gb-pairs">${shown.map(x=>{const v=member(x.v),c=member(x.c);return`<div class="gb-pair" data-act="grudge-show" data-mid="${x.v}">${av(v)}<b>${h(v.name)}</b><span class="muted">voted</span>${av(c)}<b>${h(c.name)}</b><span class="pk-badge">×${x.n}</span></div>`}).join('')}${more>0?`<p class="muted tiny" style="margin:0">+${more} more at ×${cut}</p>`:''}</div>`:'';
   const s1=[G.nBallots?`Ballots from ${G.nBallots} week${G.nBallots===1?'':'s'}`:'',G.nVotes?`${G.nVotes} vote${G.nVotes===1?'':'s'} from ${G.nReveals} reveal${G.nReveals===1?'':'s'}`:G.live&&!G.unseen.length?'Votes show up here after each reveal':''].filter(Boolean).join(' · ');
   const foot=[s1,people.length?gbUnseenLine(G):''].filter(Boolean).map(x=>x+'.').join(' ');   // with nobody listed yet, the intro already says to watch it
-  const intro=people.length?'Who votes for who, and who keeps slipping off the Bozo ballot. Tap a name for the receipts.':G.unseen.length===1?`Watch the ${h(G.unseen[0].label)} reveal to see who voted for who.`:'Watch the reveals to see who voted for who.';
-  const AW=G.nVotes?voteAwards(G):[];const wn=ids=>ids.length?ids.slice(0,3).map(id=>h(member(id)?.name||'?')).join(' & ')+(ids.length>3?` +${ids.length-3}`:''):'';
-  const awards=AW.length?`<div class="pd-sub">Vote awards</div><div class="gb-awards">${AW.map(x=>`<div class="gb-aw${x.who.length===1?' tap':''}" ${x.who.length===1?`data-act="grudge-show" data-mid="${x.who[0]}"`:''}><span class="ic">${x.icon}</span><div class="gb-awb"><small>${x.name} · ${h(x.blurb)}</small>${x.who.length?`<b>${wn(x.who)}</b>`:''}<em>${tieHtml(x.stat)}</em></div></div>`).join('')}</div>`:'';
+  const intro=people.length?'Who votes for who, and who keeps slipping off the Bozo ballot. Tap an award for the whole league, a name for the receipts.':G.unseen.length===1?`Watch the ${h(G.unseen[0].label)} reveal to see who voted for who.`:'Watch the reveals to see who voted for who.';
+  const AW=G.nVotes?voteAwards(G):[];
+  const awards=AW.length?`<div class="pd-sub">Vote awards</div><div class="gb-awards">${AW.map(x=>awardTile(x,'vote')).join('')}</div>`:'';
   const gridBtn=G.nVotes?`<button class="btn ghost block sm" style="margin:10px 0 2px" data-act="vote-grid">🗳️ Who voted for who</button>`:'';
   return`<section class="card gb-card"><h3>📒 The Grudge Book</h3><p class="muted tiny" style="margin:-4px 0 10px">${intro}</p>
     ${awards}${gridBtn}${grudges}${ranked.length?`<div class="pd-sub">Ballot escapes</div><div class="pk-rows">${ranked.map((m,k)=>row(m,pl[k])).join('')}</div>`:''}
@@ -5822,12 +5864,12 @@ const ACT={
   'px-go'(el){if(ssIn(el)){SS.node={...decNode(el.dataset.node),q:1};ssPaint();return}pxNode=decNode(el.dataset.node);refreshSheet()},
   'px-mode'(el){if(ssIn(el)){SS.mode=el.dataset.mode;ssPaint();return}pxMode=el.dataset.mode;refreshSheet()},
   'show-streak'(el){const q=decNode(el.dataset.node);withStats(()=>{const{per}=stats();const p=per[q.mid];if(!p)return;const legs=q.streak==='hit'?p.bestHitLegs:p.worstMissLegs;const m=member(q.mid);modal({stack:true,title:`${m.name} · ${legs.length} straight ${q.streak==='hit'?'hits':'misses'}`,body:betListHtml(legs,false),actions:[{label:'Done',cls:'ghost'}]})})},
-  'award-rank'(el){withStats(()=>{const{per}=stats();const a=awards(per)[+el.dataset.i];if(!a)return;modal({stack:true,title:`${a.icon} ${a.name}`,body:`<p class="muted" style="margin:0 0 6px">${h(a.blurb)}</p><div class="rank-list">${a.rows.map((r,i)=>{const m=member(r.who);return`<div class="rank-row"><span class="rank">${r.place||i+1}</span><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><div class="rank-mid"><b>${h(m.name)}</b><small>${h(r.stat||'')}${r.detail?' · '+h(r.detail):''}</small>${r.bet&&r.bet.text?`<div class="aw-bet">${betChip(r.bet.text,r.bet.teams)}${r.bet.odds!=null?`<span class="mono muted">${fmtOdds(r.bet.odds)}</span>`:''}</div>`:''}</div></div>`}).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
+  'award-rank'(el){const o=awardSheet(el.dataset.kind==='vote'?'vote':'season',el.dataset.k);if(o)modal({stack:true,title:o.title,body:o.body,actions:[{label:'Done',cls:'ghost'}]})},   // the league against that stat (a tap on a row opens the person, stacked)
   'screen-check'(){screenCheck()},
   'choke-show'(){withStats(()=>{const all=closeAll(stats().per);if(!chokeAny(all))return;modal({title:'Biggest chokes',body:chokeBody(all),actions:[{label:'Done',cls:'ghost'}]})})},   // the Biggest chokes popup of the Closest misses card
   'close-u'(el){const u=el.dataset.u;if(!CLOSE_UNITS.some(([k])=>k===u))return;closeU=u;render();const b=document.querySelector(`.cm-switch button[data-u="${u}"]`);if(b)try{b.focus({preventScroll:true})}catch(e){}},   // Points | Yards | Receptions on Closest misses
   'vote-grid'(){withStats(()=>{const G=grudgeData();modal({title:'🗳️ Who voted for who',body:voteGridHtml(G),actions:[{label:'Done',cls:'ghost'}]})})},
-  'grudge-show'(el){withStats(()=>{const G=grudgeData();const id=el.dataset.mid;const m=member(id);if(!m||!G.P[id])return;modal({title:`📒 ${m.name}`,body:grudgeSheet(G,id),actions:[{label:'Done',cls:'ghost'}]})})},
+  'grudge-show'(el){withStats(()=>{const G=grudgeData();const id=el.dataset.mid;const m=member(id);if(!m||!G.P[id])return;modal({stack:!!el.dataset.stack,title:`📒 ${m.name}`,body:grudgeSheet(G,id),actions:[{label:'Done',cls:'ghost'}]})})},
   'pk-show'(el){withStats(()=>{const{per}=stats();const m=member(el.dataset.mid);const p=per[el.dataset.mid];if(!m||!p)return;
     modal({title:`☠️ ${m.name}`,body:`<p class="muted" style="margin:0 0 12px">${pkLine(p)}. Each one: the only miss on a slip everyone else hit.</p><div class="pk-list">${p.killers.map(k=>`<div class="pk-item"><div class="pk-top"><span class="mono muted tiny">${h(k.wk)}</span><span class="mono muted tiny">${k.odds!=null?fmtOdds(k.odds):''}</span></div>${betChip(k.text,k.teams)}${k.margin!=null||k.lost?`<div class="pk-bot">${k.margin!=null?`<span class="tiny bad">Missed by ${fmtMargin(k.margin,k.unit)}</span>`:''}${k.lost?`<span class="tiny muted">${fmt$0(k.lost)} that got away</span>`:''}</div>`:''}</div>`).join('')}</div>`,actions:[{label:'Done',cls:'ghost'}]})})},
   'teams-all'(el){withStats(()=>{const{per,g}=stats();const mid=el.dataset.mid;const m=mid?member(mid):null;if(mid&&!m)return;const all=mostBet(m?(per[mid]||{}).byTeam:g.byTeam);
