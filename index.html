@@ -305,9 +305,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .lgstat{display:flex;flex-direction:column;gap:6px;margin-top:12px}.lgstat.red{margin:0 0 14px}.lgstat.red .st{box-shadow:inset 0 0 0 1px var(--line2)}   /* under the hero the rows sit on the page's own grey: a hairline gives them an edge in light mode */
 .st{display:flex;align-items:flex-start;gap:10px;min-height:44px;padding:9px 10px;border-radius:12px;background:var(--surface2)}
 .st>i{flex:none;width:9px;height:9px;border-radius:50%;margin-top:6px;background:var(--dim)}.st.ok>i{background:var(--green)}.st.warn>i{background:var(--amber)}.st.bad>i{background:var(--red)}
-.st>span{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}.st>span small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}.st.bad>span small{color:var(--text)}
+.st{color:var(--text)}.st>span{flex:1;min-width:0;font-size:14px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}.st>span small{display:block;font-weight:400;font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}.st.bad>span small{color:var(--text)}
 .st .go{flex:none;align-self:center;font:inherit;font-size:13px;font-weight:600;color:#0066cc;min-height:44px;min-width:44px;display:grid;place-items:center;padding:0 2px 0 8px;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent}.st .go:active{opacity:.6}@media(prefers-color-scheme:dark){.st .go{color:#5aa9ff}}   /* --blue is 4.3:1 on a row's grey (3.8:1 in dark): these two read 5.1:1 and 5.7:1 */
-.stag.todo{background:var(--amber-bg);color:var(--amber-tx)}.stag.set{background:var(--green-bg);color:var(--green)}.stag.broke{background:var(--red-bg);color:var(--red-tx)}
+.stag.todo{background:var(--amber-bg);color:var(--amber-tx)}.stag.set{background:var(--green-bg);color:var(--green)}.stag.broke{background:var(--red-bg);color:var(--red-tx)}.lgcard .stag.none{color:var(--text)}   /* "Checking…" in the muted grey on the chip's grey was 4.15:1 (3.95 in dark): the ink reads */
 /* The Sweat: a sheet (the one sheet pattern), the last leg's number at 64 px, the bar with the line on it, the clock, and what everyone collects if it hits. No motion of its own */
 .sweatv{text-align:center;padding:10px 0 4px}
 .sw-eye{font-size:13px;font-weight:600;color:var(--muted)}
@@ -2523,7 +2523,7 @@ function heroInner(w,c,cl0){   // cl0: the slip's claims, when the caller alread
     if(canPlace&&!isAdmin()&&needsPayer(w))line='All in. Before this side parlay can be marked placed, the commissioner has to say who pays for it. Text the commissioner to choose. Every pick stays on the slip.';
     else if(wait){line='<span class="sk-txt">All in. Waiting for this week’s games to load to check a pick.</span>';
       if(canPlace&&sync)btn=`<button class="btn primary block" disabled aria-describedby="hw-sub-${h(w.id)}">I placed it</button>`}   // the button's place is kept (greyed, its words above) so it never pops in and moves the page   // grey, its words still there for a screen reader: never words that turn into "Ready"
-    else if(!sync)line='All picks are in.';
+    else if(!sync)line=flagged?'All in. Sort out the flagged picks first.':'All picks are in.';   // no sync here: the flag is still said (it was the slip's headline before the hero)
     else if(canPlace){line=flagged?'All in. Sort out the flagged picks, then place it on DraftKings and say so here.':'All in. Place it on DraftKings, then say so here.';btn=`<button class="btn primary block" data-act="placed-open" data-wid="${h(w.id)}" aria-describedby="hw-sub-${h(w.id)}">I placed it</button>`}
     else line=`${flagged?'All in. Sort out the flagged picks first. ':''}Ready for <b>${h(bz?bz.name:'the Bozo')}</b> to place it on DraftKings.`}
   else if(key==='placed'){num=c.missingOdds&&!c.slip?'—':amer(c.dec);unit='parlay';const P=w.placed||{},ko=heroKick(w);
@@ -2571,7 +2571,7 @@ function sweatBody(w,c,mid){
     const say=last&&(cd==='GRADING'||cd==='WAITSTATS')?'That game just ended and its final numbers are still coming in, so this leg is not graded yet. Nothing was lost. This sheet fills in on its own when it is. Tap Back to slip to see the slip.':last?'This is still the only leg left, but there is no live number to show for it right now. Nothing was lost. Tap Back to slip to see the slip.':'This slip is no longer down to one leg, so there is no single sweat to watch. Nothing was lost. Tap Back to slip to see every leg.';
     return`<div class="sweatv"><div class="sw-eye">${h(lgw)}</div><div class="sw-leg">${h(p.text)}</div><p class="sw-ck">${say}</p></div>`}
   const n=v?lvNum(v):{big:'',of:'',head:'',rest:[]},tone=phase==='won'||(phase==='lost'&&me.s==='hit')?'hit':phase==='lost'&&me.s==='miss'?'miss':v?lvTone(v):'';   // a busted slip whose own leg is fine shows that leg as it is, never as the miss
-  const num=v&&n.big?`<div class="sw-num ${tone}">${h(n.big)}${n.of?`<small>${h(n.of)}</small>`:''}</div>`:v&&v.main?`<div class="sw-num words ${tone}">${h(v.main)}</div>`:'';
+  const num=v&&n.big?`<div class="sw-num ${tone}">${h(n.big)}${n.of?` <small>${h(n.of)}</small>`:''}</div>`:v&&v.main?`<div class="sw-num words ${tone}">${h(v.main)}</div>`:'';
   const bar=v&&v.bar?lvBarHtml(v,tone):'';
   const score=v&&v.score?` \xB7 <span class="lv-score">${h(v.score)}</span>`:'';
   const under=v?(n.big?lvUnder(v,n):[v.sub].filter(Boolean).join('')):'',fresh=!!L.fresh,age=L.R?Math.max(0,Date.now()-(L.R.at||0)):0;
