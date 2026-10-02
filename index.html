@@ -952,7 +952,7 @@ html.touch,html.touch body{touch-action:manipulation}
 
 .bap-more{margin:4px 0 6px}.bap-more>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;color:var(--blue);font-weight:600;font-size:14px;list-style:none}.bap-more>summary::-webkit-details-marker{display:none}.bap-more>summary::before{content:'▸';margin-right:6px}.bap-more[open]>summary::before{content:'▾'}   /* a team's players with no line yet, behind See more (Jason 09-24) */
 /* Moments, the week receipt and awards night (Jason 10-02): every size is the app's own; nothing animates but the opened envelope's 600 ms tint */
-.modal.moment .modal-body{text-align:center}.modal.moment .bozo-line{justify-content:center}.modal.moment .bozo-name{color:var(--text);text-decoration:underline;text-decoration-color:var(--c);text-decoration-thickness:3px;text-underline-offset:5px}   /* the person's colour is a line under the name, never the ink of it (their colour is 2.3:1 on white) */
+.modal.moment .modal-body{text-align:center;display:flex;flex-direction:column}.modal.moment .mo{margin:auto 0}@media(max-width:480px){.modal.moment{min-height:calc(100dvh - 40px)}}   /* a moment fills a phone screen, its content centred (auto margins, so a tall one scrolls from its top, never clipped); a wide screen keeps the centred sheet */.modal.moment .bozo-line{justify-content:center}.modal.moment .bozo-name{color:var(--text);text-decoration:underline;text-decoration-color:var(--c);text-decoration-thickness:3px;text-underline-offset:5px}   /* the person's colour is a line under the name, never the ink of it (their colour is 2.3:1 on white) */
 .mo-h{font-size:28px;font-weight:800;letter-spacing:-.03em;color:var(--text);margin:12px 0 0;line-height:1.15;text-wrap:balance;overflow-wrap:anywhere}
 .mo-tribe{font-size:13px;font-weight:600;color:var(--muted);margin:0 0 14px}
 .mo-sub{font-size:14px;color:var(--muted);line-height:1.45;margin:12px auto 0;max-width:320px;text-wrap:balance;font-variant-numeric:tabular-nums}.modal-body .mo-sub{margin-bottom:0}
@@ -3612,20 +3612,23 @@ function momentFacts(w,c){   // each kind's state for the week on screen: 'due' 
   if(c.result==='won'&&c.graded)f.cashed=newest||(nx&&nx===top&&!nx.placed)?'due':'stale';   // the newest week, or the one before it while the newest has no placed slip yet
   if(!isSide(w)&&bozoElect(w))f.bozo=w===top||(nx&&nx===top&&!calc(nx).graded)?'due':'stale';
   return f}
+let MO_SHARE=0;   // a share started from a sheet is still drawing: the next moment waits for its sheet to close
+function shareFrom(wid){MO_SHARE++;const done=()=>{MO_SHARE=Math.max(0,MO_SHARE-1);setTimeout(momentCheck,350)};let p;try{p=shareSlip(week(wid))}catch(e){done();return}Promise.resolve(p).then(done,done)}
 function momentRun(){
   const l=league(),root=document.getElementById('modal-root');
-  if(!l||VIEW!=='week'||root._open||PLAYER||quiet()||refreshing||upl||FACE_BUSY||obBusy||needWho(l)||UPCOMING||unread(l)||LEAGUE_FAIL.has(l.id)||S.members.length<2||!S.weeks.length||season(l).id!==newestOf(l).id)return;
+  if(!l||VIEW!=='week'||root._open||PLAYER||quiet()||refreshing||upl||FACE_BUSY||obBusy||needWho(l)||UPCOMING||MO_SHARE||unread(l)||LEAGUE_FAIL.has(l.id)||S.members.length<2||!S.weeks.length||season(l).id!==newestOf(l).id)return;
   const st=moStore(l);if(!st)return;const sid=season(l).id,K=(w,k)=>`${sid}|${w.id}|${k}`;
   if(st.fresh){for(const x of S.weeks){const c=calc(x),f=momentFacts(x,c);for(const k of MO_KINDS)if(f[k])st.o.m[K(x,k)]=1}moSave(st);return}   // the first look for this person on this phone: whatever is already true is old news, so nothing replays a season
   const w=currentWeek();if(!w)return;const c=calc(w),f=momentFacts(w,c);let due=null,dirty=false;
   for(const k of MO_KINDS){if(!f[k]||st.o.m[K(w,k)])continue;if(f[k]==='due'&&!due)due=k;else if(f[k]==='stale'){st.o.m[K(w,k)]=1;dirty=true}}
   if(due){st.o.m[K(w,due)]=1;dirty=true}   // marked on open, so a reload while it is up never shows it twice
-  if(dirty&&!moSave(st))return;
-  if(due)momentOpen(due,w,c)}
-function momentCheck(){try{if(VIEW==='week')guarded(momentRun)}catch(e){}}
+  if(dirty&&!moSave(st))return null;
+  if(due){momentOpen(due,w,c);return{kind:due,wid:w.id}}return null}
+function momentCheck(){try{if(VIEW==='week')return guarded(momentRun)}catch(e){}return null}
+function momentMark(w,k){try{const l=league(),st=moStore(l);if(!st||st.fresh)return;st.o.m[`${season(l).id}|${w.id}|${k}`]=1;moSave(st)}catch(e){}}   // said another way already (a toast): never shown again as a moment
 function momentOpen(k,w,c){const m=momentBody(k,w,c);if(m)modal({title:m.title,body:m.body,actions:m.actions,onOpen:root=>{const el=root.querySelector('.modal');if(el)el.classList.add('moment')}})}   // the one sheet every sheet is: the handle, the ×, a swipe, the scrim, Back or Done all close it; never required
 function momentBody(k,w,c){
-  const wid=w.id,done={label:'Done',cls:'primary'},share=t=>c.n?[{label:t,cls:'ghost',onClick:()=>{shareSlip(week(wid))}}]:[];
+  const wid=w.id,done={label:'Done',cls:'primary'},share=t=>c.n?[{label:t,cls:'ghost',onClick:()=>{shareFrom(wid)}}]:[];
   if(k==='placed'){const P=w.placed||{},by=P.by==='admin'?'the commissioner':member(P.by)?.name||'the Bozo',at=fmtET(P.at);
     return{title:wkName(w),body:`<div class="mo">${bozoLineRO(w)}<div class="mo-h" role="heading" aria-level="3">It’s in.</div>${footCells(w,c)}<p class="mo-sub">🔒 Placed by ${h(by)}${at?`, ${h(at)}`:''} · ${c.n} leg${c.n===1?'':'s'}${+P.boost>0?` · <span class="tag boost">🚀 ${h(String(P.boost))}% boost</span>`:''} · Picks are locked.</p></div>`,actions:[done,...share('📸 Share the slip')]}}
   if(k==='cashed')return{title:wkName(w),body:`<div class="mo">${bozoLineRO(w)}<div class="mo-h" role="heading" aria-level="3">Cashed.</div>${wonLine(w,c)}${receiptBody(w,c,{inMoment:true})}</div>`,actions:[done,...share('📸 Share to the chat')]};
@@ -3641,17 +3644,18 @@ function receiptBody(w,c,o={}){   // every leg, the way the slip picture draws t
     return`<div class="rp-leg"><span class="mk ${MK[st][0]}" role="img" aria-label="${MK[st][2]}">${MK[st][1]}</span><span class="t"><b>${h(m?m.name:'?')}${x.mid===w.bozoId&&!isSide(w)?' 🤡':''}</b> · ${h(String(x.text||'').trim()||'(no pick)')}</span><span class="o">${x.oddsN!=null?fmtOdds(x.oddsN):'—'}</span>${mg?`<span class="m${st==='miss'?' no':''}">${h(mg)}</span>`:''}</div>`}).join('');
   const dt=w.date&&fmtDate(w.date)?fmtDate(w.date):'',head=o.inMoment?'':`<div class="rp-head"><span>${h(dt)}</span><span>${h(l.name||'')}</span></div><div class="rp-badge">${resultBadge(c)}</div>`;
   return`<div class="rp">${head}${rows}<div class="rp-perf" aria-hidden="true"></div>${footCells(w,c)}${nb?`<div class="rp-bozo"><span class="avatar xs" style="--c:${nb.color||'#888'}">${avIn(nb)}</span><b>${h(nb.name)} is the ${h(nextName(w))} Bozo</b>${how?`<span>· ${h(how)}</span>`:''}</div>`:''}${by||at?`<div class="rp-foot"><span>Placed${by?` by ${h(by)}`:''}${at?` · ${h(at)}`:''}</span></div>`:''}</div>`}
-function receiptSheet(w){const wid=w.id,c=calc(w);modal({title:`${wkName(w)} receipt`,body:receiptBody(w,c),actions:[{label:'📸 Share to the chat',cls:'primary',onClick:()=>{shareSlip(week(wid))}},{label:'Done',cls:'ghost'}]})}
+function receiptSheet(w){const wid=w.id,c=calc(w);modal({title:`${wkName(w)} receipt`,body:receiptBody(w,c),actions:[{label:'📸 Share to the chat',cls:'primary',onClick:()=>{shareFrom(wid)}},{label:'Done',cls:'ghost'}]})}
 /* awards night: three sealed envelopes on a graded week, opened in turn, remembered per person on this phone */
 function weekAwards(w,c){   // [{k, icon, name, rule, ids, text}]: the leg that hit at the longest price, the leg that missed by the least, the hit that came closest to missing (each in the bet's own units); a tie names everyone, nothing is chosen by hand, an award nothing backs is left out
   if(!c||!c.graded||isSide(w))return[];const nm=id=>member(id)?.name||'?',L=c.legs.filter(x=>member(x.mid)),hit=L.filter(x=>x.status==='hit'),miss=L.filter(x=>x.status==='miss');
-  const mg=x=>x.margin==null||x.margin===''||!Number.isFinite(+x.margin)?null:+x.margin,pk=x=>String(x.text||'').trim()||'(no pick)';
+  const mg=x=>x.margin==null||x.margin===''||!Number.isFinite(+x.margin)||x.unit==='none'?null:+x.margin,pk=x=>String(x.text||'').trim()||'(no pick)';
   const best=(list,f,low)=>{const v=list.map(f).filter(x=>x!=null);if(!v.length)return[];const t=low?Math.min(...v):Math.max(...v);return list.filter(x=>f(x)===t)};
   const say=(legs,full)=>{const f=legs.map(full);if(legs.length===1)return`${nm(legs[0].mid)} · ${f[0]}`;if(new Set(f).size===1)return`${andList(legs.map(x=>nm(x.mid)))} · ${f[0]}`;return legs.map((x,i)=>`${nm(x.mid)} · ${f[i]}`).join('\n')};
   const A=[],add=(k,icon,name,rule,legs,full)=>{if(legs.length)A.push({k,icon,name,rule,ids:legs.map(x=>x.mid),text:say(legs,full)})};
   add('leg','🏆','Leg of the Week','Longest price that hit',best(hit,x=>x.oddsN,false),x=>`${pk(x)}, ${fmtOdds(x.oddsN)}`);
   add('miss','🎯','Closest Miss','The miss by the smallest margin',best(miss,mg,true),x=>`${pk(x)}, missed by ${fmtMargin(mg(x),x.unit)}`);
-  add('sweat','😮‍💨','Sweat of the Week','The hit that came closest to missing',best(hit,mg,true),x=>`${pk(x)}, ${mg(x)===0?'no room to spare':`covered by ${fmtMargin(mg(x),x.unit)}`}`);
+  const lg=best(hit,x=>x.oddsN,false).map(x=>x.mid),sw=best(hit,mg,true);   // the same leg as Leg of the Week: left out, so no leg is shown twice
+  add('sweat','😮‍💨','Sweat of the Week','The hit that came closest to missing',sw.some(x=>lg.includes(x.mid))?[]:sw,x=>`${pk(x)}, ${mg(x)===0?'no room to spare':`covered by ${fmtMargin(mg(x),x.unit)}`}`);
   return A}
 const ENV_MEM={};   // what this visit has opened, for a phone that can't write storage
 const envKey=l=>`bp-env:${l.sync?l.sync.id:l.id}:${l.me||'guest'}`;
@@ -5915,7 +5919,6 @@ async function slipImage(w){
     return await Promise.race([timeout,(async()=>(await viaFetch)||(await viaImg))()])};
   const logoCache={};await Promise.all(c.legs.flatMap(l=>(l.teams||[]).map(async a=>{if(!(a in logoCache))logoCache[a]=await loadImg(LOGO(a))})));
   const el=c.graded?eligible(w):null;const ballot=el&&el.list.length&&c.result!=='won'?el.list.map(id=>member(id)?.name).join(', '):'';
-  const elect=ballot?bozoElect(w):null,eHow=elect?bozoHow(w):'';   // the Bozo is known to this person (they have watched the reveal): the line says who, in the ballot line's place
   const outP=pushedOut(c);   // pushed legs collect nothing when either league rule says so
   const extra=(c.result==='won'?110:0)+(ballot?90:0)+(c.missingOdds?0:0)+(outP.length?44:0);
   const H=300+c.legs.length*legH+270+extra;
@@ -5968,7 +5971,7 @@ async function slipImage(w){
     const big=cols.some(([,v])=>v.length>8);x.fillStyle=i===2&&c.result==='won'?GREEN:T;x.font=F(600,big?(i===0?32:28):(i===0?40:36),true);x.fillText(v,cx,y+76)});
   y+=120;
   if(c.result==='won'){rr(x,L,y,R-L,80,24);x.fillStyle='rgba(52,199,89,.13)';x.fill();x.fillStyle=GREEN;x.font=F(600,30);x.textAlign='left';x.fillText(`🎉  ${outP.length?'Everyone who hit collects':'Everyone collects'} ${fmt$(c.share)}`,L+28,y+51);if(outP.length){x.fillStyle=MU;x.font=F(500,24);x.fillText(`${outP.join(', ')} pushed and ${outP.length===1?'is':'are'} left out.`,L+28,y+110)}y+=110+(outP.length?44:0)}
-  if(ballot){x.fillStyle=PURPLE;x.font=F(600,28);x.textAlign='left';x.fillText(elect?`🤡  ${elect.name} is the ${nextName(w)} Bozo${eHow?' · '+eHow:''}`:`🗳  On the ballot for Week ${w.num+1}: ${ballot}`,L,y+30);y+=90}
+  if(ballot){x.fillStyle=PURPLE;x.font=F(600,28);x.textAlign='left';x.fillText(`🗳  On the ballot for Week ${w.num+1}: ${ballot}`,L,y+30);y+=90}
   x.fillStyle=DIM;x.font=F(500,22);x.textAlign='left';x.fillText(fmtDate(w.date)?`${fmtDate(w.date)}${w.date?', '+w.date.slice(0,4):''}`:'',L,H-pad-40);
   x.textAlign='right';x.fillText('bozo parlay',R,H-pad-40);
   return cv;
@@ -6212,7 +6215,7 @@ const ACT={
     if(p.status==='pending'){delete p.gby;delete p.gat;delete p.gdet}else{p.gby='hand';p.gat=new Date().toISOString();delete p.gdet}
     if(p.status==='pending')w.votes={};
     commit();const now=calc(w).result;
-    if(now==='won'&&was!=='won'){confetti()}   // the cashed moment says it now
+    if(now==='won'&&was!=='won'){confetti();const mo=momentCheck();if(!(mo&&mo.kind==='cashed'&&mo.wid===w.id)){momentMark(w,'cashed');toast('PARLAY CASHED 🤑 the Bozo is a hero','good')}}   // the cashed moment says it when it opens; when it can't (an older week, storage blocked, a sheet up…) the toast does, so the confetti never comes with no words, and never both
     else if(now==='lost'&&was!=='lost'&&calc(w).graded){toast('Slip is dead. Open the vote 🗳️')}
   },
   vote(el){const w=el.dataset.wid?week(el.dataset.wid):currentWeek();if(!w)return stale();w.votes??={};w.votes[el.dataset.mid]=Math.max(0,(w.votes[el.dataset.mid]||0)+Number(el.dataset.d));commit()},
