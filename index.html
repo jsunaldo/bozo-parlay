@@ -852,6 +852,8 @@ table.heat{border-collapse:separate;border-spacing:4px}
 .steps{display:flex;gap:6px;justify-content:center;margin-bottom:14px}
 .steps i{width:28px;height:4px;border-radius:2px;background:var(--surface3)}
 .steps i.on{background:var(--blue)}
+.setup .btn{min-height:44px}.setup input{min-height:44px}.setup>.btn.block,.setup form>.btn.block{margin-top:10px}.setup .mlist{margin:12px 0}   /* #10 one-question setup: every button and box a 44 px target */
+.setup-stake{display:flex;align-items:center;gap:8px}.setup-stake .cur{font-family:var(--num);font-size:22px;font-weight:700;color:var(--muted);flex:none;width:18px}.setup-stake input{flex:1;min-width:0;font-family:var(--num);font-size:22px;font-weight:700;font-variant-numeric:tabular-nums}
 
 /* bet popover (season grid) */
 #tip{position:fixed;z-index:45;width:260px;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:12px 14px;box-shadow:var(--shadow-lg);pointer-events:none;opacity:0;transform:translateY(4px) scale(.98);transition:opacity .15s,transform .15s}
@@ -1086,7 +1088,7 @@ const OWNER_KEY='bp-owner';
 const isOwner=()=>{try{return localStorage.getItem(OWNER_KEY)==='1'}catch(e){return false}};
 const setOwner=()=>{try{localStorage.setItem(OWNER_KEY,'1')}catch(e){}};
 const BUILTIN=l=>!l.sync&&(l.id==='lg2'||l.id==='lg3'||(l.seasons||[]).some(x=>/^season-/.test(String(x.id))));   // a league joined from a link is not built-in history
-function guestDB(){const id=uid(),sid=uid();const d=fresh();d.season=String(new Date().getFullYear());return{leagues:[{id,name:'My league',seasons:[{id:sid,name:d.season,data:d}],activeSeason:sid}],active:id,seedV:99}}
+function guestDB(){const id=uid(),sid=uid();const d=fresh();d.season=String(new Date().getFullYear());return{leagues:[{id,name:'My league',setup:0,seasons:[{id:sid,name:d.season,data:d}],activeSeason:sid}],active:id,seedV:99}}
 function loadDB(){
   if(new URLSearchParams(location.search).get('owner')==='1')setOwner();
   try{const r=localStorage.getItem(KEY2);if(r){const d=JSON.parse(r);if(Array.isArray(d.leagues)&&d.leagues.length){if(d.leagues.some(BUILTIN))setOwner();d.leagues.forEach(readyLeague);if(!d.leagues.find(l=>l.id===d.active))d.active=d.leagues[0].id;return migrateDB(d)}}}catch(e){console.warn('load failed',e)}
@@ -2536,7 +2538,9 @@ function renderUpcoming(w,c){   // next week's slip during the vote: the same ro
 }
 function renderWeekInner(){
   if(unread())return lgPending('week');
-  if(S.members.length<2)return SHARE_MODE?empty('No crew yet','The commissioner is still setting up this season.'):renderOnboard();
+  if(S.members.length<2&&SHARE_MODE)return empty('No crew yet','The commissioner is still setting up this season.');
+  if(S.weeks.length&&league().setup!=null)delete league().setup;   // Week 1 is on the slip (started here, by a vote, or on another phone): setup is over, and the league's next new season asks Who's Bozo first? alone
+  if((S.members.length<2||setupLive())&&setupQ()<4)return renderOnboard();
   if(!S.weeks.length||openerShow())return renderFirstBozo();
   const w=currentWeek();const c=calc(w);const idx=S.weeks.indexOf(w);const isLast=w===lastWeek();const nx=nextMain(w);
   if(UPCOMING&&(UPCOMING!==w.id||w.final||nx||!c.graded||(w.reveal&&!revealSeen(w))||!(isAdmin()||league().features?.votes)))UPCOMING=null;
@@ -5162,36 +5166,41 @@ function renderVote0(w,c,isLast){
 }
 
 /* ---- onboarding ---- */
+/* One-question setup (#10): a new league asks five things, one at a time: its name, its crew, its season's name, what the Bozo puts up, and who's Bozo first. Every answer is kept the moment it is given
+   (the same boxes and saves the Crew and House rules cards had); Next only moves the pointer, league().setup (0 to 4, there only while setup runs, never sent anywhere). Settings keeps every rule. */
+const SETUP_Q=[['🤡',"What's the league called?",'The name the crew will see on every ping.'],['👥',"Who's in?",'Add everyone, one name at a time. Each week one of you is the Bozo who fronts the parlay.'],['📅',"What's this season called?",'Most leagues just use the year.'],['💵','How much does the Bozo put up?','Picks must be -200 or longer. The Bozo parlays every pick for the stake; a cash splits evenly.'],['🎩',"Who's Bozo first?",'Pick a volunteer, or let fate decide.']];
+const setupLive=()=>!SHARE_MODE&&typeof league().setup==='number'&&!S.weeks.length;   // setup is running: this league has a question to ask and no Week 1 yet
+function setupQ(l=league()){let q=typeof l.setup==='number'?Math.min(4,Math.max(0,Math.floor(l.setup))):0;if(!String(l.name||'').trim())q=0;else if(S.members.length<2)q=Math.min(q,1);return q}   // the question on screen (0 to 4), kept inside what the league has: no name, the first; fewer than two people, no later than the crew
+const setupDashes=q=>`<div class="steps" role="img" aria-label="Question ${q+1} of 5">${[0,1,2,3,4].map(i=>`<i${i<=q?' class="on"':''}></i>`).join('')}</div>`;
+const setupFocus=()=>setTimeout(()=>{const b=document.getElementById('setupBox');if(b)try{b.focus()}catch(e){}},30);
 function renderOnboard(){
-  return`<div class="hero"><span class="big">🤡</span><h2>${isOwner()?'Assemble the crew':'Got a league link?'}</h2><p>${isOwner()?'Add everyone in the group chat. Each week one of you is the Bozo who fronts the parlay.':'Paste the link your commissioner sent and this phone joins the league. Or build your own league below.'}</p></div>
-  <section class="card"><h3>Join with a link</h3><div class="linkbox"><input id="linkIn" placeholder="League link, or a code from your other device" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn primary" data-act="use-link">Go</button></div><p class="muted tiny" style="margin:8px 0 0">Works with a member link, the commissioner link, or a 6-character code from a device that's already set up.</p>${faceCommishCan()?`<div class="fid-in" style="margin-top:12px">${faceInBtn('','leagues')}<p class="muted tiny">Brings back your name in every league where you turned it on.</p></div>`:''}</section>
-  <div class="steps"><i class="on"></i><i></i></div>
-  <section class="card"><h3>Crew</h3>
-    <div class="mlist">${S.members.map(m=>`<div class="mrow"><div class="avatar" style="--c:${m.color}">${avIn(m)}</div><div class="mbody"><b>${h(m.name)}</b></div><button class="mini danger" data-act="remove-member" data-mid="${m.id}">×</button></div>`).join('')}</div>
-    <form class="addrow" data-form="add-member"><input placeholder="Name" name="name" autocomplete="off" autofocus><button class="btn sm primary">Add</button></form>
-    ${S.members.length<2?`<p class="muted tiny" style="margin-top:10px">Add at least two people to continue.</p>`:''}
-  </section>
-  <section class="card"><h3>House rules</h3>
-    <label class="field"><span>Season name</span><input value="${h(seasonName(season()))}" placeholder="2026" data-bind="season|name"></label>
-    <label class="field"><span>Bozo stake</span><input type="number" class="mono" value="${S.stake}" min="1" data-bind="set|stake"></label>
-    <p class="muted tiny">Picks must be -200 or longer. The Bozo parlays every pick for the stake; a cash splits evenly.</p>
-  </section>
-  <button class="btn ghost block sm" data-act="sample">✨ Or load a sample season to poke around</button>`;
+  const l=league(),q=Math.min(setupQ(l),3),[em,ask,line]=SETUP_Q[q],back=q?`<button type="button" class="btn ghost block" data-act="setup-back">Back</button>`:'';
+  const card=q===0?`<section class="card setup"><form data-form="setup-next"><input id="setupBox" name="v" value="${h(l.name)}" aria-label="League name" autocomplete="off"><button class="btn primary block">Next</button></form></section>`
+  :q===1?`<section class="card setup"><form class="addrow" data-form="add-member"><input id="setupBox" placeholder="Name" aria-label="Name" name="name" autocomplete="off"><button class="btn sm primary">Add</button></form>
+    <div class="mlist">${S.members.map(m=>`<div class="mrow"><div class="avatar" style="--c:${m.color}">${avIn(m)}</div><div class="mbody"><b>${h(m.name)}</b></div><button class="mini danger" aria-label="Remove ${h(m.name)}" data-act="remove-member" data-mid="${m.id}">×</button></div>`).join('')}</div>
+    <button class="btn primary block" data-act="setup-next"${S.members.length<2?' disabled':''}>${S.members.length<2?'Add at least two people':`That's everyone · ${S.members.length}`}</button>${back}</section>`
+  :q===2?`<section class="card setup"><form data-form="setup-next"><input id="setupBox" value="${h(seasonName(season()))}" placeholder="2026" aria-label="Season name" autocomplete="off" data-bind="season|name"><button class="btn primary block">Next</button><button type="button" class="btn ghost block" data-act="setup-back">Back</button></form></section>`
+  :`<section class="card setup"><form data-form="setup-next"><div class="setup-stake"><span class="cur" aria-hidden="true">$</span><input id="setupBox" class="mono" type="number" inputmode="numeric" min="1" value="${S.stake}" aria-label="Bozo stake in dollars" data-bind="set|stake" data-setup="1"></div><button class="btn primary block">Next</button><button type="button" class="btn ghost block" data-act="setup-back">Back</button></form></section>`;
+  const join=q===0?`<section class="card setup"><h3>Join with a link</h3><div class="linkbox"><input id="linkIn" placeholder="League link, or a code from your other device" autocomplete="off" autocapitalize="off" spellcheck="false"><button class="btn primary" data-act="use-link">Go</button></div><p class="muted tiny" style="margin:8px 0 0">Works with a member link, the commissioner link, or a 6-character code from a device that's already set up.</p>${faceCommishCan()?`<div class="fid-in" style="margin-top:12px">${faceInBtn('','leagues')}<p class="muted tiny">Brings back your name in every league where you turned it on.</p></div>`:''}</section>`:'';
+  return`<div class="hero"><span class="big">${em}</span><h2>${ask}</h2><p>${q===0&&!isOwner()?'Got a league link? Paste it below. Or name your own league here.':line}</p></div>
+  ${setupDashes(q)}${card}${join}
+  <button class="btn ghost block" data-act="sample">✨ Or load a sample season to poke around</button>`;
 }
 function renderFirstBozo(){
   const show=openerShow(),o=openerOf();
+  const su=setupLive();   // inside setup this is question 5 of 5; for a new season of a league that is already running it is the only question, with no dashes
   if(show)return(show.reveal?'':`<div class="hero"><span class="big">🎩</span><h2>Who's Bozo first?</h2><p>The league is voting.</p></div>
-  <div class="steps"><i class="on"></i><i class="on"></i></div>`)+renderSealedVote(show,openerCalc(show),openerEl(show),'Everyone is on the ballot.');
+  ${su?setupDashes(4):''}`)+renderSealedVote(show,openerCalc(show),openerEl(show),'Everyone is on the ballot.');
   if(!isAdmin())return o&&o.off&&o.off.how==='hand'?empty('Week 1 is almost here',`The commissioner called off the vote and is picking the Week 1 Bozo by hand.${openerIn(o)?' Votes already in stay sealed.':''}`):empty('Week 1 is almost here','The commissioner picks the first Bozo. The slip shows up here the moment they do.');
   const act=S.members.filter(m=>m.active),vote=voteOffered();   // vote: this league can hold a sealed vote, so "Open a league vote" is the first choice; otherwise the screen is exactly as it always was
   return`<div class="hero"><span class="big">🎩</span><h2>Who's Bozo first?</h2><p>${vote?'Put it to a vote, pick a volunteer, or let fate decide.':'Pick a volunteer, or let fate decide.'}</p></div>
-  <div class="steps"><i class="on"></i><i class="on"></i></div>
+  ${su?setupDashes(4):''}
   <section class="card">
     <div class="fb-grid">${act.map(m=>`<button class="fb ${S.pendingBozo===m.id?'on':''}" data-act="first-bozo" data-mid="${m.id}"><span class="avatar lg" style="--c:${m.color}">${avIn(m)}</span>${h(m.name)}</button>`).join('')}</div>
     <div class="vote-actions">
       ${vote?`<button class="btn primary block vo" data-act="first-vote-open">${o&&o.off?'🗳️ Reopen the league vote':'🗳️ Open a league vote'}</button>`:''}<button class="btn ${vote?'':'primary '}block" data-act="first-start" ${S.pendingBozo?'':'disabled'}>${S.pendingBozo?`🤡 ${h(member(S.pendingBozo)?.name)} it is — start Week 1`:'Pick someone above'}</button>
       <button class="btn block" data-act="flip" data-ids="${act.map(m=>m.id).join(',')}" data-first="1">🪙 Spin for it</button>
-      <button class="btn ghost block sm${vote?' vo':''}" data-act="nav" data-view="crew" data-pane="crew">← Back to the crew</button>
+      ${su?`<button class="btn ghost block" data-act="setup-back">Back</button>`:`<button class="btn ghost block sm${vote?' vo':''}" data-act="nav" data-view="crew" data-pane="crew">← Back to the crew</button>`}
     </div>
   </section>`;
 }
@@ -6490,6 +6499,13 @@ const ACT={
   'toggle-final'(el){const w=lastWeek();if(!w)return;if(el.dataset.wid&&el.dataset.wid!==w.id)return stale();w.final=!w.final;if(!w.final)delete w.final;commit();toast(w.final?'Final week: no next Bozo after this one':'Back to a regular week','good')},
   'drop-special'(el){const day=el.dataset.day;const sp=(S.specials||[]).find(x=>x.day===day);if(!sp)return;confirm2(`Remove the ${h(sp.name)} parlay?`,`No special parlay on ${h(fmtDay(sp.day))}. That week stays one Sunday parlay.`,'Remove',()=>{if(!(S.specials||[]).some(x=>x.day===day))return stale();S.specials=S.specials.filter(x=>x.day!==day);commit()})},
   'first-bozo'(el){S.pendingBozo=el.dataset.mid;commit()},
+  'setup-next'(){const l=league(),q=setupQ(l);if(q>3)return;const box=document.getElementById('setupBox');   // the question on screen is answered: its box is read, kept, and the pointer moves (every answer was already kept as it was given)
+    if(q===0){const n=(box?box.value:l.name).trim();if(!n){toast('Give it a name','bad');return}if(n!==l.name){l.name=n;l.setDirty={...(l.setDirty||{}),name:Date.now()}}}
+    else if(q===1){if(S.members.length<2){const m='Add at least two people to go on. Nobody was lost. Type a name above, tap Add, then tap That’s everyone.';toast(m,'bad',readMs(m));return}}
+    else if(q===2){if(box)seasonBoxDone(box)}
+    else{const raw=box?String(box.value).trim():'',v=Number(raw);if(!raw||!Number.isFinite(v)){const m=`The stake needs a number. Nothing changed: it's still $${S.stake}. Type an amount, then tap Next.`;toast(m,'bad',readMs(m));if(box)box.value=S.stake;return}S.stake=Math.max(1,v)}
+    l.setup=q+1;commit();setupFocus()},
+  'setup-back'(){const l=league(),q=setupQ(l);l.setup=Math.max(0,q-1);commit();setupFocus()},
   'first-vote-open'(){const o=openerOf();if(!isAdmin()||S.weeks.length||!voteOffered())return stale();   // opens the Week 1 vote on the season (or reopens one that was called off: its ballot and every sealed vote are as they were)
     if(o){if(!o.off)return;delete o.off;commit();toast('Vote’s open again. The votes already in still count.','good');return}
     const act=S.members.filter(m=>m.active);if(act.length<2){toast('A vote needs at least two people on the crew. Nothing was changed. Add a person in Settings, then try again.','bad');return}
@@ -6498,7 +6514,7 @@ const ACT={
     confirm2('Call off the vote?',n?`The ${n===1?'vote':n+' votes'} already in stay${n===1?'s':''} sealed and ${n===1?'is':'are'} never shown to anyone. Nothing else is lost: if you open the vote again, ${n===1?'that vote still counts':'those '+n+' still count'}.`:'Nobody has voted yet, so nothing is lost. You can open the vote again at any time.','Call it off',()=>{const o2=openerOf();if(!o2||o2.off||S.weeks.length)return stale();o2.off={at:new Date().toISOString(),how};commit();
       if(how==='spin')setTimeout(()=>spin(S.members.filter(m=>m.active).map(m=>m.id),id=>{S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} drew the short straw`)}),0);else toast('Vote called off. Pick the Week 1 Bozo below.','good')})},
   'first-crown'(el){const id=el.dataset.mid;if(!isAdmin()||S.weeks.length||!member(id))return stale();newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
-  'first-start'(){if(!S.pendingBozo)return;const id=S.pendingBozo;S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
+  'first-start'(){if(!S.pendingBozo)return;const id=S.pendingBozo;S.pendingBozo=null;delete league().setup;newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
   'crew-card'(el){crewCard(el.dataset.mid)},'badge'(el){badgeTap(el)},'crew-explore'(el){crewExplore(el.dataset.sid,el.dataset.mid,el.dataset.nm)},   // Settings → Crew: a person's card, and Explore from it to their full stats
   'remove-member'(el){S.members=S.members.filter(m=>m.id!==el.dataset.mid);commit()},
   'toggle-member'(el){const m=member(el.dataset.mid);if(!m)return stale();m.active=!m.active;
@@ -6537,7 +6553,7 @@ const ACT={
   leagues(){if(SHARE_MODE)return;modal({title:'Leagues & seasons',body:`<div class="mlist">${DB.leagues.map(l=>{const on=l.id===DB.active;return`<div class="mrow" style="flex-wrap:wrap;${on?'border-color:rgba(175,82,222,.5)':''}"><div class="avatar" style="--c:${on?'#af52de':'#8e8e93'}">${on?'🤡':'·'}</div><div class="mbody"><b>${h(l.name)}</b><small>${l.seasons.length} season${l.seasons.length===1?'':'s'}</small></div>${on?'<span class="tag bozo">Active</span>':`<button class="btn sm" data-act="switch-league" data-lid="${l.id}">Switch</button>`}<div class="seasonchips fitchips">${seasonSorted(l).map(x=>`<button class="chip ${on&&x.id===l.activeSeason?'on':''}" data-act="switch-season" data-lid="${l.id}" data-sid="${x.id}">${h(seasonName(x))}</button>`).join('')}</div></div>`}).join('')}</div>`,actions:[{label:'Close',cls:'ghost'},{label:'＋ New league',cls:'primary',onClick:()=>{ACT['new-league']();return false}}]})},
   'switch-league'(el){guideLeave(league().id);DB.active=el.dataset.lid;DB.activeAt=Date.now();GUIDE_MANUAL.clear();if(league().sync)acctNote({active:{id:league().sync.id}});S=season().data;goNow(true);ALLTIME=null;closeModal();save();render();toast(`Switched to ${league().name}`);pageTo(0);if(league().sync)pull(league(),false,true)},
   'switch-season'(el){if(el.dataset.lid&&el.dataset.lid!==DB.active){DB.active=el.dataset.lid;DB.activeAt=Date.now();if(league().sync)acctNote({active:{id:league().sync.id}});scopeLoad()}const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid))l.activeSeason=el.dataset.sid;S=season().data;ALLTIME=null;closeModal();save();render();toast(`${l.name} · ${seasonName(season())}`);pageTo(0)},
-  'new-league'(){modal({title:'New league',body:`<p>A fresh group with its own crew and seasons.</p><input id="lgName" placeholder="League name — e.g. Work guys" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n){toast('Give it a name','bad');return false}const d=fresh();const yr=String(new Date().getFullYear());d.season=yr+' NFL';const id=uid(),sid=uid();DB.leagues.push({id,name:n,seasons:[{id:sid,name:yr,data:d}],activeSeason:sid});DB.active=id;S=d;scopeLoad();PANE='crew';commit();toast(`${n} created — add the crew`);pageTo(0)}}],onOpen:()=>setTimeout(()=>document.getElementById('lgName')?.focus(),80)})},
+  'new-league'(){modal({title:'New league',body:`<p>A fresh group with its own crew and seasons.</p><input id="lgName" placeholder="League name — e.g. Work guys" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('lgName').value.trim();if(!n){toast('Give it a name','bad');return false}const d=fresh();const yr=String(new Date().getFullYear());d.season=yr+' NFL';const id=uid(),sid=uid();DB.leagues.push({id,name:n,setup:1,seasons:[{id:sid,name:yr,data:d}],activeSeason:sid});DB.active=id;S=d;scopeLoad();PANE='crew';commit();toast(`${n} created — add the crew`);pageTo(0);setupFocus()}}],onOpen:()=>setTimeout(()=>document.getElementById('lgName')?.focus(),80)})},
   'new-season'(){const l=league();const yr=freeSeasonName(l);
     modal({title:`New ${h(l.name)} season`,body:`<p>Starts with the ${h(seasonName(newestOf(l)))} crew and no weeks. Past seasons stay as they are.</p><input id="ssName" value="${h(yr)}" placeholder="Season name — e.g. 2024" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Create',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n){toast(`The new season needs a name, so it wasn’t started. Nothing was changed. Type one, like ${freeSeasonName(l)}, and tap Create again.`,'bad');return false}const had=seasonTaken(l,n);if(had){toast(`${seasonName(had)===n?`There’s already a season called ${n}`:`${n} is already used by the ${seasonName(had)} season`}, so a second one wasn’t started. Nothing was changed. Pick a name no other season uses, like ${freeSeasonName(l)}, and tap Create again.`,'bad');return false}   /* a name any season already uses, shown or kept, is turned down: no season is renamed by another's New season */const d=fresh();d.season=/^\d{4}$/.test(n)?n+' NFL':n;const base=newestOf(l).data;d.stake=base.stake;d.members=base.members.filter(m=>m.active).map(m=>({...m}));d.seq=Math.max(0,...l.seasons.map(x=>seasonSeq(x)))+1;const sid=uid();l.seasons.push({id:sid,name:n,data:d});l.activeSeason=sid;S=d;commit();toast(`${l.name} ${n} started`);pageTo(0)}}],onOpen:()=>setTimeout(()=>document.getElementById('ssName')?.select(),80)})},
   'rename-season'(el){const l=league();const x=l.seasons.find(y=>y.id===el.dataset.sid);if(!x)return;modal({title:'Rename season',body:`<p class="muted tiny" style="margin:0 0 8px">Shown at the top of the app, in Settings and on shared slips.</p><input id="ssName" value="${h(seasonName(x))}" aria-label="Season name" autocomplete="off">`,actions:[{label:'Cancel',cls:'ghost'},{label:'Save',cls:'primary',onClick:()=>{const n=document.getElementById('ssName').value.trim();if(!n)return false;const xx=league().seasons.find(y=>y.id===el.dataset.sid);if(!xx)return stale();if(nameSeason(xx,n))commit()}}]})},   // the season's one name: the list, the Settings line, the rulebook, the header and shared slips all read it (a year alone reads '2027 NFL' on the header and slips, as a new season does). Saving the name it already goes by changes nothing stored
@@ -6797,6 +6813,7 @@ document.addEventListener('keydown',e=>{if(e.key!=='Enter'&&e.key!==' ')return;
 document.addEventListener('submit',e=>{const f=e.target.closest('[data-form]');if(!f)return;e.preventDefault();
   if(f.dataset.form==='add-member'){const n=f.name.value.trim();if(!n)return;addFriend(n);
     setTimeout(()=>document.querySelector('[data-form="add-member"] input')?.focus(),30)}
+  else if(f.dataset.form==='setup-next')ACT['setup-next']();
 });
 document.addEventListener('input',e=>{if(e.target?.id==='bap-range')guidedSlide(e.target)});   // the Build a pick slider moves stop by stop
 document.addEventListener('input',e=>{if(e.target?.id==='sbText')sbTyped(e.target)});   // #49: the Suggestion Box's words, kept as they are typed
@@ -6819,7 +6836,7 @@ document.addEventListener('input',e=>{const b=e.target.dataset.bind;if(!b)return
   else if(k==='week'){const w=week(a);if(!w)return;if(c==='date')w.date=e.target.value;if(c==='stake'){w.stake=Math.max(0,Number(e.target.value)||0);patchTicket(w)}save();if(league().sync&&league().sync.role==='admin')schedulePush()}
   else if(k==='league'){const l=league();l.setDirty={...(l.setDirty||{}),[a]:Date.now()};if(a==='clubName'){l.clubName=e.target.value.slice(0,40);save();if(l.sync&&l.sync.role==='admin')schedulePush()}if(a==='mondayOk'){l.mondayOk=e.target.value==='1';save();render();if(l.sync&&l.sync.role==='admin')schedulePush();toast(`Picks must be on a ${gameDays()} game`,'good')}}
   else if(k==='season'){const n=e.target.value.trim(),x=season();if(x)document.getElementById('seasonLabel').textContent=n&&n!==seasonName(x)&&x.data===S?headFor(n):seasonLabelText()}   // the first-run Season name box while it is typed in: the header shows the name so far, and nothing is stored until the name is done (seasonBoxDone)
-  else if(k==='set'){if(a==='stake')S.stake=Math.max(1,Number(e.target.value)||1);save();if(league().sync&&league().sync.role==='admin')schedulePush();rulesLive()}
+  else if(k==='set'){if(a==='stake'){if(e.target.dataset.setup&&!String(e.target.value).trim())return;S.stake=Math.max(1,Number(e.target.value)||1)}save();if(league().sync&&league().sync.role==='admin')schedulePush();rulesLive()}
 });
 document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.classList&&d.classList.contains('rb-more'))RB_OPEN=!!d.open},true);   // Settings → Rules: the last group stays open or closed as the reader left it, through repaints
 document.addEventListener('change',e=>{const b=e.target.dataset.bind;if(!b)return;const[k,a]=b.split('|');
