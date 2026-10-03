@@ -2550,11 +2550,11 @@ function choresOf(w){   // → [{k, state:'done'|'open'|'blocked', title, sub:[l
     if(!votes){if(!auto&&!nx)row('vote',c.graded?'open':'blocked','The vote',[c.graded?'Tally the votes, then crown':'Opens once every leg is graded'],c.graded?{act:'Tally',go:'vote'}:{})}
     else{
       if(!c.graded)row('vote','blocked','The vote',['Opens once every leg is graded'],{});
-      else if(!auto){const rc=revealCount(w,c),st=subStatus(w),wt=rc.exp.filter(m=>{const x=st(m);return!(x.voted&&x.video)});
+      else if(!auto){
         if(nx||(w.reveal&&seen&&!revote))row('vote','done','The vote',[`Revealed${seen&&rv?(rv.winner?` · ${nm(rv.winner)} is the ${tag} Bozo`:` · tied between ${andList(rv.tie.map(nm))}`):''}`],{});
         else if(revote)row('vote','open','The vote',['Tied. The revote is open'],{act:'Revote',go:'vote'});
         else if(w.reveal)row('vote','open','The vote',['The reveal is ready to watch'],{act:'Watch',go:'vote'});
-        else row('vote','open','The vote',[`${rc.cast.length} of ${rc.total} voted${wt.length?` · waiting on ${wt.map(nm).join(', ')}`:''}`],{act:'Reveal',go:'vote'})}
+        else row('vote','open','The vote',['The vote is open'],{act:'Reveal',go:'vote'})}   // who is still owed is the vote card's to say (right below): no fact twice
       const ready=auto||(!!w.reveal&&seen&&!revote);
       if(nx)row('start','done',`Start ${tag}`,[`Started${!w.reveal||seen?` · ${nm(nx.bozoId)} is the Bozo`:''}`],{});
       else row('start',ready?'open':'blocked',`Start ${tag}`,[ready?'Crown the Bozo to open it':'After the reveal'],ready?{act:'Crown',go:'crown'}:{})}}
