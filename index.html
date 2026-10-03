@@ -194,6 +194,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .btn.ghost{background:transparent;color:var(--blue)}
 .btn.ghost.danger{color:var(--pace-red)}
 .btn.sm{padding:8px 14px;font-size:13px}
+.btn.vo{min-height:44px}   /* the Week 1 vote's own buttons (Open a league vote, Spin for it instead, Choose by hand instead): a 44 px target even in the small size */
 .btn.block{width:100%}
 .btn.fit{white-space:normal;text-align:center;text-wrap:balance}   /* a long label (Reveal the revote now with N of M, Record or choose your vote video, Enter Week N pick while you wait) goes onto a second line inside its pill at 320 px instead of running past it */
 .btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
@@ -1429,8 +1430,9 @@ function weekSig(w){   // the commissioner's part of a week (members' own pick f
   const o={};for(const[k,v]of Object.entries(w))if(!SERVER_WEEK.includes(k)&&k!=='picks')o[k]=v;
   o.picks={};for(const[mid,p]of Object.entries(w.picks||{})){const q={};for(const[k,v]of Object.entries(p||{}))if(!MEMBER_PICK.includes(k))q[k]=v;if(q.status==='pending')delete q.status;if(q.margin==null)delete q.margin;if(Object.keys(q).length)o.picks[mid]=q}
   return hstr(stable(o))}
-function seasonSig(sn){const o={name:sn.name};for(const[k,v]of Object.entries(sn.data||{}))if(!DEVICE_SEASON.includes(k)&&!LEAGUE_SEASON.includes(k))o[k]=v;return hstr(stable(o))}
-const seasonSigWas=(sn,tv)=>{const o={name:sn.name};for(const[k,v]of Object.entries(sn.data||{}))if(!DEVICE_SEASON.includes(k)&&!LEAGUE_SEASON.includes(k))o[k]=v;if(tv!==undefined)o.tidyV=tv;return hstr(stable(o))};   // a season's signature as apps before 2026-09-28.2 kept it in wh (tidyV in it), with the tidy mark tv
+const sigVal=(k,v)=>k==='opener'&&v&&typeof v==='object'?{id:v.id,kind:v.kind,label:v.label,num:v.num,at:v.at,picks:v.picks,off:v.off}:v;   // the Week 1 vote counts as a season setting only in the part the commissioner writes: ballots, reveal and crown move on their own and are never this phone's change
+function seasonSig(sn){const o={name:sn.name};for(const[k,v]of Object.entries(sn.data||{}))if(!DEVICE_SEASON.includes(k)&&!LEAGUE_SEASON.includes(k))o[k]=sigVal(k,v);return hstr(stable(o))}
+const seasonSigWas=(sn,tv)=>{const o={name:sn.name};for(const[k,v]of Object.entries(sn.data||{}))if(!DEVICE_SEASON.includes(k)&&!LEAGUE_SEASON.includes(k))o[k]=sigVal(k,v);if(tv!==undefined)o.tidyV=tv;return hstr(stable(o))};   // a season's signature as apps before 2026-09-28.2 kept it in wh (tidyV in it), with the tidy mark tv
 function syncSigs(seasons){const m={};for(const sn of seasons||[]){m[sn.id+'|']=seasonSig(sn);for(const w of (sn.data&&sn.data.weeks)||[])m[sn.id+'|'+w.id]=weekSig(w)}return m}
 function adoptLegs(lw,o,bs,rAt,ob,ownLogo){   // the league's legs win where this phone has typed nothing since it last matched the league: a leg put back to an earlier wording is otherwise invisible to the merge. ownLogo(mid): this phone changed that leg's team logo itself and hasn't got it up yet (l.logoAt)
   for(const[mid,sp]of Object.entries((o&&o.picks)||{})){if(!sp||typeof sp!=='object')continue;const lp=(lw.picks||{})[mid];if(!lp)continue;
@@ -2080,16 +2082,16 @@ const photoFor=(m,l=league())=>{const id=m&&(m.pmid??m.id);if(!id)return'';   //
   return photoOf(id,l)};
 const avIn=(m,now)=>{const n=m&&m.name,u=m?photoFor(m):'';return h(initials(n))+(u?`<img class="av-img" src="${h(u)}" alt="" loading="${now?'eager':'lazy'}" decoding="async">`:'')};   // what goes inside a round avatar: the initials, and the person's photo over them when there is one (All-time's people carry their newest season's id as pmid). now: load it at once (the player sheet's header: Safari may hold back a lazy picture inside a sheet until it is scrolled). The photo is decorative (alt=""): every avatar sits beside the person's name, so a screen reader says the name once (Jason 09-25); where an avatar stands alone (the waiting chips, the heat map's and the grudge grid's headers) its container carries the name (aria-label)
 
-const week=id=>S.weeks.find(w=>w.id===id);
+const week=id=>S.weeks.find(w=>w.id===id)||(id==='opener'&&S.opener&&S.opener.kind==='opener'?S.opener:undefined);   // 'opener': the Week 1 vote, a week-shaped record every vote action can take as it is
 // the Bozo chain is every parlay except side parlays (a side parlay rides along with a Sunday parlay: no Bozo, no vote)
 const isSide=w=>!!w&&w.kind==='side';
 const lastMain=ws=>{for(let i=(ws||[]).length-1;i>=0;i--)if(!isSide(ws[i]))return ws[i];return null};
 const lastWeek=()=>lastMain(S.weeks);
-function nextMain(w){const i=S.weeks.indexOf(w);if(i<0)return null;for(let k=i+1;k<S.weeks.length;k++)if(!isSide(S.weeks[k]))return S.weeks[k];return null}
+function nextMain(w){if(w&&w.kind==='opener')return S.weeks.find(x=>!isSide(x))||null;const i=S.weeks.indexOf(w);if(i<0)return null;for(let k=i+1;k<S.weeks.length;k++)if(!isSide(S.weeks[k]))return S.weeks[k];return null}
 function prevMain(w){for(let k=S.weeks.indexOf(w)-1;k>=0;k--)if(!isSide(S.weeks[k]))return S.weeks[k];return null}
 const sideOf=w=>w&&!isSide(w)?S.weeks.find(x=>isSide(x)&&x.of===w.id)||null:null;
 const parentOf=w=>isSide(w)?week(w.of)||null:null;
-function currentWeek(){return week(S.currentWeekId)||lastWeek()}
+function currentWeek(){return openerShow()||week(S.currentWeekId)||lastWeek()}
 function normPrice(v){let t=String(v??'').trim().toUpperCase().replace(/[\s,]+/g,'').replace(/[−‒-―]/g,'-');   // a price pasted from a betting app uses a typographic minus
   if(t==='EV'||t==='EVEN')return'+100';
   if(/^\d{1,3}\.\d{1,3}$/.test(t)){const d=Number(t);if(!(d>1.001&&d<1001))return null;return d>=2?'+'+Math.round((d-1)*100):'-'+Math.round(100/(d-1))}   // decimal odds
@@ -2133,7 +2135,7 @@ function nextPlan(prev){   // what the next parlay in the Bozo chain is
   if(sp)return{num,name:`Week ${num} ${sp.name}`,special:sp,extra:{kind:'special',day:sp.day,dayName:sp.name,label:`Week ${num} · ${sp.name}`,short:`W${num}a`}};
   return{num,name:`Week ${num}`,extra:{}};
 }
-function nextName(w){const n=nextMain(w);return n?wkName(n).replace(' · ',' '):nextPlan(w).name}
+function nextName(w){if(w&&w.kind==='opener')return'Week 1';const n=nextMain(w);return n?wkName(n).replace(' · ',' '):nextPlan(w).name}
 const spIcon=n=>/thanksgiving/i.test(n||'')?'🦃':/christmas|xmas/i.test(n||'')?'🎄':'📅';
 const monOk=(l=league())=>!!l.mondayOk;
 const halfPtOn=(l=league())=>!!(l&&l.halfPt);
@@ -2229,6 +2231,7 @@ function holidayGuess(){   // the next Thanksgiving or Christmas
 
 /* ============================== ENGINE ============================== */
 function calc(w){
+  if(w&&w.kind==='opener')return openerCalc(w);
   const legs=Object.entries(w.picks).map(([mid,p])=>({mid,...p,unit:p.um&&p.unit?p.unit:unitFor(p.text),oddsN:parseOdds(p.odds)})).filter(l=>member(l.mid)&&!(w.placed&&(l.status||'pending')==='pending'&&!String(l.text||'').trim())).sort((a,b)=>midx(a.mid)-midx(b.mid));
   let d=1,hits=0,misses=0,pushes=0,pending=0,missingOdds=0;
   for(const l of legs){
@@ -2255,7 +2258,17 @@ function calc(w){
   return{legs,n,hits,misses,pushes,pending,dec:d,potential,payout,share,each,result,stake,missingOdds,slip,priced,sofar,graded:pending===0&&n>0};
 }
 const winTxt=c=>c.priced?fmt$(c.potential):c.sofar?fmt$(c.sofar.potential):'—',eachTxt=c=>c.priced?fmt$(c.each):c.sofar?fmt$(c.sofar.each):'—';   // the slip's To win and Each: the full slip's once every leg is priced, the slip so far before that
+/* ---- the Week 1 vote (specs/first-bozo-vote.md): S.opener is a week-shaped record the league holds. The commissioner's phone writes only the ballot (picks, frozen when it opens) and `off`; sub, skip, reveal, revote and crowned are the league's ---- */
+const voteOffered=(l=league())=>!!(l&&l.sync&&l.features&&l.features.votes);   // only a league that can hold a sealed vote can open this one
+const openerOf=()=>S.opener&&S.opener.kind==='opener'?S.opener:null;
+const openerOpen=()=>{const o=openerOf();return!!o&&!o.off&&!o.crowned&&!S.weeks.length};   // asking for votes: not called off, not crowned, no Week 1 yet
+const openerShow=()=>{const o=openerOf();if(!o)return null;if(o.reveal&&(replaying(o)||!revealSeen(o)))return o;return!realWeeks().length&&!o.off&&(o.reveal||!o.crowned)?o:null};   // the vote that owns the screen: its reveal while this person has yet to watch it (Week 1 stays out of sight until then, wherever the weeks are) or is rewatching it, else while it is open with no Week 1 yet
+const openerIds=o=>Object.keys((o&&o.picks)||{}).filter(mid=>member(mid)).sort((a,b)=>midx(a)-midx(b));
+const openerCalc=o=>{const legs=openerIds(o).map(mid=>({mid,status:'in',text:'',teams:[]}));return{legs,n:legs.length,pending:0,hits:0,misses:0,pushes:0,graded:true}};   // everyone on the ballot, nothing graded: no leg has been played yet
+const openerEl=o=>({list:openerIds(o),reason:'opener'});
+const openerWinner=o=>{const r=o&&o.reveal,r2=o&&o.revote&&o.revote.reveal;return(r&&r.winner)||(r2&&r2.winner)||(o&&o.revote&&o.revote.pick&&o.revote.pick.id)||null};
 function eligible(w){
+  if(w&&w.kind==='opener')return openerEl(w);
   const c=calc(w);if(!c.graded)return{list:[],reason:'grade'};
   const by=st=>c.legs.filter(l=>l.status===st).map(l=>l.mid);
   if(pushBozoOn()&&by('push').length)return{list:by('push'),reason:by('push').length===1?'autopush':'pushbozo'};   // a push is an automatic Bozo
@@ -2361,13 +2374,13 @@ function awards(per){   // the Awards section's tiles, and the sheet each one op
 function autosize(t){t.style.height='auto';t.style.height=Math.max(44,t.scrollHeight)+'px'}
 let BROWSED=false;   // this session the person went to another week on purpose (This Week clears it)
 function homeWeekId(l,sn){const ws=sn.data.weeks;const lw=lastMain(ws);if(!lw)return null;
-  const c=l&&l.sync?spoilerCut(sn,l):null;return c?c.id:lw.id}   // the newest week, or the oldest reveal they still owe
+  const c=l&&l.sync?spoilerCut(sn,l):null;return c&&c!==sn.data.opener?c.id:lw.id}   // (the Week 1 vote's reveal is not a week to stand on: Week 1 stays hidden behind it)   // the newest week, or the oldest reveal they still owe
 let RV_GATE=null;   /* the reveal a viewer must watch before the newer weeks show up */
 let HIDNOW=null;   /* the one hidden-week set this render pass is using, so every card on screen agrees */
 const realWeeks=()=>(HIDNOW&&HIDNOW.all)||S.weeks;   /* the untouched week list for this pass: the guard trims S.weeks */
 function nextMainIn(ws,w){const i=(ws||[]).indexOf(w);if(i<0)return null;for(let k=i+1;k<ws.length;k++)if(!isSide(ws[k]))return ws[k];return null}
 function spoilerCut(sn,l){   // the oldest reveal this viewer still owes: the FIRST one they haven't watched, even if they watched a later one out of order
-  const ws=(sn&&sn.data&&sn.data.weeks)||[];
+  const ws=(sn&&sn.data&&sn.data.weeks)||[];const op=sn&&sn.data&&sn.data.opener;if(op&&op.kind==='opener'&&op.reveal&&ws.length&&!revealSeen(op,l))return op;   // the Week 1 vote comes before every week: until its reveal is watched, Week 1 and everything after stay hidden
   for(let i=0;i<ws.length;i++)if(!isSide(ws[i])&&ws[i].reveal&&!revealSeen(ws[i],l))return ws[i];
   return null;
 }
@@ -2507,7 +2520,7 @@ function renderUpcoming(w,c){   // next week's slip during the vote: the same ro
 function renderWeekInner(){
   if(unread())return lgPending('week');
   if(S.members.length<2)return SHARE_MODE?empty('No crew yet','The commissioner is still setting up this season.'):renderOnboard();
-  if(!S.weeks.length)return renderFirstBozo();
+  if(!S.weeks.length||openerShow())return renderFirstBozo();
   const w=currentWeek();const c=calc(w);const idx=S.weeks.indexOf(w);const isLast=w===lastWeek();const nx=nextMain(w);
   if(UPCOMING&&(UPCOMING!==w.id||w.final||nx||!c.graded||(w.reveal&&!revealSeen(w))||!(isAdmin()||league().features?.votes)))UPCOMING=null;
   if(UPCOMING)return(pushCard()||gdCard())+renderUpcoming(w,c);
@@ -3619,7 +3632,7 @@ function momentRun(){
   if(!l||!l.sync||VIEW!=='week'||root._open||PLAYER||quiet()||refreshing||upl||FACE_BUSY||obBusy||needWho(l)||UPCOMING||MO_SHARE||unread(l)||LEAGUE_FAIL.has(l.id)||S.members.length<2||!S.weeks.length||season(l).id!==newestOf(l).id)return;
   const st=moStore(l);if(!st)return;const sid=season(l).id,K=(w,k)=>`${sid}|${w.id}|${k}`;
   if(st.fresh){for(const x of S.weeks){const c=calc(x),f=momentFacts(x,c);for(const k of MO_KINDS)if(f[k])st.o.m[K(x,k)]=1}moSave(st);return}   // the first look for this person on this phone: whatever is already true is old news, so nothing replays a season
-  const w=currentWeek();if(!w)return;const c=calc(w),f=momentFacts(w,c);let due=null,dirty=false;
+  const w=currentWeek();if(!w||w.kind==='opener')return;const c=calc(w),f=momentFacts(w,c);let due=null,dirty=false;
   for(const k of MO_KINDS){if(!f[k]||st.o.m[K(w,k)])continue;if(f[k]==='due'&&!due)due=k;else if(f[k]==='stale'){st.o.m[K(w,k)]=1;dirty=true}}
   if(due){st.o.m[K(w,due)]=1;dirty=true}   // marked on open, so a reload while it is up never shows it twice
   if(dirty&&!moSave(st))return null;
@@ -3860,7 +3873,7 @@ const IDB={open(){return new Promise((res,rej)=>{if(!('indexedDB'in window))retu
   async get(k){const db=await this.open();try{return await new Promise((res,rej)=>{const r=db.transaction('pending').objectStore('pending').get(k);r.onsuccess=()=>res(r.result||null);r.onerror=()=>rej(r.error)})}finally{db.close()}},
   async del(k){const db=await this.open();try{return await new Promise((res,rej)=>{const t=db.transaction('pending','readwrite');t.objectStore('pending').delete(k);t.oncomplete=res;t.onerror=()=>rej(t.error)})}finally{db.close()}}};
 const pendKey=(l,w,mid=l.me)=>`pend:${l.sync?.id||l.id}:${w.id}:${mid||''}`;
-async function loadPending(){try{const l=league();if(!l.sync||!S.weeks.length||!l.me){pendingUp=null;return}const w=lastMain(newestOf(l).data.weeks)||currentWeek();const p=await IDB.get(pendKey(l,w));const st=w.sub?.[l.me];const vidAt=st&&st.video&&typeof st.video==='object'&&!st.video.deleted?Date.parse(st.video.at||0):0;const done=!!(p&&vidAt&&vidAt>=(p.at||0));   // a finished video newer than the pending one means it went through after all
+async function loadPending(){try{const l=league();if(!l.sync||!S.weeks.length||!l.me){pendingUp=null;return}const w=lastMain(newestOf(l).data.weeks)||(newestOf(l).data.opener&&newestOf(l).data.opener.kind==='opener'?newestOf(l).data.opener:null)||currentWeek();const p=await IDB.get(pendKey(l,w));const st=w.sub?.[l.me];const vidAt=st&&st.video&&typeof st.video==='object'&&!st.video.deleted?Date.parse(st.video.at||0):0;const done=!!(p&&vidAt&&vidAt>=(p.at||0));   // a finished video newer than the pending one means it went through after all
   const stale=!!(p&&Date.now()-(p.at||0)>2*86400e3);
   if(p&&p.file&&!done&&!stale&&p.mid===l.me){if(!pendingUp||pendingUp.key!==p.key){pendingUp={...p,weekId:w.id};if(!quiet())render()}}else{if(p&&(done||stale)){try{await IDB.del(pendKey(l,w))}catch(e){}}pendingUp=null}}catch(e){pendingUp=null}}
 const mb=n=>Math.round(n/1048576);
@@ -3870,7 +3883,7 @@ function revealCount(w,c){const st=subStatus(w),exp=expectedVoters(w,c),kept=c.l
 function decidedTag(w,r,n){const l=league();if(!n||!isAdmin(l)||!l.sync||l.sync.dirty||pushTof(l))return'';const d=VOTE_DEC.get(l.id);return d&&d.week===w.id&&d.round===r&&d.left===n&&typeof d.set==='boolean'?(d.set?'<span class="vdec">Bozo decided already</span>':'<span class="vdec open">Bozo undecided</span>'):''}   // Jason: by the Skip buttons, so skipping the last ones is no big deal ("Bozo decided"), and "Still open" when the votes still to come can still swing it (Jason 09-26: "so I can always plainly see"). Only about the ballot this phone is showing (the same week, round and number still to vote) and never while something of this phone's is on its way; nothing when the league has no plain yes or no for it
 async function sendSub(l,w,cid){setSyncDot('busy');
   try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:cid,memberId:l.me}});subEdit.delete(w.id);takeState(l,d);save();render();setSyncDot('ok');toast(w.reveal?'That was the last one — the votes are in':'Vote sealed. Now the video.','good')}
-  catch(e){setSyncDot('bad');toast(failNote(e,'Your vote didn’t go in','Nothing was saved or changed, and anything you already sent is still there. Tap the name again when you have signal.'),'bad')}}
+  catch(e){setSyncDot('bad');toast(failNote(e,'Your vote didn’t go in','Nothing was saved or changed, and anything you already sent is still there. Tap the name again when you have signal.',w.kind==='opener'&&e&&e.status===423?'':undefined),'bad')}}   // the Week 1 vote's two 423s already say what to do: no "pull down" tail
 async function uploadVideo(l,w,file,resume,replace){
   const max=(l.limits&&l.limits.videoMax)||400*1048576;if(!file)return;
   if(!resume){
@@ -3924,7 +3937,7 @@ function rvSet(w,v,R){const l=league();const r=rvOf(w,R);if(!r)return;const rk=w
   l.person={...(l.person||{}),rv:{...((l.person&&l.person.rv)||{}),[k]:{at:r.at,s:n}}};pendAdd(l,k,r.at,n);save();sendPerson(l)}
 // has this PERSON watched the reveal through to the vote board (on any device)? nothing to watch counts as seen
 function revealSeen(w,l){if(!w||!w.reveal)return true;l=l||league();if(rvStep(w,l,1)<2*(w.reveal.order.length+1))return false;const r2=w.revote&&w.revote.reveal;return!r2||rvStep(w,l,2)>=2*(r2.order.length+1)}   // a revote has to be watched too
-function curRevealAt(l,k){const[sid,wid,R]=k.split('|');const sn=(l.seasons||[]).find(x=>x.id===sid);const w=sn&&sn.data.weeks.find(x=>x.id===wid);const r=w&&rvOf(w,+R);return r&&r.at}
+function curRevealAt(l,k){const[sid,wid,R]=k.split('|');const sn=(l.seasons||[]).find(x=>x.id===sid);const w=sn&&(sn.data.weeks.find(x=>x.id===wid)||(wid==='opener'&&sn.data.opener&&sn.data.opener.kind==='opener'?sn.data.opener:null));const r=w&&rvOf(w,+R);return r&&r.at}
 const personWho=l=>(l.sync?l.sync.id:'')+'|'+(l.me||'');   // whose person record a request to the league is for: this league, this member
 function pendOwn(l){   // unsent reveal progress goes to the league only as the person who watched it, in the league they watched it in. Once the phone is someone else there (a Reset, a sign-out, a code, the commissioner playing as someone else) it is dropped, never sent as them
   const p=l.personPend||{},lg=l.sync?l.sync.id:'';for(const k of Object.keys(p)){const e=p[k];if(!e||typeof e!=='object'||!l.me||e.me!==l.me||e.lg!==lg)delete p[k]}return p}
@@ -3989,7 +4002,7 @@ function renderSealedVote(w,c,el,reason){
   const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b>${missing.length?`<button class="btn sm ghost" data-act="vote-nudge" data-wid="${w.id}">Copy nudge</button>`:`<span class="muted tiny">sealed until everyone's in</span>`}</div>${missing.length?`<small class="muted tiny">Sealed until everyone's in.</small>`:''}<div class="subavs">${exp.map(mid=>{const m=member(mid);const x=st(mid);const ok=x.voted&&x.video;const t=`${h(m.name)}: ${ok?(x.removed?'in (the commissioner removed the video to make room)':'in'):x.video?'video in, no vote yet':x.voted?'voted, no video yet':'nothing yet'}`;return`<span class="subav ${ok?'ok':x.voted||x.video?'half':''}" title="${t}" role="img" aria-label="${t}"><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><i>${ok?'✓':x.voted||x.video?'½':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${meFirst(missing).map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${skipped.length?`<small class="muted">Skipped: ${skipped.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${gone.length?`<small class="muted vid-gone">The commissioner removed ${gone.length===1?`${h(member(gone[0])?.name||'someone')}’s vote video`:`the vote videos of ${andList(gone.map(mid=>h(member(mid)?.name||'someone')))}`} to make room, so ${gone.length===1?'it':'they'} can’t be played. ${gone.length===1?'That vote still counts':'Those votes still count'}, and nobody has to record again.</small>`:''}</div>`;
   let yours='';
   if(!me)yours=l.guest?`<p class="muted tiny" style="margin:0">${isAdmin()?'You\'re not playing in this league.':'👀 You\'re watching as a guest.'} <a href="#" data-act="pick-me">${isAdmin()?'I\'m playing':'I\'m in the crew'}</a></p>`:`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
-  else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${w.skip?.[me]?'The commissioner skipped you this week.':'No leg this week for you, so no vote this week. Sit tight for the reveal.'}</p>`;
+  else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${w.skip?.[me]?'The commissioner skipped you this week.':w.kind==='opener'?'You weren’t in the crew when this vote opened, so you’re not on the ballot. Sit tight for the reveal.':'No leg this week for you, so no vote this week. Sit tight for the reveal.'}</p>`;
   else if(mine.voted&&mine.video&&!editing)yours=`<div class="mine-in"><b>✓ You're in.</b> ${mine.cand?`Your vote: ${spoiler(mine.cand,w.id)} ${mine.removed?'\xB7 The commissioner removed your video to make room; your vote still counts without it.':'<span class="nwm">\xB7 Video uploaded.</span>'} <button class="btn sm ghost" data-act="change-sub">Change</button>`:'Your vote and video are sealed.'}</div>`;
   else{
     const max=(l.limits&&l.limits.videoMax)||400*1048576;
@@ -3997,7 +4010,7 @@ function renderSealedVote(w,c,el,reason){
     yours=`${w.sub&&w.sub[me]&&w.sub[me].stale?`<p class="hint" style="margin:0 0 8px">A grade was corrected after you voted, so the ballot changed and your earlier vote no longer counts. Vote again below.${w.sub[me].video&&!w.sub[me].video.removed?' Your video is kept.':''}</p>`:''}<div class="pd-sub" style="margin:12px 0 6px">1 · Your vote ${mine.voted?'<span class="good">✓ sealed</span>':''}</div>
     ${showBallot?'':`<div class="np-saved"><span>${mine.cand?`Your vote: ${spoiler(mine.cand,w.id)}`:'Your vote is in and sealed'}</span>${mine.cand?'<button class="btn sm ghost" data-act="change-sub">Change</button>':''}</div>`}
     <div class="cands" role="radiogroup" aria-label="Who you are voting for" ${showBallot?'':'hidden'}>${el.list.map(id=>{const m=member(id);const lg=c.legs.find(x=>x.mid===id);const sub=lg.status==='miss'?(lg.margin!=null?`missed <span class="nwm">by ${fmtMargin(lg.margin,lg.unit)}</span>`:'missed'):lg.status==='push'?'pushed':'hit';const self=id===me;const on=mine.cand===id;
-      return`<div class="cand ${on?'sel':''}" role="radio" aria-checked="${!!on}" tabindex="0" data-act="pick-cand" data-mid="${id}"><div class="avatar" style="--c:${m.color}">${avIn(m)}</div><div class="cand-body"><b>${h(m.name)}${self?' (you)':''} <span class="muted" style="font-weight:500">· ${sub}</span></b><small>${lg.text?betChip(lg.text,lg.teams):''}</small></div><span class="chk ${on?'on':''}">${on?'✓':''}</span></div>`}).join('')}</div>
+      return`<div class="cand ${on?'sel':''}" role="radio" aria-checked="${!!on}" tabindex="0" data-act="pick-cand" data-mid="${id}"><div class="avatar" style="--c:${m.color}">${avIn(m)}</div><div class="cand-body"><b>${h(m.name)}${self?' (you)':''}${w.kind==='opener'?'':` <span class="muted" style="font-weight:500">· ${sub}</span>`}</b><small>${lg.text?betChip(lg.text,lg.teams):''}</small></div><span class="chk ${on?'on':''}">${on?'✓':''}</span></div>`}).join('')}</div>
     <div class="pd-sub" style="margin:12px 0 6px">2 · Your video ${mine.video?'<span class="good">✓ in</span>':''}</div>
     <div class="vidbox ${mine.voted&&!mine.video?'hot':''}">${(()=>{const pendNewer=!!(pendingUp&&(!mine.video||!(w.sub?.[me]?.video?.at)||Date.parse(w.sub[me].video.at)<(pendingUp.at||0)));const vAt=Date.parse(w.sub?.[me]?.video?.at||0)||0;const away=!upl&&!pendingUp&&(l.person?.uploads||[]).find(u=>u.week===w.id&&u.dev!==DEV_ID&&Date.parse(u.at)>vAt);return upl?`<div class="upbox"><b>Uploading your video… <span id="uppct">${upl.pct}%</span></b><div class="progress"><div id="upbar" style="width:${upl.pct}%"></div></div><small id="uplabel">${h(upl.label)}</small><small class="warnline">Keep the app open until it says uploaded.</small><button class="btn sm ghost" data-act="cancel-upload">Pause</button></div>`
       :away?`<div class="upbox warn"><b>Your video is uploading from your ${h(away.device||'other device')}</b><small>${away.size?Math.round((away.got||0)/away.size*100)+'% so far · ':''}started ${h(new Date(away.at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}))}</small><small>Finish it on your ${h(away.device||'other device')}${mine.video?'. Your earlier video counts until it lands':''}. Or choose a different video here, which stops that upload.</small><label class="btn ghost block sm" tabindex="0">Choose a different video<input type="file" id="vidIn" accept="video/*" hidden></label></div>`
@@ -4006,7 +4019,8 @@ function renderSealedVote(w,c,el,reason){
       :`<label class="btn primary block fit" tabindex="0">🎥 Record or choose your vote video<input type="file" id="vidIn" accept="video/*" hidden></label><small class="muted tiny">Say who you're voting for and why. Up to ${mb(max)} MB: several minutes at 1080p, about 2 minutes at 4K. Nobody sees it until everyone's in.</small>`})()}</div>
     ${editing?`<button class="btn ghost block sm" data-act="change-sub-done">Done changing</button>`:''}`;
   }
-  const rc=revealCount(w,c),cast=rc.cast;const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now" ${cast.length?'':'disabled'}>🎬 Reveal now with ${cast.length} of ${rc.total} voted</button>${missing.length?`${decidedTag(w,1,exp.filter(mid=>!st(mid).voted).length)}<div class="skiprow">${missing.map(mid=>{const x=st(mid),nm=h(member(mid)?.name),nv=x.voted&&!x.video;return`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="1"${nv?` aria-label="Count ${nm}’s vote without a video"`:''}>${nv?`Count ${nm}, no video`:`Skip ${nm}`}</button>`}).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose the Bozo manually instead</button></div>`:'';
+  const rc=revealCount(w,c),cast=rc.cast;const admin=isAdmin()?`<div class="vote-actions" style="margin-top:12px"><button class="btn block" data-act="reveal-now" ${cast.length?'':'disabled'}>🎬 Reveal now with ${cast.length} of ${rc.total} voted</button>${missing.length?`${decidedTag(w,1,exp.filter(mid=>!st(mid).voted).length)}<div class="skiprow">${missing.map(mid=>{const x=st(mid),nm=h(member(mid)?.name),nv=x.voted&&!x.video;return`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="1"${nv?` aria-label="Count ${nm}’s vote without a video"`:''}>${nv?`Count ${nm}, no video`:`Skip ${nm}`}</button>`}).join('')}</div>`:''}${skipped.length?`<div class="skiprow">${skipped.map(mid=>`<button class="btn sm ghost" data-act="skip-sub" data-mid="${mid}" data-skip="0">Unskip ${h(member(mid)?.name)}</button>`).join('')}</div>`:''}${w.kind==='opener'?`<button class="btn ghost block sm vo" data-act="first-vote-off" data-how="spin">🪙 Spin for it instead</button><button class="btn ghost block sm vo" data-act="first-vote-off" data-how="hand">Choose by hand instead</button>`:`<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose the Bozo manually instead</button>`}</div>`:'';
+  if(w.kind==='opener')return`<section class="card vote next"><h3>Who's the Week 1 Bozo?</h3><p class="muted tiny">${reason} Everyone votes with a name and a video. The reveal starts when the last one lands. A vote without a video still counts if the commissioner reveals without it.</p>${status}${yours}${admin}</section>`;
   return`<section class="card vote next"><h3>${h(wkName(w))} is in the books. Who's the ${h(nextName(w))} Bozo?</h3><p class="muted tiny">${reason} Everyone with a leg votes with a name and a video. The reveal starts when the last one lands. A vote without a video still counts if the commissioner reveals without it.</p>${status}${yours}${nextPickBox(w,c)}${admin}</section>`;
 }
 const nextEdit=new Set();
@@ -4916,6 +4930,7 @@ const NEXT_UNS='Some of next week’s games have kicked off, and the app can’t
 const NEXT_LOCKED=(t,lk)=>`${lk&&lk.unsure?NEXT_UNS:`Your early pick’s ${lk?lk.why:'game has kicked off'}`}, so it’s locked and can’t be changed or cleared from this phone. Nothing was lost: it’s still “${t}”. If it needs to change, text the commissioner.`;   // lk: nextKickOn, when the app can't be sure which game it is on, or the game that locked it isn't the one its row sits under
 function nextRule(w){const p=nextPlan(w);return p.special?{day:p.special.day,name:p.special.name}:{sunday:true,monday:monOk()}}
 function nextPickBox(w,c){
+  if(w.kind==='opener')return'';   // no slip yet to pick on
   const l=league(),me=l.me;if(!me||!memberCan('picks')||w.final||seasonOver()||!c.legs.some(x=>x.mid===me))return'';
   const aw=realWeeks(),nx0=nextMainIn(aw,w);if(nx0&&nx0!==lastMain(aw)||nextMain(w))return'';
   const nn=h(nextName(w)),st=subStatus(w)(me),mineIn=!!(st.voted&&st.video)||isAdmin();
@@ -4927,6 +4942,8 @@ function tallyAll(w,r,i,cands){const t=tallyAt(r,i);for(const id of cands||eligi
 function tallyAt(r,i){const t={};for(let k=0;k<=i&&k<r.order.length;k++){const c=r.order[k].candidate;t[c]=(t[c]||0)+1}return t}
 function tallyBars(t,n,bump){return`<div class="rv-tally">${Object.entries(t).sort((a,b)=>b[1]-a[1]).map(([cid,k])=>{const m=member(cid);return`<div class="rv-trow ${cid===bump?'bump':''}"><span class="avatar xs" style="--c:${m?.color||'#888'}">${avIn(m)}</span><span class="nm">${h(m?.name||'?')}</span><span class="bar"><i style="width:${Math.round(k/n*100)}%"></i></span><b class="mono">${k}</b></div>`}).join('')}</div>`}
 function crownBlock(w,c,r){
+  if(w.kind==='opener'){const wn=nextMain(w);if(wn){const nb=member(wn.bozoId);return`<button class="btn primary block" style="margin-top:12px" data-act="open-week" data-wid="${wn.id}">🤡 ${h(nb?.name||'')} is the Week 1 Bozo. Open it →</button>`}
+    const win=openerWinner(w);return isAdmin()&&!S.weeks.length&&!w.crowned&&win&&member(win)?`<div class="vote-actions" style="margin-top:12px"><button class="btn primary block" data-act="first-crown" data-mid="${win}">🤡 Start Week 1 with ${h(member(win).name)} as the Bozo</button></div>`:''}   // the league crowned Week 1 itself; this is only for a vote whose Week 1 was taken away afterwards
   const next=nextMain(w);
   if(next){const nb=member(next.bozoId);return`<button class="btn primary block" style="margin-top:12px" data-act="open-week" data-wid="${next.id}">🤡 ${h(nb?.name||'')} is the ${h(nextName(w))} Bozo. Open it →</button>`}
   if(seasonOver())return'';   // the season is finished: the reveal still plays, but nobody is crowned and no week opens
@@ -4934,8 +4951,8 @@ function crownBlock(w,c,r){
   if(lastWeek()!==w)return'';
   return`<div class="vote-actions" style="margin-top:12px">${r.winner?`<button class="btn primary block" data-act="crown" data-mid="${r.winner}">🤡 Crown ${h(member(r.winner)?.name)} · start ${h(nextName(w))}</button>`:`<button class="btn primary block" data-act="flip" data-ids="${r.tie.join(',')}">🪙 ${r.tie.length}-way tie — flip for it</button>`}<button class="btn ghost block sm" data-act="pick-bozo-manual">Choose manually instead</button><button class="btn ghost block sm" data-act="unreveal">Reopen the vote</button></div>`;
 }
-function voteBoard(w,r,R=1){const n=r.order.length;const fin=tallyAt(r,n-1);
-  return`<div class="board">${r.order.map((o,i)=>{const v=member(o.voter),cd=member(o.candidate);return`<div class="brow ${i===r.clinch?'clinch':''}"><span class="mono muted">${i+1}</span><span class="avatar xs" style="--c:${v?.color||'#888'}">${avIn(v)}</span><span class="nm">${h(v?.name||'?')}</span><span class="muted">votes</span><b style="color:${cd?.color||'inherit'}">${h(cd?.name||'?')}${o.voter===o.candidate?'<span class="selfvote">self</span>':''}</b>${i===r.clinch?'<em>the tribe has spoken</em>':''}</div>`}).join('')}</div>${tallyBars(fin,n)}<p class="rv-final">${r.winner?(seasonOver()&&!nextMain(w)?`🤡 ${h(member(r.winner)?.name)} won the vote`:`🤡 ${h(member(r.winner)?.name)} is the ${h(nextName(w))} Bozo`):R===2?`Tied again between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')}`:`Tied between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')}. ${w.revote?'Revote!':'Coin flip.'}`}</p>`}
+function voteBoard(w,r,R=1,quiet){const n=r.order.length;const fin=tallyAt(r,n-1);   // quiet: the Week 1 card, where the week's own header already names the winner
+  return`<div class="board">${r.order.map((o,i)=>{const v=member(o.voter),cd=member(o.candidate);return`<div class="brow ${i===r.clinch?'clinch':''}"><span class="mono muted">${i+1}</span><span class="avatar xs" style="--c:${v?.color||'#888'}">${avIn(v)}</span><span class="nm">${h(v?.name||'?')}</span><span class="muted">votes</span><b style="color:${cd?.color||'inherit'}">${h(cd?.name||'?')}${o.voter===o.candidate?'<span class="selfvote">self</span>':''}</b>${i===r.clinch?'<em>the tribe has spoken</em>':''}</div>`}).join('')}</div>${tallyBars(fin,n)}${quiet&&r.winner?'':`<p class="rv-final">${r.winner?(seasonOver()&&!nextMain(w)?`🤡 ${h(member(r.winner)?.name)} won the vote`:`🤡 ${h(member(r.winner)?.name)} is the ${h(nextName(w))} Bozo`):R===2?`Tied again between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')}`:`Tied between ${r.tie.map(id=>h(member(id)?.name)).join(' and ')}. ${w.revote?'Revote!':'Coin flip.'}`}</p>`}`}
 let PLAYER=null;
 function playerFailed(){const p=PLAYER;if(!p||p.failed)return;p.failed=1;try{p.el.querySelector('video').pause()}catch(e){}   // a video that won't play must never leave a black screen
   p.el.innerHTML=`<button class="rv-x" data-act="rv-close" aria-label="Close">×</button><div class="rv-fail"><h3>${p.who?h(p.who)+'’s video wouldn’t play':'That video wouldn’t play'}</h3><p>It didn’t come through on this phone. Nothing was lost: the vote still counts and the reveal is exactly where you left it.</p><p>Tap Read the vote to carry on, or try the video again in a minute.</p><button class="btn primary block" data-act="rv-close">Read the vote</button><button class="btn ghost block sm" data-rv-retry>Try again</button></div>`;
@@ -4975,7 +4992,14 @@ function renderReveal(w,c,R=1){
         ${has?`<button class="btn ghost block sm" data-act="rv-play">↺ Watch ${vn}'s video again</button>`:''}</div>`}
   </section>`;
 }
-function renderVote(w,c,isLast){
+const openerIn=o=>Object.values((o&&o.sub)||{}).filter(x=>x&&(x.voted||x.candidateId)).length;   // ballots in, sealed or not (never who for)
+function openerBlock(w){   // Week 1's own card for the vote that chose its Bozo: how it went, or that it was called off. Nothing at all for a league that never opened one
+  const o=openerOf();if(!o||isSide(w)||realWeeks().find(x=>!isSide(x))!==w)return'';
+  if(o.reveal)return`<section class="card vote"><h3>The Week 1 vote</h3>${randomCard(o)}<div class="pd-sub" style="margin:12px 0 6px">How the vote went${o.revote?' · round 1':''}</div>${voteBoard(o,o.reveal,1,1)}${o.revote&&o.revote.reveal?`<div class="pd-sub" style="margin:12px 0 6px">The revote</div>${voteBoard(o,o.revote.reveal,2,1)}`:''}<button class="btn ghost block sm" data-act="rv-restart" data-wid="opener">↺ Watch the reveal again</button></section>`;
+  if(o.off&&(o.off.how==='spin'||o.off.how==='hand')&&!calc(w).graded){const n=openerIn(o);return`<p class="muted tiny" style="margin:0 0 10px">The commissioner called off the Week 1 vote and ${o.off.how==='spin'?'spun for it':'picked by hand'}.${n?n===1?' The vote in stays sealed.':` The ${n} votes in stay sealed.`:''}</p>`}
+  return''}
+function renderVote(w,c,isLast){return openerBlock(w)+renderVote0(w,c,isLast)}
+function renderVote0(w,c,isLast){
   if(isSide(w))return'';
   const next=nextMain(w);
   if(next&&w.crowned&&w.crowned.how==='push'&&!w.reveal){const nb=member(next.bozoId);return`<section class="card vote"><h3>Next bozo</h3><div class="row between"><div class="chip-lg"><span class="avatar sm" style="--c:${nb?.color||'#888'}">${avIn(nb)}</span><span>${h(nb?.name||'—')} pushed, so ${h(nb?.name||'they')} took the bag in ${h(wkName(next))}</span></div><button class="btn sm" data-act="open-week" data-wid="${next.id}">Open →</button></div><p class="muted tiny" style="margin:8px 0 0">A push is an automatic Bozo in this league, so there was no vote.</p></section>`}
@@ -5025,14 +5049,17 @@ function renderOnboard(){
   <button class="btn ghost block sm" data-act="sample">✨ Or load a sample season to poke around</button>`;
 }
 function renderFirstBozo(){
-  if(!isAdmin())return empty('Week 1 is almost here','The commissioner picks the first Bozo. The slip shows up here the moment they do.');
-  const act=S.members.filter(m=>m.active);
-  return`<div class="hero"><span class="big">🎩</span><h2>Who's Bozo first?</h2><p>Pick a volunteer, or let fate decide.</p></div>
+  const show=openerShow(),o=openerOf();
+  if(show)return(show.reveal?'':`<div class="hero"><span class="big">🎩</span><h2>Who's Bozo first?</h2><p>The league is voting.</p></div>
+  <div class="steps"><i class="on"></i><i class="on"></i></div>`)+renderSealedVote(show,openerCalc(show),openerEl(show),'Everyone is on the ballot.');
+  if(!isAdmin())return o&&o.off&&o.off.how==='hand'?empty('Week 1 is almost here',`The commissioner called off the vote and is picking the Week 1 Bozo by hand.${openerIn(o)?' Votes already in stay sealed.':''}`):empty('Week 1 is almost here','The commissioner picks the first Bozo. The slip shows up here the moment they do.');
+  const act=S.members.filter(m=>m.active),vote=voteOffered();   // vote: this league can hold a sealed vote, so "Open a league vote" is the first choice; otherwise the screen is exactly as it always was
+  return`<div class="hero"><span class="big">🎩</span><h2>Who's Bozo first?</h2><p>${vote?'Put it to a vote, pick a volunteer, or let fate decide.':'Pick a volunteer, or let fate decide.'}</p></div>
   <div class="steps"><i class="on"></i><i class="on"></i></div>
   <section class="card">
     <div class="fb-grid">${act.map(m=>`<button class="fb ${S.pendingBozo===m.id?'on':''}" data-act="first-bozo" data-mid="${m.id}"><span class="avatar lg" style="--c:${m.color}">${avIn(m)}</span>${h(m.name)}</button>`).join('')}</div>
     <div class="vote-actions">
-      <button class="btn primary block" data-act="first-start" ${S.pendingBozo?'':'disabled'}>${S.pendingBozo?`🤡 ${h(member(S.pendingBozo)?.name)} it is — start Week 1`:'Pick someone above'}</button>
+      ${vote?`<button class="btn primary block vo" data-act="first-vote-open">${o&&o.off?'🗳️ Reopen the league vote':'🗳️ Open a league vote'}</button>`:''}<button class="btn ${vote?'':'primary '}block" data-act="first-start" ${S.pendingBozo?'':'disabled'}>${S.pendingBozo?`🤡 ${h(member(S.pendingBozo)?.name)} it is — start Week 1`:'Pick someone above'}</button>
       <button class="btn block" data-act="flip" data-ids="${act.map(m=>m.id).join(',')}" data-first="1">🪙 Spin for it</button>
       <button class="btn ghost block sm" data-act="nav" data-view="crew" data-pane="crew">← Back to the crew</button>
     </div>
@@ -6253,6 +6280,14 @@ const ACT={
   'toggle-final'(el){const w=lastWeek();if(!w)return;if(el.dataset.wid&&el.dataset.wid!==w.id)return stale();w.final=!w.final;if(!w.final)delete w.final;commit();toast(w.final?'Final week: no next Bozo after this one':'Back to a regular week','good')},
   'drop-special'(el){const day=el.dataset.day;const sp=(S.specials||[]).find(x=>x.day===day);if(!sp)return;confirm2(`Remove the ${h(sp.name)} parlay?`,`No special parlay on ${h(fmtDay(sp.day))}. That week stays one Sunday parlay.`,'Remove',()=>{if(!(S.specials||[]).some(x=>x.day===day))return stale();S.specials=S.specials.filter(x=>x.day!==day);commit()})},
   'first-bozo'(el){S.pendingBozo=el.dataset.mid;commit()},
+  'first-vote-open'(){const o=openerOf();if(!isAdmin()||S.weeks.length||!voteOffered())return stale();   // opens the Week 1 vote on the season (or reopens one that was called off: its ballot and every sealed vote are as they were)
+    if(o){if(!o.off)return;delete o.off;commit();toast('Vote’s open again. The votes already in still count.','good');return}
+    const act=S.members.filter(m=>m.active);if(act.length<2){toast('A vote needs at least two people on the crew. Nothing was changed. Add a person in Settings, then try again.','bad');return}
+    S.opener={id:'opener',kind:'opener',label:'Week 1',num:0,at:new Date().toISOString(),picks:Object.fromEntries(act.map(m=>[m.id,{status:'in'}]))};S.pendingBozo=null;commit();toast('Vote’s open. Everyone picks a name and records a video.','good')},
+  'first-vote-off'(el){const o=openerOf();if(!isAdmin()||!o||o.off||S.weeks.length)return stale();const how=el.dataset.how==='spin'?'spin':'hand',n=openerIn(o);   // "instead": one confirm, then the vote is off and its ballots stay sealed for good
+    confirm2('Call off the vote?',n?`The ${n===1?'vote':n+' votes'} already in stay${n===1?'s':''} sealed and ${n===1?'is':'are'} never shown to anyone. Nothing else is lost: if you open the vote again, ${n===1?'that vote still counts':'those '+n+' still count'}.`:'Nobody has voted yet, so nothing is lost. You can open the vote again at any time.','Call it off',()=>{const o2=openerOf();if(!o2||o2.off||S.weeks.length)return stale();o2.off={at:new Date().toISOString(),how};commit();
+      if(how==='spin')setTimeout(()=>spin(S.members.filter(m=>m.active).map(m=>m.id),id=>{S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} drew the short straw`)}),0);else toast('Vote called off. Pick the Week 1 Bozo below.','good')})},
+  'first-crown'(el){const id=el.dataset.mid;if(!isAdmin()||S.weeks.length||!member(id))return stale();newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
   'first-start'(){if(!S.pendingBozo)return;const id=S.pendingBozo;S.pendingBozo=null;newWeek(id);commit();toast(`🤡 ${member(id).name} is the Week 1 Bozo`)},
   'crew-card'(el){crewCard(el.dataset.mid)},'badge'(el){badgeTap(el)},'crew-explore'(el){crewExplore(el.dataset.sid,el.dataset.mid,el.dataset.nm)},   // Settings → Crew: a person's card, and Explore from it to their full stats
   'remove-member'(el){S.members=S.members.filter(m=>m.id!==el.dataset.mid);commit()},
@@ -6382,7 +6417,7 @@ const ACT={
   'rv-close'(){closePlayer(true)},
   'rv-next'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const st=rvGet(w,undefined,R);rvSet(w,{i:st.i+1,f:false},R);render();document.querySelector('.reveal')?.scrollIntoView({block:'start',behavior:'smooth'})},
   'rv-end'(el){const R=+(el&&el.dataset.r)||1;const w=currentWeek();const r=rvOf(w,R);rvSet(w,{i:r?r.order.length:0,f:false},R);render()},
-  'rv-restart'(el){const R=+(el&&el.dataset.r)||1;const w=(el&&el.dataset.wid&&week(el.dataset.wid))||currentWeek();S.currentWeekId=w.id;REPLAY.set(w.id+'|'+R,{i:-1,f:false});REPLAY_RUN.add(replayRunKey(w,R));if(R===1&&w.revote&&w.revote.reveal&&rvStep(w,league(),2)>=rvTop(w,2)){REPLAY.set(w.id+'|2',{i:-1,f:false});REPLAY_RUN.add(replayRunKey(w,2))}save();render();pageTo(0,'smooth')},
+  'rv-restart'(el){const R=+(el&&el.dataset.r)||1;const w=(el&&el.dataset.wid&&week(el.dataset.wid))||currentWeek();if(w!==S.opener)S.currentWeekId=w.id;REPLAY.set(w.id+'|'+R,{i:-1,f:false});REPLAY_RUN.add(replayRunKey(w,R));if(R===1&&w.revote&&w.revote.reveal&&rvStep(w,league(),2)>=rvTop(w,2)){REPLAY.set(w.id+'|2',{i:-1,f:false});REPLAY_RUN.add(replayRunKey(w,2))}save();render();pageTo(0,'smooth')},
   async 'revote-cand'(el){const l=league();const w=currentWeek();if(!l.me){pickMe(l);return}setSyncDot('busy');
     try{const d=await api(l,'/sub',{method:'POST',body:{seasonId:season(l).id,weekId:w.id,candidateId:el.dataset.mid,memberId:l.me,round:2}});subEdit.delete(w.id+':2');takeState(l,d);save();render();setSyncDot('ok');toast(week(w.id)?.revote?.reveal?'That was the last one — the revote is in':'Revote sealed','good')}
     catch(e){setSyncDot('bad');toast(failNote(e,'Your revote didn’t go in','Nothing was saved or changed. Tap the name again when you have signal.'),'bad')}},
