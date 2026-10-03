@@ -3663,7 +3663,7 @@ function momentFacts(w,c){   // each kind's state for the week on screen: 'due' 
   const par=isSide(w)?parentOf(w):w,top=lastMain(realWeeks()),newest=!!par&&par===top,nx=par?nextMain(par):null,f={};
   if(w.placed)f.placed=newest&&c.n>0&&c.result==='pending'&&c.pending===c.n&&!liveBanner(w)?'due':'stale';
   if(c.result==='won'&&c.graded)f.cashed=newest||(nx&&nx===top&&!nx.placed)?'due':'stale';   // the newest week, or the one before it while the newest has no placed slip yet
-  if(!isSide(w)&&c.graded&&(w.reveal||w.crowned)&&bozoElect(w))f.bozo=w===top||(nx&&nx===top&&!calc(nx).graded)?'due':'stale';
+  if(!isSide(w)&&c.graded&&(w.reveal||w.crowned||(nx&&nx.after===w.id))&&bozoElect(w))f.bozo=w===top||(nx&&nx===top&&!calc(nx).graded)?'due':'stale';
   return f}
 let MO_SHARE=0;   // a share started from a sheet is still drawing: the next moment waits for its sheet to close
 function shareFrom(wid){MO_SHARE++;const done=()=>{MO_SHARE=Math.max(0,MO_SHARE-1);setTimeout(momentCheck,350)};let p;try{p=shareSlip(week(wid))}catch(e){done();return}Promise.resolve(p).then(done,done)}
@@ -6357,7 +6357,8 @@ async function crown(id){
   if(w.revote&&!w.revote.reveal&&!crown.sure){modal({title:'A revote is open',body:`<p>The tie revote hasn't finished. Crown ${h(member(id)?.name||'')} anyway? The revote will be dropped.</p>`,actions:[{label:'Cancel',cls:'ghost'},{label:'Crown anyway',cls:'danger',onClick:()=>{crown.sure=true;crown(id).finally(()=>{crown.sure=false})}}]});return}const nx=nextMain(w);if(nx){S.currentWeekId=nx.id;save();render();toast(`${member(nx.bozoId)?.name||'Someone'} is already the ${wkName(nx)} Bozo`);return}
   if(lastWeek()!==w){toast('Only the latest week can crown the next Bozo','bad');return}
   if(seasonOver()){toast(`The ${seasonName(season())} season is finished, so it can't open a new week. Nothing changed. Tap "This week →" at the top to go to ${seasonName(newestSeason())}.`,'bad');return}
-  const nw=newWeek(id);commit();toast(`🤡 ${member(id).name} is the ${wkName(nw)} Bozo`);pageTo(0,'smooth');
+  const nw=newWeek(id);if(!isSide(w)&&calc(w).graded)nw.after=w.id;   // a hand crown of a graded week says which week it came after (the field the league's own crowning puts on the week it starts), so the Bozo moment can tell it from a week that was merely started early; written on the NEW week only, never on an existing one
+  commit();toast(`🤡 ${member(id).name} is the ${wkName(nw)} Bozo`);pageTo(0,'smooth');
 }
 function download(name,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'application/json'}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
 /* ---- #42 one-tap season backup (Jason, approved 2026-09-22; docs/plans/SEASON-BACKUP.md): Settings → League → Seasons, ⬇ Spreadsheet on a season's row, the commissioner downloads that season as a spreadsheet (.csv, UTF-8 with a byte-order mark so Excel reads every letter): one row per pick, then each person's season totals. Built on this phone from the league it already has, by calc() and stats() themselves, over the weeks this viewer may see (a reveal he still owes keeps the weeks after it out, as on History and Stats). Reads only: nothing is saved, sent or changed ---- */
