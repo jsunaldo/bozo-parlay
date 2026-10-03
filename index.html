@@ -344,6 +344,7 @@ div.gm-head{cursor:default;min-height:36px}.gm-head:focus-visible{outline:2px so
 .ch-t{flex:1;min-width:0}.ch-t b{display:block;font-size:15px;overflow-wrap:anywhere}.ch-t small{display:block;color:var(--muted);font-size:12px;line-height:1.35;overflow-wrap:anywhere}.ch-done .ch-t b,.ch-blocked .ch-t b{color:var(--muted);font-weight:500}
 .ch-act{flex:none;min-width:44px;min-height:44px;padding:0 12px 0 14px;border-radius:980px;border:1px solid var(--line2);background:var(--surface);color:var(--text);font:inherit;font-size:14px;font-weight:600;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent}.ch-act:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 button.kindbar{cursor:pointer;box-shadow:inset 0 0 0 1.5px var(--purple)}button.kindbar .kb-go{font-weight:700;color:var(--purple);white-space:nowrap}
+.kindbar.yours{min-height:44px}.kindbar.yours .kb-go{color:var(--text)}   /* the line under the week-nav that points at a task on another week: 44 px, its Go → in the text colour (the purple on this grey is under 4.5:1) */
 .extras .ex{display:flex;flex-direction:column;gap:6px;margin-top:10px}.extras .ex small{line-height:1.35}
 .ex-plan{background:var(--surface2);border-radius:12px;padding:8px 10px;font-size:13px;font-weight:600}
 .fld{display:flex;flex-direction:column;gap:6px;margin:12px 0 0}.fld>span{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
@@ -2571,8 +2572,37 @@ function renderWeekInner(){
     <button class="icon-btn" data-act="week-prev" aria-label="Previous week" ${idx===0?'disabled':''}>‹</button>
     <div class="week-title"><strong>${h(wkName(w))}</strong>${isAdmin()?`<input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date">`:w.date?`<small class="muted tiny">${h(new Date(w.date+'T12:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}))}</small>`:''}</div>
     <button class="icon-btn" data-act="week-next" aria-label="Next week" ${idx===S.weeks.length-1?'disabled':''}>›</button>
-  </div>${kindBar(w)}${choresCard(w)}${vote}${envelopesCard(w,c)}${upnext}${renderTicket(w,c)}${renderExtras(w)}`;   // the Bozo part leads, the slip below
+  </div>${yoursLine(w)}${kindBar(w)}${choresCard(w)}${vote}${envelopesCard(w,c)}${upnext}${renderTicket(w,c)}${renderExtras(w)}`;   // the Bozo part leads, the slip below
 }
+/* ---- "Still yours" (todo-fanduel.md 1.2): one line, in the kindbar's shape, for each task the viewer still owes whose control is NOT on the screen they are looking at: the side parlay's pick while on the main week; anything owed on the latest
+   main week while on another week. Never drawn on the week that holds the control (the vote card, the ballot, the slip's own row already say it), and nothing when nothing is owed. It reads only the viewer's own state and week names
+   (never another person's ballot, nor an outcome), runs inside render()'s spoilerPass (lastWeek() is then the latest week this phone may see) and stores and sends nothing ---- */
+function yoursOf(){   // [{wid, mid, a, b, ic}]: the week that holds the control, the leg to open there (the side parlay's pick), the words on the main week (a, side parlay only) and on any other week (b)
+  const l=league(),me=l&&l.me;if(!me||l.guest||!(l.seasons||[]).length||season(l).id!==newestOf(l).id||!member(me))return[];
+  const lw=lastWeek();if(!lw)return[];
+  const mb=member(me),nm=wkName(lw),c=calc(lw),sd=sideOf(lw),out=[],add=(wid,b,ic,a,mid)=>out.push({wid,b,ic,a:a||'',mid:mid||''});
+  const owes=x=>{const p=x.picks&&x.picks[me];return!!p&&noPickYet(p)&&!x.locked&&!x.placed&&!calc(x).graded&&!(mb.active===false&&me!==x.bozoId)&&memberCan('picks',l)};   // the viewer's own leg is empty on a slip still open (a benched player's blank leg is nobody's job)
+  const allIn=(x,cx)=>cx.n>0&&!cx.legs.some(y=>y.status==='pending'&&!String(y.text||'').trim()),canPlace=(x,cx)=>!x.placed&&!x.locked&&!cx.graded&&allIn(x,cx);
+  if(owes(lw))add(lw.id,`${nm} is waiting on your pick`,'📝');
+  if(l.sync){
+    if(lw.reveal){
+      if(!revealSeen(lw,l))add(lw.id,`${nm} is waiting on you to watch the reveal`,'🎬');
+      else if(lw.revote&&!lw.revote.reveal&&!seasonOver()){const rv=lw.revote,exp=(rv.voters||c.legs.map(x=>x.mid)).filter(mid=>!(rv.skip&&rv.skip[mid])),sb=rv.sub&&rv.sub[me];if(exp.includes(me)&&!(sb&&(sb.voted||sb.candidateId)))add(lw.id,`${nm} is waiting on your revote`,'🗳️')}
+    }else if(l.features&&l.features.votes&&c.graded&&!lw.final&&eligible(lw).reason!=='autopush'&&expectedVoters(lw,c).includes(me)){
+      const st=subStatus(lw)(me);
+      if(!st.voted)add(lw.id,lw.sub&&lw.sub[me]&&lw.sub[me].stale?`${nm} is waiting on you to vote again`:`${nm} is waiting on your vote`,'🗳️');
+      else if(!st.video)add(lw.id,`${nm} is waiting on your vote video`,'🗳️');
+    }
+    if(bozoOfW(lw)===me&&canPlace(lw,c))add(lw.id,`${nm} is waiting on you to place the parlay`,'✅');
+  }
+  if(sd){const cs=calc(sd);
+    if(owes(sd))add(sd.id,`${nm}’s side parlay is waiting on your Anytime TD pick`,'🎯','Your Anytime TD pick isn’t in',me);
+    if(l.sync&&payerSet(sd)&&payerOf(sd)===me&&canPlace(sd,cs))add(sd.id,`${nm}’s side parlay is waiting on you to place it`,'✅','Your Anytime TD side parlay is waiting on you to place it');}
+  return out}
+function yoursLine(w){   // under the week-nav, before the kindbar: each owed task whose control is on another week. On the latest main week only the side parlay's lines can show (the main week's own controls are right there)
+  const lw=lastWeek();if(!lw||!w)return'';const top=w===lw;
+  let L;try{L=yoursOf()}catch(e){return''}   // an extra line must never take This Week down with it
+  return L.filter(x=>x.wid!==w.id).map(x=>{const a=top&&x.a;return`<button class="kindbar yours" data-act="yours-go" data-wid="${h(x.wid)}"${x.mid?` data-mid="${h(x.mid)}"`:''}><span class="kb-ic">${x.ic}</span><span class="kb-t"><b>${h(a||x.b)}</b></span><span class="kb-go">${a?'Open →':'Go →'}</span></button>`}).join('')}
 function kindBar(w){   // what kind of parlay this is, and the side parlay riding along with it
   if(isSide(w)){const p=parentOf(w);return`<div class="kindbar"><span class="kb-ic">🎯</span><span class="kb-t"><b>Anytime TD side parlay</b>ATTD bets only · ${gameDays()} games · no Bozo, no vote${p?` · runs alongside <a href="#" data-act="open-week" data-wid="${p.id}">${h(wkName(p))}</a>`:''}</span></div>`}
   let out='';
@@ -6495,6 +6525,7 @@ const ACT={
   'guide-choice-manual'(el){const d=el.dataset,next=d.next==='1';GUIDE_MANUAL.add(guideKey(d.wid,d.mid,next));guidedTyped(d.wid,d.mid,next)},   // the typed box, unchanged; remembered on this screen only, so a repaint keeps it
   nav(el){const go=()=>{const same=VIEW===el.dataset.view&&!el.dataset.pane;VIEW=el.dataset.view;if(el.dataset.pane)PANE=el.dataset.pane;if(VIEW==='week'){goNow();loadPending()}else REPLAY_RUN.clear();save();render();pageTo(0,same?'smooth':'auto')};UPCOMING?leaveUpcoming(go):go()},   // tapping the tab you're on scrolls back to the top; a button that names a Settings pane opens that pane
   'go-now'(){goNow();VIEW='week';save();render();pageTo(0)},
+  'yours-go'(el){const wid=el.dataset.wid,w=week(wid);if(!w)return stale();goNow();S.currentWeekId=wid;VIEW='week';if(el.dataset.mid){BROWSED=true;slipOpen.add(wid+'|'+el.dataset.mid)}save();render();pageTo(0)},   // "Still yours": the week that holds the task (the side parlay's: with the viewer's own row open)
   'settings-pane'(el){const note=!!el.closest('.setnote');setPane(el.dataset.pane);if(note)document.getElementById('settab-'+el.dataset.pane)?.focus()},   // the banner's Open League hides itself once League shows, so focus goes to the League tab and a screen reader says where it landed
   'use-link'(el){const box=el&&el.closest?el.closest('.linkbox'):null;const v=(box?box.querySelector('input'):document.getElementById('linkIn'))?.value||'';useLink(v,el)},
   'pick-season'(el){const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid)){l.activeSeason=el.dataset.sid;S=season().data}scopeSet('season');ALLTIME=null;xNode={};detailOpen=null;save();render()},
