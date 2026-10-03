@@ -2691,8 +2691,9 @@ function dlLine(w,missing,offLeft){   // Deadlines (the pick-status box): the de
   if(!w||!w.dl||!w.dl.pick||isSide(w)||w.placed||w.locked)return'';const t=Date.parse(w.dl.pick);if(!Number.isFinite(t))return'';
   if(leagueNow()<t)return missing?`<div class="dl-line">Picks close <b>${dlShort(t)}</b>${dlAway()?` (${h(dlHere(t))} here)`:''}</div>`:'';
   const off=dlOffIds(w).map(id=>member(id)),late=Object.entries(w.picks||{}).filter(([id,p])=>p&&p.late===true&&String(p.text||'').trim()&&member(id)).map(([id])=>member(id)),nm=a=>andList(a.map(m=>h(m.name)));
-  if(!off.length&&!late.length)return'';
-  return`<div class="dl-line">Picks closed <b>${dlShort(t)}</b>.${off.length?` ${nm(off)} had no pick in, so ${nm(off)} ${off.length===1?'is':'are'} off this slip.`:''}${late.length?` ${late.length===1?`${nm(late)}’s pick came in late; the commissioner let it in.`:`${nm(late)}’s picks came in late; the commissioner let them in.`}`:''}${off.length&&isAdmin()&&!offLeft?' ＋ Add a leg for… below lets a late one in.':''}</div>`}
+  const frozen='<div class="dl-line dl-frozen">Prices are frozen now that picks have closed. Only the commissioner can change one.</div>';   // task/dl2: no member or automatic price change is accepted after the pick deadline (the league refuses it); said once, here
+  if(!off.length&&!late.length)return frozen;
+  return`<div class="dl-line">Picks closed <b>${dlShort(t)}</b>.${off.length?` ${nm(off)} had no pick in, so ${nm(off)} ${off.length===1?'is':'are'} off this slip.`:''}${late.length?` ${late.length===1?`${nm(late)}’s pick came in late; the commissioner let it in.`:`${nm(late)}’s picks came in late; the commissioner let them in.`}`:''}${off.length&&isAdmin()&&!offLeft?' ＋ Add a leg for… below lets a late one in.':''}</div>${frozen}`}
 function pickStatus(w,c,cl){
   if(c.none)return`<div class="pickstat"><span>Nobody got a pick in by the deadline, so there’s no parlay this week.${isAdmin()?' ＋ Add a leg for… below lets a late one in.':''}</span></div>`;   // DL-F03: said once, here (the names are in the vote's ballot)
   if(!c.n)return'';
