@@ -1126,8 +1126,8 @@ const DEV_ID=(()=>{let d='';try{d=localStorage.getItem('bp-dev')||''}catch(e){}i
 const APP_KIND=SHARE_MODE?'club':'commish';
 const HW_FP=(()=>{try{const u=navigator.userAgent;const os=(u.match(/(iPhone OS|CPU OS|Mac OS X|Android) [\d_.]+/)||[''])[0];const t=[/iPhone/.test(u)?'iPhone':/iPad/.test(u)||(/Macintosh/.test(u)&&navigator.maxTouchPoints>1)?'iPad':/Android/.test(u)?'Android':'other',Math.min(screen.width,screen.height)+'x'+Math.max(screen.width,screen.height),window.devicePixelRatio||1,os,Intl.DateTimeFormat().resolvedOptions().timeZone||''].join('|');let a=5381;for(let i=0;i<t.length;i++)a=Math.imul(a,33)^t.charCodeAt(i);return'h'+(a>>>0).toString(36)}catch(e){return''}})();   // the same on every app of one phone (each Home Screen app has its own storage)
 const appLabel=(u,l)=>/[?&]league=/.test(u||'')?'Commish app':`${l.name} app`;
-const BP_READS='2';   // what this app understands in the league's replies (header X-BP-Pins): 1 = price pins, 2 = also who pays for a side parlay
-const hdrs=l=>({'Content-Type':'application/json','X-BP-Pins':BP_READS,'X-BP-Key':l.sync.key,...(l.meKey?{'X-BP-Me':l.meKey}:{}),...(l.sync.role==='admin'&&l.me?{'X-BP-As':l.me}:{})});
+const BP_READS='2',BP_VOTE='1';   // what this app understands in the league's replies (header X-BP-Pins): 1 = price pins, 2 = also who pays for a side parlay. X-BP-Vote: 1 = it also reads the Week 1 vote's reveal (an app without it is asked to update once a vote has crowned Week 1)
+const hdrs=l=>({'Content-Type':'application/json','X-BP-Pins':BP_READS,'X-BP-Vote':BP_VOTE,'X-BP-Key':l.sync.key,...(l.meKey?{'X-BP-Me':l.meKey}:{}),...(l.sync.role==='admin'&&l.me?{'X-BP-As':l.me}:{})});
 const canEdit=(mid,l=league())=>isAdmin(l)||l.me===mid;
 const memberCan=(f,l=league())=>isAdmin(l)||!!(l.features&&l.features[f]);
 const shareLink=l=>l.sync&&l.shareKey?`${location.origin}${location.pathname}?join=${l.sync.id}.${l.shareKey}`:'';
@@ -1620,7 +1620,7 @@ function askRefusedCopy(name,ahead,e,later){return new Promise(res=>{modal({titl
 const notNow=new Set();   // leagues whose copy here the league turned down and the commissioner said Not now: the account doesn't ask again until the app opens next
 async function adoptLink(id,key,opt={}){
   let l=null,created=false,prev=null,ahead=[],refused=null;const busyB=opt.btn&&!opt.quiet?busy(opt.btn,'Connecting as commissioner…'):null;
-  try{if(!opt.quiet&&!busyB)toast('Connecting as commissioner…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`,{headers:{'X-BP-Pins':BP_READS}});const d=await r.json().catch(()=>({}));if(!d.ok||d.role!=='admin')throw Object.assign(new Error(d.error||'that link doesn\'t work'),{status:r.status});if(!isLeagueReply(d))throw badLeagueReply(d,r);
+  try{if(!opt.quiet&&!busyB)toast('Connecting as commissioner…');const r=await fetch(`${SYNC_URL}/leagues/${id}?k=${key}`,{headers:{'X-BP-Pins':BP_READS,'X-BP-Vote':BP_VOTE}});const d=await r.json().catch(()=>({}));if(!d.ok||d.role!=='admin')throw Object.assign(new Error(d.error||'that link doesn\'t work'),{status:r.status});if(!isLeagueReply(d))throw badLeagueReply(d,r);
     if(!opt.quiet&&!DB.acct&&isOwner())mergeBuiltIns();   // only a commissioner link gets here: this is the commish's device (an account brings its own leagues)
     l=DB.leagues.find(x=>x.sync&&x.sync.id===id);   // only a league this phone already holds by its id: a league kept only on this phone with the same name (or its "(kept on this phone)" copy) is never sent into it and stays as it is, a league of its own
     if(!l){l={id:'cloud-'+id,name:d.name,seasons:[],activeSeason:null};DB.leagues.push(l);created=true}if(created||!opt.quiet)l.made=born(l.id);   // made (DD01): added, or opened again by hand, now: after any earlier removal of it
@@ -1747,7 +1747,7 @@ async function redeemLinkCode(code,el){
 }
 async function redeemLinkCode2(code,B){
   if(!B)toast('Checking the code…');
-  let b,r;try{r=await fetch(`${SYNC_URL}/link/redeem`,{method:'POST',headers:{'Content-Type':'application/json','X-BP-Pins':BP_READS},body:JSON.stringify({code,app:SHARE_MODE?SHARE_LEAGUE.id:'commish'})})}   // it says what it understands: a league from the other device can carry who pays for a side parlay
+  let b,r;try{r=await fetch(`${SYNC_URL}/link/redeem`,{method:'POST',headers:{'Content-Type':'application/json','X-BP-Pins':BP_READS,'X-BP-Vote':BP_VOTE},body:JSON.stringify({code,app:SHARE_MODE?SHARE_LEAGUE.id:'commish'})})}   // it says what it understands: a league from the other device can carry who pays for a side parlay
   catch(e){modal({title:'Couldn\'t reach the server',body:'<p>Nothing changed on this device. Check the Wi-Fi or signal, then type the same code again. It still works until it expires.</p>',actions:[{label:'OK',cls:'primary'}]});return false}
   b=await r.json().catch(()=>({}));
   if(r.status===409){modal({title:'That code goes in a different app',body:`<p>${h(b.error||'')}</p>`,actions:[{label:'OK',cls:'primary'}]});return false}
@@ -1796,7 +1796,7 @@ async function joinLink(id,key,opt={}){
   try{let l=DB.leagues.find(x=>x.sync&&x.sync.id===id);
     if(l&&l.sync.role==='admin'){if(opt.quiet)return true;{const sw=DB.active!==l.id;DB.active=l.id;S=season().data;if(sw)goNow(true)}save();render();toast('You already run this league from this device','good');return true}
     let mine=!!(opt.keepMe&&l&&l.me&&l.meKey&&opt.meKey&&opt.meKey!==l.meKey);   // a code never changes who this phone is in a league it has a name in: its own name key stays, and the code's is never sent or kept (sec-r2)
-    const read=k=>fetch(`${SYNC_URL}/leagues/${id}?k=${key}`,{headers:{'X-BP-Pins':BP_READS,...(k?{'X-BP-Me':k}:{})}});
+    const read=k=>fetch(`${SYNC_URL}/leagues/${id}?k=${key}`,{headers:{'X-BP-Pins':BP_READS,'X-BP-Vote':BP_VOTE,...(k?{'X-BP-Me':k}:{})}});
     if(!opt.quiet&&!busyB)toast('Joining the league…');let r=await read(mine?l.meKey:(opt.meKey||(l&&l.meKey)||'')),d=await r.json().catch(()=>({}));
     if(mine&&d.ok&&d.you===null&&opt.me===l.me){mine=false;r=await read(opt.meKey);d=await r.json().catch(()=>({}))}   // the same person, and the league has signed this phone's own key out: the code's key is used, the very way back the app gives (sec-r2 fix round 1)
     if(!d.ok)throw Object.assign(new Error(d.error||'that link doesn\'t work'),{status:r.status});
@@ -3892,7 +3892,7 @@ async function uploadVideo(l,w,file,resume,replace){
   }
   const s=season(l);upl={pct:0,label:resume?'Picking up where it left off…':'Starting the upload…'};render();
   const bar=()=>{const b=document.getElementById('upbar');const t=document.getElementById('uplabel');const pc=document.getElementById('uppct');if(b)b.style.width=upl.pct+'%';if(t)t.textContent=upl.label;if(pc)pc.textContent=upl.pct+'%'};
-  const hdr={'Content-Type':'application/octet-stream','X-BP-Pins':BP_READS,'X-BP-Key':l.sync.key,'X-BP-Me':l.meKey||'','X-BP-As':l.sync.role==='admin'&&l.me?l.me:''};
+  const hdr={'Content-Type':'application/octet-stream','X-BP-Pins':BP_READS,'X-BP-Vote':BP_VOTE,'X-BP-Key':l.sync.key,'X-BP-Me':l.meKey||'','X-BP-As':l.sync.role==='admin'&&l.me?l.me:''};
   upCancel=false;try{upLock=await navigator.wakeLock?.request('screen')}catch(e){}
   let key=null;try{let ps,have=new Set();
     if(resume){const st=await api(l,'/video/status?key='+encodeURIComponent(resume.key));
@@ -5061,7 +5061,7 @@ function renderFirstBozo(){
     <div class="vote-actions">
       ${vote?`<button class="btn primary block vo" data-act="first-vote-open">${o&&o.off?'🗳️ Reopen the league vote':'🗳️ Open a league vote'}</button>`:''}<button class="btn ${vote?'':'primary '}block" data-act="first-start" ${S.pendingBozo?'':'disabled'}>${S.pendingBozo?`🤡 ${h(member(S.pendingBozo)?.name)} it is — start Week 1`:'Pick someone above'}</button>
       <button class="btn block" data-act="flip" data-ids="${act.map(m=>m.id).join(',')}" data-first="1">🪙 Spin for it</button>
-      <button class="btn ghost block sm" data-act="nav" data-view="crew" data-pane="crew">← Back to the crew</button>
+      <button class="btn ghost block sm${vote?' vo':''}" data-act="nav" data-view="crew" data-pane="crew">← Back to the crew</button>
     </div>
   </section>`;
 }
