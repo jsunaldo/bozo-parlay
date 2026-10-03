@@ -3601,7 +3601,7 @@ const bozoLineRO=w=>{if(isSide(w)){const py=payerOf(w);return`<div class="bozo-l
   const b=member(w.bozoId);return`<div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':'Bozo unknown'}</span></div>`};   // the ticket head's line, without its edit buttons
 const footCells=(w,c)=>`<div class="foot-grid"><div><small>Parlay</small><b class="mono">${c.n?amer(c.dec):'—'}</b></div><div><small>Stake</small><b class="mono">$${c.stake}</b></div><div><small>${c.result==='won'?'Paid':'To win'}</small><b class="mono ${c.result==='won'?'good':''}">${winTxt(c)}</b></div><div><small>Each</small><b class="mono">${eachTxt(c)}</b></div></div>`;   // the ticket foot's four cells, to read (no stake box, no ids a repaint of the ticket would also write to)
 const MO_KINDS=['placed','cashed','bozo'];
-const moKey=l=>`bp-moments:${l.sync?l.sync.id:l.id}:${l.me||'guest'}`;   // the person, not the phone: a phone that changes hands keeps each person's own record
+const moKey=l=>`bp-moments:${l.sync?l.sync.id:l.id}:${l.me||'guest'}`;   // the one place this name is built (like faceKey): every moments read and write goes through it, so the one-app merge wraps it in skey() once   // the person, not the phone: a phone that changes hands keeps each person's own record
 function moStore(l){   // this person's marks on this phone: {k, o:{seeded, m:{'<season>|<week>|<kind>':1}}, fresh}; null when the phone can't keep them (a private window): then there are no moments at all, and the ticket still says everything
   try{const k=moKey(l),raw=localStorage.getItem(k);let o=null;if(raw){try{o=JSON.parse(raw)}catch(e){o=null}}
     return o&&typeof o==='object'&&o.seeded===1&&o.m&&typeof o.m==='object'?{k,o,fresh:false}:{k,o:{seeded:1,m:{}},fresh:true}}catch(e){return null}}
@@ -3610,13 +3610,13 @@ function momentFacts(w,c){   // each kind's state for the week on screen: 'due' 
   const par=isSide(w)?parentOf(w):w,top=lastMain(realWeeks()),newest=!!par&&par===top,nx=par?nextMain(par):null,f={};
   if(w.placed)f.placed=newest&&c.n>0&&c.result==='pending'&&c.pending===c.n&&!liveBanner(w)?'due':'stale';
   if(c.result==='won'&&c.graded)f.cashed=newest||(nx&&nx===top&&!nx.placed)?'due':'stale';   // the newest week, or the one before it while the newest has no placed slip yet
-  if(!isSide(w)&&bozoElect(w))f.bozo=w===top||(nx&&nx===top&&!calc(nx).graded)?'due':'stale';
+  if(!isSide(w)&&c.graded&&bozoElect(w))f.bozo=w===top||(nx&&nx===top&&!calc(nx).graded)?'due':'stale';
   return f}
 let MO_SHARE=0;   // a share started from a sheet is still drawing: the next moment waits for its sheet to close
 function shareFrom(wid){MO_SHARE++;const done=()=>{MO_SHARE=Math.max(0,MO_SHARE-1);setTimeout(momentCheck,350)};let p;try{p=shareSlip(week(wid))}catch(e){done();return}Promise.resolve(p).then(done,done)}
 function momentRun(){
   const l=league(),root=document.getElementById('modal-root');
-  if(!l||VIEW!=='week'||root._open||PLAYER||quiet()||refreshing||upl||FACE_BUSY||obBusy||needWho(l)||UPCOMING||MO_SHARE||unread(l)||LEAGUE_FAIL.has(l.id)||S.members.length<2||!S.weeks.length||season(l).id!==newestOf(l).id)return;
+  if(!l||!l.sync||VIEW!=='week'||root._open||PLAYER||quiet()||refreshing||upl||FACE_BUSY||obBusy||needWho(l)||UPCOMING||MO_SHARE||unread(l)||LEAGUE_FAIL.has(l.id)||S.members.length<2||!S.weeks.length||season(l).id!==newestOf(l).id)return;
   const st=moStore(l);if(!st)return;const sid=season(l).id,K=(w,k)=>`${sid}|${w.id}|${k}`;
   if(st.fresh){for(const x of S.weeks){const c=calc(x),f=momentFacts(x,c);for(const k of MO_KINDS)if(f[k])st.o.m[K(x,k)]=1}moSave(st);return}   // the first look for this person on this phone: whatever is already true is old news, so nothing replays a season
   const w=currentWeek();if(!w)return;const c=calc(w),f=momentFacts(w,c);let due=null,dirty=false;
@@ -3658,7 +3658,7 @@ function weekAwards(w,c){   // [{k, icon, name, rule, ids, text}]: the leg that 
   add('sweat','😮‍💨','Sweat of the Week','The hit that came closest to missing',sw.some(x=>lg.includes(x.mid))?[]:sw,x=>`${pk(x)}, ${mg(x)===0?'no room to spare':`covered by ${fmtMargin(mg(x),x.unit)}`}`);
   return A}
 const ENV_MEM={};   // what this visit has opened, for a phone that can't write storage
-const envKey=l=>`bp-env:${l.sync?l.sync.id:l.id}:${l.me||'guest'}`;
+const envKey=l=>`bp-env:${l.sync?l.sync.id:l.id}:${l.me||'guest'}`;   // likewise: the only place bp-env is named
 function envRead(l){try{const raw=localStorage.getItem(envKey(l)),o=raw?JSON.parse(raw):{};return o&&typeof o==='object'&&!Array.isArray(o)?o:{}}catch(e){return{}}}
 const envN=(l,w)=>{const k=season(l).id+'|'+w.id;return Math.max(+envRead(l)[k]||0,+(ENV_MEM[envKey(l)]||{})[k]||0,0)};   // how many envelopes this person has opened on this week
 function envBump(l,w){const k=season(l).id+'|'+w.id,n=envN(l,w)+1;(ENV_MEM[envKey(l)]=ENV_MEM[envKey(l)]||{})[k]=n;try{const o=envRead(l);o[k]=n;localStorage.setItem(envKey(l),JSON.stringify(o))}catch(e){}return n}
