@@ -1178,7 +1178,8 @@ const LEAGUE_POSTS=/^\/(pick|vote|sub|nextpick|placed|tidy|pings|signin|as|resto
 const leaguePostOk=(path,d)=>isLeagueReply(d)&&(path!=='/claim'||(typeof d.memberId==='string'&&!!d.memberId&&typeof d.meKey==='string'&&!!d.meKey));
 const SAYBAD=what=>`${what}: the league didn’t answer properly, so this phone can’t tell whether it went through. Nothing on this phone was lost. Do this: wait a moment, pull down to refresh (or tap Refresh in Settings → League) to see where things stand, then try again if it isn’t there.`;
 async function api(l,path,opts={}){apiFly++;try{
-  const t0=Date.now();let r;try{r=await fetch((l.sync.url||SYNC_URL)+'/leagues/'+l.sync.id+path,{method:opts.method||'GET',headers:hdrs(l),body:opts.body?JSON.stringify(opts.body):undefined,signal:opts.signal})}catch(x){throw netTag(x)}   // the request never got an answer: the app marks it as the connection's (the uncaught-error filter stays quiet only for these)
+  const url=(l.sync.url||SYNC_URL)+'/leagues/'+l.sync.id+path,init={method:opts.method||'GET',headers:hdrs(l),body:opts.body?JSON.stringify(opts.body):undefined,signal:opts.signal};   // the address, headers and body are built first, outside the transport catch: a fault in them is the app's, never the connection's
+  const t0=Date.now();let r;try{r=await fetch(url,init)}catch(x){throw netTag(x)}   // only the request itself never getting an answer is marked as the connection's (the uncaught-error filter stays quiet only for these)
   const t1=Date.now(),ln=+(r.headers?.get?.('X-BP-Now')||0);if(ln>0&&t1-t0<15e3)LEAGUE_OFF=Math.round(ln-(t0+t1)/2);   // the league stamps its time on every answer (a slow answer is too rough to go by)
   const d=await r.json().catch(()=>({ok:false,error:'unreadable response'}));
   if(!r.ok||!d.ok)throw Object.assign(new Error(d.error||('HTTP '+r.status)),{status:r.status,data:d});
