@@ -6550,14 +6550,14 @@ function recapGo(el){const to=el.dataset.to;let draw=false;if(to==='close'&&CLOS
 let tipPinned=null;
 function tipHtml(wid,mid){return withStats(()=>tipHtmlInner(wid,mid))}
 function tipHtmlInner(wid,mid){
-  const w=week(wid),m=member(mid);if(!w||!m)return'';const p=w.picks[mid];const bz=w.bozoId===mid;
+  const w=week(wid),m=member(mid);if(!w||!m)return'';const p=w.picks[mid];const bz=w.bozoId===mid;const fr=(isSide(w)?payerOf(w):fronter(w))===mid?`<div class="tip-bozo">${bz?'🤡 ':''}Fronted the parlay this week</div>`:'';   // on whoever fronted the stake: the person recorded as placing a Sunday parlay, a side parlay's payer, else the Bozo; no clown on anyone else
   const head=`<div class="tip-head"><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><b>${h(m.name)}</b><small>${h(wkName(w))}</small></div>`;
-  if(!p)return head+`<div class="tip-empty">Sat this week out.</div>${bz?'<div class="tip-bozo">🤡 Was the Bozo</div>':''}`;
+  if(!p)return head+`<div class="tip-empty">Sat this week out.</div>${bz?'<div class="tip-bozo">🤡 Was the Bozo</div>':''}${fr}`;
   const oddsN=parseOdds(p.odds);const st=p.status||'pending';
   const badge={hit:'<span class="badge won">Hit</span>',miss:'<span class="badge lost">Miss</span>',push:'<span class="badge void">Push</span>',pending:'<span class="badge pending">Pending</span>'}[st];
   const margin=p.margin!=null&&(st==='hit'||st==='miss')?`<span class="tip-margin ${st}">${st==='hit'?'covered':'missed'} by ${fmtMargin(p.margin,p.um&&p.unit?p.unit:unitFor(p.text))}</span>`:'';
   return head+`<div class="tip-bet">${pickIcon({...p,mid}).replace('data-act="pick-team"','')}<span>${h(p.text||'(no pick)')}</span></div>${p.unsure?'<div class="tip-empty" style="margin-top:6px">Owner inferred from the shared slip, not verified.</div>':''}
-    <div class="tip-row"><span class="mono">${oddsN!=null?fmtOdds(oddsN):'—'}</span>${margin}${badge}</div>${bz?'<div class="tip-bozo">🤡 Fronted the parlay this week</div>':''}`;
+    <div class="tip-row"><span class="mono">${oddsN!=null?fmtOdds(oddsN):'—'}</span>${margin}${badge}</div>${fr||(bz?'<div class="tip-bozo">🤡 Was the Bozo</div>':'')}`;
 }
 function showTip(cell){
   const t=document.getElementById('tip');const html=tipHtml(cell.dataset.wid,cell.dataset.mid);if(!html)return;
