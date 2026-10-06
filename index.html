@@ -1469,7 +1469,7 @@ function heldSecrets(){   // every credential and id this phone holds, to be str
 const SCRUB_CAMEL=/^(?:[a-z]{2,}(?:[A-Z][a-z]{2,})+|(?:[A-Z][a-z]{2,}){2,})$/;   // a camelCase or PascalCase identifier made of real-looking words (addEventListener, querySelector, ReferenceError); a random key never has this shape (its humps are one letter long) and a key this phone holds is struck before this is asked
 const SCRUB_IDENT=w=>{if(/[^A-Za-z]/.test(w))return false;const x=w.match(/[A-Z]+(?![a-z])|[A-Z]?[a-z]+/g)||[],lw=x.filter(y=>/[a-z]/.test(y)),ac=x.filter(y=>!/[a-z]/.test(y)),z=lw.join('');return x.join('')===w&&x.every(y=>y.length>=2)&&lw.some(y=>/^[A-Z]?[a-z]{3,}$/.test(y))&&ac.length<=1&&ac.every(y=>y.length<=5)&&x.filter(y=>y.length>=3).join('').length*10>=w.length*7&&z.replace(/[a-z]/g,'').length*3<=w.length&&!/[b-df-hj-np-tv-xz]{5}/i.test(lw.join(' '))&&(z.match(/[aeiouy]/gi)||[]).length*4>=z.length};   // an identifier a browser names in an error (getElementById, getElementsByClassName, innerHTML, XMLHttpRequest): camelCase or PascalCase, letters only, made of words of 2+ letters (one acronym at most), one with a real lowercase run, mostly lowercase and pronounceable; a random key with humps of one or two letters never has this shape. Spared only when this phone does not hold it (held keys are struck before this is asked)
 const scrubErr=m=>{let t=String(m==null?'':m).slice(0,20000);
-  for(let i=0;i<3&&/%[0-9a-f]{2}/i.test(t);i++)t=t.replace(/(?:%[0-9a-f]{2})+/gi,r=>{try{return decodeURIComponent(r)}catch(e){return r.replace(/%([0-9a-f]{2})/gi,(_,h)=>String.fromCharCode(parseInt(h,16)))}});   // layer 0: a %xx-escaped key is read as the key it is (up to three times over)
+  for(let i=0;i<12&&/%[0-9a-f]{2}/i.test(t);i++)t=t.replace(/(?:%[0-9a-f]{2})+/gi,r=>{try{return decodeURIComponent(r)}catch(e){return r.replace(/%([0-9a-f]{2})/gi,(_,h)=>String.fromCharCode(parseInt(h,16)))}});   // layer 0: a %xx-escaped key is read as the key it is (up to twelve times over; each pass only shortens the text)
   const hs=heldSecrets();for(const k of hs)t=t.split(k).join('…');   // layer 1: every key, code and id this phone holds, by exact match
   const G=new Set();for(const k of hs)for(let i=0;i+8<=k.length;i++)G.add(k.slice(i,i+8));   // layer 1b: and any 8 or more characters in a row of one (a key cut in halves, the first 10 characters a JSON error shows), wherever they sit
   if(G.size){const mk=new Uint8Array(t.length);for(let i=0;i+8<=t.length;i++)if(G.has(t.slice(i,i+8)))mk.fill(1,i,i+8);let o='';for(let i=0;i<t.length;i++){if(!mk[i])o+=t[i];else if(i===0||!mk[i-1])o+='…'}t=o}
@@ -3848,8 +3848,8 @@ function momentFacts(w,c){   // each kind's state for the week on screen: 'due' 
   if(!isSide(w)&&c.graded&&(w.reveal||w.crowned||(nx&&nx.after===w.id))&&bozoElect(w))f.bozo=w===top||(nx&&nx===top&&!calc(nx).graded)?'due':'stale';
   return f}
 let MO_SHARE=0;   // a share started from a sheet is still drawing: the next moment waits for its sheet to close
-const toastBad=()=>{try{return!!document.querySelector('#toast-root .toast.bad')}catch(e){return false}};   // an error toast is on screen (it goes by itself: readMs)
-function shareFrom(wid){MO_SHARE++;const done=()=>{if(toastBad())return void setTimeout(done,350);MO_SHARE=Math.max(0,MO_SHARE-1);setTimeout(momentCheck,350)};let p;try{p=shareSlip(week(wid))}catch(e){done();return}Promise.resolve(p).then(done,done)}   // a share that failed says so in an error toast: the hold stays until that toast has gone, so the next moment never opens over it
+const toastsBad=()=>{try{return[...document.querySelectorAll('#toast-root .toast.bad')]}catch(e){return[]}};   // the error toasts on screen (each goes by itself: readMs)
+function shareFrom(wid){MO_SHARE++;const was=new Set(toastsBad());let mine=null;const done=()=>{if(!mine)mine=toastsBad().filter(t=>!was.has(t));if(mine.some(t=>t.isConnected))return void setTimeout(done,350);MO_SHARE=Math.max(0,MO_SHARE-1);setTimeout(momentCheck,350)};let p;try{p=shareSlip(week(wid))}catch(e){done();return}Promise.resolve(p).then(done,done)}   // a share that failed says so in an error toast: the hold stays until that toast has gone, so the next moment never opens over it; only the share's own toasts (those that came while it ran) hold it, never an older or later one
 function momentRun(){
   const l=league(),root=document.getElementById('modal-root');
   if(!l||!l.sync||VIEW!=='week'||root._open||PLAYER||quiet()||refreshing||upl||FACE_BUSY||obBusy||needWho(l)||UPCOMING||MO_SHARE||unread(l)||LEAGUE_FAIL.has(l.id)||S.members.length<2||!S.weeks.length||season(l).id!==newestOf(l).id)return;
@@ -3890,8 +3890,8 @@ function weekAwards(w,c){   // [{k, icon, name, rule, ids, text}]: the leg that 
   const A=[],add=(k,icon,name,rule,legs,full)=>{if(legs.length)A.push({k,icon,name,rule,ids:legs.map(x=>x.mid),text:say(legs,full)})};
   add('leg','🏆','Leg of the Week','Longest price that hit',best(hit,x=>x.oddsN,false),x=>`${pk(x)}, ${fmtOdds(x.oddsN)}`);
   add('miss','🎯','Closest Miss','The miss by the smallest margin',best(miss,mg,true),x=>`${pk(x)}, missed by ${fmtMargin(mg(x),x.unit)}`);
-  const lg=best(hit,x=>x.oddsN,false).map(x=>x.mid),sw=best(hit,mg,true);   // the same leg as Leg of the Week: left out, so no leg is shown twice
-  add('sweat','😮‍💨','Sweat of the Week','The hit that came closest to missing',sw.some(x=>lg.includes(x.mid))?[]:sw,x=>`${pk(x)}, ${mg(x)===0?'no room to spare':`covered by ${fmtMargin(mg(x),x.unit)}`}`);
+  const lg=best(hit,x=>x.oddsN,false).map(x=>x.mid),sw=best(hit,mg,true);   // a leg that is also Leg of the Week: left out, so no leg is shown twice (the others it tied with stay)
+  add('sweat','😮‍💨','Sweat of the Week','The hit that came closest to missing',sw.filter(x=>!lg.includes(x.mid)),x=>`${pk(x)}, ${mg(x)===0?'no room to spare':`covered by ${fmtMargin(mg(x),x.unit)}`}`);
   return A}
 const ENV_MEM={};   // what this visit has opened, for a phone that can't write storage
 const envKey=l=>`bp-env:${l.sync?l.sync.id:l.id}:${l.me||'guest'}`;   // likewise: the only place bp-env is named
