@@ -2615,7 +2615,7 @@ function upcomingBtn(w,c){
   const exp=c.legs.map(x=>x.mid);const inN=exp.filter(mid=>String(w.next?.[mid]?.text||'').trim()).length;
   return`<button class="upnext" data-act="upcoming" data-wid="${w.id}"><span class="ic">📋</span><span class="t"><b>Upcoming · ${h(nextName(w))} slip</b><small>${inN} of ${exp.length} picks in so far</small></span><span class="go">→</span></button>`;
 }
-function renderUpcoming(w,c){   // next week's slip during the vote: the same rows as a real slip
+function renderUpcoming(w,c){   // next week's slip during the vote: the same design as this week's slip (Jason 2026-10-09): "N of M picks in" with the Waiting on names, then only the picks that are in, plus your own row while yours is missing (to enter it)
   const l=league();const me=l.me;const exp=c.legs.map(x=>x.mid);const next=w.next||{};const rule=nextRule(w);
   const nfl=nextSlate(w);const ok=nflOk(nfl);
   const items=exp.filter(mid=>String(next[mid]?.text||'').trim()).map(mid=>({mid,text:next[mid].text,raw:next[mid].raw,teams:next[mid].teams,tm:false,odds:next[mid].odds}));
@@ -2632,17 +2632,21 @@ function renderUpcoming(w,c){   // next week's slip during the vote: the same ro
       <span class="avatar xs" style="--c:${m?.color||'#888'}">${avIn(m)}</span><span class="nm">${h(m?.name||'?')}${isMe?'<span class="muted tiny" style="font-weight:500">you</span>':''}</span>
       <span class="rt${pre?' pre-info':''}">${heavy?'<span class="tag warn">Too heavy</span>':''}${pre?`<span class="stag pre">${h(pre)}</span>`:has?'<span class="stag in">✓ pick in</span>':'<span class="stag none">not in yet</span>'}</span>
       ${editing?`<div class="edit">${chooseN?`${guidedChoice(w.id,me,true)}<div class="bap-typed" data-typed hidden>${typedN}</div>`:typedN}</div>`
-        :`<div class="sp">${has?betChip((ok&&cleanPick(np.text,ok))||np.text,cm?.teams?.length?cm.teams:np.teams?.length?np.teams:teamOfPlayer(np.text)):`<span class="muted">${isMe?(mineIn?'Tap to enter your pick':'Unlocks once your vote and video are in'):'Waiting on their pick'}</span>`}<span class="odds mono">${mn(h(has?np.odds||'':''))}</span></div>`}
+        :`<div class="sp">${has?betChip((ok&&cleanPick(np.text,ok))||np.text,cm?.teams?.length?cm.teams:np.teams?.length?np.teams:teamOfPlayer(np.text)):`<span class="muted">${mineIn?'Tap to enter your pick':'Unlocks once your vote and video are in'}</span>`}<span class="odds mono">${mn(h(has?np.odds||'':''))}</span></div>`}
       ${isMe&&has&&np.raw&&!editing?`<div class="sx"><span class="leg-tidy">Typed as “${h(np.raw)}”</span></div>`:''}
       ${lockN?`<div class="sx muted">${(lk=>lk&&lk.unsure?NEXT_UNS:`Its ${h(lk?lk.why:'game has kicked off')}`)(nextKickOn(w,np))}, so this pick is locked. If it needs to change, text the commissioner.</div>`:''}
       ${fl.length?`<div class="sx flag">${fl.join('<br>')}</div>`:''}
     </div>`};
   const plan=slipPlan(w,{legs:exp.map(mid=>({mid,text:next[mid]?.text||'',teams:next[mid]?.teams,tm:false,status:'pending'}))},cl);
+  const shown=plan.legs.filter(l=>!noPickYet(l)||l.mid===me);   // no one else's missing pick has a row (the Waiting on names say who); yours stays while it's missing, with its box or Build a pick (the only editor and guided draft on this slip are yours)
+  const missing=exp.filter(mid=>!String(next[mid]?.text||'').trim());
+  const stat=!exp.length?'':!missing.length?`<div class="pickstat all"><b>All ${exp.length} picks are in</b></div>${cl.pairs.length?`<div class="pickstat">${clashLines({...cl,off:{},notd:{},flags:0})}</div>`:''}`
+    :`<div class="pickstat"><b>${items.length} of ${exp.length} picks in</b>${waitWho(missing,null)}${cl.pairs.length?clashLines({...cl,off:{},notd:{},flags:0}):''}</div>`;   // this week's slip's box, said once (no count badge beside it); the names are plain for the commissioner too: an early pick is entered by its own person here
   return`<div class="week-nav"><button class="icon-btn" data-act="upcoming-back" aria-label="Back">‹</button><div class="week-title"><strong>${h(nextName(w))}</strong><small class="muted tiny">upcoming slip</small></div><span style="width:40px"></span></div>
   <div class="kindbar"><span class="kb-ic">🤡</span><span class="kb-t"><b>${bz?`${h(bz.name)} is the Bozo`:r?'Bozo: tie, revote under way':`Bozo: decided by the ${h(wkName(w))} vote`}</b>These picks land on the slip the moment the Bozo is crowned. ${h(ruleText(rule))}.</span></div>
-  <section class="ticket"><div class="ticket-head"><div class="row between"><div class="eyebrow">Upcoming slip · ${exp.length} leg${exp.length===1?'':'s'}</div><span class="badge pending">${items.length}/${exp.length} in</span></div></div>
-  ${cl.pairs.length?`<div class="pickstat">${clashLines({...cl,off:{},notd:{},flags:0})}</div>`:''}
-  <div class="legs slip">${renderSlipRows(plan,x=>row(x.mid))}</div>
+  <section class="ticket"><div class="ticket-head"><div class="row between"><div class="eyebrow">Upcoming slip · ${exp.length} leg${exp.length===1?'':'s'}</div></div></div>
+  ${stat}
+  ${shown.length?`<div class="legs slip">${renderSlipRows({...plan,legs:shown},x=>row(x.mid))}</div>`:''}
   ${nfl&&nfl.failed?`<p class="muted tiny" style="padding:0 16px 14px">Couldn't load next week's NFL schedule, so only exact duplicates are checked right now.</p>`:''}</section>
   <button class="btn ghost block" data-act="upcoming-back">‹ Back to ${h(wkName(w))}</button>`;
 }
@@ -2878,6 +2882,7 @@ function dlLine(w,missing,offLeft){   // Deadlines (the pick-status box): the de
   const frozen='<div class="dl-line dl-frozen">Prices are frozen now that picks have closed. Only the commissioner can change one.</div>';   // task/dl2: no member or automatic price change is accepted after the pick deadline (the league refuses it); said once, here
   if(!off.length&&!late.length)return frozen;
   return`<div class="dl-line">Picks closed <b>${dlShort(t)}</b>.${off.length?` ${nm(off)} had no pick in, so ${nm(off)} ${off.length===1?'is':'are'} off this slip.`:''}${late.length?` ${late.length===1?`${nm(late)}’s pick came in late; the commissioner let it in.`:`${nm(late)}’s picks came in late; the commissioner let them in.`}`:''}${off.length&&isAdmin()&&!offLeft?' ＋ Add a leg for… below lets a late one in.':''}</div>${frozen}`}
+const waitWho=(mids,chip)=>`<div class="pickstat-who"><span>Waiting on </span><span class="pw-chips">${meFirst(mids.filter(mid=>member(mid))).map(mid=>chip?chip(mid):`<span class="waitchip">${h(member(mid).name)}</span>`).join('')}</span></div>`;   // the "Waiting on" names under "N of M picks in": the viewer first, every name (never "and N more"), one chip each (balance() splits them into even rows). chip: the commissioner's tappable name; none: a plain chip. This week's slip and the upcoming slip both draw it
 function pickStatus(w,c,cl){
   if(c.none)return`<div class="pickstat"><span>Nobody got a pick in by the deadline, so there’s no parlay this week.${isAdmin()?' ＋ Add a leg for… below lets a late one in.':''}</span></div>`;   // DL-F03: said once, here (the names are in the vote's ballot)
   if(!c.n)return'';
@@ -2896,7 +2901,7 @@ function pickStatus(w,c,cl){
   if(!tot)return offTxt+offLine;
   if(!missing.length)return`${tidyBtn?`<div class="pickstat">${tidyBtn}</div>`:''}<div class="pickstat all${dlL?' dl':''}"><b>All ${tot} picks are in</b><span class="muted tiny${clWait(w,cl)?' sk-txt':''}">${w.locked?'Locked.':hasFlags(cl)&&!cl.quiet?(cl.pairs.length||Object.keys(cl.off||{}).length||Object.values(cl.notd||{}).some(v=>v!=='soon')?'Sort out the flagged picks first.':'Waiting for this week’s games to load to check a pick.'):isSide(w)?'Ready to place it.':'Ready for the Bozo to place it.'}</span>${dlL}</div>${offTxt}${offLine}${hasFlags(cl)?`<div class="pickstat">${clashLines(cl)}</div>`:''}${note}`;
   const names=missing.map(l=>member(l.mid)?.name).filter(Boolean);
-  return`<div class="pickstat"><div class="row between"><b>${inCount} of ${tot} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div><div class="pickstat-who"><span>Waiting on </span><span class="pw-chips">${meFirst(missing.filter(l=>member(l.mid)),l=>l.mid).map(l=>isAdmin()?`<button type="button" class="waitchip wc-go" data-act="wait-enter" data-wid="${w.id}" data-mid="${l.mid}" aria-label="Enter a pick for ${h(member(l.mid).name)}">${h(member(l.mid).name)}</button>`:`<span class="waitchip">${h(member(l.mid).name)}</span>`).join('')}</span></div>${isAdmin()?'<span class="muted tiny wc-hint">Tap a name to enter their pick.</span>':''}${dlL}${offTxt}${offLine}${clashLines(cl)}${tidyBtn}${note}</div>`;
+  return`<div class="pickstat"><div class="row between"><b>${inCount} of ${tot} picks in</b><button class="btn sm ghost" data-act="nudge" data-wid="${w.id}">Copy nudge</button></div>${waitWho(missing.map(l=>l.mid),isAdmin()?mid=>`<button type="button" class="waitchip wc-go" data-act="wait-enter" data-wid="${w.id}" data-mid="${mid}" aria-label="Enter a pick for ${h(member(mid).name)}">${h(member(mid).name)}</button>`:null)}${isAdmin()?'<span class="muted tiny wc-hint">Tap a name to enter their pick.</span>':''}${dlL}${offTxt}${offLine}${clashLines(cl)}${tidyBtn}${note}</div>`;
 }
 function renderTicket(w,c){
   const b=member(w.bozoId);const cl=slipClaims(w,c)||histClaims(w,c);
