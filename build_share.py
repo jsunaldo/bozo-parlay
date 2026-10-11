@@ -45,6 +45,15 @@ if os.path.exists(_old):
     if _m and _m.group(1) != A.league: sys.exit(f"STOPPED, nothing was written: {OUT} is the app for league {_m.group(1)}, but you asked for league {A.league}. Check --league and --out (the Bozo University build needs its full flag list).")
     if _pm and _pm.group(1) != P: sys.exit(f"STOPPED, nothing was written: {OUT} was built with --prefix {_pm.group(1)}, not {P}. A different prefix would sign every member out. Check the flags.")
 
+# the slip reader (slipread): its vendored files go next to every app's page, each checked against ocr/SHA256SUMS first, so no app ever ships a changed or partial copy.
+# A copy of this script run from a folder with no ocr/ at all (the test suites' trial builds) copies none and says so; scripts/build-clubs.sh refuses a league app without them
+import hashlib
+_ocr = os.path.join(SRC, 'ocr')
+_sums = [l.split() for l in open(os.path.join(_ocr, 'SHA256SUMS')).read().splitlines() if l.strip()] if os.path.isdir(_ocr) else None
+if _sums is None: print('no ocr/ folder next to this script, so the slip reader was not copied')
+for _h, _f in _sums or []:
+    _p = os.path.join(_ocr, _f)
+    if not os.path.isfile(_p) or hashlib.sha256(open(_p, 'rb').read()).hexdigest() != _h: sys.exit(f"STOPPED, nothing was written: ocr/{_f} is missing or doesn't match ocr/SHA256SUMS. The slip reader's files must be exactly the vendored ones: restore them from Git (git checkout -- ocr), or see ocr/LICENSES.txt to update them.")
 s = open(os.path.join(SRC, 'index.html')).read()
 a = s.index('/*@@SEEDS-START@@*/'); b = s.index('/*@@SEEDS-END@@*/')
 STUB = r"""/* league app: no seeds; one league, live from the sync server, this phone claims one name */
@@ -102,6 +111,12 @@ m['name'] = A.title; m['short_name'] = A.short; m['description'] = A.desc
 json.dump(m, open(os.path.join(OUT, 'manifest.json'), 'w'), indent=2)
 for f in ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png']:
     shutil.copy(os.path.join(ICONS, f), os.path.join(OUT, f))
+# the slip reader's files (checked before anything was written, above)
+if _sums is not None:
+    _oo = os.path.join(OUT, 'ocr'); _tmp = _oo + '.new'
+    shutil.rmtree(_tmp, ignore_errors=True); os.makedirs(_tmp)
+    for _f in ['SHA256SUMS'] + [f for _, f in _sums]: shutil.copy(os.path.join(_ocr, _f), os.path.join(_tmp, _f))
+    shutil.rmtree(_oo, ignore_errors=True); os.rename(_tmp, _oo)
 print('built ->', OUT, len(s), 'bytes')
 
 # every device checks this to know a newer build is out (the Commish reads the copy next to its own index.html)
