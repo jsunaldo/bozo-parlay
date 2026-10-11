@@ -2462,9 +2462,8 @@ function stats(){
           if(p.closest==null||m<p.closest.m)p.closest={m,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams};
           if(p.choke==null||m>p.choke.m)p.choke={m,num:w.num,wk:wkShort(w),text:l.text,teams:l.teams}}
       }else p.pushes++;
-      if(!mvOwn(w))p.earned+=cashTo(w,c,l.mid,l.status);
+      p.earned+=cashTo(w,c,l.mid,l.status);
     }
-    if(per[mvOwn(w)])per[mvOwn(w)].earned+=cashTo(w,c,mvOwn(w));   // a missed-vote side parlay: its person takes the whole payout, leg or no leg
   }
   Object.values(per).forEach(p=>{
     const g2=p.hits+p.misses;
@@ -3835,15 +3834,15 @@ function ticketFoot(w,c,mid=''){
     <div><small>Parlay</small><b class="mono" id="f-odds">${c.n?amer(c.dec):'—'}</b></div>
     <div><small>Stake</small><b class="mono">$${isAdmin()?`<input type="number" class="inline-num" value="${c.stake}" min="0" step="1" data-bind="week|${w.id}|stake" inputmode="numeric">`:c.stake}</b></div>
     <div><small>${c.result==='won'?'Paid':'To win'}</small><b class="mono ${c.result==='won'?'good':''}" id="f-win">${winTxt(c)}</b></div>
-    <div><small>${member(mvOwn(w))?`${h(member(mvOwn(w)).name)} gets`:'Each'}</small><b class="mono" id="f-each">${member(mvOwn(w))?winTxt(c):eachTxt(c)}</b></div>
+    <div><small>Each</small><b class="mono" id="f-each">${eachTxt(c)}</b></div>
   </div>
   <div class="hint" id="f-hint" ${c.missingOdds&&c.n?'':'hidden'}>Enter odds on every leg to price the parlay.</div>
   <div id="f-won">${wonLine(w,c)}</div><div id="f-dk">${dkFoot(w,c)}</div>${mid}
   <div class="foot-actions"><button class="btn sm primary" data-act="share-slip" data-wid="${w.id}">📸 Share slip</button>${c.graded?`<button class="btn sm ghost" data-act="receipt-open" data-wid="${w.id}">🧾 Receipt</button>`:''}${isAdmin()&&league().sync&&!c.graded?(w.placed?`<button class="btn sm ghost" data-act="placed-undo" data-wid="${w.id}">🔓 Undo placed</button>`:w.locked?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">🔓 Unlock picks</button>`:`<button class="btn sm ghost" data-act="placed-open" data-wid="${w.id}">✅ I placed it</button>`):isAdmin()&&!league().sync?`<button class="btn sm ghost" data-act="toggle-lock" data-wid="${w.id}">${w.locked?'🔓 Unlock picks':'🔒 Lock picks'}</button>`:''}${isAdmin()&&(lastMain(realWeeks())===w||isSide(w))?`<button class="btn sm ghost danger" data-act="delete-week" data-wid="${w.id}">${isSide(w)?'Delete side parlay':'Delete week'}</button>`:''}</div>`;
 }
-const cashTo=(w,c,mid,st)=>{if(c.result!=='won')return 0;const o=mvOwn(w);if(o)return mid===o?c.payout:0;return pushOutOn()&&st==='push'?0:c.share};   // what one person collects from a cashed parlay: a share each for everyone on it (a push too unless a league push rule leaves pushers out), except a missed-vote side parlay, whose whole payout is its person's (they paid its $10: mvown)
+const cashTo=(w,c,mid,st)=>c.result!=='won'?0:pushOutOn()&&st==='push'?0:c.share;   // what one person collects from a cashed parlay: a share each for everyone on it (a push too unless a league push rule leaves pushers out); a missed-vote side parlay too: its person only pays the $10, as the Bozo pays for the slip (mvown, Jason 2026-10-11)
 const pushedOut=c=>pushOutOn()&&c.result==='won'?c.legs.filter(l=>l.status==='push').map(l=>member(l.mid)?.name).filter(Boolean):[];   // who collects nothing on a slip that cashed
-function wonLine(w,c){if(c.result!=='won')return'';if(member(mvOwn(w)))return`<div class="won-line">🎉 ${h(member(mvOwn(w)).name)} collects ${fmt$(c.payout)}: it was their missed-vote parlay, so the winnings are theirs.</div>`;const pid=payerOf(w),named=!!pid,gone=!named&&!isSide(w)&&placedGone(w,Object.fromEntries(S.members.map(m=>[m.id,1]))),b=member(named?pid:w.bozoId);const out=pushedOut(c);const bOut=!!out.length&&c.legs.some(l=>l.mid===(named?pid:w.bozoId)&&l.status==='push');   // the one who fronted it: the person recorded as placing it, else the Bozo; they collect a share only when they have a leg that hit
+function wonLine(w,c){if(c.result!=='won')return'';const pid=payerOf(w),named=!!pid,gone=!named&&!isSide(w)&&placedGone(w,Object.fromEntries(S.members.map(m=>[m.id,1]))),b=member(named?pid:w.bozoId);const out=pushedOut(c);const bOut=!!out.length&&c.legs.some(l=>l.mid===(named?pid:w.bozoId)&&l.status==='push');   // the one who fronted it: the person recorded as placing it, else the Bozo; they collect a share only when they have a leg that hit
   const fnet=named?(c.legs.some(l=>l.mid===pid)&&!bOut?c.share-c.stake:-c.stake):bOut?-c.stake:c.share-c.stake;return`<div class="won-line">🎉 ${out.length?'Everyone who hit':'Everyone'} collects ${fmt$(c.share)}.${out.length?` ${h(out.join(', '))} pushed and ${out.length===1?'is':'are'} left out.`:''}${isSide(w)||!b||gone?'':` ${h(b.name)} nets ${fmt$(fnet)} after fronting the stake.`}</div>`}
 /* ---- Moments, the week receipt and awards night (Jason 10-02). App only: nothing here is saved to the league or sent. What a person has already seen is remembered on this phone (bp-moments, bp-env), one record per league and person. ---- */
 function bozoElect(w){   // who this viewer may know is the next Bozo: only once they have watched the reveal that decided it (the gate every other word in the app uses); a side parlay has none
@@ -3929,7 +3928,7 @@ function patchTicket(w){
   if(!$('tfoot'))return;
   $('f-odds').textContent=c.n?amer(c.dec):'—';
   $('f-win').textContent=winTxt(c);
-  $('f-each').textContent=member(mvOwn(w))?winTxt(c):eachTxt(c);
+  $('f-each').textContent=eachTxt(c);
   $('f-hint').hidden=!(c.missingOdds&&c.n);
   $('tbadge').innerHTML=resultBadge(c);
   const b=member(w.bozoId);
@@ -6167,7 +6166,7 @@ function rulebookRows(l,s,own){const f=l.features||{},shared=!!l.sync,unlinked=n
 [BV,'Who’s on the ballot',unlinked&&!own?'The ballot is everyone whose leg missed. If nobody missed, it’s the pushers. If everybody hit, it’s everyone with a leg. The league’s push rule can change who’s on it, and this device can’t read that rule yet.'+fin:mine((push?'If someone pushed, the push rule below decides first. Otherwise the ballot is everyone whose leg missed. If everybody hit, it’s everyone with a leg.':'The ballot is everyone whose leg missed. If nobody missed, it’s the pushers. If everybody hit, it’s everyone with a leg.')+fin)],
 [BV,'Pushes',mine(push?'One push and that person is the next Bozo. No vote. Two or more people push? They vote among themselves.':'A push doesn’t make you the Bozo on its own.')],
 [BV,'Unanimous Bozo',unlinked?unk:unanOn(l)?'A unanimous Bozo also places and pays for that Sunday’s Anytime TD side parlay. If that Bozo’s next parlay is a special day (Thanksgiving, Christmas), no side parlay is added.':'Off in this league: a unanimous Bozo has nothing extra to do.'],
-[BV,'Missed the vote',unlinked?unk:mvOn(l)?(dlVoteOn(l)?'Whoever hasn’t voted when the vote deadline passes gets their own Anytime TD side parlay for that Sunday. They pay its $10 and keep any winnings. Everyone adds one leg to it, as on the slip: Anytime TD on any player, any price. If the next parlay is a special day (Thanksgiving, Christmas), none is added.':'On, but this league has no vote deadline, so nobody can miss it. It starts once the commissioner sets one under Deadlines.'):'Off in this league: missing the vote costs nothing extra.'],
+[BV,'Missed the vote',unlinked?unk:mvOn(l)?(dlVoteOn(l)?'Whoever hasn’t voted when the vote deadline passes gets their own Anytime TD side parlay for that Sunday. They pay its $10; a win is shared like any side parlay’s. Everyone adds one leg to it, as on the slip: Anytime TD on any player, any price. If the next parlay is a special day (Thanksgiving, Christmas), none is added.':'On, but this league has no vote deadline, so nobody can miss it. It starts once the commissioner sets one under Deadlines.'):'Off in this league: missing the vote costs nothing extra.'],
 [NT,'League notifications',unlinked?unk:shared&&f.notify?(l.npVer?(l.person&&l.person.notify&&l.person.notify.rem?'On. Turn them on for your own devices. In Settings → Me you can switch kinds off, pick when reminders come, and set quiet hours.':'On. Turn them on for your own devices. In Settings → Me you can switch kinds off and set quiet hours.'):'On. Turn them on for your own devices. The league’s settings decide which pings go out.'):'Off for this league.'],
 [NT,'Pick reminders',unlinked?unk:rulebookSchedule(pg.pick,shared&&f.notify&&f.picks)],
 [NT,'Vote reminders',unlinked?unk:rulebookSchedule(pg.vote,shared&&f.notify&&f.votes)],
@@ -6264,7 +6263,7 @@ function badgesOf(mid,sid,you){   // a person's badges in Jason's order, [] when
   let f=B.by.get(aid);const real=S;
   if(!f){let p=null,cash=null,free=0,tops=null;
   try{S=v;if(!B.per){B.per=stats().per;B.ws=[...v.weeks].sort((a,b)=>a.num-b.num)}p=B.per[aid];if(p){const ws=B.ws,cOf=i=>B.cs[i]??=calc(ws[i]),done=x=>!!x&&(x.status==='hit'||x.status==='miss'||x.status==='push');   // the Stats page's own week order
-    for(let i=0;i<ws.length;i++){const w=ws[i],c=cOf(i),x=c.legs.find(y=>y.mid===aid);if((x||mvOwn(w)===aid)&&cashTo(w,c,aid,x&&x.status)>0){cash=w;break}}   // the first parlay that PAID the person (Jason, fix round 1): the Stats page's own per-person payout (stats(): a share of a cashed parlay for everyone on it, a push too unless the league's push rule leaves pushers out), read here, not changed. A side parlay too
+    for(let i=0;i<ws.length;i++){const w=ws[i],c=cOf(i),x=c.legs.find(y=>y.mid===aid);if(x&&cashTo(w,c,aid,x.status)>0){cash=w;break}}   // the first parlay that PAID the person (Jason, fix round 1): the Stats page's own per-person payout (stats(): a share of a cashed parlay for everyone on it, a push too unless the league's push rule leaves pushers out), read here, not changed. A side parlay too
     for(let i=ws.length-1;i>=0;i--){const w=ws[i];if(isSide(w))continue;if(w.bozoId===aid)break;if(w.bozoId&&done(cOf(i).legs.find(x=>x.mid===aid)))free++}   // back from the newest week this viewer sees: weeks the person played (a graded leg) with someone else the Bozo, until the week the person is the Bozo. A week the person sat out, or one with no Bozo on record, is skipped
     if(!B.tops)B.tops=seasonTops(v);tops=seasonBest(B.tops[aid])}}finally{S=real}
   f={p,cash,free,tops};B.by.set(aid,f)}
@@ -6434,7 +6433,7 @@ function recap(w){
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss'))s+=` — ${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`;L.push(s)}
   if(c.none)L.push('','No parlay this week: nobody got a pick in by the deadline.');   // DL-R2-F03: said once, with no stake, no price and no result
   else{L.push('',`Parlay ${c.n?asc(amer(c.dec)):'—'} → ${c.missingOdds?'unpriced':fmt$(c.potential)}`);
-  L.push(`Result: ${c.result==='won'?member(mvOwn(w))?`CASHED 🤑 ${fmt$(c.payout)} to ${member(mvOwn(w)).name}`:`CASHED 🤑 ${fmt$(c.share)} each${gone.length?` (${gone.join(', ')} pushed and ${gone.length===1?'is':'are'} left out)`:''}`:c.result==='lost'?`LOST (${c.hits} of ${c.n-c.pushes} hit)`:c.result==='void'?'VOID':'Pending'}`)}
+  L.push(`Result: ${c.result==='won'?`CASHED 🤑 ${fmt$(c.share)} each${gone.length?` (${gone.join(', ')} pushed and ${gone.length===1?'is':'are'} left out)`:''}`:c.result==='lost'?`LOST (${c.hits} of ${c.n-c.pushes} hit)`:c.result==='void'?'VOID':'Pending'}`)}
   if(c.graded){const el=eligible(w);if(el.list.length)L.push(`On the ballot: ${el.list.map(id=>member(id)?.name).join(', ')}`)}
   return L.join('\n');
 }
@@ -6506,7 +6505,7 @@ async function slipImage(w){
   const cw=(R-L)/4;cols.forEach(([k,v],i)=>{const cx=L+cw*i;x.textAlign='left';try{x.letterSpacing='3px'}catch(e){}x.fillStyle=MU;x.font=F(600,20);x.fillText(k,cx,y+24);try{x.letterSpacing='0px'}catch(e){}
     const big=cols.some(([,v])=>v.length>8);x.fillStyle=i===2&&c.result==='won'?GREEN:T;x.font=F(600,big?(i===0?32:28):(i===0?40:36),true);x.fillText(v,cx,y+76)});
   y+=120;
-  if(c.result==='won'){rr(x,L,y,R-L,80,24);x.fillStyle='rgba(52,199,89,.13)';x.fill();x.fillStyle=GREEN;x.font=F(600,30);x.textAlign='left';x.fillText(member(mvOwn(w))?`🎉  ${member(mvOwn(w)).name} collects ${fmt$(c.payout)}`:`🎉  ${outP.length?'Everyone who hit collects':'Everyone collects'} ${fmt$(c.share)}`,L+28,y+51);if(outP.length&&!mvOwn(w)){x.fillStyle=MU;x.font=F(500,24);x.fillText(`${outP.join(', ')} pushed and ${outP.length===1?'is':'are'} left out.`,L+28,y+110)}y+=110+(outP.length?44:0)}
+  if(c.result==='won'){rr(x,L,y,R-L,80,24);x.fillStyle='rgba(52,199,89,.13)';x.fill();x.fillStyle=GREEN;x.font=F(600,30);x.textAlign='left';x.fillText(`🎉  ${outP.length?'Everyone who hit collects':'Everyone collects'} ${fmt$(c.share)}`,L+28,y+51);if(outP.length){x.fillStyle=MU;x.font=F(500,24);x.fillText(`${outP.join(', ')} pushed and ${outP.length===1?'is':'are'} left out.`,L+28,y+110)}y+=110+(outP.length?44:0)}
   if(ballot){x.fillStyle=PURPLE;x.font=F(600,28);x.textAlign='left';x.fillText(`🗳  On the ballot for Week ${w.num+1}: ${ballot}`,L,y+30);y+=90}
   x.fillStyle=DIM;x.font=F(500,22);x.textAlign='left';x.fillText(fmtDate(w.date)?`${fmtDate(w.date)}${w.date?', '+w.date.slice(0,4):''}`:'',L,H-pad-40);
   x.textAlign='right';x.fillText('bozo parlay',R,H-pad-40);
