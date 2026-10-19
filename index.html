@@ -304,7 +304,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .lvline:empty,#lvb-empty{display:none}.lv{font-size:12px;font-weight:600}.lv.hit,.lv.up{color:var(--green)}.lv.miss,.lv.down{color:var(--red-tx)}.lv.push,.lv.even{color:var(--amber-tx)}
 .lv-row{display:flex;align-items:flex-start;justify-content:space-between;gap:4px 10px;flex-wrap:wrap;min-height:32px}.lv-main{overflow-wrap:anywhere;min-width:0;flex:1 1 0}
 .lv.num{font-size:var(--n3);line-height:1.1;font-weight:700;letter-spacing:-.03em;padding-top:2px;color:var(--text)}.lv.num.hit,.lv.num.up{color:var(--green)}.lv.num.miss,.lv.num.down{color:var(--red-tx)}.lv.num.push,.lv.num.even{color:var(--amber-tx)}   /* idea 2: the live number is the loudest thing on the row: 22 px, rounded, tabular, in the leg's tone */
-.lv.num{flex:1 1 auto}.lv.num small{font-size:13px;font-weight:600;letter-spacing:0;color:var(--muted);margin-left:5px;white-space:nowrap}   /* the number and its words stay whole; if they cannot share a line with the score, the score and clock drop to the next line, right-aligned */
+.lv.num{flex:1 1 auto;text-wrap:balance}.lv.num small{font-size:13px;font-weight:600;letter-spacing:0;color:var(--muted);margin-left:5px;white-space:nowrap}   /* the number and its words stay whole; if they cannot share a line with the score, the score and clock drop to the next line, right-aligned */
 .lv-side{display:flex;flex:0 0 auto;flex-direction:column;align-items:flex-end;gap:1px;margin-left:auto;text-align:right}.lv-score{order:-1;font-size:12px;line-height:1.3;font-weight:700;color:var(--text);white-space:nowrap;font-variant-numeric:tabular-nums}.lv-clock{font-size:11px;line-height:1.3;color:var(--muted);font-weight:500;white-space:nowrap;margin-left:auto;font-variant-numeric:tabular-nums}   /* the score, then the clock, quiet on the right */
 .lv-tag{display:block;font-weight:800;margin:2px 0}.lv-tag.hit,.lv-tag.up{color:var(--green)}.lv-tag.miss,.lv-tag.down{color:var(--red-tx)}.lv-tag.push,.lv-tag.even,.lv-tag.sweat{color:var(--amber-tx)}.lv-tag.none,.lv-tag.pre,.lv-tag.k-dash{color:var(--muted)}.lv-tag.live{color:var(--blue)}
 .lv-sub{display:block;color:var(--muted);font-size:11px;font-weight:500;margin-top:2px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
@@ -321,7 +321,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .sk-pg .week-nav{margin-bottom:14px}.sk-pg .tiles{margin-bottom:14px}.sk-pg .tile{gap:6px}.sk-pg .srow,.sk-pg .wk{pointer-events:none}.sk-pg .ticket-head{gap:10px}.sk-pg .sk-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-bottom:14px;display:flex;flex-direction:column;gap:12px}.sk-line{display:flex;align-items:center;gap:10px;min-height:44px}.sk-line>.sk{max-width:100%}.sk-line>.sk:first-child{flex:none}
 .sk-fail .btn{margin-top:14px}
 .stag.none.sk-chip{color:transparent!important;background:linear-gradient(90deg,var(--surface3) 25%,var(--surface2) 50%,var(--surface3) 75%);background-size:200% 100%;animation:shimmer 1.4s linear infinite;user-select:none}
-.lv-skel{display:block}.lv-sk-tag{width:30%;height:16px;margin:2px 0}.lv-sk-row{align-items:flex-start;padding-top:2px}.lv-sk-bar{height:8px;margin:18px 0 4px;border-radius:980px}.lv-sk-sub{display:block;margin-top:2px;height:15px}.lv-sk-sub .sk{margin-top:2px}
+.lv-skel{display:block}.lv-sk-tag{width:30%;height:16px;margin:2px 0}.lv-sk-row{align-items:flex-start;padding-top:2px}.lv-sk-bar{height:8px;margin:18px 0 4px;border-radius:980px}.lv-sk-sub{display:block;margin-top:2px;height:15px}.lv-sk-sub .sk{margin-top:2px}.lv-sk-side{display:none}@media(max-width:359px){.lv-sk-side{display:block;height:29px}}   /* a spread's cover words do not fit beside the score on the narrowest phones (the score drops under them): its placeholder keeps that line too, so nothing jumps when the numbers land */
 @media(prefers-reduced-motion:reduce){.sk,.sk-txt,.bap-wait .bap-row:not(.bap-ko):not(.bap-side) .bap-cell:disabled,.bap-wait .bap-num>.bap-p:empty,.stag.none.sk-chip{animation:none;background:var(--surface3)}.lv.num.chg{animation:none;background:var(--amber-bg)}}   /* reduced motion: a flat grey bar; the changed number stays tinted */
 .stag.k-dash{background:transparent;color:var(--muted);border:1px dashed currentColor;padding:3px 8px}.stag.k-dash.pace-up,.lv-tag.k-dash.pace-up{color:var(--green)}.stag.k-dash.pace-down,.lv-tag.k-dash.pace-down{color:var(--pace-red)}.srow .stag.even,.srow .stag.sweat{color:var(--amber-tx)}.lvline .lv{margin-top:0}
 .lvbanner{margin:0 16px 10px;padding:9px 12px;border-radius:12px;background:rgba(48,209,88,.12);display:flex;flex-direction:column;gap:2px;font-size:13px}.lvbanner.dead{background:rgba(255,69,58,.12)}.lvbanner span{color:var(--muted);font-size:12px}
@@ -3480,7 +3480,7 @@ const GV_TONE={HIT:'hit',MISS:'miss',PUSH:'push',HITTING:'up',ONPACE:'up',SWEAT:
 function gvLeg(it){   // how one leg stands: tone, its place in the order (0 off pace or lost, 1 sweating, 2 on pace or won, 3 not started or nothing to say, 4 settled) and the words of its number
   const l=it.l,st=l.status||'pending',L=it.empty||st!=='pending'?null:legLive(it.w,l,it.cl),v=L&&L.v,r=L&&L.r,x=r&&r.x;
   const settled=st!=='pending'||!!(v&&v.over&&['HIT','MISS','PUSH','GRADING'].includes(v.code));
-  const tone=st!=='pending'?st:v?(GV_TONE[v.code]||''):'';
+  const tone=st!=='pending'?st:v?(GV_TONE[v.code]||''):'',col=st!=='pending'?st:v?(v.tone||''):'';   // tone places the leg (sweating sorts before on pace); col colours its number: green hitting now, red not, push's colour on the number, as on the slip
   const rank=settled?4:tone==='down'||tone==='miss'?0:tone==='even'?1:tone==='up'||tone==='hit'||tone==='push'?2:3;
   const odds=String(l.odds||'').trim(),unit=l.unit||'pts',first=s=>String(s||'').split(' \xB7 ')[0];
   let main='',small='',drop=false,word='';
@@ -3491,10 +3491,10 @@ function gvLeg(it){   // how one leg stands: tone, its place in the order (0 off
   else{word=v.word&&['HITTING','ONPACE','SWEAT','PUSHING','EARLY','MISSING','OFFPACE'].includes(v.code)?v.word:'';
     if(v.code==='PRE')main=odds;else if(v.code==='HAND')main='By hand';else if(v.code==='GRADING')main='Grading';else if(v.code==='WAITSTATS')main='No stats yet';
     else if(v.code==='HIT'||v.code==='MISS'||v.code==='PUSH')done(v.code.toLowerCase(),r&&r.margin);
-    else if(x&&x.have!==false&&(x.m==='ml'||x.m==='spread')){const d=x.m==='spread'?x.diff:x.v;main=d>0?`Up ${lvN(d)}`:d<0?`Down ${lvN(-d)}`:'Tied';if(x.m==='spread'){small=x.v>0?'covering':x.v<0?'not covering':'on the number';drop=true}}
+    else if(x&&x.have!==false&&(x.m==='ml'||x.m==='spread')){const d=x.m==='spread'?x.diff:x.v;const sc=d>0?`Up ${lvN(d)}`:d<0?`Down ${lvN(-d)}`:'Tied';if(x.m==='spread'){main=lvCover(x,false,v.code==='PUSHING');small=sc;drop=true}else main=sc}   // a spread: the cover first, the score beside it (dropped on the narrowest phones)
     else if(x&&x.have!==false&&Number.isFinite(x.line)&&!['dst','tScore','tdFirst','tFirst','td','tdN'].includes(x.m)){main=lvN(x.v);small='/ '+lvN(x.line)}   // yards, points, catches: where it stands against its line, in the bet's own unit (the words say which)
     else main=first(v.main)||odds}
-  return{tone,rank,main,small,drop,word}}
+  return{tone,col,rank,main,small,drop,word}}
 function gvGroups(items){   // the games with legs on them, worst first, then the people with no pick and the legs whose game isn't known. A leg on two games is listed under both (a shadow of itself under the second)
   const by=new Map(),wait=[],lost=[];
   items.forEach((it,n)=>{Object.assign(it,gvLeg(it),{n})});
@@ -3527,7 +3527,7 @@ function gvLine(it){
   const l=it.l,m=member(l.mid),mine=league().me===l.mid,bz=!it.side&&!isSide(it.w)&&l.mid===it.w.bozoId,al=it.also.length||it.shadow?gvAlso(it):'';
   const ns=mine&&!it.shadow&&unsent(it.w,l.mid);   // your own pick the league hasn't got yet: said here as By person says it (reviewer 09-30)
   const val=it.shadow?'':ns?`<span class="ns">Not sent yet</span>`:`${it.word?`<span class="gv-sr">${h(it.word)}. </span>`:''}${mn(h(it.main))}${it.small?` <small${it.drop?' class="drop"':''}>${h(it.small)}</small>`:''}`;
-  return`<div class="gl ${it.shadow?'':it.tone}"><span class="avatar" style="--c:${m.color}" aria-hidden="true">${avIn(m)}</span><span class="txt"><b>${h(m.name)}</b>${bz?'<span title="This week’s Bozo"> \u{1F921}</span>':''}${mine?' <span class="you">you</span>':''}<span aria-hidden="true"> \xB7 </span>${h(l.text)}</span><span class="val">${val}</span>${al?`<span class="gl-x">${al}</span>`:''}</div>`}
+  return`<div class="gl ${it.shadow?'':it.col}"><span class="avatar" style="--c:${m.color}" aria-hidden="true">${avIn(m)}</span><span class="txt"><b>${h(m.name)}</b>${bz?'<span title="This week’s Bozo"> \u{1F921}</span>':''}${mine?' <span class="you">you</span>':''}<span aria-hidden="true"> \xB7 </span>${h(l.text)}</span><span class="val">${val}</span>${al?`<span class="gl-x">${al}</span>`:''}</div>`}
 const gvSideHead=its=>`Side parlay \xB7 ${h([...new Set(its.map(i=>member(i.l.mid).name))].join(', '))}`;
 function gvBoard(w,items){
   const G=gvGroups(items),n=G.games.length;
@@ -5376,12 +5376,13 @@ function sweatable(w){if(!w||!league().sync)return false;const l=league();if(sea
   return t>=addDays(d,-4)&&t<=addDays(d,2)&&Object.values(w.picks||{}).some(p=>p.status==='pending'&&String(p.text||'').trim())}   // this slip's games are on around now
 /* ---- idea 2 (UX-LESSONS): a live leg's number is the loudest thing on its row, the bar is the story, the line is marked on the bar ---- */
 const CHIP_EMOJI=/^(?:\u{1F7E2}|\u{1F534}|\u{1F62C}|\u{1F7E1}|⏳)\s*/u,chipWords=t=>String(t).replace(CHIP_EMOJI,'');   // the chip's colour and its words already say how the leg is doing: the traffic-light and face emoji are left off the live chips (a lock, a check and an arrow carry meaning of their own and stay)
-const lvTone=v=>v.tone||(v.code==='ONPACE'?'up':v.code==='OFFPACE'?'down':'');   // the bar and the big number take the chip's tone; a pace chip has none of its own, so on pace is green and off pace red
+const lvTone=v=>v.tone||'';   // the bar and the big number are green when the leg is hitting right now and red when it isn't (a push or a leg on the number keeps push's colour); only the chip says Sweating, On pace or Not there yet (Jason, 2026-10-19)
 function lvNum(v){   // the first clause of the line, when it is a number ("54 of 74.5 yds", "54 yds", "Up 7"), is the big number; what follows its first " · " goes under the bar
   const parts=String(v.main||'').split(' · '),head=parts[0],rest=parts.slice(1);let m,big='',of='';
   if(m=head.match(/^(\d[\d,.]*) of (.+)$/)){big=m[1];of='/ '+m[2]}
+  else if(m=head.match(/^(Needs [\d,.]+) (to cover)$/)){big=m[1];of=m[2]}   // "Needs 7" loud, "to cover" in the small words beside it: the score and clock keep their place beside it on a phone
   else if(m=head.match(/^(\d[\d,.]*) (\S.*)$/)){big=m[1];of=m[2]}
-  else if(/^(?:Up|Down) \d[\d,.]*$/.test(head)||/^Tied(?: \d+–\d+)?$/.test(head)||/^\d[\d,.]*$/.test(head))big=head;
+  else if(/^(?:Up|Down) \d[\d,.]*$/.test(head)||/^(?:(?:Covering|Covered|Missed) by [\d,.½]+|On the number)$/.test(head)||/^Tied(?: \d+–\d+)?$/.test(head)||/^\d[\d,.]*$/.test(head))big=head;
   return{big,of,head,rest}}
 function lvUnder(v,n){   // the small line under the bar: what it takes ("Needs 20.5 more"), then the box-score line and the projection; a clause that only repeats the big number ("54 yds") is left out (no fact twice)
   const dup=n.big&&n.of?[`${n.big} ${n.of.replace(/^\/ [\d,.]+ ?/,'')}`.trim()]:[],keep=String(v.sub||'').split(' · ').filter(x=>x&&!dup.includes(x));
@@ -5397,7 +5398,7 @@ function lvSkel(w,p,L,tag){   // tag: the line carries the state word on its own
   if(!(lvLoading(w)||LV_BUSY.has(checkDate(w))))return null;const nfl=nflOk(slipNfl(w));
   if(L&&L.sg&&pregameChip(L.sg))return null;if(legHand(p,nfl)||betType(p.text)==='Other'||/\b3 ?-? ?way\b|\bregulation\b/i.test(p.text))return null;const k=lvShape(p.text);
   const sk=(wd,ht,x='')=>`<span class="sk" style="width:${wd};height:${ht}px${x?';'+x:''}"></span>`;
-  return`<span class="lv-skel" aria-hidden="true" data-sk="${k}">${tag?'<span class="sk lv-sk-tag"></span>':''}<span class="lv-row lv-sk-row">${sk('58%',22)}</span>${k==='bar'?'<span class="sk lv-sk-bar"></span>':''}${k!=='row'?'<span class="lv-sk-sub">'+sk('64%',11)+'</span>':''}</span>`}
+  return`<span class="lv-skel" aria-hidden="true" data-sk="${k}">${tag?'<span class="sk lv-sk-tag"></span>':''}<span class="lv-row lv-sk-row">${sk('58%',22)}</span>${k==='tiny'?'<span class="lv-sk-side"></span>':''}${k==='bar'?'<span class="sk lv-sk-bar"></span>':''}${k!=='row'?'<span class="lv-sk-sub">'+sk('64%',11)+'</span>':''}</span>`}
 function liveLine(w,mid,prepared,showChip){const p=w.picks[mid];if(!p||p.status!=='pending'||!String(p.text||'').trim()||!sweatable(w))return'';
   const L=prepared||legLive(w,{mid,...p},null),v=L.v,visible=showChip==null?w.placed&&!!document.getElementById(`lvt-${w.id}-${mid}`):showChip;if(!v)return lvSkel(w,p,L,!visible)||'';
   const n=lvNum(v),tone=lvTone(v),under=n.big?lvUnder(v,n):[v.sub].filter(Boolean).join('');
@@ -5429,6 +5430,7 @@ const lvNeed=x=>x.m==='spread'?Math.floor(-x.v)+1:Math.round(((x.op==='>'?(Math.
 const lvProx=x=>(x.m==='long'||/Yds$/.test(x.st||''))?10:(x.m==='ml'||x.m==='spread'||x.m==='total'||x.m==='teamTotal'||x.m==='tScore'||x.st==='Kicking Points')?3:(x.step||1);
 const lvN=n=>String(Math.round(n*10)/10);
 const lvPts=n=>n===.5?'half a point':n===1?'1 point':`${lvN(n)} points`;
+const lvCover=(x,fin,push)=>{const by=n=>n===.5?'½':lvN(n);return push||x.v===0?'On the number':x.v>0?`${fin?'Covered':'Covering'} by ${by(x.v)}`:fin?`Missed by ${by(-x.v)}`:`Needs ${lvN(lvNeed(x))} to cover`};   // a spread's cover state in a few words: the big line on the slip, the number on By game
 const lvAgo=ms=>{const m=Math.round(ms/6e4);return m<1?'just now':m<60?`${m}m ago`:`${Math.round(m/60)}h ago`};
 const LVNOUN={'Receptions':'catches','Completions':'completions','Pass Attempts':'pass attempts','Rush Attempts':'carries','Kicking Points':'kicking points','Passing TDs':'passing TDs','Rushing TDs':'rushing TDs','Receiving TDs':'receiving TDs','Interceptions':'interceptions','Field Goals Made':'field goals','Sacks':'sacks','Targets':'targets','Team sacks':'sacks','Team TDs':'TDs'};
 const lvNoun=x=>(x.m==='total'||x.m==='teamTotal')?'points':(x.m==='long'||/Yds$/.test(x.st||''))?'yds':(LVNOUN[x.st]||'');
@@ -5460,15 +5462,17 @@ function legView(r,g,fresh,age=0,p=null){   // one leg's card: which state it is
   const past=!!x&&(x.op==='<'?x.v>x.line:x.v>=x.line);
   const sideMain=()=>{const d=x.m==='spread'?x.diff:x.v,pr=x.per?` in the ${LVPER[x.per]}`:'';return d>0?`Up ${lvN(d)}${pr}`:d<0?`Down ${lvN(-d)}${pr}`:((x.s&&x.s.aw!=null)?`Tied ${x.s.aw}\u2013${x.s.hm}`:`Tied${pr}`)};   // a 2nd-half or quarter moneyline (x.per) says which period its lead is in
   const yesMain=()=>x.m==='dst'?(x.v>0?`${TEAM_NM(x.team)} D/ST scored`:`No ${TEAM_NM(x.team)} D/ST touchdown yet`):x.m==='tScore'?(x.v>0?`${TEAM_NM(x.team)} scored ${x.v}`:`No ${TEAM_NM(x.team)} points yet`):x.m==='tdFirst'?((x.s&&x.s.nm)?`First TD: ${x.s.nm}`:'No touchdown yet'):((x.s&&x.s.tm)?`First score: ${TEAM_NM(x.s.tm)}`:'No score yet');
-  const sideNeed=()=>{const n=lvNeed(x);return ` \xB7 needs ${lvN(n)} more point${n===1?'':'s'}${x.m==='spread'?' to cover':''}`};
-  const mainWin=fin=>side?(sideMain()+(x.m==='spread'?` \xB7 ${fin?'covered by':'covering by'} ${lvPts(Math.abs(x.v))}`:'')):yes?yesMain():tdm?val():x.op==='<'?`${val()} \xB7 ${lvN(x.line-x.v)} to spare`:`${val()} \xB7 ${lvN(x.v-x.line)} over the line`;
-  const mainLose=()=>side?(sideMain()+sideNeed()):yes?yesMain():tdm?(x.v===0?'No touchdown yet':`${val()} \xB7 needs ${lvN(lvNeed(x))} more`):x.op==='<'?`${val()} \xB7 ${lvN(x.v-x.line)} over the line`:`${ofl()} \xB7 needs ${lvN(lvNeed(x))} more`;
-  const mainSettled=()=>side?(sideMain()+(x.m==='spread'?` \xB7 ${r.final?'missed by':'missing by'} ${lvPts(Math.abs(x.v))}`:'')):yes?yesMain():tdm?(x.v===0?'No touchdown':`${val()} \xB7 ${lvN(x.line-x.v)} short`):x.op==='<'?`${val()} \xB7 ${lvN(x.v-x.line)} over the line`:`${val()} \xB7 ${lvN(x.line-x.v)} short`;
-  const mainPush=()=>side?(sideMain()+(x.m==='spread'?' \xB7 right on the number':'')):yes?yesMain():`${val()} \xB7 right on the number${((x.op==='>'||x.op==='>=')&&!r.final)?` \xB7 needs ${lvN(lvNeed(x))} more`:''}`;
+  const sideNeed=()=>{const n=lvNeed(x);return ` \xB7 needs ${lvN(n)} more point${n===1?'':'s'}`};
+  const spMain=(fin,push)=>`${lvCover(x,fin,push)} \xB7 ${sideMain()}`;   // a spread: the cover is the answer (the big line), the score goes under it (Jason, 2026-10-19: "Down 7" big over "Covering by half a point" read as losing)
+  const mainWin=fin=>x&&x.m==='spread'?spMain(fin):side?sideMain():yes?yesMain():tdm?val():x.op==='<'?`${val()} \xB7 ${lvN(x.line-x.v)} to spare`:`${val()} \xB7 ${lvN(x.v-x.line)} over the line`;
+  const mainLose=()=>x&&x.m==='spread'?spMain(false):side?(sideMain()+sideNeed()):yes?yesMain():tdm?(x.v===0?'No touchdown yet':`${val()} \xB7 needs ${lvN(lvNeed(x))} more`):x.op==='<'?`${val()} \xB7 ${lvN(x.v-x.line)} over the line`:`${ofl()} \xB7 needs ${lvN(lvNeed(x))} more`;
+  const mainSettled=()=>x&&x.m==='spread'?spMain(r.final):side?sideMain():yes?yesMain():tdm?(x.v===0?'No touchdown':`${val()} \xB7 ${lvN(x.line-x.v)} short`):x.op==='<'?`${val()} \xB7 ${lvN(x.v-x.line)} over the line`:`${val()} \xB7 ${lvN(x.line-x.v)} short`;
+  const mainPush=()=>x&&x.m==='spread'?spMain(r.final,true):side?sideMain():yes?yesMain():`${val()} \xB7 right on the number${((x.op==='>'||x.op==='>=')&&!r.final)?` \xB7 needs ${lvN(lvNeed(x))} more`:''}`;
   const ck=r.final?lvClock(g,r):(stale||lvClock(g,r));
   const proj=x&&!r.final&&!r.locked&&canProject(x,t,fresh)?lvProj(x,t):null;
   const sub=[x?lvContext(x):'',proj!=null?`Projected: ~${lvN(proj)} ${noun}`:'',(x&&x.rev&&past&&!r.final)?'Yardage can still go down':''].filter(Boolean).join(' · ');
-  const mk=(code,cls,chip,tone,main)=>({code,cls,chip,kind:code==='HIT'||code==='MISS'||code==='PUSH'?'solid':code==='ONPACE'||code==='OFFPACE'?'dash':'tint',word:code==='PUSH'?'Push':chip.replace(/^[^A-Za-z]+/u,''),icon:code==='PUSH'?'P':(chip.match(/^[^A-Za-z]+/u)||[''])[0].trim(),tone,main,sub,clock:ck,score,bar:x&&x.have&&x.pace&&Number.isFinite(x.line)?lvBar(x,proj,noun,tone):null,over:gone});
+  const now=ps?(r.final||r.locked?'push':'even'):hit?(r.final||r.locked?'hit':'up'):(r.final||r.locked?'miss':'down');   // the big line's colour: green when the leg is hitting right now, red when it isn't, push's colour on the number; never the chip's amber (the chip alone says Sweating)
+  const mk=(code,cls,chip,_t,main,tone=now)=>({code,cls,chip,kind:code==='HIT'||code==='MISS'||code==='PUSH'?'solid':code==='ONPACE'||code==='OFFPACE'?'dash':'tint',word:code==='PUSH'?'Push':chip.replace(/^[^A-Za-z]+/u,''),icon:code==='PUSH'?'P':(chip.match(/^[^A-Za-z]+/u)||[''])[0].trim(),tone,main,sub,clock:ck,score,bar:x&&x.have&&x.pace&&Number.isFinite(x.line)?lvBar(x,proj,noun,tone):null,over:gone});
   if(r.final)return mk(ps?'PUSH':hit?'HIT':'MISS',ps?'push':hit?'hit':'miss',ps?'P Push':hit?'\u2713 Hit':'\u2717 Missed',ps?'push':hit?'hit':'miss',!x?String(r.detail||''):ps?mainPush():hit?mainWin(true):mainSettled());
   if(r.locked)return mk(ps?'PUSH':hit?'HIT':'MISS',ps?'push':hit?'hit':'miss',ps?'P Push':hit?'\u{1F512} Hit':'\u2717 Missed',ps?'push':hit?'hit':'miss',!x?String(r.detail||''):ps?mainPush():hit?((side||yes||tdm)?mainWin(true):`${val()} \xB7 can't lose it`):mainSettled());
   if(x&&x.have===false)return{code:'WAITSTATS',kind:'neutral',word:'Waiting for stats',icon:'',cls:'none',chip:'Waiting for stats',tone:'',main:x.m==='tdFirst'&&x.s&&(x.s.nm||x.s.tm)?String(r.detail||yesMain())+(p&&x.s.nm&&(' '+nameKey(p.text)+' ').includes(' '+nameKey(x.s.nm)+' ')?' · waiting for the box score to confirm it':''):'',sub:'',clock:ck,score,bar:null,over:gone};
