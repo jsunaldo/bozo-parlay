@@ -3003,15 +3003,19 @@ const srPaidAt=(p,w)=>p>w&&w>0?(p>=2*w?'+'+Math.round((p-w)*100/w):'-'+Math.roun
 function srMoney(rows){const out=[],R=rows||[];   // the rows of one screenshot -> what each money word on it says: {f: 'wager'|'pot'|'pre' (a payout crossed out)|'odds'|'boost', v, ok}. The Bet Slip bar's "$10.00 pays $8,165.26" is never read:
   // it is the bet slip as it is now, before any boost, and the reader can miss the boost (it missed a "30% PROFIT BOOST" banner on Jason's Week 5 slip, where that bar said $8,165.26 and the bet pays $8,952.50)
   const add=(f,w,v)=>out.push({f,v:v??null,ok:v!=null&&(+w.c||0)>=SR_MIN_CONF});
-  for(let i=0;i<R.length;i++){const ws=R[i].w||[],lo=String(R[i].t||'').toLowerCase(),$=ws.map((w,j)=>({w,j,v:srCents(w.t)})).filter(x=>/^[$S§]?\d/.test(x.w.t)),aft=j=>$.find(x=>x.j>j);
+  // several amounts (or prices) side by side after one label: only the RIGHTMOST is the bet's, and only when every one of them reads cleanly; an earlier one is never taken in its place (F1: a garbled boosted payout once let the crossed-out one through)
+  const sure=x=>(+x.c||0)>=SR_MIN_CONF,num=t=>/[$§\d]/.test(t),px=t=>/\d|^[+\-−–]/.test(t),sep=t=>!/[a-z0-9$§]/i.test(t);   // money-like: any $ or digit, read or not ("$O,310.00" too); price-like; a separator ("|")
+  const run=(ws,k,is)=>{const xs=[];for(;k<ws.length;k++){if(is(ws[k].t))xs.push(ws[k]);else if(!sep(ws[k].t))break}return xs};   // the words side by side from word k, separators skipped
+  const right=(f,xs,val)=>{const last=xs[xs.length-1];if(last)add(f,last,xs.every(x=>sure(x)&&val(x.t)!=null)?val(last.t):null)};
+  for(let i=0;i<R.length;i++){const ws=R[i].w||[],lo=String(R[i].t||'').toLowerCase(),aft=j=>{const k=ws.findIndex((x,k)=>k>j&&num(x.t));return k<0?[]:run(ws,k,num)};
     if(/\bboost\b/.test(lo)&&!/eligib/.test(lo)&&(/%/.test(lo)||/\b(?:profit|odds|parlay|sgp) boost\b/.test(lo))){const m=/(?:^| )(\d{1,3}) ?%/.exec(R[i].t),w=m&&ws.find(x=>x.t.includes(m[1]+'%')||x.t===m[1]);add('boost',w||{c:0},m&&w&&+m[1]>0?+m[1]:null)}   // "30% PROFIT BOOST" (never "PARLAY BOOST INELIGIBLE")
     if(ws.length===1&&/^[+-]?\d{3,7}$/.test(ws[0].t.replace(/[|:;,]+$/,''))&&[R[i-1],R[i+1]].some(r=>r&&/\bodds\b/i.test(r.t))){add('odds',ws[0],srAm(ws[0].t));continue}   // "+83448" over "Odds subject to change"; its sign lost: unread
     for(let j=0;j<ws.length;j++){const t=ws[j].t.toLowerCase().replace(/[|:;,]+$/,'');
-      if(t==='wager'){const x=aft(j);if(x)add('wager',x.w,x.v)}   // "Wager: $10.00", "Wager Amount: $10.00"
-      else if(t==='pay'&&j>0&&/^to$/i.test(ws[j-1].t)){const x=aft(j);if(x)add('pot',x.w,x.v)}   // "To Pay: $8,354.80"
-      else if(t==='payout'&&j>0&&/^total$/i.test(ws[j-1].t)){const xs=$.filter(x=>x.j>j),last=xs[xs.length-1];if(!last)continue;const pre=xs.slice(0,-1);   // "Total Payout: $11,720.27 $14,441.00": the amount on the right is what DraftKings pays; one crossed out before it is the payout before a boost
-        if(last.v!=null&&pre.every(x=>x.v==null||x.v<last.v)){add('pot',last.w,last.v);pre.forEach(x=>add('pre',x.w,x.v))}else xs.forEach(x=>add('pot',x.w,x.v))}   // two amounts the other way round: both kept, so the Bozo is asked
-      else if(t==='odds'&&j+1<ws.length&&/^[+-]?\d{3,7}[|:;,]*$/.test(ws[j+1].t))add('odds',ws[j+1],srAm(ws[j+1].t))}}   // "Parlay Odds +81552"
+      if(t==='wager')right('wager',aft(j),srCents);   // "Wager: $10.00", "Wager Amount: $10.00"
+      else if(t==='pay'&&j>0&&/^to$/i.test(ws[j-1].t))right('pot',aft(j),srCents);   // "To Pay: $8,354.80"
+      else if(t==='payout'&&j>0&&/^total$/i.test(ws[j-1].t)){const xs=ws.slice(j+1).filter(x=>num(x.t)),last=xs[xs.length-1];if(!last)continue;const pre=xs.slice(0,-1),c=srCents(last.t);   // "Total Payout: $11,720.27 $14,441.00": the amount on the right is what DraftKings pays; one crossed out before it is the payout before a boost
+        pre.forEach(x=>add('pre',x,srCents(x.t)));add('pot',last,c!=null&&xs.every(x=>sure(x)&&srCents(x.t)!=null)&&pre.every(x=>srCents(x.t)<c)?c:null)}   // any amount on the line unreadable or unsure, or two the other way round: the payout is unread and the Bozo types it
+      else if(t==='odds')right('odds',run(ws,j+1,px),srAm)}}   // "Parlay Odds +81552"
   return out}
 // every screenshot's money words -> each field: {st:'ok', v} | {st:'clash', vs} (read two ways) | {st:'unclear'} (there, not readable safely) | {st:'miss'}; total adds calc (worked out from the payout and the wager) and pre (the slip's odds before a boost)
 function srMoneyRes(list,stakeC){if(!Array.isArray(list))list=[];
