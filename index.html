@@ -340,6 +340,9 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 /* #5 the game-day scoreboard: the slip's second order, By game (UX-LESSONS-2 Part A). The switch is the stats switcher's own look at 44 px; a game's tone is a 3 px stripe AND words (colour never carries it alone); every text colour is a token that reads 4.5:1 on the card, light and dark */
 .gv-switch{margin:0 16px 10px}.gv-switch button{min-height:44px;font-size:14px;letter-spacing:-.01em}.gv-switch button.on{color:var(--text)}.gv-switch button:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}
 @media(prefers-color-scheme:dark){.gv-switch button.on{background:var(--surface3)}}
+.scope.wk-tabs{margin:0 0 12px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch}.wk-tabs::-webkit-scrollbar{display:none}.scope.wk-tabs button{white-space:nowrap;flex:1 0 auto;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:5px 14px;font-size:14px;letter-spacing:-.01em;line-height:1.2;overflow:visible;text-overflow:clip}.scope.wk-tabs button.on{color:var(--text)}.wk-tabs .wt-s{font-size:11.5px;font-weight:500}.wk-tabs button:focus-visible{outline:2px solid var(--blue);outline-offset:-2px}   /* weekui 3: the week's slips; one row (it scrolls sideways when the names don't fit), 48 px tall with or without the small status, so switching never moves the page */
+@media(prefers-color-scheme:dark){.scope.wk-tabs button.on{background:var(--surface3)}}
+.vt-due{display:block;margin-top:2px}.vt-due b{display:block;font-size:14px;font-variant-numeric:tabular-nums}   /* weekui 4: the vote's countdown, a line of its own (it changes every minute without moving anything) */
 .slip.gv{gap:8px}.gv-sum{font-size:12px;color:var(--muted);margin:0 2px;text-wrap:balance}.gv-note{font-size:12px;line-height:1.4;color:var(--muted);margin:2px 2px 0;text-wrap:balance}
 .gm{--gt:var(--line2);display:flex;flex-direction:column;min-width:0;background:var(--surface2);border-radius:14px;padding:2px 10px 6px;border-left:3px solid var(--gt);cursor:pointer;-webkit-tap-highlight-color:transparent}
 .gm.down{--gt:var(--red-tx)}.gm.even{--gt:var(--amber-tx)}.gm.up{--gt:var(--green)}.gm.none{cursor:default}
@@ -1385,7 +1388,10 @@ const dlPast=w=>!!w&&!!w.dl&&!!w.dl.pick&&leagueNow()>=Date.parse(w.dl.pick);   
 const dlWhy=w=>({dl:true,on:'deadline',why:'pick deadline has passed',say:dlSay(w.dl.pick)});   // why a member's pick is locked, in the place the kickoff lock's reason goes
 const dlOffIds=w=>Object.keys((w&&w.dl&&w.dl.out)||{}).filter(mid=>member(mid)&&!(w.picks&&w.picks[mid]));   // off the slip at the pick deadline (the league's record), and still off it
 const voterIdsC=(w,c)=>{const a=c.legs.map(x=>x.mid);if(DL_SWEPT_VOTE)for(const m of dlOffIds(w))if(!a.includes(m))a.push(m);return a};   // who votes: every leg, plus whoever is off the slip at the deadline
-const dlVoteTail=(w,rv)=>{const x=rv?w.revote&&w.revote.dl:w.dl&&!w.dl.closed&&w.dl.vote;return x?`, or <b>${dlShort(x)}</b>`:''};   // "Sealed until everyone's in, or Tue 8:00 PM ET."
+function dueSay(t){const m=Math.ceil((t-leagueNow())/60e3);if(!(m>0))return'Votes are due now';const d=Math.floor(m/1440),hr=Math.floor(m%1440/60),mi=m%60;return`Votes due in ${d?`${d}d ${hr}h ${mi}m`:hr?`${hr}h ${mi}m`:`${mi}m`}`}   // weekui 4: "Votes due in 2d 3h 14m", "3h 14m" under a day, "4m" under an hour, by the league's clock
+let DUE_T=0;
+function dueArm(){if(DUE_T)return;DUE_T=setTimeout(()=>{DUE_T=0;const els=document.querySelectorAll('[data-due]');if(!els.length)return;for(const el of els){const t=dueSay(+el.dataset.due);if(el.textContent!==t)el.textContent=t}dueArm()},60e3-((leagueNow()%60e3)+60e3)%60e3+50)}   // every minute on the minute while a countdown is on screen; none on screen: it stops
+function dueLine(w,rv){const x=rv?w.revote&&w.revote.dl:w.dl&&!w.dl.closed&&w.dl.vote,t=x?(typeof x==='number'?x:Date.parse(x)):NaN;if(!Number.isFinite(t))return`<small class="muted tiny">Sealed until everyone's in.</small>`;dueArm();return`<div class="vt-due"><b data-due="${t}" aria-live="off">${dueSay(t)}</b><small class="muted tiny">Sealed until then, or until everyone's in.</small></div>`}   // with a vote deadline: the countdown, and the sealed meaning once; with none: today's words
 function dlWords(l){const d=l&&l.deadlines,p=d&&d.pick,v=d&&d.vote;if(!p&&!v)return'None set. Picks follow the Locks rule above, and the vote stays open until the reveal.';
   return(p?`Picks close ${DLD[p.day]}s at ${dlHm(p.time)} Eastern. No pick in by then and you’re off that week’s slip: not on the bet, no share if it cashes, and your pick can’t go in late. You can still be voted the next Bozo. If a week opens after its deadline has passed, that week has none.`:'Picks follow the Locks rule above.')+' '+(v?`Votes close ${DLD[v.day]}s at ${dlHm(v.time)} Eastern; the votes in by then decide.`:'The vote stays open until the reveal.')}   // the Deadlines row's words, everyone reads them
 function dlZoneLine(k,s){const ds0=dlP(Date.now()),today=`${ds0.year}-${ds0.month}-${ds0.day}`,wd0=dlWd(Date.now());let t=null;for(let i=0;i<8&&t==null;i++){const[y,m,d]=today.split('-').map(Number),dd=new Date(Date.UTC(y,m-1,d+i));if(dd.getUTCDay()!==s.day)continue;const c=dlWall(dd.toISOString().slice(0,10),s.time);if(c>Date.now())t=c}
@@ -2583,7 +2589,7 @@ function render0(){
   main._set=setAt;for(const[k,t]of keepTyped){const x=main.querySelector(k);if(x&&!x.value)x.value=t}
   if(keepDone)try{const e=main.querySelector(keepDone);if(e&&e.matches('.srow')&&!e.hasAttribute('tabindex'))e.setAttribute('tabindex','-1');e?.focus({preventScroll:true})}catch(e){}
   main.classList.remove('enter');void main.offsetWidth;main.classList.add('enter');
-  main.querySelectorAll('textarea.pick-in').forEach(autosize);balance();
+  main.querySelectorAll('textarea.pick-in').forEach(autosize);balance();if(v==='week')wtShow();
   if(v==='week'&&!liveT)liveWatch();   // game day: the slip follows the games
   paintHead();
   if(document.body.classList.contains('typing')){const af=document.activeElement;if(!(af&&af.matches&&af.matches('input:not([type=file]),textarea,select'))){document.body.classList.remove('typing');needRender=false;if(DEFER.size)setTimeout(csFree,0)}}   /* nothing is being typed in any more */
@@ -2697,15 +2703,15 @@ function renderWeekInner(){
   if(S.weeks.length&&league().setup!=null)delete league().setup;   // Week 1 is on the slip (started here, by a vote, or on another phone): setup is over, and the league's next new season asks Who's Bozo first? alone
   if((S.members.length<2||setupLive())&&setupQ()<4)return renderOnboard();
   if(!S.weeks.length||openerShow())return renderFirstBozo();
-  const w=currentWeek();const c=calc(w);const idx=S.weeks.indexOf(w);const isLast=w===lastWeek();const nx=nextMain(w);
+  const w=currentWeek();const c=calc(w);const nav=navWeeks(),hw=tabHome(w),idx=nav.indexOf(hw);const isLast=w===lastWeek();const nx=nextMain(w);
   if(UPCOMING&&(UPCOMING!==w.id||w.final||nx||!c.graded||(w.reveal&&!revealSeen(w))||!(isAdmin()||league().features?.votes)))UPCOMING=null;
   if(UPCOMING)return(pushCard()||gdCard())+renderUpcoming(w,c);
   const vote=renderVote(w,c,isLast);const upnext=vote.includes('data-act="next-go"')?'':upcomingBtn(w,c);   /* the vote card already offers the next-week pick: one way to that slip, not two */
   return`${pushCard()||gdCard()}<div class="week-nav">
-    <button class="icon-btn" data-act="week-prev" aria-label="Previous week" ${idx===0?'disabled':''}>‹</button>
-    <div class="week-title"><strong>${h(wkName(w))}</strong>${isAdmin()?`<input type="date" class="date-in" value="${h(w.date||'')}" data-bind="week|${w.id}|date">`:w.date?`<small class="muted tiny">${h(new Date(w.date+'T12:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}))}</small>`:''}</div>
-    <button class="icon-btn" data-act="week-next" aria-label="Next week" ${idx===S.weeks.length-1?'disabled':''}>›</button>
-  </div>${yoursLine(w)}${kindBar(w)}${choresCard(w)}${vote}${envelopesCard(w,c)}${upnext}${renderTicket(w,c)}${renderExtras(w)}`;   // the Bozo part leads, the slip below
+    <button class="icon-btn" data-act="week-prev" aria-label="Previous week" ${idx<=0?'disabled':''}>‹</button>
+    <div class="week-title"><strong>${h(wkName(hw))}</strong>${isAdmin()?`<input type="date" class="date-in" value="${h(hw.date||'')}" data-bind="week|${hw.id}|date">`:hw.date?`<small class="muted tiny">${h(new Date(hw.date+'T12:00').toLocaleDateString([],{weekday:'short',month:'short',day:'numeric'}))}</small>`:''}</div>
+    <button class="icon-btn" data-act="week-next" aria-label="Next week" ${idx<0||idx===nav.length-1?'disabled':''}>›</button>
+  </div>${weekTabs(w)}${yoursLine(w)}${kindBar(w)}${choresCard(w)}${vote}${envelopesCard(w,c)}${upnext}${renderTicket(w,c)}${renderExtras(w)}`;   // the Bozo part leads, the slip below
 }
 /* ---- "Still yours" (todo-fanduel.md 1.2): one line, in the kindbar's shape, for each task the viewer still owes whose control is NOT on the screen they are looking at: the side parlay's pick while on the main week; anything owed on the latest
    main week while on another week. Never drawn on the week that holds the control (the vote card, the ballot, the slip's own row already say it), and nothing when nothing is owed. It reads only the viewer's own state and week names
@@ -2736,11 +2742,26 @@ function yoursLine(w){   // under the week-nav, before the kindbar: each owed ta
   const lw=lastWeek();if(!lw||!w)return'';const top=w===lw;
   let L;try{L=yoursOf()}catch(e){return''}   // an extra line must never take This Week down with it
   return L.filter(x=>x.wid!==w.id).map(x=>{const a=top&&x.a;return`<button class="kindbar yours" data-act="yours-go" data-wid="${h(x.wid)}"${x.mid?` data-mid="${h(x.mid)}"`:''}><span class="kb-ic">${x.ic}</span><span class="kb-t"><b>${h(a||x.b)}</b></span><span class="kb-go">${a?'Open →':'Go →'}</span></button>`}).join('')}
-function kindBar(w){   // what kind of parlay this is, and the side parlay riding along with it
-  if(isSide(w)){const p=parentOf(w),un=unanNote(w)||mvNote(w)||mpNote(w);return`<div class="kindbar"><span class="kb-ic">🎯</span><span class="kb-t"><b>${h(sideTitle(w))}</b>ATTD bets only · ${gameDays()} games · no Bozo, no vote${p?` · runs alongside <a href="#" data-act="open-week" data-wid="${p.id}">${h(wkName(p))}</a>`:''}${un?`<span class="kb-un">${h(un)}</span>`:''}</span></div>`}
+/* ---- weekui 3 (Jason 2026-10-19): the week's slips as tabs at the top of the week, in the By person | By game track: "Main parlay" first, then each side parlay riding with it (the crew's
+   "Anytime TD", then each person's own). One row that fills the width when the tabs fit and scrolls sideways when they don't, so it never wraps (no orphan row at any count or width) and no
+   name is cut. A tap shows that slip in place, with its own By person | By game; the week-nav, its arrows and every link that opens a side parlay land on its tab. The tab chosen is remembered
+   per week on this phone only (bp-week-tab: never saved to the league or sent); the arrows and This Week come back to it. A week with only its main parlay has no tabs ---- */
+const WEEK_TAB_KEY='bp-week-tab';
+const tabHome=w=>(isSide(w)&&parentOf(w))||w;   // the week a slip's tabs belong to: a side parlay's Sunday parlay, else itself
+const navWeeks=()=>S.weeks.filter(x=>!isSide(x)||!parentOf(x));   // the weeks the arrows step through: a side parlay is a tab of its week, not a week of its own (one whose week is gone stays reachable)
+const wtKey=p=>`${league().id}|${season().id}|${p.id}`;
+function wtRead(){try{const m=JSON.parse(localStorage.getItem(WEEK_TAB_KEY)||'{}');return m&&typeof m==='object'&&!Array.isArray(m)?m:{}}catch(e){return{}}}
+function wtKeep(w){try{const p=tabHome(w),m=wtRead(),k=wtKey(p);if(w===p)delete m[k];else m[k]=w.id;const ks=Object.keys(m);for(const x of ks.slice(0,Math.max(0,ks.length-60)))delete m[x];localStorage.setItem(WEEK_TAB_KEY,JSON.stringify(m))}catch(e){}}   // storage that can't be written: the tab still works for the visit
+function wtOf(w){if(!w||isSide(w))return w;const id=wtRead()[wtKey(w)],sd=id&&sidesOf(w).find(x=>x.id===id);return sd||w}   // the tab this phone last chose on that week; a side parlay that is gone: the main parlay
+function weekTabs(w){const p=tabHome(w),sds=isSide(p)?[]:sidesOf(p);if(!sds.length)return'';
+  const lab=x=>x===p?'Main parlay':sideOwn(x)?sideTitle(x):'Anytime TD';
+  const st=x=>{const c=calc(x);if(c.graded)return{won:'Cashed',lost:'Busted',void:'Void'}[c.result]||'';if(c.result==='lost')return'Busted';const inN=c.legs.filter(l=>String(l.text||'').trim()).length;return c.n?`${inN} of ${c.n} in`:''};   // said only on the tabs you're not on: the slip on screen says its own
+  return`<div class="scope wk-tabs" role="group" aria-label="${h(wkName(p))}: which slip">${[p,...sds].map(x=>{const on=x===w,t=on?'':st(x);return`<button type="button" class="${on?'on':''}" aria-pressed="${on}" data-act="week-tab" data-wid="${h(x.id)}"><span class="wt-l">${h(lab(x))}</span>${t?`<span class="wt-s"><span class="gv-sr">, </span>${h(t)}</span>`:''}</button>`}).join('')}</div>`}
+function wtShow(){const bar=document.querySelector('#view .wk-tabs'),b=bar&&bar.querySelector('button.on');if(!b)return;const l=b.offsetLeft-bar.offsetLeft,r=l+b.offsetWidth;if(l<bar.scrollLeft)bar.scrollLeft=Math.max(0,l-16);else if(r>bar.scrollLeft+bar.clientWidth)bar.scrollLeft=r-bar.clientWidth+16}   // the tab you're on is in view (the row scrolls itself, never the page)
+function kindBar(w){   // what kind of parlay this is. A side parlay's own tab says what it is and, once, what its rule did (weekui 3: these lines lived on the main week's "side parlay this week" cards, which the week's tabs replace)
+  if(isSide(w)){const p=parentOf(w),un=[unanSay(w)||mvSay(w)||mpSay(w),unanNote(w)||mvNote(w)||mpNote(w)].filter(Boolean);return`<div class="kindbar"><span class="kb-ic">🎯</span><span class="kb-t"><b>${h(sideTitle(w))}</b>ATTD bets only · ${gameDays()} games · no Bozo, no vote${p&&!sidesOf(p).includes(w)?` · runs alongside <a href="#" data-act="open-week" data-wid="${p.id}">${h(wkName(p))}</a>`:''}${un.map(u=>`<span class="kb-un">${h(u)}</span>`).join('')}</span></div>`}
   let out='';
   if(w.kind==='special')out+=`<div class="kindbar"><span class="kb-ic">${spIcon(w.dayName)}</span><span class="kb-t"><b>${h(w.dayName||'Special')} parlay · ${h(fmtDay(w.day))}</b>${h(w.dayName||'Special-day')} games only. Its vote picks the Week ${w.num} Sunday Bozo.</span></div>`;
-  for(const sd of sidesOf(w)){const c=calc(sd);const inN=c.legs.filter(l=>String(l.text||'').trim()).length;out+=`<button class="kindbar" data-act="open-week" data-wid="${sd.id}"><span class="kb-ic">🎯</span><span class="kb-t"><b>${h(sideTitle(sd))} this week</b>${c.graded?{won:'Cashed 🤑',lost:'Busted',void:'Void'}[c.result]||'Graded':`${inN} of ${c.n} picks in`}${(u=>u?`<span class="kb-un">${h(u)}</span>`:'')(unanSay(sd)||mvSay(sd)||mpSay(sd))}</span><span class="kb-go">Open →</span></button>`}   // every side parlay of the Sunday, each its own card (mvown)
   return out;
 }
 /* ---- the Commissioner's Monday (ux-specs/h2h-commish.md, section 2): one card under the week-nav, for the commissioner alone, on the last main week once its games are over, until nothing is left open. Nothing is stored: every row is worked out from the week as it is right now, so a done row ticks by itself and the card goes when the list is empty. Each action points at the control that already does the thing (the leg's editor, the payer sheet, the vote card); nothing here is a second way to do it, and nothing here runs by itself ---- */
@@ -3112,7 +3133,7 @@ function renderTicket(w,c){
   const missing=S.members.filter(m=>(m.active||m.id===w.bozoId)&&!w.picks[m.id]);
   return`<section class="ticket ${c.result}" id="ticket">
     <div class="ticket-head">
-      <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c)}</div></div>
+      <div class="row between"><div class="eyebrow">Parlay slip · ${c.n} leg${c.n===1?'':'s'}</div><div id="tbadge">${resultBadge(c,w)}</div></div>
       ${isSide(w)?`<div class="bozo-line"><span class="clown">🎯</span><span class="bozo-name">Side parlay</span><span class="is-bozo">${(py=>needsPayer(w)&&!c.graded?(isAdmin()?'who pays? tap ✎ to choose':'the commissioner still has to say who pays'):py?`no Bozo, no vote · ${h(member(py).name)} pays`:'no Bozo, no vote')(payerOf(w))}</span>${isAdmin()?`<button class="mini" data-act="change-payer" data-wid="${w.id}" title="Who pays" aria-label="Who pays for the side parlay">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked">🔒 locked</span>':''}</div>`:`<div class="bozo-line"><span class="clown">🤡</span><span class="bozo-name" style="--c:${b?.color||'var(--muted)'}">${h(b?.name||'Unknown')}</span><span class="is-bozo">${b?'is the Bozo':(isAdmin()?'Bozo — tap ✎ to set':'Bozo unknown')}</span>${isAdmin()?`<button class="mini" data-act="change-bozo" data-wid="${w.id}" title="Change bozo">✎</button>`:''}${w.locked?'<span class="tag warn" title="Picks are locked for this week">🔒 locked</span>':''}</div>`}
     </div>
     ${w.placed&&league().sync?placedTop(w,c):c.graded?`<div class="ticket-foot placed-top" id="tfoot">${ticketFoot(w,c)}</div>`:placedBar(w,c)}
@@ -3416,10 +3437,7 @@ function gvItems(w,c,cl,side){   // one week's legs in the slip's own order, eac
   return plan.legs.map(l=>{const g=plan.games[l.mid]||null,empty=!String(l.text||'').trim(),also=[];
     if(g&&!empty&&nfl&&nfl.teamGame){const cm=claimOf(l.text,l.teams,l.tm,nfl);for(const t of cm?cm.teams:[]){const x=nfl.teamGame[t];if(x&&gvKey(x)!==gvKey(g)&&!also.some(y=>gvKey(y)===gvKey(x)))also.push(x)}}
     return{w,l,cl,side,g,also,empty}})}
-function gvAllOf(w,c,cl){   // every leg By game lists: this slip's, then (on a Sunday slip) its side parlay's that have a pick, each on the game(s) it rides on. A hidden week's side parlay is not in S.weeks while the page is drawn, so it is never here
-  let it=gvItems(w,c,cl,false);
-  for(const sd of isSide(w)?[]:sidesOf(w)){const c2=calc(sd);it=it.concat(gvItems(sd,c2,slipClaims(sd,c2)||histClaims(sd,c2),true).filter(x=>!x.empty))}   // every side parlay of the Sunday (mvown)
-  return it}
+function gvAllOf(w,c,cl){return gvItems(w,c,cl,false)}   // every leg By game lists: this slip's own, each on the game(s) it rides on. Each slip's By game is its own (weekui 2, Jason 2026-10-19): a side parlay's legs are on its own tab, never under the main slip's games
 const gvAll=w=>{const c=calc(w);return gvAllOf(w,c,slipClaims(w,c)||histClaims(w,c))};
 function gvOffer(items){const k=new Set();for(const it of items){if(it.empty||!it.g)continue;k.add(gvKey(it.g));for(const a of it.also)k.add(gvKey(a))}return k.size>=2}   // nothing to switch with legs on one game (or none)
 const GV_TONE={HIT:'hit',MISS:'miss',PUSH:'push',HITTING:'up',ONPACE:'up',SWEAT:'even',PUSHING:'even',EARLY:'even',MISSING:'down',OFFPACE:'down'};
@@ -4051,8 +4069,8 @@ function withStats(fn){return(VIEW==='stats'||VIEW==='history')?withAll(fn):fn()
 
 function typeRows(byType,mid){return TYPE_ORDER.filter(k=>byType[k]).map(k=>statRow({label:k,rec:byType[k],act:'show-bets',data:`data-node="${encNode({type:k,mid})}"`})).join('')}
 function betChip(text,teams,cls='',ask=1){const t=((teams&&teams.length)||!ask?teams||[]:teamOfPlayer(text||'')).slice(0,2);return`<span class="betchip ${cls}">${t.map(a=>`<img src="${LOGO(a)}" alt="" decoding="async">`).join('')}<span class="bt">${h(text||'—')}</span></span>`}
-function resultBadge(c){
-  const map={pending:['pending',c.n?`${c.n-c.pending}/${c.n} graded`:'empty'],won:['won','Cashed'],lost:['lost',`Lost · ${c.hits} of ${c.n-c.pushes} hit`],void:['void','Void'],none:['void','No parlay']};   // DL-F03: every leg swept: no parlay, not a loss
+function resultBadge(c,w){
+  const map={pending:['pending',c.n?`${c.n-c.pending}/${c.n} graded`:'empty'],won:['won','Cashed'],lost:['lost',`Lost · ${w?hitSay(w):`${c.hits} of ${c.n-c.pushes} hit`}`],void:['void','Void'],none:['void','No parlay']};   // DL-F03: every leg swept: no parlay, not a loss
   const[cls,txt]=map[c.result];return`<span class="badge ${cls}">${txt}</span>`;
 }
 const placedOpen=new Set();   // slips whose placed details are open (this screen only)
@@ -4131,7 +4149,7 @@ function receiptBody(w,c,o={}){   // every leg, the way the slip picture draws t
   const MK={hit:['','✓','hit'],miss:['no','✗','missed'],push:['p','P','push'],pending:['wt','·','not graded yet']};
   const rows=slipOrder(w,c,null).map(x=>{const m=member(x.mid),st=MK[x.status]?x.status:'pending',pt=placedText(x),say=lmSay(x),mg0=(st==='hit'||st==='miss')&&x.margin!=null&&x.unit!=='none'?`${st==='hit'?'covered':'missed'} by ${fmtMargin(x.margin,x.unit)}`:st==='push'?'push':'',mg=say||(pt?[mg0,`line moved: picked ${lineNum(x.text)}`].filter(Boolean).join(' · '):mg0);   // line moves: every leg drawn as placed with the slip's mark (the receipt is the money); a leg whose two lines went different ways says why once, the others that moved name the picked line
     return`<div class="rp-leg"><span class="mk ${MK[st][0]}" role="img" aria-label="${MK[st][2]}">${MK[st][1]}</span><span class="t"><b>${h(m?m.name:'?')}${x.mid===w.bozoId&&!isSide(w)?' 🤡':''}</b> · ${h(pt||String(x.text||'').trim()||'(no pick)')}</span><span class="o">${x.oddsN!=null?fmtOdds(x.oddsN):'—'}</span>${mg?`<span class="m${st==='miss'?' no':''}">${h(mg)}</span>`:''}</div>`}).join('');
-  const dt=w.date&&fmtDate(w.date)?fmtDate(w.date):'',head=o.inMoment?'':`<div class="rp-head"><span>${h(dt)}</span><span>${h(l.name||'')}</span></div><div class="rp-badge">${resultBadge(c)}</div>`;
+  const dt=w.date&&fmtDate(w.date)?fmtDate(w.date):'',head=o.inMoment?'':`<div class="rp-head"><span>${h(dt)}</span><span>${h(l.name||'')}</span></div><div class="rp-badge">${resultBadge(c,w)}</div>`;
   return`<div class="rp">${head}${rows}<div class="rp-perf" aria-hidden="true"></div>${footCells(w,c)}${nb?`<div class="rp-bozo"><span class="avatar xs" style="--c:${nb.color||'#888'}">${avIn(nb)}</span><b>${h(nb.name)} is the ${h(nextName(w))} Bozo</b>${how?`<span>· ${h(how)}</span>`:''}</div>`:''}${by||at?`<div class="rp-foot"><span>Placed${by?` by ${h(by)}`:''}${at?` · ${h(at)}`:''}</span></div>`:''}</div>`}
 function receiptSheet(w){const wid=w.id,c=calc(w);modal({title:`${wkName(w)} receipt`,body:receiptBody(w,c),actions:[{label:'📸 Share to the chat',cls:'primary',onClick:()=>{shareFrom(wid)}},{label:'Done',cls:'ghost'}]})}
 /* awards night: three sealed envelopes on a graded week, opened in turn, remembered per person on this phone */
@@ -4164,7 +4182,7 @@ function patchTicket(w){
   $('f-win').textContent=winTxt(c);
   $('f-each').textContent=eachTxt(c);
   $('f-hint').hidden=!(c.missingOdds&&c.n);
-  $('tbadge').innerHTML=resultBadge(c);
+  $('tbadge').innerHTML=resultBadge(c,w);
   const b=member(w.bozoId);
   $('f-won').innerHTML=wonLine(w,c);{const f=$('f-dk');if(f)f.innerHTML=dkFoot(w,c)}try{dkSync()}catch(e){}   // Export to DraftKings follows the prices as they are typed
   for(const l of c.legs){
@@ -4511,7 +4529,7 @@ function renderRevoteBallot(w,c){   // just a vote among the tied: no video, sea
   const l=league();const me=l.me;const rv=w.revote;const exp=(rv.voters||voterIdsC(w,c)).filter(mid=>!(rv.skip&&rv.skip[mid]));const sub=rv.sub||{};const skipped=Object.keys(rv.skip||{});
   const inn=mid=>!!(sub[mid]&&(sub[mid].voted||sub[mid].candidateId));const done=exp.filter(inn);const missing=exp.filter(mid=>!inn(mid));
   const mine=me?sub[me]:null;const iVote=!!me&&exp.includes(me);const editing=subEdit.has(w.id+':2');const names=rv.cands.map(id=>h(member(id)?.name||'?')).join(' vs ');
-  const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b>${missing.length?`<button class="btn sm ghost" data-act="vote-nudge" data-wid="${w.id}" data-r="2">Copy nudge</button>`:`<span class="muted tiny">sealed until everyone's in</span>`}</div>${missing.length?`<small class="muted tiny">Sealed until everyone's in${dlVoteTail(w,1)}.</small>`:''}<div class="subavs">${exp.map(mid=>{const m=member(mid);const ok=inn(mid);return`<span class="subav ${ok?'ok':''}" title="${h(m?.name||'')}: ${ok?'in':'not yet'}" role="img" aria-label="${h(m?.name||'')}: ${ok?'in':'not yet'}"><span class="avatar sm" style="--c:${m?.color||'#888'}">${avIn(m)}</span><i>${ok?'✓':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${meFirst(missing).map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}</div>`;
+  const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b>${missing.length?`<button class="btn sm ghost" data-act="vote-nudge" data-wid="${w.id}" data-r="2">Copy nudge</button>`:`<span class="muted tiny">sealed until everyone's in</span>`}</div>${missing.length?dueLine(w,1):''}<div class="subavs">${exp.map(mid=>{const m=member(mid);const ok=inn(mid);return`<span class="subav ${ok?'ok':''}" title="${h(m?.name||'')}: ${ok?'in':'not yet'}" role="img" aria-label="${h(m?.name||'')}: ${ok?'in':'not yet'}"><span class="avatar sm" style="--c:${m?.color||'#888'}">${avIn(m)}</span><i>${ok?'✓':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${meFirst(missing).map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}</div>`;
   let yours='';
   if(!me)yours=l.guest?`<p class="muted tiny" style="margin:0">${isAdmin()?'You\'re not playing in this league.':'👀 You\'re watching as a guest.'} <a href="#" data-act="pick-me">${isAdmin()?'I\'m playing':'I\'m in the crew'}</a></p>`:`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
   else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${rv.skip?.[me]?'The commissioner skipped you for the revote.':w.kind==='opener'&&w.skip?.[me]?'The commissioner skipped you in the first round, so you’re not in the revote. Sit tight for the reveal.':w.kind==='opener'?'You weren’t in the crew when this vote opened, so you’re not on the ballot. Sit tight for the reveal.':'No leg this week for you, so no vote. Sit tight for the reveal.'}</p>`;
@@ -4528,7 +4546,7 @@ function renderSealedVote(w,c,el,reason){
   const l=league();const me=l.me;const st=subStatus(w);const exp=expectedVoters(w,c);const skipped=Object.keys(w.skip||{}).filter(mid=>c.legs.some(x=>x.mid===mid));
   const done=exp.filter(mid=>{const x=st(mid);return x.voted&&x.video});const missing=exp.filter(mid=>!done.includes(mid));const gone=exp.filter(mid=>st(mid).removed);
   const mine=me?st(me):null;const iVote=!!me&&exp.includes(me);const editing=subEdit.has(w.id);
-  const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b>${missing.length?`<button class="btn sm ghost" data-act="vote-nudge" data-wid="${w.id}">Copy nudge</button>`:`<span class="muted tiny">sealed until everyone's in</span>`}</div>${missing.length?`<small class="muted tiny">Sealed until everyone's in${dlVoteTail(w)}.</small>`:''}<div class="subavs">${exp.map(mid=>{const m=member(mid);const x=st(mid);const ok=x.voted&&x.video;const t=`${h(m.name)}: ${ok?(x.removed?'in (the commissioner removed the video to make room)':'in'):x.video?'video in, no vote yet':x.voted?'voted, no video yet':'nothing yet'}`;return`<span class="subav ${ok?'ok':x.voted||x.video?'half':''}" title="${t}" role="img" aria-label="${t}"><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><i>${ok?'✓':x.voted||x.video?'½':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${meFirst(missing).map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${skipped.length?`<small class="muted">Skipped: ${skipped.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${gone.length?`<small class="muted vid-gone">The commissioner removed ${gone.length===1?`${h(member(gone[0])?.name||'someone')}’s vote video`:`the vote videos of ${andList(gone.map(mid=>h(member(mid)?.name||'someone')))}`} to make room, so ${gone.length===1?'it':'they'} can’t be played. ${gone.length===1?'That vote still counts':'Those votes still count'}, and nobody has to record again.</small>`:''}</div>`;
+  const status=`<div class="substat"><div class="row between"><b>${done.length} of ${exp.length} in</b>${missing.length?`<button class="btn sm ghost" data-act="vote-nudge" data-wid="${w.id}">Copy nudge</button>`:`<span class="muted tiny">sealed until everyone's in</span>`}</div>${missing.length?dueLine(w):''}<div class="subavs">${exp.map(mid=>{const m=member(mid);const x=st(mid);const ok=x.voted&&x.video;const t=`${h(m.name)}: ${ok?(x.removed?'in (the commissioner removed the video to make room)':'in'):x.video?'video in, no vote yet':x.voted?'voted, no video yet':'nothing yet'}`;return`<span class="subav ${ok?'ok':x.voted||x.video?'half':''}" title="${t}" role="img" aria-label="${t}"><span class="avatar sm" style="--c:${m.color}">${avIn(m)}</span><i>${ok?'✓':x.voted||x.video?'½':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${meFirst(missing).map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${skipped.length?`<small class="muted">Skipped: ${skipped.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${gone.length?`<small class="muted vid-gone">The commissioner removed ${gone.length===1?`${h(member(gone[0])?.name||'someone')}’s vote video`:`the vote videos of ${andList(gone.map(mid=>h(member(mid)?.name||'someone')))}`} to make room, so ${gone.length===1?'it':'they'} can’t be played. ${gone.length===1?'That vote still counts':'Those votes still count'}, and nobody has to record again.</small>`:''}</div>`;
   let yours='';
   if(!me)yours=l.guest?`<p class="muted tiny" style="margin:0">${isAdmin()?'You\'re not playing in this league.':'👀 You\'re watching as a guest.'} <a href="#" data-act="pick-me">${isAdmin()?'I\'m playing':'I\'m in the crew'}</a></p>`:`<button class="btn primary block" data-act="pick-me">Tap your name to vote</button>`;
   else if(!iVote)yours=`<p class="muted tiny" style="margin:0">${w.skip?.[me]?'The commissioner skipped you this week.':w.kind==='opener'?'You weren’t in the crew when this vote opened, so you’re not on the ballot. Sit tight for the reveal.':'No leg this week for you, so no vote this week. Sit tight for the reveal.'}</p>`;
@@ -5440,16 +5458,23 @@ function legChip(w,l,cl,prepared){   // once the bet is in, a leg shows where it
   if(G&&G.state==='post')return['live','Final \xB7 grading'];
   if(pregameChip(g))return['pre',pregameChip(g)];
   return['none','On the slip']}
-function liveBanner(w,prepared){if(!sweatable(w))return'';const R=RESULTS[checkDate(w)];if(!R)return'';
-  const k={hit:0,hitting:0,onpace:0,sweat:0,pushing:0,early:0,offpace:0,missing:0,miss:0,push:0,play:0,hand:0};const killed=[];const cl0=prepared||{nfl:weekNfl(w),live:{}};
+function legTally(w,prepared){   // weekui 1: the ONE count of a slip's legs that the result badge (This Week, History, the receipt, the share image, search) and the live card ("4 hit · 1 not there yet · 1 missed") both read, so they always agree: a graded leg by its grade, a leg locked while its game is on ("can't lose it", or already lost) as hit or missed, every other leg with a pick still to play. Live words only for a slip this phone is sweating (sweatable: never an old season)
+  const k={hit:0,hitting:0,onpace:0,sweat:0,pushing:0,early:0,offpace:0,missing:0,miss:0,push:0,play:0,hand:0,killed:[]};
+  let cl0=null;try{if(sweatable(w)&&RESULTS[checkDate(w)])cl0=prepared||{nfl:weekNfl(w),live:{}}}catch(e){cl0=null}
   const CODE={HIT:'hit',MISS:'miss',PUSH:'push',HITTING:'hitting',ONPACE:'onpace',SWEAT:'sweat',PUSHING:'pushing',EARLY:'early',OFFPACE:'offpace',MISSING:'missing'};
-  for(const[mid,p]of Object.entries(w.picks)){if(!member(mid)||!String(p.text||'').trim())continue;
-    if(p.status!=='pending'){if(p.status==='miss')killed.push(mid);k[p.status==='miss'?'miss':p.status==='push'?'push':'hit']++;continue}
-    const v=(cl0.live[mid]||legLive(w,{mid,...p},cl0)).v;if(!v){k.play++;continue}
-    if(v.code==='MISS')killed.push(mid);
+  for(const[mid,p]of Object.entries(w.picks||{})){if(!member(mid)||!String(p.text||'').trim())continue;
+    if(p.status&&p.status!=='pending'){if(p.status==='miss')k.killed.push(mid);k[p.status==='miss'?'miss':p.status==='push'?'push':'hit']++;continue}
+    let v=null;if(cl0)try{v=(cl0.live[mid]||legLive(w,{mid,...p},cl0)).v}catch(e){v=null}
+    if(!v){k.play++;continue}
+    if(v.code==='MISS')k.killed.push(mid);
     if(v.code==='HAND'){k.play++;if(v.over)k.hand++;continue}
-    if(v.code==='PRE'||v.code==='GRADING'||v.code==='WAITSTATS'){k.play++;continue}
+    if(v.code==='PRE'||v.code==='GRADING'||v.code==='WAITSTATS'||!CODE[v.code]){k.play++;continue}
     k[CODE[v.code]]++}
+  k.left=k.play+k.hitting+k.onpace+k.sweat+k.pushing+k.early+k.offpace+k.missing;   // still to play: everything neither hit, missed nor pushed for good
+  return k}
+function hitSay(w,prepared){const k=legTally(w,prepared);return`${k.hit} of ${k.hit+k.miss} hit${k.left?` \xB7 ${k.left} to play`:''}`}   // "4 of 5 hit · 1 to play", then "4 of 6 hit" once every leg is final
+function liveBanner(w,prepared){if(!sweatable(w))return'';const R=RESULTS[checkDate(w)];if(!R)return'';
+  const k=legTally(w,prepared),killed=k.killed;
   if(!k.hit&&!k.miss&&!k.push&&!(k.hitting+k.onpace+k.sweat+k.pushing+k.early+k.offpace+k.missing))return'';
   const bits=[k.hit&&`${k.hit} hit`,k.hitting&&`${k.hitting} hitting`,k.onpace&&`${k.onpace} on pace`,k.sweat&&`${k.sweat} sweating`,k.pushing&&`${k.pushing} pushing`,k.early&&`${k.early} not there yet`,k.offpace&&`${k.offpace} off pace`,k.missing&&`${k.missing} missing`,k.miss&&`${k.miss} missed`,k.push&&`${k.push} push`,k.play&&`${k.play} to play`,k.hand&&`${k.hand} to grade by hand`].filter(Boolean).join(' \xB7 ');
   const who=killed.length?`Killed by ${killed.slice(0,2).map(mid=>`${h(member(mid)?.name||'?')}\u2019s ${h(w.picks[mid].text)}`).join(' and ')}${killed.length>2?` and ${killed.length-2} more`:''}`:'';
@@ -5747,7 +5772,7 @@ function hsJump(q,o){const l=league(),X=hsList(),t=hsNorm(q).split(' ').filter(B
   if(nm||!t.every(x=>HS_WEEKW.has(x))){S=X.v;try{for(const w of [...X.v.weeks].reverse()){const j=String(w.id).indexOf('|'),sid=w.id.slice(0,j),s0=sn.get(sid),rw=s0&&(s0.data.weeks||[]).find(x=>x.id===w.id.slice(j+1));if(!rw||(ids&&!ids.includes(sid)))continue;
     const wn=hsNorm(wkName(rw)+' '+(rw.dayName||'')).split(' ');if(!(nm?!isSide(rw)&&+rw.num===+nm[1]:hsSeq(wn,t)||hsSeq(hsNorm(fmtDate(rw.date)).split(' '),t)))continue;   // Week 7, wk 7, w7 or 7 is that number and nothing longer (1 is Week 1 only); else the words in order, in the week's name and day (thanks: Thanksgiving) or its date (oct 4)
     const c=calc(w),b=member(w.bozoId);J.weeks.push({id:w.id,chip:wkShort(rw),title:`${multiS?seasonName(s0)+' · ':''}${isSide(rw)?'🎯 '+(rw.label?wkName(rw):'Side parlay'):wkName(rw)+(b?' · 🤡 '+b.name:'')}`,sub:`${fmtDate(rw.date)}${rw.date?' · ':''}${c.n} leg${c.n===1?'':'s'} · ${c.n?amer(c.dec):'—'}`,
-      res:c.result==='lost'?['lost',`${c.hits} of ${c.n-c.pushes} hit`]:c.result==='won'?['hit','Cashed']:c.result==='void'?['void','Void']:['pending',w.placed?'Live':'Not placed']})}}finally{S=real}}
+      res:c.result==='lost'?['lost',hitSay(w)]:c.result==='won'?['hit','Cashed']:c.result==='void'?['void','Void']:['pending',w.placed?'Live':'Not placed']})}}finally{S=real}}
   if(o&&o.teams&&!hasD){const on=new Set();for(const r of X.rows)if(!ids||ids.includes(r.sid))for(const a of r.teams)on.add(a);   // a team that is on at least one pick in the rows being searched
     for(const a of Object.keys(TEAMS)){const ws=hsTeamW(a).split(' ');if(on.has(a)&&t.every(x=>ws.some(w=>w.startsWith(x))))J.teams.push(a)}}
   return J}
@@ -5838,7 +5863,7 @@ function renderHistoryInner(){
   ${[...S.weeks].reverse().map(w=>{const c=calc(w);const b=member(w.bozoId);
     return`<button class="wk ${c.result}" data-act="open-week" data-wid="${w.id}">
       <div class="wk-l"><div class="wk-num">${h(wkShort(w))}</div><div><div class="wk-title">${isSide(w)?`🎯 ${h(sideTitle(w))}`:`🤡 ${h(b?.name||'Unknown')}${w.kind==='special'?` · ${h(w.dayName||'special')}`:''}`}</div><div class="wk-sub">${fmtDate(w.date)}${w.date?' · ':''}${c.n} legs · ${c.n?amer(c.dec):'—'}${c.result==='won'?' · '+fmt$(c.payout):''}</div></div></div>
-      <div class="wk-r"><div class="dots">${c.legs.map(l=>`<span class="dot ${l.status}" style="--c:${member(l.mid)?.color}" title="${h(member(l.mid)?.name)}: ${l.status==='hit'?'hit':l.status==='miss'?'miss':l.status==='push'?'push':'not graded yet'}"></span>`).join('')}</div>${c.result==='lost'?`<span class="wk-count">${c.hits} of ${c.n-c.pushes} hit</span>`:resultBadge(c)}</div>
+      <div class="wk-r"><div class="dots">${c.legs.map(l=>`<span class="dot ${l.status}" style="--c:${member(l.mid)?.color}" title="${h(member(l.mid)?.name)}: ${l.status==='hit'?'hit':l.status==='miss'?'miss':l.status==='push'?'push':'not graded yet'}"></span>`).join('')}</div>${c.result==='lost'?`<span class="wk-count">${hitSay(w)}</span>`:resultBadge(c,w)}</div>
     </button>`}).join('')}`;
 }
 
@@ -6700,7 +6725,7 @@ function recap(w){
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss'))s+=` — ${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`;L.push(s)}
   if(c.none)L.push('','No parlay this week: nobody got a pick in by the deadline.');   // DL-R2-F03: said once, with no stake, no price and no result
   else{L.push('',`Parlay ${c.n?asc(amer(c.dec)):'—'} → ${c.missingOdds?'unpriced':fmt$(c.potential)}`);
-  L.push(`Result: ${c.result==='won'?`CASHED 🤑 ${fmt$(c.share)} each${gone.length?` (${gone.join(', ')} pushed and ${gone.length===1?'is':'are'} left out)`:''}`:c.result==='lost'?`LOST (${c.hits} of ${c.n-c.pushes} hit)`:c.result==='void'?'VOID':'Pending'}`)}
+  L.push(`Result: ${c.result==='won'?`CASHED 🤑 ${fmt$(c.share)} each${gone.length?` (${gone.join(', ')} pushed and ${gone.length===1?'is':'are'} left out)`:''}`:c.result==='lost'?`LOST (${hitSay(w)})`:c.result==='void'?'VOID':'Pending'}`)}
   if(c.graded){const el=eligible(w);if(el.list.length)L.push(`On the ballot: ${el.list.map(id=>member(id)?.name).join(', ')}`)}
   return L.join('\n');
 }
@@ -6728,7 +6753,7 @@ async function slipImage(w){
   x.fillStyle='#f5f5f7';x.fillRect(0,0,W,H);
   x.save();x.shadowColor='rgba(0,0,0,.14)';x.shadowBlur=40;x.shadowOffsetY=14;rr(x,pad,pad,W-pad*2,H-pad*2,44);x.fillStyle='#ffffff';x.fill();x.restore();
   rr(x,pad,pad,W-pad*2,H-pad*2,44);x.strokeStyle='rgba(0,0,0,.08)';x.lineWidth=2;x.stroke();
-  const pill={won:['CASHED',GREEN,'#fff'],lost:[`LOST · ${c.hits} of ${c.n-c.pushes} hit`,'rgba(255,59,48,.12)',RED],pending:[`${c.n-c.pending}/${c.n} GRADED`,'rgba(255,159,10,.15)','#b25e00'],void:['VOID','#e8e8ed',MU],none:['NO PARLAY','#e8e8ed',MU]}[c.result];
+  const pill={won:['CASHED',GREEN,'#fff'],lost:[`LOST · ${hitSay(w)}`,'rgba(255,59,48,.12)',RED],pending:[`${c.n-c.pending}/${c.n} GRADED`,'rgba(255,159,10,.15)','#b25e00'],void:['VOID','#e8e8ed',MU],none:['NO PARLAY','#e8e8ed',MU]}[c.result];
   x.font=F(700,24);try{x.letterSpacing='3px'}catch(e){}const pw=x.measureText(pill[0]).width+48;
   try{x.letterSpacing='4px'}catch(e){}
   x.fillStyle=MU;x.font=F(600,24);x.textBaseline='alphabetic';x.textAlign='left';
@@ -7001,14 +7026,16 @@ const ACT={
   'guide-open'(el){openGuided(el.dataset.wid,el.dataset.mid,el.dataset.next==='1')},
   'guide-pick'(el){guidedPick(el)},'guide-bet'(el){guidedBet(el)},'guide-back'(){guidedBack()},'guide-nudge'(el){guidedNudge(el)},'guide-use'(){useGuided()},'guide-manual'(){guidedManual()},'guide-find'(el){guidedFindGo(el)},'guide-find-clear'(){const d=GUIDED;if(!d)return;d.q='';const i=document.getElementById('bap-q');if(i){i.value='';try{i.focus()}catch(e){}}guidedFindPaint(d)},
   'guide-choice-manual'(el){const d=el.dataset,next=d.next==='1';GUIDE_MANUAL.add(guideKey(d.wid,d.mid,next));guidedTyped(d.wid,d.mid,next)},   // the typed box, unchanged; remembered on this screen only, so a repaint keeps it
-  nav(el){const go=()=>{const same=VIEW===el.dataset.view&&!el.dataset.pane;VIEW=el.dataset.view;if(el.dataset.pane)PANE=el.dataset.pane;if(VIEW==='week'){goNow();loadPending()}else REPLAY_RUN.clear();save();render();pageTo(0,same?'smooth':'auto')};UPCOMING?leaveUpcoming(go):go()},   // tapping the tab you're on scrolls back to the top; a button that names a Settings pane opens that pane
+  nav(el){const go=()=>{const same=VIEW===el.dataset.view&&!el.dataset.pane;VIEW=el.dataset.view;if(el.dataset.pane)PANE=el.dataset.pane;if(VIEW==='week'){goNow();{const hw=week(S.currentWeekId);if(hw)S.currentWeekId=wtOf(hw).id}loadPending()}else REPLAY_RUN.clear();save();render();pageTo(0,same?'smooth':'auto')};UPCOMING?leaveUpcoming(go):go()},   // tapping the tab you're on scrolls back to the top; a button that names a Settings pane opens that pane
   'go-now'(){goNow();VIEW='week';save();render();pageTo(0)},
   'yours-go'(el){const wid=el.dataset.wid,w=week(wid);if(!w)return stale();goNow();S.currentWeekId=wid;VIEW='week';if(el.dataset.mid){BROWSED=true;slipOpen.add(wid+'|'+el.dataset.mid)}save();render();pageTo(0)},   // "Still yours": the week that holds the task (the side parlay's: with the viewer's own row open)
   'settings-pane'(el){const note=!!el.closest('.setnote');setPane(el.dataset.pane);if(note)document.getElementById('settab-'+el.dataset.pane)?.focus()},   // the banner's Open League hides itself once League shows, so focus goes to the League tab and a screen reader says where it landed
   'use-link'(el){const box=el&&el.closest?el.closest('.linkbox'):null;const v=(box?box.querySelector('input'):document.getElementById('linkIn'))?.value||'';useLink(v,el)},
   'pick-season'(el){const l=league();if(l.seasons.find(x=>x.id===el.dataset.sid)){l.activeSeason=el.dataset.sid;S=season().data}scopeSet('season');ALLTIME=null;xNode={};detailOpen=null;save();render()},
-  'week-prev'(){const i=S.weeks.indexOf(currentWeek());if(i>0){BROWSED=true;REPLAY.clear();REPLAY_RUN.clear();S.currentWeekId=S.weeks[i-1].id;save();render();loadPending()}},
-  'week-next'(){const i=S.weeks.indexOf(currentWeek());if(i<S.weeks.length-1){BROWSED=true;REPLAY.clear();REPLAY_RUN.clear();S.currentWeekId=S.weeks[i+1].id;save();render();loadPending()}},
+  'week-prev'(){const ws=navWeeks(),i=ws.indexOf(tabHome(currentWeek()));if(i>0){BROWSED=true;REPLAY.clear();REPLAY_RUN.clear();S.currentWeekId=wtOf(ws[i-1]).id;save();render();loadPending()}},   // weekui 3: week to week (a side parlay is a tab of its week), landing on the tab chosen there last
+  'week-next'(){const ws=navWeeks(),i=ws.indexOf(tabHome(currentWeek()));if(i>=0&&i<ws.length-1){BROWSED=true;REPLAY.clear();REPLAY_RUN.clear();S.currentWeekId=wtOf(ws[i+1]).id;save();render();loadPending()}},
+  'week-tab'(el){const w=week(el.dataset.wid);if(!w)return stale();const bar0=document.querySelector('#view .wk-tabs'),y0=bar0?bar0.getBoundingClientRect().top:null;BROWSED=true;REPLAY.clear();REPLAY_RUN.clear();S.currentWeekId=w.id;wtKeep(w);save();render();loadPending();
+    const bar=document.querySelector('#view .wk-tabs');if(bar&&y0!=null){const d=bar.getBoundingClientRect().top-y0;if(Math.abs(d)>1)pageTo(Math.max(0,pageY()+d))}const b=[...document.querySelectorAll('#view .wk-tabs button')].find(x=>x.dataset.wid===w.id);if(b)try{b.focus({preventScroll:true})}catch(e){}},   // weekui 3: that slip in place: the tabs stay where they were on the screen, the keyboard stays on the tab
   'hs-set'(el){const k=el.dataset.k,v=el.dataset.v||'';if(k==='res'&&ownKey(HS_ST,v))HS.res=v;else if(k==='sid'&&(!v||league().seasons.some(x=>x.id===v)))HS.sid=v;else return;HS.n=HS_PAGE;hsPaint(`#hsChips [data-v="${HS.res}"]`)},   // a result filter, or back to every season: the keyboard stays on the filters (never on a list box, which a phone would pop open)
   'ss-clear'(){SS.q='';SS.node={q:1};const i=document.getElementById('ssIn');if(i)i.value='';ssPaint(i)},
   'ss-all'(){ACT['stat-scope']({dataset:{scope:'all'}})},   // nothing in this season: the same words over every season (the page draws again, the query stays)
