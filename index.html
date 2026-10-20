@@ -2799,7 +2799,7 @@ function choresOf(w){   // → [{k, state:'done'|'open'|'blocked', title, sub:[l
         if(nx||(w.reveal&&seen&&!revote))row('vote','done',VT,[`Revealed${seen&&rv?(rv.winner?` · ${nm(rv.winner)} is the ${tag} Bozo`:` · tied between ${andList(rv.tie.map(nm))}`):''}`],{});
         else if(revote)row('vote','open',VT,['Tied. The revote is open'],{act:'Revote',go:'vote'});
         else if(w.reveal)row('vote','open',VT,['The reveal is ready to watch'],{act:'Watch',go:'vote'});
-        else row('vote','open',VT,[solo?'Messages are open until the reveal':'The vote is open'],{act:solo?'See it':'See the vote',go:'vote'})}   // who is still owed is the vote card's to say (right below): no fact twice
+        else row('vote','open',VT,[solo?'Open until the reveal':'The vote is open'],{act:solo?'See it':'See the vote',go:'vote'})}   // who is still owed is the vote card's to say (right below): no fact twice
       const ready=auto||(!!w.reveal&&seen&&!revote);
       if(nx)row('start','done',`Start ${tag}`,[`Started${!w.reveal||seen?` · ${nm(nx.bozoId)} is the Bozo`:''}`],{});
       else row('start',ready?'open':'blocked',`Start ${tag}`,[ready?'Crown the Bozo to open it':'After the reveal'],ready?{act:'Crown',go:'crown'}:{})}}
@@ -2927,7 +2927,7 @@ function srBoxHtml(w){const K=CK,pk=SHOTS_PICK.length;if(!K||!w||K.wid!==w.id||!
 // placewiz step 3: the slip's wager, then each number read from it (marked "from your slip", with Edit) or why it has to be typed; the boxes under it show only for what wasn't read
 function ckMnBox(w){const K=CK;if(!K||!w||K.wid!==w.id)return'<section class="ck-box ck-mn" id="ckMnBox" hidden></section>';const pk=SHOTS_PICK.length,st=pk&&srCur(w,K)?SR.st:null,M=st==='done'?K.mn:null,stakeC=Math.round((Number(w.stake??S.stake)||0)*100);
   const wg=M&&(M.wager.st==='ok'||M.wager.st==='clash')?'':`<div class="ck-row sr-money"><span aria-hidden="true"></span><span class="ck-t"><b>Wager</b> ${h(srSay$(stakeC))} <span class="muted tiny">this week’s stake</span></span><span></span></div>`;
-  return`<section class="ck-box ck-mn" id="ckMnBox" aria-label="The total"><div class="ck-rows">${wg}${M?ckMnHtml(K,pk):''}</div>${st==='busy'?'<p class="ck-note">Still reading your screenshot: what it finds fills in here.</p>':''}${M&&M.stakeOff?'<p class="ck-note">Reading the slip never changes the stake. If the slip’s wager is right, tell the commissioner.</p>':''}${M&&ckMnUsed().length?'<p class="ck-note">Read from your screenshot. They count once you confirm the slip on step 4.</p>':''}</section>`}
+  return`<section class="ck-box ck-mn" id="ckMnBox" aria-label="Odds and payout"><div class="ck-rows">${wg}${M?ckMnHtml(K,pk):''}</div>${st==='busy'?'<p class="ck-note">Still reading your screenshot: what it finds fills in here.</p>':''}${M&&M.stakeOff?'<p class="ck-note">Reading the slip never changes the stake. If the slip’s wager is right, tell the commissioner.</p>':''}${M&&ckMnUsed().length?'<p class="ck-note">Read from your screenshot. They count once you confirm the slip on step 4.</p>':''}</section>`}
 function ckPaint(focus){const w=CK&&week(CK.wid);if(!w)return;for(const[id,f]of[['ckBox',ckHtml],['srBox',srBoxHtml],['ckMnBox',ckMnBox]]){const el=document.getElementById(id);if(!el)continue;const t=document.createElement('div');t.innerHTML=f(w);const nw=t.firstElementChild;if(nw)el.replaceWith(nw)}try{plMoneyShow()}catch(e){}   // placewiz: step 4's lines, step 2's reader and step 3's numbers
   document.querySelectorAll('.pl-row .pl-bet[data-mid]').forEach(b=>{const p=w.picks[b.dataset.mid];if(p)b.textContent=ckSlip(w,b.dataset.mid)||p.text});   // the price rows follow the slip's line
   if(focus)setTimeout(()=>{try{document.querySelector(focus)?.focus()}catch(e){}},0)}
@@ -3099,7 +3099,7 @@ async function sendLines(w,body){const l=league();try{if(isAdmin(l)&&(l.sync.dir
 // placewiz (Jason, 2026-10-20: "bozo entering the slip is confusing, we should go thru pages for a clear entry"): Bet placed? is one sheet in four steps, Back / Next and "Step N of 4": 1 the share link, 2 the screenshots
 // (and Read the slip), 3 the total (the slip's wager, final odds, prize pot and boost), 4 each leg (its line in Check the slip, its price), then Confirm and Lock. Every box stays in the sheet while another step shows,
 // so Back never loses what was typed, and the lock sends exactly what the one long sheet sent. A placed slip ("Fix odds or pot", the placed bar's Check the slip) opens the same steps at the one it is about, with Save on every step
-const PW_STEPS=['Share link','Screenshots','The total','Each leg'];
+const PW_STEPS=['Share link','Screenshots','Odds and payout','Each leg'];
 let PW=null;   // the open sheet's steps: {wid, step, edit, saved (screenshots already on a placed slip), snap (what its boxes held when it opened)}
 const plCan=w=>{const l=league();return!!w&&(isAdmin(l)||!!(l.me&&(l.me===bozoOfW(w)||l.me===sideOwn(w))))};   // who places the bet and fixes it (the placed bar's canPlace): the Bozo, the person a side parlay belongs to, the commissioner. Nobody else ever sees the steps
 const pwActs=(A,n,edit)=>{if(Array.isArray(A))for(const a of A){if(!a||!a.pw)continue;a.hide=a.pw==='cancel'?(edit||n!==1):a.pw==='back'?n===1:a.pw==='next'?n===4:a.pw==='lock'?(!edit&&n!==4):false}};   // one big button per step (Next, then Lock; Save on a placed slip) and a quiet one (Cancel on the first step, Back after it)
@@ -4648,8 +4648,7 @@ function renderRevoteBallot(w,c){   // just a vote among the tied: no video, sea
 function renderSoloVote(w,c,so){   // VOTE RULES 2: one candidate, so no vote. SOLO MESSAGES (Jason 2026-10-20): the videos are messages to the Bozo, and the word "vote" never shows. Said once: who the Bozo is and why; a message is optional, by the deadline; the reveal plays once everyone's in or time's up. The Bozo isn't asked to message themself
   const l=league(),me=l.me,st=subStatus(w),exp=msgFrom(w,c,so),skipped=Object.keys(w.skip||{}).filter(mid=>mid!==so&&(c.legs.some(x=>x.mid===mid)||dlOffIds(w).includes(mid)));
   const inV=exp.filter(mid=>st(mid).video),missing=exp.filter(mid=>!inV.includes(mid)),mine=me?st(me):null,iVote=!!me&&exp.includes(me),nm=h(member(so)?.name||'?'),due=voteDueBit(w,'Messages'),at=voteDueAt(w),self=!!me&&me===so;
-  const ask=self?(at?`The crew can leave you a message (optional) by ${h(dlShort(at))}.`:'The crew can leave you a message (optional).'):(at?`Leave ${nm} a message (optional) by ${h(dlShort(at))}.`:`Leave ${nm} a message (optional).`);
-  const lead=`${soloWhy(w,so)}, so ${nm} is the ${h(nextName(w))} Bozo. ${ask} ${at?'The reveal plays once everyone’s in or time’s up.':'The reveal plays once everyone’s in, or when the commissioner starts it.'}`;
+  const lead=`${self?`You ${soloHow(w)}, so you’re the ${h(nextName(w))} Bozo. The crew can leave you a message.`:`${soloWhy(w,so)}, so ${nm} is the ${h(nextName(w))} Bozo. Leave ${nm} a message (optional).`} ${at?'The reveal plays once everyone’s in or time’s up.':'The reveal plays once everyone’s in, or when the commissioner starts it.'}`;   // SOLO LOWS (review of 2026-10-20.2): the deadline once, as the countdown under the count; the Bozo's own card says "you" throughout
   const status=`<div class="substat"><div class="row between"><b>${inV.length} of ${exp.length} message${exp.length===1?'':'s'} in</b></div>${due&&missing.length?`<div class="vt-due">${due}</div>`:''}<div class="subavs">${exp.map(mid=>{const m=member(mid),x=st(mid),t=`${h(m?.name||'?')}: ${x.video?'message in':'no message yet'}`;return`<span class="subav ${x.video?'ok':''}" title="${t}" role="img" aria-label="${t}"><span class="avatar sm" style="--c:${m?.color||'#888'}">${avIn(m)}</span><i>${x.video?'✓':''}</i></span>`}).join('')}</div>${missing.length?`<small class="muted">Waiting on ${meFirst(missing).map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}${skipped.length?`<small class="muted">Skipped: ${skipped.map(mid=>h(member(mid)?.name)).join(', ')}</small>`:''}</div>`;
   const max=(l.limits&&l.limits.videoMax)||400*1048576;
   const yours=!me?(l.guest?`<p class="muted tiny" style="margin:0">${isAdmin()?'You\'re not playing in this league.':'👀 You\'re watching as a guest.'}</p>`:`<button class="btn primary block" data-act="pick-me">Tap your name to leave ${nm} a message</button>`)
@@ -6353,14 +6352,14 @@ function grudgeSheet(G,id){
   const evs=Object.values(p.ev).sort((a,b)=>b.i-a.i);
   const howTxt={random:'tie, picked at random',revote:'won the revote'};
   const evRow=x=>{const bits=[];const b=x.ballot;const nxt=x.next?` for ${h(x.next)}`:'';
-    if(b)bits.push(b.solo?`<span class="gb-chip bad">🤡 ${b.how==='push'?'Pushed, automatic Bozo':b.how==='miss'?'The only one up, automatic Bozo':'Only one on the ballot'}${nxt}</span>`
+    if(b)bits.push(b.solo?`<span class="gb-chip bad">🤡 ${b.how==='push'?'Pushed, automatic Bozo':b.how==='miss'?'The only one up, automatic Bozo':'The only choice, automatic Bozo'}${nxt}</span>`
       :b.bz===id?`<span class="gb-chip bad">🤡 Picked${nxt}${b.how&&howTxt[b.how]?` · ${howTxt[b.how]}`:''}</span>`
       :`<span class="gb-chip good">Escaped the ballot</span><span class="muted tiny">${h(nm(b.bz))} got ${x.next?h(x.next):'it'}</span>`);
     for(const v of x.voted)bits.push(`<span class="tiny">${v.R===2?'Revote: voted':'Voted'} ${v.c===id?`<b>${me}</b>`:`<b>${h(nm(v.c))}</b>`}</span>`);
     for(const R of [1,2]){const g=x.got.filter(y=>y.R===R);if(g.length)bits.push(`<span class="tiny">${g.length} ${R===2?'revote ':''}vote${g.length===1?'':'s'} against: ${g.map(y=>h(nm(y.v))).join(', ')}</span>`)}
     return`<div class="gb-ev"><span class="mono muted tiny">${h(x.label)}</span><div class="gb-bits">${bits.join('')}</div></div>`};
   return`${pdGrid([cell('On the ballot',`${p.on}×`,p.on?`${Math.round(e*100)}% escaped`:p.solo?'only alone so far':p.got?'none decided yet':'never'),cell('Picked',`${p.picked}×`,'as the Bozo'),
-      p.solo?cell('Only one on it',`${p.solo}×`,'automatic Bozo'):'',
+      p.solo?cell('The only choice',`${p.solo}×`,'automatic Bozo'):'',
       cell('Votes cast',p.cast,p.self?`${p.self} for ${me}`:''),cell('Votes against',p.got,''),
       cell('With the room',p.roomN?`${p.room}/${p.roomN}`:'—','voted for the Bozo'),cell('Revenge votes',p.revenge,p.lastRevenge?`latest ${h(p.lastRevenge.label)}, ${h(nm(p.lastRevenge.on))}`:'the week after')])}
     <div class="pd-sub">Who ${me} votes for</div>${list(p.to,p.cast?`Only for ${me} so far.`:'No votes on the record yet.')}
@@ -7475,7 +7474,7 @@ const st=subStatus(w);const rc=revealCount(w,c);const cast=rc.cast;const noVid=c
   'shot-unpick'(el){SHOTS_PICK.splice(+el.dataset.i,1);shotsPreview()},
   'placed-toggle'(el,e){const t=e&&e.target;if(t&&t.closest&&t.closest('input,select,textarea,label,a,.shots,.placed-bar')&&!t.closest('.placed-sum'))return;   // a box, a link or a screenshot inside: that, not the toggle
     const id=el.dataset.wid;if(placedOpen.has(id))placedOpen.delete(id);else placedOpen.add(id);render()},
-  'placed-edit'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(w)placedSheet(w,{edit:true,step:3})},   // Fix odds or pot, the payout after a push: straight to The total
+  'placed-edit'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(w)placedSheet(w,{edit:true,step:3})},   // Fix odds or pot, the payout after a push: straight to Odds and payout
   'rulebook-open'(){modal({title:'League rulebook',body:rulebookBody(),actions:[{label:'Close',cls:'primary'}]})},
   'placed-open'(el,e){if(e&&e.preventDefault)e.preventDefault();const w=week(el.dataset.wid);if(w)placedSheet(w)},
   'pl-addone'(el,e){plNoProofOff();pwShow(1,false);const i=document.getElementById('plLink');if(i){try{i.scrollIntoView({block:'center'});i.focus()}catch(x){}}},
