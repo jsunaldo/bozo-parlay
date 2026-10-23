@@ -639,6 +639,7 @@ table.lb{width:max-content;min-width:100%;border-collapse:collapse;font-size:13p
 .aw-name .chev{margin-left:auto;color:var(--muted);font-size:18px;line-height:1;font-weight:600}   /* the › is text on the tile: --muted (4.66:1 on the tile, 4.5:1 is the floor), not --dim (4.21:1) */
 .aw-blurb{font-size:12px;font-weight:400;color:var(--muted);line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .aw-who{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:14px;font-weight:600;color:var(--text);margin-top:2px;font-variant-numeric:tabular-nums;min-width:0}
+.aw-who>*{min-width:0;max-width:100%;overflow-wrap:anywhere}
 .aw-who .nm{display:inline-flex;align-items:center;gap:5px;min-width:0}
 .aw-who .dot{color:var(--muted);font-weight:400}
 .aw-who .tag{background:var(--surface3);color:var(--text)}
@@ -2536,11 +2537,11 @@ function stats(){
   });
   return{per,g};
 }
-const TIE_MAX=3,TIE_FIT=36;   // ties: the most people whose own words a tie says, and the longest line ("Jason $20 burned · W2, W5") one of them may be. Past either the words are left out, never one person's under several names
-function tieDetail(ids,full,nm,part){   // the ONE rule for the words under a tie (every award, record and recap): what every tied holder shares is said once; when they differ, each holder's own, with the name, a line each ("Jason W1–W2\nSean W5–W6"); none when there are too many of them, a line is too long for the card, or one has nothing to say. Never one holder's words beside several names. full(id): that holder's words; part(id): their shorter words when the tie has to name them (the words every holder shares, like "on the season", stay out of each line)
+const TIE_MAX=3,TIE_FIT=36;   // TIE_MAX: the most weeks a shared vote record lists one by one (voteAwards); TIE_FIT: the longest line ("Jason $20 burned · W2, W5") one tied person's words may be. Past it the words are left out, never one person's under several names
+function tieDetail(ids,full,nm,part){   // the ONE rule for the words under a tie (every award, record and recap): what every tied holder shares is said once; when they differ, each holder's own, with the name, a line each ("Jason W1–W2\nSean W5–W6"), however many are tied (every tied person is named, nomore); none when a line is too long for the card, or one has nothing to say. Never one holder's words beside several names. full(id): that holder's words; part(id): their shorter words when the tie has to name them (the words every holder shares, like "on the season", stay out of each line)
   const f=ids.map(id=>String(full(id)||'').trim());if(!f.length||f.every(x=>!x))return'';
   if(new Set(f).size===1)return f[0];
-  if(f.some(x=>!x)||ids.length>TIE_MAX)return'';
+  if(f.some(x=>!x))return'';
   const ls=ids.map((id,i)=>`${nm(id)} ${String((part&&part(id))||f[i]).trim()}`);return ls.some(x=>x.length>TIE_FIT)?'':ls.join('\n')}
 const tieHtml=t=>{t=String(t||'');return t.includes('\n')?t.split('\n').map(x=>`<span class="tdl">${h(x)}</span>`).join(' '):h(t)};   // a tie's lines, a line each on the card (one holder's words, or all holders', as they are)
 const placeLabel=(pl,i)=>pl.filter(x=>x===pl[i]).length>1?`T-${pl[i]}`:String(pl[i]);   // a place two people share reads "T-1", a place one holds "1" (places(): 1, 1, 3 -> T-1, T-1, 3)
@@ -6291,7 +6292,7 @@ function voteAwards(G){   // fun ones from the votes themselves (one vote per pe
   {const tosOf=p=>{const mx=Math.max(0,...Object.values(p.to));return{mx,tos:Object.entries(p.to).filter(([,n])=>n===mx&&mx>0).map(([t])=>t).sort((x,y)=>ord(x)-ord(y))}};   // one-track mind: the share of a voter's votes on one person (3 votes cast or more; a vote for themself is never on a target); the award is every voter at 100%
     const orows=rank(ids.filter(id=>P[id].cast>=3).map(id=>{const p=P[id],{mx,tos}=tosOf(p);return{who:id,v:mx/p.cast,stat:pct(mx/p.cast),detail:mx?`${mx===p.cast?'all '+p.cast:mx+' of '+p.cast} on ${tos.map(nm).join(' & ')}`:`all ${p.cast} on themself`}})),one=orows.filter(r=>r.v===1);
     if(one.length)mk('onetrack','🧲','One-track mind','every vote on the same person',orows,{stat:one.length===1?`all ${P[one[0].who].cast} on ${nm(tosOf(P[one[0].who]).tos[0])}`:`${one.length} of them`,rest:few(p=>p.cast>=1&&p.cast<3?n1(p.cast,'vote'):''),restSay:'Fewer than 3 votes cast'})}
-  // a tie for the record names every holder (tieDetail: the words every holder shares once, or each holder's own, a line each, with the count last; the count alone when there are too many or a line is too long)
+  // a tie for the record names every holder (tieDetail: the words every holder shares once, or each holder's own, a line each, with the count last; the count alone when a line is too long)
   const holders=(recs,say,part,shared,one)=>{const by=new Map();for(const r of recs)by.set(r.who,[...(by.get(r.who)||[]),r.to]);const who=[...by.keys()].sort((x,y)=>S.members.findIndex(m=>m.id===x)-S.members.findIndex(m=>m.id===y)),to=id=>by.get(id).map(nm).join(' & ');
     const d=tieDetail(who,id=>say(to(id)),nm,id=>part(to(id)));return{who,stat:who.length===1&&one?one(by.get(who[0]).map(nm),nm(who[0])):d.includes('\n')?d+'\n'+shared:(d||shared)}};   // one: what a lone holder's card says, with the names in it (Jason 2026-09-29: "never once" did not make sense)
   const best=(m,v,c,n)=>{const b=m[v]||(m[v]={n:0,tos:[]});if(n>b.n){b.n=n;b.tos=[c]}else if(n===b.n&&!b.tos.includes(c))b.tos.push(c)};   // a voter's longest count, and who it was on
