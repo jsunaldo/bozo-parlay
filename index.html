@@ -6895,7 +6895,7 @@ function recap(w){
     if(l.margin!=null&&(l.status==='hit'||l.status==='miss'))s+=` — ${l.status==='hit'?'covered':'missed'} by ${fmtMargin(l.margin,l.unit)}`;L.push(s)}
   if(c.none)L.push('','No parlay this week: nobody got a pick in by the deadline.');   // DL-R2-F03: said once, with no stake, no price and no result
   else{L.push('',`Parlay ${c.n?asc(amer(c.dec)):'—'} → ${c.missingOdds?'unpriced':fmt$(c.potential)}`);
-  L.push(`Result: ${c.result==='won'?`CASHED 🤑 ${fmt$(c.share)} each${gone.length?` (${gone.join(', ')} pushed and ${gone.length===1?'is':'are'} left out)`:''}`:c.result==='lost'?`LOST (${hitSay(w)})`:c.result==='void'?'VOID':'Pending'}`)}
+  L.push(`Result: ${c.result==='won'?`CASHED 🤑 ${cutsTxt(c)} each${gone.length?` (${gone.join(', ')} pushed and ${gone.length===1?'is':'are'} left out)`:''}`:c.result==='lost'?`LOST (${hitSay(w)})`:c.result==='void'?'VOID':'Pending'}`)}
   if(c.graded){const el=eligible(w);if(el.list.length)L.push(`On the ballot: ${el.list.map(id=>member(id)?.name).join(', ')}`)}
   return L.join('\n');
 }
