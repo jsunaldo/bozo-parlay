@@ -1472,7 +1472,7 @@ function applyState(l,d,ro){   // ro: a read-only look (Refresh on a phone that 
   if(inc.length)l.seasons=inc;else if(!(l.seasons||[]).length)l.seasons=[{id:uid(),name:'Season',data:fresh()}];   // a league never arrives empty; if it somehow does, keep what's here so the app still opens
   if(d.person!==undefined)mergePerson(l,d.person);
   for(const[k,p]of Object.entries(held)){const[sid,wid,mid]=k.split('|');const w=l.seasons.find(x=>x.id===sid)?.data.weeks.find(x=>x.id===wid);const q=w&&w.picks[mid];
-    const ent=l.outbox[k];if(!w&&String(p.text||'').trim())gone.push(p.text);if(!q||q.status!=='pending'||w.locked||(q.at&&ent&&'base' in ent&&q.at!==ent.base)){delete l.outbox[k];continue}for(const f of MEMBER_PICK){if(f in p)q[f]=p[f];else delete q[f]}}   // still waiting to go up: keep showing it
+    const ent=l.outbox[k];if(!w&&String(p.text||'').trim())gone.push(p.text);const moved=!!(q&&q.at&&ent&&'base' in ent&&q.at!==ent.base);if(!q||q.status!=='pending'||w.locked||(moved&&ent.auto)){delete l.outbox[k];continue}for(const f of MEMBER_PICK){if(moved&&(f==='at'||f==='by'))continue;if(f in p)q[f]=p[f];else delete q[f]}}   /* still waiting to go up: keep showing it. moved: the league's pick changed since this one was typed (another phone, or this phone's own send landing). What was typed stays queued, from its own base: only this pick's own send decides a conflict (the league refuses an older base, and the conflict sheet keeps the typed words to copy), never an unrelated reply. The league's stamp and author stay as the league has them. An automatic price refresh nobody typed is dropped, as before */
   if(gone.length)setTimeout(()=>lostSlipNote(gone,d.restoredAt),80);
   if((d.role||l.sync.role)==='admin')l.sync.wh=syncSigs(l.seasons);else delete l.sync.wh;   // what the league looked like when this copy last matched it
   for(const x of l.seasons){const u=ui[x.id]||{};const newest=lastMain(x.data.weeks)?.id;const cur=u.cur&&x.data.weeks.find(w=>w.id===u.cur);
@@ -2356,11 +2356,12 @@ function addFriend(n){   // Add a friend: the same person keeps their id, so the
   commit();toast(t,'good',readMs(t));
   return true;
 }
+const EARLY_KEEP=['tm','tmh','unit','um','keep','eby','eat','oddsBy','oddsTyped','oddsDk','oddsSrc','oddsAt','oddsPin','oddsRelease','oddsEdit'],earlyKeep=np=>{const o={};for(const k of EARLY_KEEP)if(np&&np[k]!==undefined)o[k]=JSON.parse(JSON.stringify(np[k]));if(o.tm!==undefined)o.tm=!!o.tm;return o};   // a slip folded back by a reopened reveal (the league keeps its prices, the commissioner's own price and teams/unit set by hand on each early pick): starting the week again puts them back on the legs, as the league's own crown does. An early pick typed as one has none of these
 function newWeek(bozoId){
   const prev=lastWeek();const plan=nextPlan(prev);const early=(prev&&prev.next)||{};
   const ps=prev&&prev.kind!=='special'?checkDate(prev):null;   // started on (or before) the finished week's own Sunday: date it the day after, so it covers NEXT Sunday and never gets graded from games already played
   const d0=ps&&today()<=ps?addDays(ps,1):today();const w={id:uid(),num:plan.num,date:plan.extra.kind!=='special'&&dowOf(d0)===0?addDays(d0,1):d0,bozoId,stake:S.stake,picks:{},votes:{},vr:VOTE_RULES,...plan.extra};   // never dated on a Sunday: a Sunday slip would cover that day's games, already under way (a crown on a later Sunday night)
-  S.members.filter(m=>m.active||m.id===bozoId).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:false,...(np.raw?{raw:np.raw}:{}),by:np.by||m.id,...(np.at?{at:np.at}:{})}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
+  S.members.filter(m=>m.active||m.id===bozoId).forEach(m=>{const np=early[m.id];w.picks[m.id]=np&&np.text?{text:np.text,odds:np.odds||'',status:'pending',margin:null,unit:unitFor(np.text),teams:np.teams||[],tm:false,...(np.raw?{raw:np.raw}:{}),by:np.by||m.id,...(np.at?{at:np.at}:{}),...earlyKeep(np)}:{text:'',odds:'',status:'pending',margin:null,unit:'pts',teams:[]}});
   S.weeks.push(w);S.currentWeekId=w.id;
   for(const sd of prev&&prev.kind==='special'?sidesOf(prev):[]){sd.of=w.id;S.weeks.splice(S.weeks.indexOf(sd),1);S.weeks.push(sd)}   // a side parlay belongs with the Sunday parlay (every one, in order)
   return w;
