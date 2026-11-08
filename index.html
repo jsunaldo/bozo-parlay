@@ -2939,7 +2939,7 @@ function plPairFill(src){   // ODDSFILL (Jason 2026-11-08: "if i enter odds you 
   const t=document.getElementById('plTotal'),p=document.getElementById('plPot'),bEl=document.getElementById('plBoost'),w=PW&&week(PW.wid);if(!t||!p)return;const stake=+(bEl&&bEl.dataset.stake)||+(w&&(w.stake??S.stake))||0;if(!(stake>0))return;
   const free=el=>!String(el.value||'').trim()||el.value===el.dataset.auto;
   if(src===t){if(!free(p)||ckMn('pot')!=null)return;const o=totalOdds(t.value),n=o!=null?parseOdds(o):null,v=n!=null&&dec(n)>1?potBox((stake*dec(n)).toFixed(2)):'';p.value=v;p.dataset.auto=v;if(v)p.classList.remove('bad')}
-  else if(src===p){if(!free(t)||ckMn('total')!=null)return;const c=slipMoney(p.value),o=c!=null?srPaidAt(Math.round(c*100),Math.round(stake*100)):null,v=o?oddsBox(o):'';t.value=v;t.dataset.auto=v;if(v)t.classList.remove('bad')}}
+  else if(src===p){if(!free(t)||ckMn('total')!=null)return;const c=slipMoney(p.value),o=c!=null?srPaidAt(Math.round(c*100),Math.round(stake*100)):null,v=o&&totalOdds(o)!=null?oddsBox(o):'';t.value=v;t.dataset.auto=v;if(v)t.classList.remove('bad')}}
 function plOddsTyping(el,e){const v=el.value;let nv=v;const m=nv.match(/^[+\-\u2212\u2012-\u2015]{2,}/);if(m)nv=(/[^+]/.test(m[0])?'-':'+')+nv.slice(m[0].length);   // as they type: the "+" goes in with the first digit (not after the Bozo deleted it: that is room for a "-")
   if(!/^delete/.test((e&&e.inputType)||'')&&/^\d+$/.test(nv)){nv='+'+nv;el.dataset.plus='1'}
   if(el.dataset.plus&&/^\+\d{1,6}\.\d*$/.test(nv)){nv=nv.slice(1);delete el.dataset.plus}else if(!/^\+/.test(nv))delete el.dataset.plus;   // decimal odds (2.5): the "+" put in for the 2 comes off at the "."
@@ -3251,7 +3251,7 @@ function boostFill(){   // the boost box changed: the final odds and prize pot, 
   let d=1,ok=true;document.querySelectorAll('.pl-odds').forEach(i=>{const n=parseOdds(slipOdds(i.value)||'');if(n==null)ok=false;else d*=dec(n)});if(!ok||d<=1)d=+bEl.dataset.dec||0;if(!(d>1))return;
   const bd=1+(d-1)*(1+b/100);const stake=+bEl.dataset.stake||0;const t=document.getElementById('plTotal'),p=document.getElementById('plPot');
   const fill=(el,v)=>{if(!el||(el.value&&el.value!==el.dataset.auto)||ckMn(el===t?'total':'pot')!=null)return;el.value=v;el.dataset.auto=v};   // only an empty box, or one this filled: never over what they typed from the slip
-  fill(t,amOf(bd));if(stake>0)fill(p,potBox((stake*bd).toFixed(2)))}
+  fill(t,amOf(bd));if(stake>0)fill(p,potBox((stake*bd).toFixed(2)));const ty=[t,p].filter(x=>x&&String(x.value||'').trim()&&x.value!==x.dataset.auto);if(ty.length===1)plPairFill(ty[0])}   // ODDSFILL fix round 1: one box typed from the slip drives the other, never the legs' estimate
 const shareUrl=v=>{const m=String(v??'').match(/https:\/\/[^\s<>"'`]+/i);if(!m)return null;const u=m[0].replace(/[).,;:!?\]]+$/,'');if(u.length>600)return null;try{const x=new URL(u);return x.protocol==='https:'&&x.hostname.includes('.')?x.href:null}catch(e){return null}};   // DraftKings copies the link with a line of text in front: keep just the link
 const BOOKS=[['draftkings','DraftKings'],['fanduel','FanDuel'],['betmgm','BetMGM'],['caesars','Caesars'],['espnbet','ESPN BET'],['thescore','theScore Bet'],['fanatics','Fanatics'],['bet365','bet365'],['hardrock','Hard Rock Bet']];
 const bookOfUrl=u=>{let host='';try{host=new URL(u).hostname.toLowerCase()}catch(e){}const b=BOOKS.find(([k])=>host.includes(k));return b?b[1]:host.replace(/^www\./,'')||'the sportsbook'};
