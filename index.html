@@ -359,6 +359,22 @@ div.gm-head{cursor:default;min-height:36px}.gm-head:focus-visible{outline:2px so
 .gl.up .val,.gl.hit .val{color:var(--green)}.gl.down .val,.gl.miss .val{color:var(--red-tx)}.gl.even .val,.gl.push .val{color:var(--amber-tx)}
 .gl .gl-x,.gv-also{grid-column:2/-1;font-size:11px;line-height:1.3;color:var(--muted);padding-top:1px}.gv-also{margin:-2px 0 0 30px}.gl-x .gx,.gv-also .gx{font-weight:700}
 .gv-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+/* LIVESTRIP (Jason 2026-11-08): Live, the slip on one screen. One 44 px row per leg (finished ones dimmed and shorter); behind it a bar, as wide as the leg is close to cashing, in the leg's colour (the app's own green, amber and red tints); the number in the same colour's text token; every word 4.5:1 on the bar, light and dark. The bar slides to its new width and colour (reduced motion: it simply changes) */
+.slip.ls{gap:6px}.ls-sum{font-size:13px;line-height:1.35;color:var(--muted);margin:0 2px 2px;text-wrap:balance}.ls-sum b{color:var(--text);font-weight:600}
+.ls-sec{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:8px 4px 0}
+.ls-row{position:relative;display:flex;align-items:center;gap:10px;width:100%;min-width:0;height:44px;padding:0 12px 0 9px;border:0;border-radius:12px;background:var(--surface2);color:var(--text);font:inherit;text-align:left;overflow:hidden;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.ls-row:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.ls-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--lsf,transparent);transition:width .6s var(--ease),background-color .6s var(--ease)}
+.ls-row>:not(.ls-fill){position:relative}.ls-row .avatar{width:26px;height:26px;font-size:11px}
+.ls-bet{flex:1 1 0;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.ls-bet b{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ls-bet small,.ls-n small{font-size:11px;color:var(--muted);color:color-mix(in srgb,var(--text) 70%,var(--surface2));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* a shade stronger than --muted, from the same two tokens: it sits on the bar's tint and still reads 4.5:1 */
+.ls-n{flex:none;max-width:60%;display:flex;flex-direction:column;align-items:flex-end;line-height:1.25;text-align:right}
+.ls-n b{font-family:var(--num);font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ls-row.t-g{--lsf:var(--green-bg)}.ls-row.t-a{--lsf:var(--amber-bg)}.ls-row.t-r{--lsf:var(--red-bg)}
+.ls-row.t-g .ls-n b{color:var(--green)}.ls-row.t-a .ls-n b,.ls-row.t-p .ls-n b{color:var(--amber-tx)}.ls-row.t-r .ls-n b{color:var(--red-tx)}.ls-row.t-n .ls-n b{color:var(--muted);font-weight:500}
+.ls-row.done{height:36px}.ls-row.done.t-g{--lsf:color-mix(in srgb,var(--green-bg) 45%,transparent)}.ls-row.done .ls-bet b{color:var(--muted);color:color-mix(in srgb,var(--text) 70%,var(--surface2))}.ls-row.done .ls-n b{font-size:15px}
+@media(prefers-reduced-motion:reduce){.ls-fill{transition:none}}
 .gm .side-h{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8e3dbf;margin:4px 0 0;padding-top:9px;border-top:1px dashed var(--line2)}
 @media(prefers-color-scheme:dark){.gm .side-h{color:#d39bf8}}
 @media(max-width:359px){.gl .val small.drop{display:none}}
@@ -3308,7 +3324,8 @@ function pickStatus(w,c,cl){
 }
 function renderTicket(w,c){
   const b=member(w.bozoId);const cl=slipClaims(w,c)||histClaims(w,c);
-  const gvIt=(()=>{try{const it=gvAllOf(w,c,cl);return gvOffer(it)?it:null}catch(e){return null}})(),byGame=!!gvIt&&slipView==='game';   // By game is offered when the legs sit on 2+ games; By person is the slip as it was
+  const gvEv=(()=>{try{return gvAllOf(w,c,cl)}catch(e){return null}})(),gvIt=gvEv&&gvOffer(gvEv)?gvEv:null,byGame=!!gvIt&&slipView==='game';   // By game is offered when the legs sit on 2+ games; By person is the slip as it was
+  const lsOn=!!gvEv&&lsOffer(w),live=lsOn&&slipView==='live';   // LIVESTRIP: Live is offered on a placed slip this phone is sweating; a phone that remembered Live sees By person anywhere else
   const missing=S.members.filter(m=>(m.active||m.id===w.bozoId)&&!w.picks[m.id]);
   return`<section class="ticket ${h(c.result)}" id="ticket">
     <div class="ticket-head">
@@ -3317,10 +3334,10 @@ function renderTicket(w,c){
     </div>
     ${w.placed&&league().sync?placedTop(w,c):c.graded?`<div class="ticket-foot placed-top" id="tfoot">${ticketFoot(w,c)}</div>`:placedBar(w,c)}
     ${pickStatus(w,c,cl)}
-    ${sweatable(w)?`<div id="lvb-${h(w.id)}">${liveBanner(w)}</div>`:''}
+    ${sweatable(w)?`<div id="lvb-${h(w.id)}">${liveBanner(w,undefined,live)}</div>`:''}
     ${checkable(w,c)?`<div class="checkrow"><button class="btn block" data-act="check-results" data-wid="${h(w.id)}">🔎 Check results · ${c.legs.filter(x=>x.status==='pending'&&String(x.text||'').trim()).length} to grade</button></div>`:''}
-    ${gvIt?gvSwitch():''}
-    ${(inner=>inner?`<div class="legs slip${byGame?' gv':''}"${byGame?` id="gvBoard" data-wid="${h(w.id)}"`:''}>${inner}</div>`:'')(byGame?gvBoard(w,gvIt):renderLegs(w,c,cl))}
+    ${gvIt||lsOn?gvSwitch(w,!!gvIt):''}
+    ${(inner=>inner?`<div class="legs slip${byGame?' gv':live?' ls':''}"${byGame?` id="gvBoard" data-wid="${h(w.id)}"`:live?` id="lsStrip" data-wid="${h(w.id)}"`:''}>${inner}</div>`:'')(live?lsStrip(w,gvEv):byGame?gvBoard(w,gvIt):renderLegs(w,c,cl))}
     ${missing.length&&isAdmin()&&!w.placed?`<div class="addleg"><select data-bind="add-leg|${h(w.id)}"><option value="">＋ Add a leg for…</option>${missing.map(m=>`<option value="${h(m.id)}">${h(m.name)}</option>`).join('')}</select></div>`:''}
     ${(w.placed&&league().sync)||c.graded?'':`<div class="ticket-foot" id="tfoot">${ticketFoot(w,c)}</div>`}
   </section>`;
@@ -3611,7 +3628,7 @@ function renderSlipRows({legs,games},row){
 }
 /* ---- #5 the game-day scoreboard (UX-LESSONS-2 Part A): the slip's second order. By person is the slip as it always was; By game lists each game as a head line (teams, score and clock, or kickoff, or Final) with one line per leg riding on it. The same legs, grades, tones and games the slip already uses: nothing is asked for, saved or sent for it, and a leg By person does not list is not listed here ---- */
 const SLIP_VIEW_KEY='bp-slip-view';
-let slipView=(()=>{try{return localStorage.getItem(SLIP_VIEW_KEY)==='game'?'game':'person'}catch(e){return'person'}})();   // By person until this phone picks By game; remembered on this phone only (never saved to the league); storage that can't be read: By person
+let slipView=(()=>{try{const v=localStorage.getItem(SLIP_VIEW_KEY);return v==='game'||v==='live'?v:'person'}catch(e){return'person'}})();   // By person until this phone picks By game (or Live: LIVESTRIP); remembered on this phone only (never saved to the league); storage that can't be read: By person
 const gvKey=g=>String(g.id||g.name);
 function gvItems(w,c,cl,side){   // one week's legs in the slip's own order, each with its game: {w,l,cl,side,g,also,empty}. A leg whose two teams play in different games ("Chiefs & Ravens both win") also carries the other game(s) in also
   const plan=slipPlan(w,c,cl),nfl=cl&&Object.prototype.hasOwnProperty.call(cl,'nfl')?cl.nfl:weekNfl(w);
@@ -3682,7 +3699,44 @@ function gvBoard(w,items){
   const pk=(t,its)=>its.length?`<div class="gm none"><div class="gm-head"><span class="teams">${h(t)}</span></div>${its.map(gvLine).join('')}</div>`:'';
   const edit=items.some(it=>!it.side&&canEdit(it.l.mid)&&(isAdmin()||(memberCan('picks')&&!it.w.locked&&it.l.status==='pending'&&!kickLocked(it.w,it.l.mid,it.w.picks[it.l.mid]))));
   return`${n?`<div class="gv-sum">${n} game${n===1?'':'s'}, the ones in trouble first</div>`:''}${blocks}${pk('Game not found yet',G.lost)}${pk('Waiting on picks',meFirst(G.wait,i=>i.l&&i.l.mid))}${edit?`<p class="gv-note">${isAdmin()&&G.wait.length?'To change a pick, switch to By person. To enter one for someone who hasn’t picked, tap their name in Waiting on, at the top.':'To enter or change a pick, switch to By person.'}</p>`:''}`}
-function gvSwitch(){return`<div class="scope gv-switch" role="group" aria-label="How to list the slip">${[['person','By person'],['game','By game']].map(([k,t])=>`<button type="button" class="${slipView===k?'on':''}" aria-pressed="${h(slipView===k)}" data-act="slip-view" data-v="${k}">${t}</button>`).join('')}</div>`}
+function gvSwitch(w,game=true){const lv=!!w&&lsOffer(w),cur=lv&&slipView==='live'?'live':game&&slipView==='game'?'game':'person';   // LIVESTRIP: a third option, Live, only where it is offered (lsOffer); the one on is the view drawn, so a remembered Live that is not offered lights By person
+  return`<div class="scope gv-switch" role="group" aria-label="How to list the slip">${[['person','By person'],game&&['game','By game'],lv&&['live','Live']].filter(Boolean).map(([k,t])=>`<button type="button" class="${cur===k?'on':''}" aria-pressed="${h(cur===k)}" data-act="slip-view" data-v="${k}">${t}</button>`).join('')}</div>`}
+/* ---- LIVESTRIP (Jason 2026-11-08, docs/plans/LIVESTRIP.md): the slip's third order, Live, so a game day's slip fits on one screen. One 44 px row per leg in three groups: Live (in trouble first, then the rest by how close they are), Later (not started, its kickoff), then the finished ones, dimmed and shorter (Hit, Push, Missed last). Behind each row a bar shows how close the leg is to cashing. Every state, number and clock is the app's own live grade (legLive, legView, legFin, gvLeg's words); the one count on top is legTally's. Nothing is asked for, saved or sent for it ---- */
+const lsOffer=w=>{try{return!!(w&&w.placed&&sweatable(w))}catch(e){return false}};   // only a placed slip this phone is sweating (live, or its game day)
+function lsFrac(x){   // how close a leg is to cashing, 0 to 1, from its live numbers alone (legView's r.x). Pure: monotonic in the leg's number, clamped. No numbers (not started, no stats): empty
+  if(!x||x.have===false)return 0;const v=+x.v,line=+x.line,c=n=>Number.isFinite(n)?Math.max(0,Math.min(1,n)):0;if(!Number.isFinite(v))return 0;
+  if(x.m==='ml'||x.m==='spread')return c(.5+v/28);   // a side: half full when level (a spread: on the number), full two touchdowns to the good, empty two to the bad
+  if(['dst','tScore','tdFirst','tFirst','td'].includes(x.m))return(x.op==='first'?v>=1:x.op==='>'?v>line:v>=line)?1:.1;   // yes or no (anytime TD and the like): full once it happens, a sliver until then
+  if(!Number.isFinite(line))return 0;
+  if(x.op==='<')return line>0?c((line-v)/line):v<line?1:0;   // an under: the room left
+  const st=+x.step||1,t=x.op==='>'?(Math.floor(line/st)+1)*st:line;return t>0?c(v/t):v>=t?1:0}   // an over or a count: how much of what it takes is in
+const LS_TONE={HITTING:'g',ONPACE:'g',SWEAT:'a',EARLY:'a',PUSHING:'a',MISSING:'r',OFFPACE:'r'},LS_SEC={live:'Live',later:'Later',hit:'Hit',push:'Push',miss:'Missed'},LS_ORD={live:0,later:1,hit:2,push:3,miss:4};
+function lsLeg(it){   // one leg's row: its group, colour (g green: hitting or on pace; a amber: not there yet, sweating, pushing; r red: missing or off pace; n no number to colour; p a push), bar, number and clock
+  const l=it.l,st=l.status||'pending',L=st==='pending'?legLive(it.w,l,it.cl):null,v=L&&L.v,x=L&&L.r&&L.r.x,g=(L&&L.g)||null,sg=it.g;
+  const fin=st!=='pending'?st:legFin(L)||(v&&{HIT:'hit',MISS:'miss',PUSH:'push'}[v.code])||'';   // graded, decided by a final box score, or locked while its game is on ("can't lose it"): the same legs legTally counts as in
+  const game=sg?`${sg.away||'?'} @ ${sg.home||'?'}`:'',kick=sg&&Number.isFinite(startMs(sg.at))?startMs(sg.at):Infinity,on=!!(g&&(g.state==='in'||g.state==='post'||g.final));
+  if(fin)return{grp:fin==='hit'?'hit':fin==='push'?'push':'miss',tone:fin==='hit'?'g':fin==='push'?'p':'r',frac:fin==='hit'?1:0,main:{hit:'✓',miss:'✗',push:'P'}[fin],word:{hit:'Hit',miss:'Missed',push:'Push'}[fin],clock:'',game,kick};
+  if(!v||v.code==='PRE'||(v.code==='HAND'&&!on))return{grp:'later',tone:'n',frac:0,main:Number.isFinite(kick)?ETK.format(new Date(kick)):'Time not set yet',word:'Starts',clock:'',game,kick};
+  const gl=gvLeg(it),tone=LS_TONE[v.code]||'n';   // the number in the bet's own unit, as By game says it ("54 / 74.5", "Up 4", "Needs 3 to cover")
+  const main=(gl.main+(gl.small&&!gl.drop?' '+gl.small:'')).replace(/^No touchdown yet$/,'No TD yet');
+  return{grp:'live',tone,frac:tone==='n'?0:lsFrac(x),main,word:gl.word||v.word||'',clock:v.clock||'',game,kick}}
+function lsSum(w,prep){   // the one line on top, from legTally (the count the badge and the banner read): "5 hitting · 2 in trouble · 2 to play · 2 in"
+  const k=legTally(w,prep),go=k.hitting+k.onpace,sw=k.sweat+k.early+k.pushing,tr=k.missing+k.offpace;
+  const b=[go&&`<b>${go} hitting</b>`,sw&&`${sw} sweating`,tr&&`${tr} in trouble`,k.play&&`${k.play} to play`,k.hit&&`${k.hit} in`,k.push&&`${k.push} ${k.push===1?'push':'pushes'}`,k.miss&&`${k.miss} missed`].filter(Boolean);
+  return b.length?`<p class="ls-sum">${b.map(x=>x.replace(/ (?![^<]*>)/g,'\xA0')).join('\xA0\xB7 ')}</p>`:''}   // each count's words kept together: the line breaks only between counts
+function lsRows(items){const rows=(items||[]).filter(it=>!it.empty&&member(it.l.mid)).map((it,n)=>({it,n,...lsLeg(it)})),tr=r=>r.tone==='r'?0:r.tone==='n'?2:1;
+  return rows.sort((a,b)=>LS_ORD[a.grp]-LS_ORD[b.grp]||(a.grp==='live'?tr(a)-tr(b)||a.frac-b.frac:0)||(a.grp==='later'?(a.kick===b.kick?0:a.kick<b.kick?-1:1):0)||a.n-b.n)}   // Live: in trouble first, then the rest by how close they are (the furthest from cashing first); Later by kickoff; then the slip's own order
+function lsRow(w,r){const l=r.it.l,m=member(l.mid),done=r.grp==='hit'||r.grp==='miss'||r.grp==='push';
+  return`<button type="button" class="ls-row t-${h(r.tone)}${done?' done':''}" data-act="ls-leg" data-wid="${h(w.id)}" data-mid="${h(l.mid)}"><span class="ls-fill" style="width:${Math.round(r.frac*1000)/10}%" aria-hidden="true"></span><span class="avatar" style="--c:${h(m.color||'#888')}" aria-hidden="true">${avIn(m)}</span><span class="ls-bet">${done?`<span class="gv-sr">${h(m.name)}: </span>`:''}<b>${h(l.text)}</b>${done?'':`<small>${h(m.name)}${r.game?` \xB7 ${h(r.game)}`:''}</small>`}</span><span class="ls-n">${r.word?`<span class="gv-sr">${h(r.word)}${r.grp==='later'?' ':'. '}</span>`:''}<b${done?' aria-hidden="true"':''}>${mn(h(r.main))}</b>${r.clock?`<small>${h(r.clock)}</small>`:''}</span></button>`}
+function lsStrip(w,items,prep){let out='',last='';for(const r of lsRows(items)){if(r.grp!==last){last=r.grp;out+=`<h3 class="ls-sec">${LS_SEC[r.grp]}</h3>`}out+=lsRow(w,r)}return out?lsSum(w,prep)+out:''}
+function lsPaint(el,html){   // live scores: the strip is drawn again only when its words change. The same rows in the same order: each is updated where it stands, so its bar slides to its new width and colour and the keyboard stays put; rows that moved, came or went: drawn whole, the keyboard kept on the same leg
+  const t=document.createElement('div');t.innerHTML=html;if(t.innerHTML===el.innerHTML)return;
+  const a=[...el.children],b=[...t.children],key=n=>n.localName+'|'+(n.getAttribute('data-mid')||n.textContent);
+  if(a.length===b.length&&a.every((n,i)=>key(n)===key(b[i]))){a.forEach((n,i)=>{const m=b[i];if(n.outerHTML===m.outerHTML)return;if(!n.classList.contains('ls-row')){n.replaceWith(m);return}
+    n.setAttribute('class',m.getAttribute('class')||'');const nk=[...n.children],mk=[...m.children];if(nk.length!==mk.length){n.innerHTML=m.innerHTML;return}
+    nk.forEach((c,j)=>{const d=mk[j];if(c.outerHTML===d.outerHTML)return;if(c.classList.contains('ls-fill'))c.setAttribute('style',d.getAttribute('style')||'');else c.replaceWith(d)})});return}
+  const ae=document.activeElement,mid=ae&&ae!==el&&el.contains(ae)&&ae.dataset?ae.dataset.mid:null;el.innerHTML=html;
+  if(mid){const r=[...el.querySelectorAll('.ls-row')].find(x=>x.dataset.mid===mid);if(r)try{r.focus({preventScroll:true})}catch(e){}}}
 function gvSheetBody(gr){   // a game's bets in full: the slip's own rows (read only here: a tap on one opens its Details), the side parlay under its own heading
   const row=it=>renderLeg(it.w,it.l,it.cl,true)+(it.also.length||it.shadow?`<div class="gv-also">${gvAlso(it)}</div>`:''),main=gr.items.filter(i=>!i.side),side=gr.items.filter(i=>i.side),hd=gvHead(gr),n=gr.items.length;
   return`<p class="gv-sheet-sub">${h(`${hd.ck} \xB7 ${n} ${n===1?'bet':'bets'} here`)}</p><div class="slip gv-sheet">${main.map(row).join('')}${side.length?`<div class="slip-group"><div class="slip-sg">${gvSideHead(side)}</div>${side.map(row).join('')}</div>`:''}</div>`}
@@ -5825,12 +5879,13 @@ function legTally(w,prepared){   // weekui 1: the ONE count of a slip's legs tha
   k.left=k.play+k.hitting+k.onpace+k.sweat+k.pushing+k.early+k.offpace+k.missing;   // still to play: everything neither hit, missed nor pushed for good
   return k}
 function hitSay(w,prepared){const k=legTally(w,prepared);return`${k.hit} of ${k.hit+k.miss} hit${k.left?` \xB7 ${k.left} to play`:''}`}   // "4 of 5 hit · 1 to play", then "4 of 6 hit" once every leg is final
-function liveBanner(w,prepared){if(!sweatable(w))return'';const R=RESULTS[checkDate(w)];if(!R)return'';
+function liveBanner(w,prepared,brief){if(!sweatable(w))return'';   // brief: the slip is on Live, whose own line on top carries the count and whose rows name every missed leg: the banner keeps only its headline (no fact twice)
+  const R=RESULTS[checkDate(w)];if(!R)return'';
   const k=legTally(w,prepared),killed=k.killed;
   if(!k.hit&&!k.miss&&!k.push&&!(k.hitting+k.onpace+k.sweat+k.pushing+k.early+k.offpace+k.missing))return'';
   const bits=[k.hit&&`${k.hit} hit`,k.hitting&&`${k.hitting} hitting`,k.onpace&&`${k.onpace} on pace`,k.sweat&&`${k.sweat} sweating`,k.pushing&&`${k.pushing} pushing`,k.early&&`${k.early} not there yet`,k.offpace&&`${k.offpace} off pace`,k.missing&&`${k.missing} missing`,k.miss&&`${k.miss} missed`,k.push&&`${k.push} push`,k.play&&`${k.play} to play`,k.hand&&`${k.hand} to grade by hand`].filter(Boolean).join(' \xB7 ');
-  const who=killed.length?`Killed by ${andList(killed.map(mid=>`${h(member(mid)?.name||'?')}\u2019s ${h(w.picks[mid].text)}`))}`:'';
-  return`<div class="lvbanner ${k.miss?'dead':''}"><b>${k.miss?'\u{1F480} Parlay\'s dead':(k.missing||k.offpace||k.sweat||k.pushing)?'\u{1F62C} Parlay alive':'\u{1F525} Parlay alive'}</b>${who?`<span>${who}</span>`:''}<span>${bits}</span></div>`}
+  const who=!brief&&killed.length?`Killed by ${andList(killed.map(mid=>`${h(member(mid)?.name||'?')}\u2019s ${h(w.picks[mid].text)}`))}`:'';
+  return`<div class="lvbanner ${k.miss?'dead':''}"><b>${k.miss?'\u{1F480} Parlay\'s dead':(k.missing||k.offpace||k.sweat||k.pushing)?'\u{1F62C} Parlay alive':'\u{1F525} Parlay alive'}</b>${who?`<span>${who}</span>`:''}${brief?'':`<span>${bits}</span>`}</div>`}
 const LIVE_FAILED=new WeakSet();
 let liveT=null,liveBusy=false;
 function livePaint(w){const cw=currentWeek();if(VIEW!=='week'||cw!==w)return;const cl0={nfl:weekNfl(w),live:{}};
@@ -5839,7 +5894,9 @@ function livePaint(w){const cw=currentWeek();if(VIEW!=='week'||cw!==w)return;con
     let c=ct?legChip(w,{mid,...p},cl0,L):null;
     if(ct){if(!w.placed&&c[0]!=='pre')c=['in','✓ pick in'];c=[c[0],chipWords(c[1])];if(ct.textContent!==c[1])ct.textContent=c[1];if(ct.className!=='stag '+c[0])ct.className='stag '+c[0];if(ct.removeAttribute)ct.removeAttribute('aria-hidden');ct.parentElement?.classList.toggle('pre-info',c[0]==='pre')}
     if(!el)continue;const html=liveLine(w,mid,L,!!ct&&(w.placed||c[0]==='pre'));lvSwap(el,html)}   /* the kickoff chip on screen already says the matchup and the time: the line underneath must not say them again */
-  const bn=document.getElementById(`lvb-${w.id}`);if(bn){const html=liveBanner(w,cl0);if(bn.innerHTML!==html)bn.innerHTML=html}
+  const ls=slipView==='live'?document.getElementById('lsStrip'):null,lsHere=!!ls&&ls.dataset.wid===w.id;
+  const bn=document.getElementById(`lvb-${w.id}`);if(bn){const html=liveBanner(w,cl0,lsHere);if(bn.innerHTML!==html)bn.innerHTML=html}
+  if(lsHere)try{lsPaint(ls,lsStrip(w,gvAll(w),cl0))}catch(e){}   // LIVESTRIP: Live follows the games in place too
   {const bd=slipView==='game'?document.getElementById('gvBoard'):null;if(bd&&bd.dataset.wid===w.id)try{const html=gvBoard(w,gvAll(w));if(bd.innerHTML!==html){const a=document.activeElement,kept=a&&bd.contains(a)&&a.dataset&&a.dataset.gid;bd.innerHTML=html;if(kept){const b=bd.querySelector(`.gm-head[data-gid="${kept}"]`);if(b)b.focus({preventScroll:true})}}}catch(e){}}try{gvSheetPaint(w)}catch(e){}}   // By game follows the games too: drawn again only when its words change, and a game's head that had the keyboard keeps it; so does a game's open sheet
 function liveWatch(delay){clearTimeout(liveT);liveT=setTimeout(liveTick,delay==null?1500:delay)}
 async function liveTick(){liveT=null;if(liveBusy||document.visibilityState!=='visible'||VIEW!=='week')return;const w=S.weeks.length?currentWeek():null;if(!sweatable(w))return;liveBusy=true;const date=checkDate(w),owner=league(),sn=season();let delay=2*60e3;
@@ -7774,7 +7831,8 @@ const st=subStatus(w);const rc=revealCount(w,c);const cast=rc.cast;const noVid=c
     const cur=[...c.ids];if(cur.includes(sid)){if(cur.length>1)fin(cur.filter(x=>x!==sid))}   // the last one checked cannot be unchecked: nothing redraws
     else fin([...cur,sid])},
   'stat-sec'(el){const k=el.dataset.sec;if(!statSecOk(k))return;statSec=k;try{localStorage.setItem(STAT_SEC_KEY,k)}catch(e){}try{if(/^#stats/i.test(location.hash))history.replaceState(null,'','#stats/'+k)}catch(e){}render();const b=document.querySelector(`#view .sec-switch button[data-sec="${k}"]`),bar=b&&b.parentNode;if(bar&&bar.getBoundingClientRect().top<0)pageTo(Math.max(0,pageY()+bar.getBoundingClientRect().top-90));if(b)try{b.focus({preventScroll:true})}catch(e){}},   // Board | Awards | Grudge Book | Bets | Grid (UX-STATS §4): remembered on this phone; the page comes back up to the bar if it was scrolled past it; the keyboard stays on the chip
-  'slip-view'(el){const v=el.dataset.v==='game'?'game':'person';if(v===slipView)return;slipView=v;try{localStorage.setItem(SLIP_VIEW_KEY,v)}catch(e){}render();const b=document.querySelector(`#view .gv-switch [data-v="${v}"]`);if(b)try{b.focus({preventScroll:true})}catch(e){}},   // By person | By game on the slip: remembered on this phone, never saved or sent; the keyboard stays on the switch
+  'slip-view'(el){const v=el.dataset.v==='game'||el.dataset.v==='live'?el.dataset.v:'person';if(v===slipView)return;slipView=v;try{localStorage.setItem(SLIP_VIEW_KEY,v)}catch(e){}render();const b=document.querySelector(`#view .gv-switch [data-v="${v}"]`);if(b)try{b.focus({preventScroll:true})}catch(e){}},   // By person | By game on the slip: remembered on this phone, never saved or sent; the keyboard stays on the switch
+  'ls-leg'(el){const w=week(el.dataset.wid);if(w&&w.picks[el.dataset.mid])legInfo(w,el.dataset.mid)},   // LIVESTRIP: a row on Live opens that leg's Details
   'gv-game'(el){gvOpen(el.dataset.wid,decodeURIComponent(el.dataset.gid||''))},   // a game on the By game board: its bets in full
   'cell-tip'(el){if(tipPinned===el){tipPinned=null;hideTip()}else{tipPinned=el;tipScrollY=pageY();showTip(el)}},
   'modal-close'(el,e){if(e.target===el)closeModal()},
