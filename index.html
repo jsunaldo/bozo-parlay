@@ -176,6 +176,7 @@ body.typing .tabs{transform:translate(-50%,160%) scale(var(--vvs,1));opacity:0;p
 /* generic */
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
 .card h3{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:12px}
+.lb-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:4px}.lb-head h3{margin-bottom:0}.lb-sides{display:inline-flex;align-items:center;gap:8px;flex:none;min-height:44px;padding:0 2px 0 6px;background:none;border:0;color:var(--text);font:inherit;font-size:13px;white-space:nowrap;cursor:pointer;border-radius:12px}.sides-off{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:0 0 12px;color:var(--muted);font-size:14px}.sides-off .pillbtn{min-height:44px;color:var(--text)}.lb-sides:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
 .story .st-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:8px}.story .st-head h3{margin:0}.st-row{display:flex;gap:10px;padding:9px 0;border-top:1px solid var(--line)}.st-head+.st-row{border-top:0}.st-wk{flex:none;min-width:52px;text-align:center;box-sizing:border-box;font-family:var(--num);font-weight:600;font-size:12px;color:var(--muted);background:var(--surface2);padding:4px 8px;border-radius:10px;height:fit-content;margin-top:1px;white-space:nowrap}.st-row p{margin:0;font-size:14px;line-height:1.45;min-width:0;overflow-wrap:anywhere}   /* the Season story card on History (specs/story-search.md section 1): text only */
 .muted{color:var(--muted)}.tiny{font-size:12px}.good{color:var(--green)}.bad{color:var(--red)}.mono,.num{font-family:var(--num);font-variant-numeric:tabular-nums}.mono.code{font-family:var(--mono)}   /* idea 7: every displayed number, price and total is ONE rounded tabular family; mono is only the typing boxes (input.mono below), the link code, and the copy boxes that hold words someone typed */
 .num{font-weight:700;letter-spacing:-.03em}
@@ -1109,7 +1110,7 @@ button.env{cursor:pointer;-webkit-tap-highlight-color:transparent}button.env:act
 try{const de=document.documentElement;if(navigator.maxTouchPoints>0||'ontouchstart' in window){de.classList.add('touch');if(matchMedia('(display-mode: standalone)').matches||navigator.standalone===true)de.classList.add('shell')}}catch(e){}   // touch screens (iPads with a keyboard or trackpad included): 16px text boxes, no double-tap zoom. Opened from the Home Screen: the page itself never scrolls (the app scrolls inside it), so iOS can't slide the tab bar and header away
 
 /* ============================== STATE ============================== */
-const APP_VERSION='2026-11-08.2';
+const APP_VERSION='2026-11-08.3';
 const KEY='bozo-parlay-v1';
 const TEAMS={ARI:['Arizona','Cardinals','Cards'],ATL:['Atlanta','Falcons'],BAL:['Baltimore','Ravens'],BUF:['Buffalo','Bills'],CAR:['Carolina','Panthers'],CHI:['Chicago','Bears'],CIN:['Cincinnati','Bengals'],CLE:['Cleveland','Browns'],DAL:['Dallas','Cowboys'],DEN:['Denver','Broncos'],DET:['Detroit','Lions'],GB:['Green Bay','Packers'],HOU:['Houston','Texans'],IND:['Indianapolis','Colts'],JAX:['Jacksonville','Jaguars','Jags'],KC:['Kansas City','Chiefs'],LV:['Las Vegas','Raiders'],LAC:['Chargers','Bolts'],LAR:['Rams'],MIA:['Miami','Dolphins','Fins'],MIN:['Minnesota','Vikings','Vikes'],NE:['New England','Patriots','Pats'],NO:['New Orleans','Saints'],NYG:['Giants'],NYJ:['Jets'],PHI:['Philadelphia','Eagles','Philly'],PIT:['Pittsburgh','Steelers'],SF:['San Francisco','49ers','Niners'],SEA:['Seattle','Seahawks','Hawks'],TB:['Tampa Bay','Tampa','Buccaneers','Bucs'],TEN:['Tennessee','Titans'],WSH:['Washington','Commanders']};
 const NICK={ARI:'Cardinals',ATL:'Falcons',BAL:'Ravens',BUF:'Bills',CAR:'Panthers',CHI:'Bears',CIN:'Bengals',CLE:'Browns',DAL:'Cowboys',DEN:'Broncos',DET:'Lions',GB:'Packers',HOU:'Texans',IND:'Colts',JAX:'Jaguars',KC:'Chiefs',LV:'Raiders',LAC:'Chargers',LAR:'Rams',MIA:'Dolphins',MIN:'Vikings',NE:'Patriots',NO:'Saints',NYG:'Giants',NYJ:'Jets',PHI:'Eagles',PIT:'Steelers',SF:'49ers',SEA:'Seahawks',TB:'Buccaneers',TEN:'Titans',WSH:'Commanders'};
@@ -2698,7 +2699,7 @@ function balHtml(e){if(!e.cloneNode||!e.querySelector('[style]'))return e.innerH
 function fitChips(){balance()}   // the old name of balance(), kept on purpose: other branches (2026-09-25.6, the Stats popup's popRedraw) still call fitChips(); they merge cleanly, and without this they would throw once merged
 addEventListener('resize',()=>{if(!BAL_RO)balance()});
 function seasonLabelText(){return headOfS()||'Season'}
-function headOfS(){const x=(league().seasons||[]).find(y=>y.data===S);return x?seasonHead(x):String(S&&S.season||'').trim()}   // the name of the season being shown, as the header and shared slips print it (the all-time view keeps its own)
+function headOfS(){const x=(league().seasons||[]).find(y=>y.data===S||(S&&S.src&&y.data===S.src));return x?seasonHead(x):String(S&&S.season||'').trim()}   // the name of the season being shown, as the header and shared slips print it (the all-time view keeps its own)
 const LEAGUE_LOGOS={'bozo parlay':'icons/parlay/icon.svg','bozo university':'icons/university/icon.svg','stags bozo parlay':'icons/stags/icon.svg'};
 function leagueLogo(l=league()){if(SHARE_MODE)return'icon.svg';return LEAGUE_LOGOS[canonName(l.name)]||'icons/parlay/icon.svg'}   // each league's own app icon
 const empty=(t,s)=>`<div class="empty"><div class="empty-ic">🤡</div><b>${t}</b><p class="muted">${s}</p></div>`;
@@ -6309,9 +6310,15 @@ function allTimeSeason(l=league(),sids=null){   // every season's weeks as one; 
       for(const[mid,p]of Object.entries(w.picks))if(map[mid])nw.picks[map[mid]]=p;v.weeks.push(nw)}}
   return v;
 }
-function withAll(fn){if(!multiOn())return fn();ALLTIME??=allTimeSeason(league(),statScope==='multi'?statSids:null);const real=S;S=ALLTIME;try{return fn()}finally{S=real}}
+function withAll(fn){const off=VIEW==='stats'&&!sidesOn();if(!multiOn()&&!off)return fn();let T=multiOn()?(ALLTIME??=allTimeSeason(league(),statScope==='multi'?statSids:null)):S;if(off)T=noSides(T);const real=S;S=T;try{return fn()}finally{S=real}}
+/* ---- SIDESTAT (Jason 2026-11-08: "Add a toggle to include bonus bets or not (ie things like the side ATTD parlays)"): the Side parlays switch on Stats' Leaderboard. Off: every number on the Stats page, and the popups it opens, leaves out side parlays (Anytime TD, missed vote, missed pick, unanimous), legs and money alike. On (the default): as before. History and This Week always show them. Remembered on this phone only ('bp-stat-sides'), never in the league and never sent ---- */
+const SIDES_KEY='bp-stat-sides';let SIDES_ON=null;
+const sidesOn=()=>{if(SIDES_ON==null){try{SIDES_ON=localStorage.getItem(SIDES_KEY)!=='off'}catch(e){SIDES_ON=true}}return SIDES_ON};
+function sidesSet(on){SIDES_ON=!!on;try{if(on)localStorage.removeItem(SIDES_KEY);else localStorage.setItem(SIDES_KEY,'off')}catch(e){}}   // storage that throws keeps the choice for this visit only
+const noSides=d=>({...d,src:d.src||d,weeks:d.weeks.filter(w=>!isSide(w))});   // src: the season it was copied from, so anything that finds the season on screen (headOfS) still finds it   // the same season (or seasons) without its side parlays: a copy, so nothing in the league changes
 const COLS=[['rate','Hit %'],['hits','Record'],['units','Units'],['avgDec','Avg odds'],['bozo','Bozo'],['net','Net'],['cur','Streak']];
-function renderStats(){ALLTIME=null;return withAll(()=>ssPage(renderStatsInner))}
+function renderStats(){ALLTIME=null;HAS_SIDES=VIEW==='stats'&&(multiOn()?(ALLTIME??=allTimeSeason(league(),statScope==='multi'?statSids:null)):S).weeks.some(isSide);return withAll(()=>ssPage(renderStatsInner))}
+let HAS_SIDES=false;   // the scope on screen has a side parlay, side parlays switched on or off: the switch shows only then
 function newestSeason(){return newestOf(league())}
 function seasonOver(){const cur=season();return league().seasons.some(x=>x!==cur&&seasonNewer(x,cur))}
 /* ---- UX-STATS-HEAD A: the Stats page's season pill opens the app's own sheet, where any set of seasons (or All-time) is checked. The pick is remembered per viewer on this phone (localStorage 'bp-stat-scope', {leagueId: 'all' | [season ids]}), never in the league and never sent; one season is the league's activeSeason as before ---- */
@@ -6409,7 +6416,7 @@ function goNow(other){UPCOMING=null;BROWSED=false;REPLAY.clear();REPLAY_RUN.clea
   const hw=homeWeekId(l,season(l));if(hw)S.currentWeekId=hw}
 function oldBanner(){const l=league();if(l.seasons.length<2||season().id===newestOf(l).id)return'';return`<div class="oldbanner"><span>Browsing the ${h(seasonName(season()))} season</span><button class="pillbtn" data-act="go-now">This week →</button></div>`}
 function renderStatsInner(){
-  if(!S.weeks.length)return scopeBar()+empty('Nothing to crunch','Stats show up once Week 1 is graded.');
+  if(!S.weeks.length)return scopeBar()+(HAS_SIDES&&!sidesOn()?sidesOff()+empty('Only side parlays so far','Side parlays are switched off on Stats, so there is nothing to count yet.'):empty('Nothing to crunch','Stats show up once Week 1 is graded.'));   // SIDESTAT fix round 1: only side parlays and the switch off: say so, with the way back
   const{per,g}=stats();
   const rows=S.members.map(m=>({m,...per[m.id]})).filter(r=>r.m.active||r.picks>0||r.paid>0);
   rows.sort((a,b)=>{const av=a[sortKey],bv=b[sortKey];if(av==null&&bv==null)return 0;if(av==null)return 1;if(bv==null)return-1;return bv-av||(sortKey==='hits'?a.misses-b.misses:b.hits-a.hits)});   // on Record, fewer misses is the better record
@@ -6423,7 +6430,7 @@ function renderStatsInner(){
   </div>
   ${RV_GATE?`<p class="muted tiny" style="margin:6px 0 0">These numbers only count the ${S.weeks.length} week${S.weeks.length===1?'':'s'} you have caught up on, so they look smaller than you remember. Nothing is missing: watch the ${h(wkName(RV_GATE))} reveal over on the This Week tab, or skip the show, and the weeks after it join back in, one reveal at a time.</p>`:''}
   ${g.gone?`<p class="muted tiny" style="margin:6px 0 0">${fmt$0(g.gone)} of the stakes is not on anyone’s Net: the person who placed ${h(g.goneWks.join(', '))} is no longer on the crew. Nothing is missing from the totals. To fix it in the commissioner app: open ${g.goneWks.length===1?'that week':'each of those weeks'}, open Details and tap Change who placed it.</p>`:''}${g.unpaid?`<p class="muted tiny" style="margin:6px 0 0">${fmt$0(g.unpaid)} of the stakes is not on anyone’s Net: no Bozo is on record for ${h(g.unpaidWks.join(', '))}. Nothing is missing from the totals. To fix it in the commissioner app: open ${g.unpaidWks.length===1?'that week':'each of those weeks'} and set the Bozo.</p>`:''}
-  <section class="card"><h3>Leaderboard</h3><div class="lb-wrap"><table class="lb"><thead><tr><th>Player</th>${COLS.map(([k,l])=>`<th class="${sortKey===k?'on':''}" tabindex="0" aria-sort="${sortKey===k?'descending':'none'}" data-act="sort" data-key="${k}">${l}</th>`).join('')}</tr></thead><tbody>
+  <section class="card"><div class="lb-head"><h3>Leaderboard</h3>${HAS_SIDES?`<button type="button" class="lb-sides" role="switch" aria-checked="${sidesOn()}" data-act="stat-sides"><span class="lb-sides-t">Side parlays</span><span class="toggle ${sidesOn()?'on':''}" aria-hidden="true"><i></i></span></button>`:''}</div><div class="lb-wrap"><table class="lb"><thead><tr><th>Player</th>${COLS.map(([k,l])=>`<th class="${sortKey===k?'on':''}" tabindex="0" aria-sort="${sortKey===k?'descending':'none'}" data-act="sort" data-key="${k}">${l}</th>`).join('')}</tr></thead><tbody>
     ${(pl=>rows.map((r,i)=>`<tr class="lb-row" tabindex="0" data-act="player-detail" data-mid="${h(r.m.id)}"><td><div class="who"><span class="rank">${pl[i]}</span><span class="avatar sm" style="--c:${r.m.color}">${avIn(r.m)}</span><span class="nm">${h(r.m.name)}</span><span class="chev">›</span></div></td>
       <td><span class="bar" style="width:${Math.round((r.rate||0)*28)}px"></span>${pct(r.rate)}</td>
       <td>${r.hits}-${r.misses}${r.pushes?'-'+r.pushes:''}</td>
@@ -6436,8 +6443,9 @@ function renderStatsInner(){
   const awd=A.length?`<section class="card"><h3>Awards</h3><div class="awards">${A.map(a=>awardTile(a,'season')).join('')}</div></section>`:'';
   const grid=`<section class="card"><h3>Season grid</h3>${heatmap()}<div class="legend"><span><i style="background:var(--green)"></i>hit</span><span><i style="background:var(--red)"></i>miss</span><span><i style="background:var(--amber)"></i>push</span><span><i style="background:rgba(255,184,77,.25);outline:1px dashed rgba(255,184,77,.6)"></i>pending</span><span><i style="box-shadow:0 0 0 2px var(--purple);background:transparent"></i>bozo</span></div></section>`;
   const SEC={board,awards:awd+recapCard(per,A)+killerClubCard(per)+closeCalls(per),grudge:grudgeCard(),bets:explorerCard(g)+kingsCard(per)+teamsCard(g)+survivalCard(),grid};   // the page's cards, by section (the order inside a section is the spec's)
-  return scopeBar()+statSecBar(SEC)+SEC[statSecNow(SEC)];
+  const cur=statSecNow(SEC);return scopeBar()+statSecBar(SEC)+(cur!=='board'&&HAS_SIDES&&!sidesOn()?sidesOff():'')+SEC[cur];   // SIDESTAT fix round 1: the other sections say the side parlays are left out, with the way back (the switch itself is on Board's Leaderboard)
 }
+const sidesOff=()=>`<div class="sides-off"><span>Side parlays are left out.</span><button type="button" class="pillbtn" data-act="stat-sides">Count them</button></div>`;
 const statSecs=SEC=>STAT_SECS.filter(([k])=>k==='board'||String(SEC[k]||'').trim());   // a section with nothing in it yet (no votes, no bets) is not offered: never a blank page
 const statSecNow=SEC=>statSecs(SEC).some(([k])=>k===statSec)?statSec:'board';   // a remembered section this league has nothing in: Board, and the remembered one is kept
 function statSecBar(SEC){const on=statSecs(SEC),cur=statSecNow(SEC);return on.length<2?'':`<div class="scope sec-switch" role="group" aria-label="Stats section">${on.map(([k,t,a,d])=>`<button type="button" class="${k===cur?'on':''}" aria-pressed="${h(k===cur)}"${a?` aria-label="${h(a)}"`:''} data-act="stat-sec" data-sec="${k}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${h(d)}"/></svg><span>${h(t)}</span></button>`).join('')}</div>`}
@@ -7272,7 +7280,7 @@ async function recapImage(R){
   x.font=F(500,22);x.fillStyle=MU;x.textAlign='right';x.fillText('bozo parlay',RX,H-pad-40-22*1.3);
   return cv}
 async function shareRecap(el){   // Stats → Season recap → Share recap: the recap of the season on screen, as this viewer sees it
-  const R=multiOn()?null:recapOf();
+  const R=withStats(()=>multiOn()?null:recapOf());   // SIDESTAT fix round 1: the recap shared is the one on the page, side parlays switched off or on
   if(!R||!R.items.length){const t=`The recap needs ${RC_WEEKS} graded weeks of a season, and this phone doesn’t have that for the season on screen right now. Nothing was lost. Pull down on Stats to refresh it, then tap Share recap on the recap card.`;toast(t,'bad',readMs(t));return}
   const B=busy(el,'Making the recap picture…'),sn=seasonName(season());
   let cv;try{cv=await recapImage({...R,head:headOfS(),title:'Season recap',sub:`Through ${R.thru}`})}catch(e){B.end();console.error(e);const t='Couldn’t make the recap picture. Nothing was lost: the season’s stats are unchanged. Tap Share recap again. If it still won’t open, close the app fully and reopen it.';toast(t,'bad',readMs(t));return}
@@ -7540,6 +7548,7 @@ const ACT={
   },
   swatch(el){document.querySelectorAll('.sw').forEach(s=>s.classList.toggle('on',s===el))},
   sort(el){sortKey=el.dataset.key;render()},
+  'stat-sides'(){sidesSet(!sidesOn());ALLTIME=null;render();const b=document.querySelector('#view .lb-sides')||document.querySelector('#view .sec-switch button.on');if(b)b.focus()},   // the switch keeps the focus; from another section's Count them, the section's own tab takes it
   'csv-season'(el){csvSave(el.dataset.sid)},   // #42 the season spreadsheet
   export(){const l=league();download(`bozo-parlay-${today()}.json`,JSON.stringify({bozoLeague:1,name:l.name,clubName:l.clubName||'',activeSeason:l.activeSeason,exportedAt:new Date().toISOString(),seasons:l.seasons.map(x=>({id:x.id,name:x.name,data:x.data}))},null,2));toast(`Backup downloaded: every season of ${l.name}`);if(isAdmin(l)&&!notLinked(l)){if(!l.sync){l.exportedAt=new Date().toISOString();l.exportedSig=bakSig(l);save();bakDraw(l)}else api(l,'/exported',{method:'POST'}).then(d=>{const H=HEALTH[l.id];if(d&&d.exported&&H&&H.d){H.d.exported=d.exported;bakDraw(l)}}).catch(()=>{})}},   // the date of a commissioner's backup follows the commissioner (the league keeps it); a league that can't take it, or no signal, leaves the line as it was
   
