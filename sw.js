@@ -12,12 +12,17 @@ self.addEventListener('fetch',e=>{
   if(url.origin!==location.origin)return;
   if(url.pathname.includes('/ocr/'))return;   // the slip reader's files (about 9 MB) never go into the offline copy: the phone's own web cache keeps them after the first Read the slip
   if(e.request.mode==='navigate'&&url.searchParams.has('bp-refresh')){e.respondWith((async()=>{const c=await caches.open(CACHE),hit=await c.match(new URL('__refresh__',self.registration.scope).href);if(hit&&refreshVersion(await hit.clone().text())===url.searchParams.get('bp-refresh')){await c.delete(new URL('__refresh__',self.registration.scope).href).catch(()=>{});return hit}const cached=await refreshHit(c,url.searchParams.get('bp-refresh'));if(cached)return cached;const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),10000);try{const r=await fetch(new Request(e.request,{cache:'reload',signal:abort.signal}));return r.status<400?r:(await c.match(url.origin+url.pathname))||(await c.match(self.registration.scope))||r}catch(x){return(await c.match(url.origin+url.pathname))||(await c.match(self.registration.scope))||Response.error()}finally{clearTimeout(timer)}})());return}   // a hosting error (500, 503, 404) is no better than no signal: the copy on the phone opens when there is one
-  // network first, always revalidated against the server, cache only as the offline fallback
-  const net=fetch(new Request(e.request,{cache:'no-cache'})).then(r=>{if(r.ok&&(!url.search||e.request.mode==='navigate')){const cp=r.clone();caches.open(CACHE).then(c=>c.put(url.search?url.origin+url.pathname:e.request,cp))}return r});   // opening from a notification link keeps the offline copy up to date, one entry per address: one-off links (?t=) used to pile up forever
+  // everything but opening the app: network first, always revalidated against the server, cache only as the offline fallback
+  let kept=null;const net=fetch(new Request(e.request,{cache:'no-cache'})).then(r=>{if(r.ok&&(!url.search||e.request.mode==='navigate')){const cp=r.clone();kept=caches.open(CACHE).then(c=>c.put(url.search?url.origin+url.pathname:e.request,cp))}return r});   // opening from a notification link keeps the offline copy up to date, one entry per address: one-off links (?t=) used to pile up forever
   if(e.request.mode!=='navigate'){e.respondWith(url.search?net:net.catch(()=>caches.match(e.request,{ignoreSearch:true})));return}
-  // weak signal: after 3 s open the copy already on the phone instead of sitting on a blank screen (the app still checks for a newer build once it is up).
-  // A hosting error (500, 503, 404) counts as no signal when the phone has the app: its copy opens, and the error is never kept. With no copy, the error shows as before
-  e.respondWith(caches.match(e.request,{ignoreSearch:true}).then(hit=>hit?Promise.race([net.then(r=>r.status<400?r:null,()=>null),new Promise(r=>setTimeout(()=>r(null),3000))]).then(r=>r||hit):net));
+  // FASTOPEN (docs/plans/FASTOPEN.md): opening the app shows the copy already on the phone at once, however weak the signal: it never waits on the network.
+  // The hosting's copy is still asked for now, in the background, and kept for the next open (just above, one entry per address). The app itself checks
+  // version.json and, once nobody is mid-action, moves to a newer build that it has had kept first (checkVersion in index.html). No signal or a hosting error
+  // (500, 503, 404) leaves the copy as it is, and the error is never kept. A redirect means the app has moved: the copy is let go, so the next open follows the
+  // hosting. No copy yet (the very first open on a phone): the network answers, as before, error or not
+  const pages=[self.registration.scope,new URL('index.html',self.registration.scope).href],gone=pages.includes(url.origin+url.pathname)?pages:[url.origin+url.pathname],saved=caches.match(e.request,{ignoreSearch:true});
+  e.respondWith(saved.then(hit=>hit||net));
+  e.waitUntil(saved.then(hit=>hit&&net.then(r=>r.type==='opaqueredirect'||r.redirected?caches.open(CACHE).then(c=>Promise.all(gone.map(k=>c.delete(k)))):kept,()=>{})).catch(()=>{}));   // ./ and index.html are one page: a redirect of either lets both go
 });
 // phone notifications: always show one (iPhones drop subscriptions that stay silent); a tap opens the app
 self.addEventListener('push',e=>{let d={};try{d=e.data?e.data.json():{}}catch(x){d={body:e.data?e.data.text():''}}
