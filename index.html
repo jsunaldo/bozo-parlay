@@ -5203,7 +5203,7 @@ const NICKS={cmc:'christian mccaffrey',arsb:'amon ra st brown',jsn:'jaxon smith 
 const BET_WORDS=new Set('td ml pk fg fgs qb rb wr te ou ot alt plus minus props prop line lines odds pts pt ats dk fd draftkings fanduel sgp'.split(' '));
 function nameFits(text,pl){const mine=nameKey(pl.name).split(' ');const full=mine.join(' ');
   return nameKey(text).split(' ').filter(w=>w.length>=2&&!NOT_NAMES.has(w)&&!BET_WORDS.has(w)&&!/\d/.test(w)&&!detectTeams(w).length).every(w=>(NICKS[w]&&(full===NICKS[w]||full.startsWith(NICKS[w]+' ')))||mine.some(t=>t.length>=2&&(t.startsWith(w)||w.startsWith(t))))}   // "CMC" fits Christian McCaffrey
-function matchPlayer(text,nfl){return matchPlayer0(text,nfl,pl=>nameFits(text,pl))}
+function matchPlayer(text,nfl){const dt=detectTeams(text);return matchPlayer0(text,nfl,pl=>nameFits(text,pl)&&(!dt.length||dt.includes(pl.team)))}   // NAMEGUARD (2026-11-14): a part-name match (a last name, a first name, a nickname, a prefix) is never someone on a team other than the one the words name. nameFits skips team words, so “Darnell Washington Anytime TD” (Steelers) read as “Darnell” and matched the Giants’ Darnell Mooney once his game was final, and was graded a miss. A full name still matches as before
 function matchPlayer0(text,nfl,fits){   // full name, then a unique last name, then a unique last-name prefix ("Skatt" → Skattebo)
   if(!nfl||!nfl.full)return null;const t=' '+nameKey(text)+' ';let best=null,bi=0;
   for(const n in nfl.full){const i=t.indexOf(' '+n+' ');if(i<0)continue;const nw=n.split(' ');
