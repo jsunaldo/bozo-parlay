@@ -2558,7 +2558,7 @@ const betKey=t=>String(t||'').toLowerCase().replace(/(\d)\.(?=\d)/g,'$1\u0001').
 const nflWkKey=(w,d=S)=>{const m=isSide(w)?sideSun(d,w)||w:w,id=String(m.id),j=id.indexOf('|');return(j<0?'':id.slice(0,j))+'#'+Math.floor(m.wkNum??m.num)};   // the NFL week a parlay is in: a side parlay is its Sunday's; a special day and that week's Sunday share it. All-time keeps each season apart (its ids start with the season's) and its weeks' own numbers (wkNum)
 function oneBets(ws,cOf=calc,d=S){   /* ONEBET (Jason 2026-11-15: "This is only 1 single bet despite being placed 4 times. It should only count as 1 win, not 4 wins"): the ONE rule for a person's record. The same person with the same bet (betKey) in more than one parlay of the same NFL week (the Sunday, a special day, any side parlay) counts it once.
      Returns the copies to leave out of the person's record, as "<week id>|<member id>". The copy kept: the first graded one (hit, missed or pushed, as the person's record reads it: pickLeg) in week order, else the first. Money (earned, stakes) and each parlay's own legs, results and killers count every copy: every parlay was really placed */
-  const by=new Map(),out=new Set();for(const w of [...ws].sort((a,b)=>a.num-b.num)){if(!w||w.kind==='opener')continue;for(const l0 of cOf(w).legs){const k=betKey(l0.text);if(!k)continue;const key=l0.mid+'|'+nflWkKey(w,d)+'|'+k,st=(pickLeg(l0).status||'pending');(by.get(key)||by.set(key,[]).get(key)).push({id:w.id+'|'+l0.mid,g:st!=='pending'})}}
+  const by=new Map(),out=new Set();for(const w of [...ws].sort((a,b)=>a.num-b.num)){if(!w||w.kind==='opener')continue;for(const l0 of cOf(w).legs){const pl=pickLeg(l0),k=betKey(dkPicked(l0)||l0.text);if(!k)continue;const key=l0.mid+'|'+nflWkKey(w,d)+'|'+k,st=(pl.status||'pending');(by.get(key)||by.set(key,[]).get(key)).push({id:w.id+'|'+l0.mid,g:st!=='pending'})}}
   for(const xs of by.values())if(xs.length>1){const keep=xs.find(x=>x.g)||xs[0];for(const x of xs)if(x!==keep)out.add(x.id)}
   return out}
 function stats(){
@@ -6445,7 +6445,7 @@ function h2hShared(a,b,ws=h2hWeeks()){const done=l=>l&&(l.status==='hit'||l.stat
 const h2hOn=(per,id)=>{const m=member(id),p=per[id];return!!(m&&p&&(m.active||p.picks>0||p.paid>0))};   // on that scope's leaderboard, by the page's own rule (popPlayed's, from one stats() pass)
 const h2hPlural=(n,w,p=w+'s')=>`${n} ${n===1?w:p}`;
 function h2hRows(a,b,per,G,ws){   // {n: shared weeks, rows: [{k, lead: 0|1|-1, cells:[{v, sub|wks}]}], beef, note}
-  const sh=h2hShared(a,b,ws),one=oneBets((ws||h2hWeeks()).map(x=>x.w)),ids=[a,b],T=ids.map(()=>({hit:0,miss:0,push:0,sank:[],bozo:[],best:null,cash:0})),nm=ids.map(x=>member(x).name);let beef=null;
+  const sh=h2hShared(a,b,ws),one=oneBets(sh.map(x=>x.w)),ids=[a,b],T=ids.map(()=>({hit:0,miss:0,push:0,sank:[],bozo:[],best:null,cash:0})),nm=ids.map(x=>member(x).name);let beef=null;
   for(const{w,c,la,lb}of sh){const L=[la,lb],fr=isSide(w)?frontedBy(w,per):placedPayer(w,per)||w.bozoId;   // a side parlay is a week like any other for Hit and Longest hit; it is never a Sank or a Bozo (it has no Bozo); its payer is who it was fronted by
     ids.forEach((x,i)=>{const lg=L[i],t=T[i];
       if(one.has(w.id+'|'+x));else if(lg.status==='hit'){t.hit++;if(lg.oddsN!=null&&(!t.best||lg.oddsN>t.best.odds))t.best={odds:lg.oddsN,wk:wkShort(w)}}else if(lg.status==='miss')t.miss++;else t.push++;   // ONEBET: Hit and Longest hit count a bet once a week (oneBets)
