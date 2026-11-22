@@ -8206,7 +8206,8 @@ render();save();loadPending();if(!SHARE_MODE)setTimeout(()=>{tidySeasons()},6000
 setInterval(()=>{if(document.visibilityState==='visible'){pull();pushDirty()}},45000);
 addEventListener('storage',e=>{if(e&&e.key===KEY2){if(adoptStored())saveNow(false);softRender()}});   // another tab claimed a name or joined a league: take that, don't write over it
 if(!SHARE_MODE)setTimeout(()=>acctSync(true,true),1500);setTimeout(checkVersion,8000);
-addEventListener('load',()=>{const f=document.getElementById('webfont');if(f)f.media='all'});   // the downloaded font waits until the first screen is up; the phone's own font is used until thensetTimeout(pruneNfl,3000);
+addEventListener('load',()=>{const f=document.getElementById('webfont');if(f)f.media='all'});   // the downloaded font waits until the first screen is up; the phone's own font is used until then
+setTimeout(pruneNfl,3000);   // NFL slates kept on this phone more than 36 hours ago go (a slate is only ever read back within 6 hours); this used to sit inside the comment above and never ran
 let hiddenAt=0;
 function pushDirty(){for(const l of DB.leagues)if(l.sync&&l.sync.role==='admin'&&l.sync.dirty&&!pushTof(l)&&!(l.sync.stuck&&Date.now()-l.sync.stuck<6e5))push(l)}   // edits waiting on any league, not just the open one
 const verNewer=(a,b)=>{const[da,na]=String(a).split('.'),[db,nb]=String(b).split('.');return da>db||(da===db&&(+na||0)>(+nb||0))};

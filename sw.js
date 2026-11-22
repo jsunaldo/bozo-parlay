@@ -31,6 +31,6 @@ self.addEventListener('fetch',e=>{
 // phone notifications: always show one (iPhones drop subscriptions that stay silent); a tap opens the app
 self.addEventListener('push',e=>{let d={};try{d=e.data?e.data.json():{}}catch(x){d={body:e.data?e.data.text():''}}
   e.waitUntil(self.registration.showNotification(d.title||'Bozo Parlay',{body:d.body||'',tag:d.tag||undefined,renotify:!!d.tag,icon:new URL('icon-192.png',self.registration.scope).href,data:{url:d.url||self.registration.scope}}))});
-const inScope=u=>{const scope=self.registration.scope;try{const h=new URL(String(u||''),scope).href;return h.startsWith(scope)?h:scope}catch(x){return scope}};   // L10: a tap only ever opens this app's own pages; any other address opens the app
+const inScope=u=>{const scope=self.registration.scope;try{const x=new URL(String(u||''),scope);return x.origin===new URL(scope).origin&&/^https?:$/.test(x.protocol)?x.href:scope}catch(e){return scope}};   // L10: a tap only ever opens a page of this app's own site (the scope's origin, which is always the worker's own) (another folder of it too: the one app's club and Commish addresses); another site, or no address, opens the app
 self.addEventListener('notificationclick',e=>{e.notification.close();const url=inScope(e.notification.data&&e.notification.data.url);
   e.waitUntil(self.clients.matchAll({type:'window',includeUncontrolled:true}).then(cs=>{for(const c of cs){if(c.url.startsWith(self.registration.scope)&&'focus'in c){c.postMessage({type:'bp-open',url});return c.focus()}}return self.clients.openWindow(url)}))});
