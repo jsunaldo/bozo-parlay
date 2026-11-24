@@ -14,7 +14,7 @@ gets its own storage and cache prefix — two clubs must never share one.
 
 Rebuild and push the club repo whenever index.html changes.
 """
-import os, re, shutil, json, subprocess, sys, argparse
+import os, re, shutil, json, subprocess, sys, argparse, tempfile, html
 
 ap = argparse.ArgumentParser()
 ap.add_argument('--league', required=True, help='sync league id')
@@ -49,12 +49,12 @@ if os.path.exists(_old):
 # A copy of this script run from a folder with no ocr/ at all (the test suites' trial builds) copies none and says so; scripts/build-clubs.sh refuses a league app without them
 import hashlib
 _ocr = os.path.join(SRC, 'ocr')
-_sums = [l.split() for l in open(os.path.join(_ocr, 'SHA256SUMS')).read().splitlines() if l.strip()] if os.path.isdir(_ocr) else None
+_sums = [l.split() for l in open(os.path.join(_ocr, 'SHA256SUMS'), encoding='utf-8').read().splitlines() if l.strip()] if os.path.isdir(_ocr) else None
 if _sums is None: print('no ocr/ folder next to this script, so the slip reader was not copied')
 for _h, _f in _sums or []:
     _p = os.path.join(_ocr, _f)
     if not os.path.isfile(_p) or hashlib.sha256(open(_p, 'rb').read()).hexdigest() != _h: sys.exit(f"STOPPED, nothing was written: ocr/{_f} is missing or doesn't match ocr/SHA256SUMS. The slip reader's files must be exactly the vendored ones: restore them from Git (git checkout -- ocr), or see ocr/LICENSES.txt to update them.")
-s = open(os.path.join(SRC, 'index.html')).read()
+s = open(os.path.join(SRC, 'index.html'), encoding='utf-8').read()
 a = s.index('/*@@SEEDS-START@@*/'); b = s.index('/*@@SEEDS-END@@*/')
 STUB = r"""/* league app: no seeds; one league, live from the sync server, this phone claims one name */
 const SHARE_LEAGUE={id:'__LEAGUE_ID__',key:'__MEMBER_KEY__',url:'__SYNC_URL__'};
@@ -78,13 +78,15 @@ sub("const KEY2='bozo-parlay-v2';", f"const KEY2='{P}-v1';")
 sub("const KEY='bozo-parlay-v1';", f"const KEY='{P}-v0';")
 sub("const CACHE_PREFIX='bozo-parlay-';", f"const CACHE_PREFIX='{P}-';")
 # only this league's own app link ships in this build — never the other leagues'
-s, n = re.subn(r"^const SHARE_SITES=\{.*\};$", lambda m: "const SHARE_SITES={self:" + json.dumps({'url': A.site, 'sync': A.league, 'app': A.title, 'home': A.short}) + "};", s, flags=re.M)
+s, n = re.subn(r"^const SHARE_SITES=\{.*\};$", lambda m: "const SHARE_SITES={self:" + json.dumps({'url': A.site, 'sync': A.league, 'app': A.title, 'home': A.short}).replace('</', '<\\/') + "};", s, flags=re.M)
 assert n == 1, 'SHARE_SITES line not found'
 s, n = re.subn(r"^const LEAGUE_LOGOS=\{.*\};$", "const LEAGUE_LOGOS={};", s, flags=re.M); assert n == 1, 'LEAGUE_LOGOS line not found'   # a club app only ever shows its own icon
 sub("(async()=>{const joined=(await adoptFromUrl())||(await joinFromUrl());if(!joined){if(refreshedIn)reopenRead();else pull()}})();", "if(refreshedIn)reopenRead();else pull(league(),false);")   # after Refresh reopens the app, the first read says how it went
-s = s.replace("__LEAGUE_ID__", A.league).replace("__MEMBER_KEY__", A.key).replace("__SYNC_URL__", A.url).replace("__LEAGUE_NAME__", A.name.replace("'", "\\'"))
-sub("<title>Bozo Commish</title>", f"<title>{A.title}</title>")
-sub('<meta name="apple-mobile-web-app-title" content="Bozo Commish">', f'<meta name="apple-mobile-web-app-title" content="{A.short}">')
+def jsq(v):   # the inside of a '...' JavaScript string: json.dumps escapes \\ and every control character, then ' and </ (a </script> would end the page's script early)
+    return json.dumps(v, ensure_ascii=False)[1:-1].replace("'", "\\'").replace('</', '<\\/')
+s = s.replace("__LEAGUE_ID__", jsq(A.league)).replace("__MEMBER_KEY__", jsq(A.key)).replace("__SYNC_URL__", jsq(A.url)).replace("__LEAGUE_NAME__", jsq(A.name))
+sub("<title>Bozo Commish</title>", f"<title>{html.escape(A.title)}</title>")
+sub('<meta name="apple-mobile-web-app-title" content="Bozo Commish">', f'<meta name="apple-mobile-web-app-title" content="{html.escape(A.short)}">')
 
 # nothing from the other leagues may ship: no seeds, no other league's app link
 for bad in ['seedStags', 'OG25', 'STAGS24', 'MARGINS={"', 'seedOG', 'seedLeague2', 'SEED1=', 'Stags Bozo', '__BU_SYNC_ID__']:
@@ -95,20 +97,33 @@ other_names = {'Bozo University', 'Bozo Parlay Club'} - {A.title, A.name}
 for nm in other_names | {'Stags Bozo Parlay'}:
     assert nm.lower() not in s.lower(), 'leaked another league name: ' + nm
 
-open(os.path.join(OUT, 'index.html'), 'w').write(s)
-js = re.search(r'<script>(.*)</script>', s, re.S).group(1); open('/tmp/club.js', 'w').write(js)
-r = subprocess.run(['node', '--check', '/tmp/club.js'], capture_output=True, text=True)
-if r.returncode: print(r.stderr[:600]); sys.exit(1)
+# the page's script is checked before the page is written (L5, audit 2026-11-22): a failed check leaves the old page in place, never half a build the next push would publish.
+# It is checked in a private temporary folder. KEEP_JS is for the test suites only: they rewrite the path below to one of their own, and then the checked
+# script is also kept there for them to load (a normal build leaves nothing behind).
+KEEP_JS = '/tmp/club.js'
+js = re.search(r'<script>(.*)</script>', s, re.S).group(1)
+with tempfile.TemporaryDirectory(prefix='bozo-club-') as _td:
+    _js = os.path.join(_td, 'club.js')
+    with open(_js, 'w', encoding='utf-8') as f: f.write(js)
+    r = subprocess.run(['node', '--check', _js], capture_output=True, text=True)
+if r.returncode: print(r.stderr[:600]); sys.exit(f"STOPPED, nothing was written: the club page's script does not compile (above). {OUT} still has its previous build. Do this: fix bozo-parlay/index.html (or this script's changes to it), then build again.")
+if KEEP_JS != '/tmp/' + 'club.js':
+    with open(KEEP_JS, 'w', encoding='utf-8') as f: f.write(js)
+def write(path, text):   # whole or not at all: a temporary file beside it, then one rename
+    tmp = path + '.tmp'
+    with open(tmp, 'w', encoding='utf-8') as f: f.write(text)
+    os.replace(tmp, path)
+write(os.path.join(OUT, 'index.html'), s)
 
-_sw = open(os.path.join(SRC, 'sw.js')).read()
+_sw = open(os.path.join(SRC, 'sw.js'), encoding='utf-8').read()
 _cv = re.search(r"CACHE='bozo-parlay-(v\d+)'", _sw).group(1)   # a club's offline copy rotates whenever the main app's does
 sw = _sw.replace('bozo-parlay-' + _cv, f'{P}-{_cv}').replace("k.startsWith('bozo-parlay-')", f"k.startsWith('{P}-')")
 assert f'{P}-{_cv}' in sw and f"startsWith('{P}-')" in sw
-open(os.path.join(OUT, 'sw.js'), 'w').write(sw)
+write(os.path.join(OUT, 'sw.js'), sw)
 
-m = json.load(open(os.path.join(SRC, 'manifest.json')))
+m = json.load(open(os.path.join(SRC, 'manifest.json'), encoding='utf-8'))
 m['name'] = A.title; m['short_name'] = A.short; m['description'] = A.desc
-json.dump(m, open(os.path.join(OUT, 'manifest.json'), 'w'), indent=2)
+write(os.path.join(OUT, 'manifest.json'), json.dumps(m, indent=2))
 for f in ['icon.svg', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png']:
     shutil.copy(os.path.join(ICONS, f), os.path.join(OUT, f))
 # the slip reader's files (checked before anything was written, above)
@@ -121,4 +136,4 @@ print('built ->', OUT, len(s), 'bytes')
 
 # every device checks this to know a newer build is out (the Commish reads the copy next to its own index.html)
 ver = re.search(r"APP_VERSION='([^']+)'", s).group(1)
-for d in (OUT, SRC): json.dump({'v': ver}, open(os.path.join(d, 'version.json'), 'w'))
+for d in (OUT, SRC): write(os.path.join(d, 'version.json'), json.dumps({'v': ver}))
